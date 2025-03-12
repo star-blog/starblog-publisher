@@ -1,0 +1,110 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:StarBlogPublisher.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:md="clr-namespace:Markdown.Avalonia;assembly=Markdown.Avalonia"
+        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="650"
+        x:Class="StarBlogPublisher.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="StarBlogPublisher"
+        MinWidth="800" MinHeight="600">
+
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- 顶部区域：Logo和软件信息 -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="10">
+            <!-- Logo -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="StarBlog Publisher" FontSize="24" FontWeight="Bold" Margin="0,0,10,0"/>
+            </StackPanel>
+            
+            <!-- 空白区域 -->
+            <Grid Grid.Column="1"/>
+            
+            <!-- 软件信息 -->
+            <StackPanel Grid.Column="2" Orientation="Vertical" HorizontalAlignment="Right">
+                <TextBlock Text="{Binding SoftwareVersion}" HorizontalAlignment="Right"/>
+                <TextBlock Text="开发者: DealiAxy" HorizontalAlignment="Right"/>
+            </StackPanel>
+        </Grid>
+        
+        <!-- 主要内容区域 -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="10">
+            <!-- 左侧：文件选择和文本显示 -->
+            <Grid Grid.Column="0" RowDefinitions="Auto,*" Margin="0,0,5,0">
+                <!-- 文件拖放区域 -->
+                <Border Grid.Row="0" 
+                        BorderBrush="{DynamicResource SystemAccentColor}" 
+                        BorderThickness="2" 
+                        CornerRadius="4" 
+                        Padding="10" 
+                        Margin="0,0,0,10"
+                        DragDrop.AllowDrop="True">
+                    <Grid RowDefinitions="*,Auto">
+                        <TextBlock Grid.Row="0" 
+                                   Text="拖放Markdown文件到此处，或点击选择文件" 
+                                   HorizontalAlignment="Center" 
+                                   VerticalAlignment="Center"
+                                   Margin="0,10"/>
+                        <Button Grid.Row="1" 
+                                Content="选择文件" 
+                                HorizontalAlignment="Center"
+                                Command="{Binding SelectFileCommand}"/>
+                    </Grid>
+                </Border>
+                
+                <!-- 文本显示区域 -->
+                <Border Grid.Row="1" 
+                        BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}" 
+                        BorderThickness="1" 
+                        CornerRadius="4">
+                    <ScrollViewer>
+                        <TextBox Text="{Binding ArticleContent}" 
+                                 AcceptsReturn="True" 
+                                 TextWrapping="Wrap"
+                                 IsReadOnly="True"/>
+                    </ScrollViewer>
+                </Border>
+            </Grid>
+            
+            <!-- 右侧：Markdown预览 -->
+            <Grid Grid.Column="1" RowDefinitions="Auto,*" Margin="5,0,0,0">
+                <TextBlock Grid.Row="0" Text="预览" FontWeight="Bold" Margin="0,0,0,10"/>
+                <Border Grid.Row="1" 
+                        BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}" 
+                        BorderThickness="1" 
+                        CornerRadius="4">
+                    <md:MarkdownScrollViewer Markdown="{Binding ArticleContent}"/>
+                </Border>
+            </Grid>
+        </Grid>
+        
+        <!-- 底部区域：发布按钮、进度条和状态显示 -->
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="10">
+            <!-- 发布按钮 -->
+            <Button Grid.Column="0" 
+                    Content="发布文章" 
+                    Command="{Binding PublishCommand}"
+                    IsEnabled="{Binding CanPublish}"
+                    Padding="15,10"/>
+            
+            <!-- 进度条 -->
+            <ProgressBar Grid.Column="1" 
+                         Value="{Binding PublishProgress}" 
+                         IsVisible="{Binding IsPublishing}"
+                         Margin="10,0"/>
+            
+            <!-- 状态显示 -->
+            <TextBlock Grid.Column="2" 
+                       Text="{Binding StatusMessage}" 
+                       VerticalAlignment="Center"/>
+        </Grid>
+    </Grid>
+</Window>
