@@ -1,15 +1,20 @@
 ﻿using System.IO;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Avalonia.Styling;
 
 namespace StarBlogPublisher.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase {
     // 软件版本信息
     [ObservableProperty] private string _softwareVersion = "版本: 1.0.0";
+    
+    // 主题设置
+    [ObservableProperty] private bool _isDarkTheme = false;
     
     // 文章内容
     [ObservableProperty] private string _articleContent = "";
@@ -19,6 +24,16 @@ public partial class MainWindowViewModel : ViewModelBase {
     [ObservableProperty] private double _publishProgress = 0;
     [ObservableProperty] private string _statusMessage = "准备就绪";
     [ObservableProperty] private bool _canPublish = false;
+    
+    // 切换主题命令
+    [RelayCommand]
+    private void ToggleTheme() {
+        IsDarkTheme = !IsDarkTheme;
+        var app = Application.Current;
+        if (app != null) {
+            app.RequestedThemeVariant = IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
+        }
+    }
     
     // 选择文件命令
     [RelayCommand]

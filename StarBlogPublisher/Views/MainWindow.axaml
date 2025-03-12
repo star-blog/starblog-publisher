@@ -17,9 +17,10 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,*,Auto">
+    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource SystemChromeLowColor}">
         <!-- 顶部区域：Logo和软件信息 -->
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="10">
+        <Border Classes="Card" Grid.Row="0" Margin="10">
+        <Grid ColumnDefinitions="Auto,*,Auto" Margin="10">
             <!-- Logo -->
             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="StarBlog Publisher" FontSize="24" FontWeight="Bold" Margin="0,0,10,0"/>
@@ -28,12 +29,16 @@
             <!-- 空白区域 -->
             <Grid Grid.Column="1"/>
             
-            <!-- 软件信息 -->
-            <StackPanel Grid.Column="2" Orientation="Vertical" HorizontalAlignment="Right">
+            <!-- 软件信息和主题切换 -->
+            <StackPanel Grid.Column="2" Orientation="Vertical" HorizontalAlignment="Right" Spacing="4">
+                <Button Command="{Binding ToggleThemeCommand}" 
+                        HorizontalAlignment="Right"
+                        Content="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}"/>
                 <TextBlock Text="{Binding SoftwareVersion}" HorizontalAlignment="Right"/>
                 <TextBlock Text="开发者: DealiAxy" HorizontalAlignment="Right"/>
             </StackPanel>
         </Grid>
+        </Border>
         
         <!-- 主要内容区域 -->
         <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="10">
@@ -84,27 +89,6 @@
                     <md:MarkdownScrollViewer Markdown="{Binding ArticleContent}"/>
                 </Border>
             </Grid>
-        </Grid>
-        
-        <!-- 底部区域：发布按钮、进度条和状态显示 -->
-        <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="10">
-            <!-- 发布按钮 -->
-            <Button Grid.Column="0" 
-                    Content="发布文章" 
-                    Command="{Binding PublishCommand}"
-                    IsEnabled="{Binding CanPublish}"
-                    Padding="15,10"/>
-            
-            <!-- 进度条 -->
-            <ProgressBar Grid.Column="1" 
-                         Value="{Binding PublishProgress}" 
-                         IsVisible="{Binding IsPublishing}"
-                         Margin="10,0"/>
-            
-            <!-- 状态显示 -->
-            <TextBlock Grid.Column="2" 
-                       Text="{Binding StatusMessage}" 
-                       VerticalAlignment="Center"/>
         </Grid>
     </Grid>
 </Window>
