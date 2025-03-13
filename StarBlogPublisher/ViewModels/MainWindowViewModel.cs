@@ -93,4 +93,10 @@ public partial class MainWindowViewModel : ViewModelBase {
         var aboutWindow = new AboutWindow();
         await aboutWindow.ShowDialog(App.MainWindow);
     }
+
+    [RelayCommand]
+    private async Task ShowSettings() {
+        var settingsWindow = new SettingsWindow();
+        await settingsWindow.ShowDialog(App.MainWindow);
+    }
 }

@@ -37,7 +37,8 @@
                         Padding="10"
                         Classes="IconButton"/>
                 <Button Content="⚙️ 设置" Padding="10" 
-                        Classes="IconButton"/>
+                        Classes="IconButton"
+                        Command="{Binding ShowSettingsCommand}"/>
                 <Button Content="ℹ️ 关于" Padding="10"
                         Classes="IconButton"
                         Command="{Binding ShowAboutCommand}"/>

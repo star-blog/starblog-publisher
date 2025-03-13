@@ -1,0 +1,79 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:StarBlogPublisher.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="700"
+        x:Class="StarBlogPublisher.Views.SettingsWindow"
+        x:DataType="vm:SettingsWindowViewModel"
+        Title="设置"
+        Width="600" Height="700"
+        WindowStartupLocation="CenterOwner">
+
+    <Design.DataContext>
+        <vm:SettingsWindowViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="20">
+        <!-- 标题 -->
+        <TextBlock Grid.Row="0" Text="设置" FontSize="24" FontWeight="Bold" Margin="0,0,0,20" />
+
+        <!-- 主要内容区域 -->
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="20">
+                <!-- 代理设置卡片 -->
+                <Border Classes="Card">
+                    <StackPanel Spacing="15" Margin="15">
+                        <TextBlock Text="代理设置" FontWeight="Bold" FontSize="16" />
+
+                        <StackPanel Spacing="10">
+                            <ToggleSwitch OnContent="启用代理" OffContent="禁用代理"
+                                          IsChecked="{Binding UseProxy}" />
+
+                            <TextBox Watermark="代理URL" Text="{Binding ProxyUrl}"
+                                     IsEnabled="{Binding UseProxy}" />
+
+                            <NumericUpDown Watermark="代理超时时间（秒）"
+                                           Value="{Binding ProxyTimeout}"
+                                           Minimum="1" Maximum="600"
+                                           IsEnabled="{Binding UseProxy}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- StarBlog后端配置卡片 -->
+                <Border Classes="Card">
+                    <StackPanel Spacing="15" Margin="15">
+                        <TextBlock Text="StarBlog后端配置" FontWeight="Bold" FontSize="16" />
+
+                        <StackPanel Spacing="10">
+                            <ToggleSwitch OnContent="使用自定义后端" OffContent="使用默认后端"
+                                          IsChecked="{Binding UseCustomBackend}" />
+
+                            <TextBox Watermark="StarBlog后端URL"
+                                     Text="{Binding BackendUrl}"
+                                     IsEnabled="{Binding UseCustomBackend}" />
+
+                            <TextBox Watermark="用户名"
+                                     Text="{Binding Username}" />
+
+                            <TextBox Watermark="密码"
+                                     PasswordChar="*"
+                                     Text="{Binding Password}" />
+
+                            <NumericUpDown Watermark="超时时间（秒）"
+                                           Value="{Binding BackendTimeout}"
+                                           Minimum="1" Maximum="600" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- 底部按钮 -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,20,0,0">
+            <Button Content="取消" Command="{Binding CancelCommand}" />
+            <Button Content="保存" Command="{Binding SaveCommand}" Classes="Primary" />
+        </StackPanel>
+    </Grid>
+</Window>
