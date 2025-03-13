@@ -9,6 +9,7 @@
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="StarBlogPublisher"
+        WindowStartupLocation="CenterOwner"
         MinWidth="800" MinHeight="600">
 
     <Design.DataContext>
@@ -30,12 +31,16 @@
             <Grid Grid.Column="1"/>
             
             <!-- 软件信息和主题切换 -->
-            <StackPanel Grid.Column="2" Orientation="Vertical" HorizontalAlignment="Right" Spacing="4">
+            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" VerticalAlignment="Center">
                 <Button Command="{Binding ToggleThemeCommand}" 
-                        HorizontalAlignment="Right"
-                        Content="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}"/>
-                <TextBlock Text="{Binding SoftwareVersion}" HorizontalAlignment="Right"/>
-                <TextBlock Text="开发者: DealiAxy" HorizontalAlignment="Right"/>
+                        Content="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}"
+                        Padding="10"
+                        Classes="IconButton"/>
+                <Button Content="⚙️ 设置" Padding="10" 
+                        Classes="IconButton"/>
+                <Button Content="ℹ️ 关于" Padding="10"
+                        Classes="IconButton"
+                        Command="{Binding ShowAboutCommand}"/>
             </StackPanel>
         </Grid>
         </Border>
@@ -89,6 +94,50 @@
                     <md:MarkdownScrollViewer Markdown="{Binding ArticleContent}"/>
                 </Border>
             </Grid>
+        </Grid>
+        
+        
+        <!-- 底部区域：发布按钮、进度条和状态显示 -->
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="10">
+            <!-- 发布按钮 -->
+            <Button Grid.Column="0" 
+                    Content="发布文章" 
+                    Command="{Binding PublishCommand}"
+                    IsEnabled="{Binding CanPublish}"
+                    Padding="15,10"/>
+            
+            <!-- 进度条 -->
+            <ProgressBar Grid.Column="1" 
+                         Value="{Binding PublishProgress}" 
+                         IsVisible="{Binding IsPublishing}"
+                         Margin="10,0"/>
+            
+            <!-- 状态显示 -->
+            <TextBlock Grid.Column="2" 
+                       Text="{Binding StatusMessage}" 
+                       VerticalAlignment="Center"/>
+        </Grid>
+        
+        
+        <!-- 底部区域：发布按钮、进度条和状态显示 -->
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="10">
+            <!-- 发布按钮 -->
+            <Button Grid.Column="0" 
+                    Content="发布文章" 
+                    Command="{Binding PublishCommand}"
+                    IsEnabled="{Binding CanPublish}"
+                    Padding="15,10"/>
+            
+            <!-- 进度条 -->
+            <ProgressBar Grid.Column="1" 
+                         Value="{Binding PublishProgress}" 
+                         IsVisible="{Binding IsPublishing}"
+                         Margin="10,0"/>
+            
+            <!-- 状态显示 -->
+            <TextBlock Grid.Column="2" 
+                       Text="{Binding StatusMessage}" 
+                       VerticalAlignment="Center"/>
         </Grid>
     </Grid>
 </Window>

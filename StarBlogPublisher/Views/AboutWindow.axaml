@@ -1,0 +1,83 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="500"
+        x:Class="StarBlogPublisher.Views.AboutWindow"
+        Title="关于 StarBlog Publisher"
+        Width="450" Height="500"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        Icon="/Assets/avalonia-logo.ico">
+    
+    <Grid RowDefinitions="Auto,*" Margin="20">
+        <!-- 头部：软件图标和名称 -->
+        <StackPanel Grid.Row="0" Spacing="15" HorizontalAlignment="Center" Margin="0,0,0,20">
+            <Image Source="/Assets/avalonia-logo.ico" Width="64" Height="64"/>
+            <TextBlock Text="StarBlog Publisher" 
+                     FontSize="24" 
+                     FontWeight="Bold" 
+                     HorizontalAlignment="Center"/>
+            <TextBlock Text="版本 1.0.0" 
+                     HorizontalAlignment="Center"
+                     Foreground="{DynamicResource SystemBaseMediumColor}"/>
+        </StackPanel>
+        
+        <!-- 主要内容区域 -->
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="20">
+                <!-- 基本信息卡片 -->
+                <Border Classes="Card">
+                    <StackPanel Spacing="10" Margin="15">
+                        <TextBlock Text="基本信息" 
+                                 FontWeight="Bold" 
+                                 FontSize="16"/>
+                        <TextBlock Text="StarBlog Publisher 是一款专业的博客文章发布工具，支持Markdown格式文章的预览和发布。" 
+                                 TextWrapping="Wrap"/>
+                        <TextBlock Text="© 2024 StarBlog Publisher. All rights reserved." 
+                                 Foreground="{DynamicResource SystemBaseMediumColor}"/>
+                    </StackPanel>
+                </Border>
+                
+                <!-- 技术栈卡片 -->
+                <Border Classes="Card">
+                    <StackPanel Spacing="10" Margin="15">
+                        <TextBlock Text="技术栈" 
+                                 FontWeight="Bold" 
+                                 FontSize="16"/>
+                        <TextBlock TextWrapping="Wrap">
+                            <Run>• 基于 </Run>
+                            <Run Text=".NET 8" FontWeight="SemiBold"/>
+                            <Run> 和 </Run>
+                            <Run Text="Avalonia UI" FontWeight="SemiBold"/>
+                            <Run> 开发</Run>
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap">
+                            <Run>• 使用 </Run>
+                            <Run Text="Markdown.Avalonia" FontWeight="SemiBold"/>
+                            <Run> 提供Markdown渲染支持</Run>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+                
+                <!-- 相关链接卡片 -->
+                <Border Classes="Card">
+                    <StackPanel Spacing="10" Margin="15">
+                        <TextBlock Text="相关链接" 
+                                 FontWeight="Bold" 
+                                 FontSize="16"/>
+                        <Button Content="🌐 访问项目主页" 
+                                Classes="IconButton"
+                                HorizontalAlignment="Left"/>
+                        <Button Content="📖 查看文档" 
+                                Classes="IconButton"
+                                HorizontalAlignment="Left"/>
+                        <Button Content="🐛 报告问题" 
+                                Classes="IconButton"
+                                HorizontalAlignment="Left"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>
