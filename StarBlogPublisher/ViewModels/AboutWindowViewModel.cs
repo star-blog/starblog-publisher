@@ -8,7 +8,6 @@ public partial class AboutWindowViewModel : ViewModelBase
     // 软件基本信息
     [ObservableProperty] private string _appName = "StarBlog Publisher";
     [ObservableProperty] private string _appVersion = "版本 1.0.0";
-    [ObservableProperty] private string _appIconPath = "/Assets/avalonia-logo.ico";
     [ObservableProperty] private string _copyright = "© 2024 StarBlog Publisher. All rights reserved.";
     [ObservableProperty] private string _description = "StarBlog Publisher 是一款专业的博客文章发布工具，支持Markdown格式文章的预览和发布。";
     
