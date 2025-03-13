@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using StarBlogPublisher.ViewModels;
 
 namespace StarBlogPublisher.Views
 {
@@ -7,6 +8,7 @@ namespace StarBlogPublisher.Views
         public AboutWindow()
         {
             InitializeComponent();
+            DataContext = new AboutWindowViewModel();
         }
     }
 }
