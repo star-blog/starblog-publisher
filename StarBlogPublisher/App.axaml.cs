@@ -11,7 +11,7 @@ namespace StarBlogPublisher;
 
 public partial class App : Application {
     // 添加静态属性以便在ViewModel中访问MainWindow
-    public static MainWindow MainWindow { get; private set; }
+    public static MainWindow MainWindow { get; private set; } = null!;
     
     public override void Initialize() {
         AvaloniaXamlLoader.Load(this);

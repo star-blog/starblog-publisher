@@ -13,8 +13,6 @@
         MinWidth="800" MinHeight="600">
 
     <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
@@ -85,38 +83,60 @@
                 </Border>
             </Grid>
             
-            <!-- 右侧：Markdown预览 -->
-            <Grid Grid.Column="1" RowDefinitions="Auto,*" Margin="5,0,0,0">
-                <TextBlock Grid.Row="0" Text="预览" FontWeight="Bold" Margin="0,0,0,10"/>
-                <Border Grid.Row="1" 
+            <!-- 右侧：文章信息编辑和预览 -->
+            <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*" Margin="5,0,0,0">
+                <!-- 文章信息编辑区域 -->
+                <Border Grid.Row="0" 
+                        Classes="Card"
+                        Margin="0,0,0,10"
+                        Background="{DynamicResource SystemAltHighColor}">
+                    <StackPanel Spacing="10" Margin="15">
+                        <TextBlock Text="文章信息" FontWeight="Bold" FontSize="16"/>
+                        
+                        <!-- 标题输入 -->
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="标题" FontWeight="SemiBold"/>
+                            <TextBox Text="{Binding ArticleTitle}"
+                                     Watermark="请输入文章标题"/>
+                        </StackPanel>
+                        
+                        <!-- 说明输入 -->
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="说明" FontWeight="SemiBold"/>
+                            <TextBox Text="{Binding ArticleDescription}"
+                                     Height="60"
+                                     AcceptsReturn="True"
+                                     TextWrapping="Wrap"
+                                     Watermark="请输入文章说明"/>
+                        </StackPanel>
+                        
+                        <!-- 分类选择 -->
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="分类" FontWeight="SemiBold"/>
+                            <TreeView ItemsSource="{Binding Categories}"
+                                      SelectedItem="{Binding SelectedCategory}"
+                                      Height="120">
+                                <TreeView.ItemTemplate>
+                                    <TreeDataTemplate ItemsSource="{Binding Children}">
+                                        <TextBlock Text="{Binding Name}"/>
+                                    </TreeDataTemplate>
+                                </TreeView.ItemTemplate>
+                            </TreeView>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- 预览标题 -->
+                <TextBlock Grid.Row="1" Text="预览" FontWeight="Bold" Margin="0,0,0,10"/>
+                
+                <!-- Markdown预览区域 -->
+                <Border Grid.Row="2" 
                         BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}" 
                         BorderThickness="1" 
                         CornerRadius="4">
                     <md:MarkdownScrollViewer Markdown="{Binding ArticleContent}"/>
                 </Border>
             </Grid>
-        </Grid>
-        
-        
-        <!-- 底部区域：发布按钮、进度条和状态显示 -->
-        <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="10">
-            <!-- 发布按钮 -->
-            <Button Grid.Column="0" 
-                    Content="发布文章" 
-                    Command="{Binding PublishCommand}"
-                    IsEnabled="{Binding CanPublish}"
-                    Padding="15,10"/>
-            
-            <!-- 进度条 -->
-            <ProgressBar Grid.Column="1" 
-                         Value="{Binding PublishProgress}" 
-                         IsVisible="{Binding IsPublishing}"
-                         Margin="10,0"/>
-            
-            <!-- 状态显示 -->
-            <TextBlock Grid.Column="2" 
-                       Text="{Binding StatusMessage}" 
-                       VerticalAlignment="Center"/>
         </Grid>
         
         

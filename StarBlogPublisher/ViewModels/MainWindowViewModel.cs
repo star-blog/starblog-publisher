@@ -10,18 +10,39 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using StarBlogPublisher.Views;
 using ReactiveUI;
+using System.Collections.ObjectModel;
+using StarBlogPublisher.Models;
 
 namespace StarBlogPublisher.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase {
+    public MainWindowViewModel()
+    {
+        // 初始化分类数据
+        Categories.Add(new Category { Name = "技术博客", Children = new() {
+            new Category { Name = "前端开发" },
+            new Category { Name = "后端开发" },
+            new Category { Name = "移动开发" }
+        }});
+        Categories.Add(new Category { Name = "生活随笔" });
+        Categories.Add(new Category { Name = "读书笔记" });
+    }
     // 软件版本信息
     [ObservableProperty] private string _softwareVersion = "版本: 1.0.0";
 
     // 主题设置
     [ObservableProperty] private bool _isDarkTheme = false;
 
+    // 文章标题和描述
+    [ObservableProperty] private string _articleTitle = string.Empty;
+    [ObservableProperty] private string _articleDescription = string.Empty;
+
     // 文章内容
     [ObservableProperty] private string _articleContent = "";
+
+    // 分类相关
+    [ObservableProperty] private ObservableCollection<Category> _categories = new();
+    [ObservableProperty] private Category? _selectedCategory;
 
     // 发布状态
     [ObservableProperty] private bool _isPublishing = false;
