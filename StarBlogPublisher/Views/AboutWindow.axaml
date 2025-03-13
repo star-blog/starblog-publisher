@@ -7,84 +7,85 @@
         mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="500"
         x:Class="StarBlogPublisher.Views.AboutWindow"
         x:DataType="vm:AboutWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
         Title="关于 StarBlog Publisher"
         Width="450" Height="500"
         WindowStartupLocation="CenterOwner"
-        CanResize="False"
-        Icon="/Assets/avalonia-logo.ico">
-    
+        CanResize="False">
+
     <Design.DataContext>
-        <vm:AboutWindowViewModel/>
+        <vm:AboutWindowViewModel />
     </Design.DataContext>
-    
+
     <Grid RowDefinitions="Auto,*" Margin="20">
         <!-- 头部：软件图标和名称 -->
         <StackPanel Grid.Row="0" Spacing="15" HorizontalAlignment="Center" Margin="0,0,0,20">
-            <Image Source="/Assets/avalonia-logo.ico" Width="64" Height="64"/>
-            <TextBlock Text="{Binding AppName}" 
-                     FontSize="24" 
-                     FontWeight="Bold" 
-                     HorizontalAlignment="Center"/>
-            <TextBlock Text="{Binding AppVersion}" 
-                     HorizontalAlignment="Center"
-                     Foreground="{DynamicResource SystemBaseMediumColor}"/>
+            <Image Source="/Assets/avalonia-logo.ico" Width="64" Height="64" />
+            <TextBlock Text="{Binding AppName}"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding AppVersion}"
+                       HorizontalAlignment="Center"
+                       Foreground="{DynamicResource SystemBaseMediumColor}" />
         </StackPanel>
-        
+
         <!-- 主要内容区域 -->
         <ScrollViewer Grid.Row="1">
             <StackPanel Spacing="20">
                 <!-- 基本信息卡片 -->
                 <Border Classes="Card">
                     <StackPanel Spacing="10" Margin="15">
-                        <TextBlock Text="基本信息" 
-                                 FontWeight="Bold" 
-                                 FontSize="16"/>
-                        <TextBlock Text="{Binding Description}" 
-                                 TextWrapping="Wrap"/>
-                        <TextBlock Text="{Binding Copyright}" 
-                                 Foreground="{DynamicResource SystemBaseMediumColor}"/>
+                        <TextBlock Text="基本信息"
+                                   FontWeight="Bold"
+                                   FontSize="16" />
+                        <TextBlock Text="{Binding Description}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Copyright}"
+                                   Foreground="{DynamicResource SystemBaseMediumColor}" />
                     </StackPanel>
                 </Border>
-                
+
                 <!-- 技术栈卡片 -->
                 <Border Classes="Card">
                     <StackPanel Spacing="10" Margin="15">
-                        <TextBlock Text="技术栈" 
-                                 FontWeight="Bold" 
-                                 FontSize="16"/>
+                        <TextBlock Text="技术栈"
+                                   FontWeight="Bold"
+                                   FontSize="16" />
                         <ItemsControl ItemsSource="{Binding TechStack}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:TechStackItem">
                                     <TextBlock TextWrapping="Wrap" Margin="0,5,0,0">
                                         <Run>• 基于 </Run>
-                                        <Run Text="{Binding Name}" FontWeight="SemiBold"/>
+                                        <Run Text="{Binding Name}" FontWeight="SemiBold" />
                                         <Run> </Run>
-                                        <Run Text="{Binding Description}"/>
+                                        <Run Text="{Binding Description}" />
                                     </TextBlock>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </StackPanel>
                 </Border>
-                
+
                 <!-- 相关链接卡片 -->
                 <Border Classes="Card">
                     <StackPanel Spacing="10" Margin="15">
-                        <TextBlock Text="相关链接" 
-                                 FontWeight="Bold" 
-                                 FontSize="16"/>
+                        <TextBlock Text="相关链接"
+                                   FontWeight="Bold"
+                                   FontSize="16" />
                         <ItemsControl ItemsSource="{Binding Links}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:LinkItem">
-                                    <Button CommandParameter="{Binding Url}"
+                                    <Button Command="{Binding OpenLinkCommand}"
+                                            CommandParameter="{Binding Url}"
                                             Classes="IconButton"
                                             HorizontalAlignment="Left"
                                             Padding="8"
                                             Margin="0,5,0,0">
                                         <Button.Content>
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding Icon}" Margin="0,0,5,0"/>
-                                                <TextBlock Text="{Binding Text}"/>
+                                                <TextBlock Text="{Binding Icon}" Margin="0,0,5,0" />
+                                                <TextBlock Text="{Binding Text}" />
                                             </StackPanel>
                                         </Button.Content>
                                     </Button>
