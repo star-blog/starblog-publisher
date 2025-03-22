@@ -30,6 +30,23 @@
             
             <!-- 软件信息和主题切换 -->
             <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" VerticalAlignment="Center">
+                <!-- 登录状态和按钮 -->
+                <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,10,0">
+                    <TextBlock Text="{Binding LoginStatusMessage}" FontSize="12" HorizontalAlignment="Right"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="5">
+                        <Button Content="登录" 
+                                Command="{Binding LoginCommand}"
+                                IsVisible="{Binding !IsLoggedIn}"
+                                Classes="IconButton"
+                                Padding="8,3"/>
+                        <Button Content="登出" 
+                                Command="{Binding LogoutCommand}"
+                                IsVisible="{Binding IsLoggedIn}"
+                                Classes="IconButton"
+                                Padding="8,3"/>
+                    </StackPanel>
+                </StackPanel>
+                
                 <Button Command="{Binding ToggleThemeCommand}" 
                         Content="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}"
                         Padding="10"
@@ -111,8 +128,13 @@
                         </StackPanel>
                         
                         <!-- 分类选择 -->
-                        <StackPanel Spacing="5">
-                            <TextBlock Text="分类" FontWeight="SemiBold"/>
+                        <StackPanel Spacing="5" IsVisible="{Binding IsLoggedIn}">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <TextBlock Grid.Column="0" Text="分类" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <Button Grid.Column="2" Content="🔄" ToolTip.Tip="刷新分类" 
+                                        Command="{Binding RefreshCategoriesCommand}"
+                                        Classes="IconButton" Padding="5,2"/>
+                            </Grid>
                             <TreeView ItemsSource="{Binding Categories}"
                                       SelectedItem="{Binding SelectedCategory}"
                                       Height="120">

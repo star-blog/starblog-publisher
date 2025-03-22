@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia;
@@ -12,6 +13,7 @@ using StarBlogPublisher.Views;
 using ReactiveUI;
 using System.Collections.ObjectModel;
 using StarBlogPublisher.Models;
+using StarBlogPublisher.Services;
 
 namespace StarBlogPublisher.ViewModels;
 
@@ -26,6 +28,12 @@ public partial class MainWindowViewModel : ViewModelBase {
         }});
         Categories.Add(new Category { Name = "生活随笔" });
         Categories.Add(new Category { Name = "读书笔记" });
+        
+        // 订阅全局状态变更事件
+        GlobalState.Instance.StateChanged += OnGlobalStateChanged;
+        
+        // 初始化登录状态
+        UpdateLoginState();
     }
     // 软件版本信息
     [ObservableProperty] private string _softwareVersion = "版本: 1.0.0";
@@ -43,12 +51,18 @@ public partial class MainWindowViewModel : ViewModelBase {
     // 分类相关
     [ObservableProperty] private ObservableCollection<Category> _categories = new();
     [ObservableProperty] private Category? _selectedCategory;
+    [ObservableProperty] private bool _isRefreshingCategories = false;
 
     // 发布状态
     [ObservableProperty] private bool _isPublishing = false;
     [ObservableProperty] private double _publishProgress = 0;
     [ObservableProperty] private string _statusMessage = "准备就绪";
     [ObservableProperty] private bool _canPublish = false;
+    
+    // 登录状态
+    [ObservableProperty] private bool _isLoggedIn = false;
+    [ObservableProperty] private bool _hasCredentials = false;
+    [ObservableProperty] private string _loginStatusMessage = "未登录";
 
     // 切换主题命令
     [RelayCommand]
@@ -90,6 +104,11 @@ public partial class MainWindowViewModel : ViewModelBase {
     // 发布文章命令
     [RelayCommand]
     private async Task Publish() {
+        if (!IsLoggedIn) {
+            StatusMessage = "请先登录";
+            return;
+        }
+        
         if (string.IsNullOrEmpty(ArticleContent)) {
             StatusMessage = "没有内容可发布";
             return;
@@ -119,5 +138,111 @@ public partial class MainWindowViewModel : ViewModelBase {
     private async Task ShowSettings() {
         var settingsWindow = new SettingsWindow();
         await settingsWindow.ShowDialog(App.MainWindow);
+        
+        // 设置窗口关闭后，更新登录状态
+        UpdateLoginState();
+    }
+    
+    // 登录命令
+    [RelayCommand]
+    private async Task Login() {
+        if (!HasCredentials) {
+            StatusMessage = "请先配置用户名和密码";
+            await ShowSettings();
+            return;
+        }
+        
+        StatusMessage = "正在登录...";
+        
+        try {
+            // 模拟登录过程和获取JWT令牌
+            await Task.Delay(1000); // 模拟网络延迟
+            
+            // 假设这是从服务器获取的JWT令牌
+            var jwtToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ";
+            
+            // 更新全局状态
+            GlobalState.Instance.SetLoggedIn(jwtToken);
+            
+            StatusMessage = "登录成功";
+        }
+        catch (Exception ex) {
+            StatusMessage = $"登录失败: {ex.Message}";
+        }
+    }
+    
+    // 登出命令
+    [RelayCommand]
+    private void Logout() {
+        GlobalState.Instance.Logout();
+        StatusMessage = "已登出";
+    }
+    
+    // 全局状态变更事件处理
+    private void OnGlobalStateChanged(object? sender, EventArgs e) {
+        // 在UI线程上更新状态
+        Dispatcher.UIThread.Post(UpdateLoginState);
+    }
+    
+    // 刷新分类命令
+    [RelayCommand]
+    private async Task RefreshCategories() {
+        if (!IsLoggedIn) {
+            StatusMessage = "请先登录";
+            return;
+        }
+        
+        IsRefreshingCategories = true;
+        StatusMessage = "正在刷新分类...";
+        
+        try {
+            // 清空现有分类
+            Categories.Clear();
+            
+            // 模拟从服务器获取分类数据的延迟
+            await Task.Delay(1000);
+            
+            // 重新加载分类数据（这里是模拟数据，实际应用中应从API获取）
+            Categories.Add(new Category { Name = "技术博客", Children = new() {
+                new Category { Name = "前端开发" },
+                new Category { Name = "后端开发" },
+                new Category { Name = "移动开发" },
+                new Category { Name = "DevOps" }
+            }});
+            Categories.Add(new Category { Name = "生活随笔" });
+            Categories.Add(new Category { Name = "读书笔记" });
+            Categories.Add(new Category { Name = "项目管理" });
+            
+            StatusMessage = "分类刷新成功";
+        }
+        catch (Exception ex) {
+            StatusMessage = $"分类刷新失败: {ex.Message}";
+        }
+        finally {
+            IsRefreshingCategories = false;
+        }
+    }
+    
+    // 更新登录状态
+    private void UpdateLoginState() {
+        var globalState = GlobalState.Instance;
+        bool wasLoggedIn = IsLoggedIn;
+        IsLoggedIn = globalState.IsLoggedIn;
+        HasCredentials = globalState.HasCredentials();
+        
+        if (IsLoggedIn) {
+            LoginStatusMessage = "已登录";
+            
+            // 如果是刚登录成功，自动刷新分类
+            if (!wasLoggedIn) {
+                RefreshCategoriesCommand.Execute(null);
+            }
+        }
+        else if (HasCredentials) {
+            LoginStatusMessage = "未登录 (已配置凭据)";
+        }
+        else {
+            LoginStatusMessage = "未登录 (未配置凭据)";
+        }
     }
 }
