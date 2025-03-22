@@ -13,174 +13,174 @@
         MinWidth="800" MinHeight="600">
 
     <Design.DataContext>
-        <vm:MainWindowViewModel/>
+        <vm:MainWindowViewModel />
     </Design.DataContext>
 
     <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource SystemChromeLowColor}">
         <!-- 顶部区域：Logo和软件信息 -->
         <Border Classes="Card" Grid.Row="0" Margin="10">
-        <Grid ColumnDefinitions="Auto,*,Auto" Margin="10">
-            <!-- Logo -->
-            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="StarBlog Publisher" FontSize="24" FontWeight="Bold" Margin="0,0,10,0"/>
-            </StackPanel>
-            
-            <!-- 空白区域 -->
-            <Grid Grid.Column="1"/>
-            
-            <!-- 软件信息和主题切换 -->
-            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" VerticalAlignment="Center">
-                <!-- 登录状态和按钮 -->
-                <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,10,0">
-                    <TextBlock Text="{Binding LoginStatusMessage}" FontSize="12" HorizontalAlignment="Right"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="5">
-                        <Button Content="登录" 
-                                Command="{Binding LoginCommand}"
-                                IsVisible="{Binding !IsLoggedIn}"
-                                Classes="IconButton"
-                                Padding="8,3"/>
-                        <Button Content="登出" 
-                                Command="{Binding LogoutCommand}"
-                                IsVisible="{Binding IsLoggedIn}"
-                                Classes="IconButton"
-                                Padding="8,3"/>
-                    </StackPanel>
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="10">
+                <!-- Logo -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="StarBlog Publisher" FontSize="24" FontWeight="Bold" Margin="0,0,10,0" />
                 </StackPanel>
-                
-                <Button Command="{Binding ToggleThemeCommand}" 
-                        Content="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}"
-                        Padding="10"
-                        Classes="IconButton"/>
-                <Button Content="⚙️ 设置" Padding="10" 
-                        Classes="IconButton"
-                        Command="{Binding ShowSettingsCommand}"/>
-                <Button Content="ℹ️ 关于" Padding="10"
-                        Classes="IconButton"
-                        Command="{Binding ShowAboutCommand}"/>
-            </StackPanel>
-        </Grid>
+
+                <!-- 空白区域 -->
+                <Grid Grid.Column="1" />
+
+                <!-- 软件信息和主题切换 -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8"
+                            VerticalAlignment="Center">
+                    <!-- 登录状态和按钮 -->
+                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,10,0">
+                        <TextBlock Text="{Binding LoginStatusMessage}" FontSize="12" HorizontalAlignment="Right" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="5">
+                            <Button Content="登录"
+                                    Command="{Binding LoginCommand}"
+                                    IsVisible="{Binding !IsLoggedIn}"
+                                    Classes="IconButton"
+                                    Padding="8,3" />
+                            <Button Content="登出"
+                                    Command="{Binding LogoutCommand}"
+                                    IsVisible="{Binding IsLoggedIn}"
+                                    Classes="IconButton"
+                                    Padding="8,3" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Button Command="{Binding ToggleThemeCommand}"
+                            Content="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}"
+                            Padding="10"
+                            Classes="IconButton" />
+                    <Button Content="⚙️ 设置" Padding="10"
+                            Classes="IconButton"
+                            Command="{Binding ShowSettingsCommand}" />
+                    <Button Content="ℹ️ 关于" Padding="10"
+                            Classes="IconButton"
+                            Command="{Binding ShowAboutCommand}" />
+                </StackPanel>
+            </Grid>
         </Border>
-        
+
         <!-- 主要内容区域 -->
         <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="10">
             <!-- 左侧：文件选择和文本显示 -->
             <Grid Grid.Column="0" RowDefinitions="Auto,*" Margin="0,0,5,0">
                 <!-- 文件拖放区域 -->
-                <Border Grid.Row="0" 
-                        BorderBrush="{DynamicResource SystemAccentColor}" 
-                        BorderThickness="2" 
-                        CornerRadius="4" 
-                        Padding="10" 
+                <Border Grid.Row="0"
+                        BorderBrush="{DynamicResource SystemAccentColor}"
+                        BorderThickness="2"
+                        CornerRadius="4"
+                        Padding="10"
                         Margin="0,0,0,10"
                         DragDrop.AllowDrop="True">
                     <Grid RowDefinitions="*,Auto">
-                        <TextBlock Grid.Row="0" 
-                                   Text="拖放Markdown文件到此处，或点击选择文件" 
-                                   HorizontalAlignment="Center" 
+                        <TextBlock Grid.Row="0"
+                                   Text="拖放Markdown文件到此处，或点击选择文件"
+                                   HorizontalAlignment="Center"
                                    VerticalAlignment="Center"
-                                   Margin="0,10"/>
-                        <Button Grid.Row="1" 
-                                Content="选择文件" 
+                                   Margin="0,10" />
+                        <Button Grid.Row="1"
+                                Content="选择文件"
                                 HorizontalAlignment="Center"
-                                Command="{Binding SelectFileCommand}"/>
+                                Command="{Binding SelectFileCommand}" />
                     </Grid>
                 </Border>
-                
+
                 <!-- 文本显示区域 -->
-                <Border Grid.Row="1" 
-                        BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}" 
-                        BorderThickness="1" 
+                <Border Grid.Row="1"
+                        BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                        BorderThickness="1"
                         CornerRadius="4">
                     <ScrollViewer>
-                        <TextBox Text="{Binding ArticleContent}" 
-                                 AcceptsReturn="True" 
+                        <TextBox Text="{Binding ArticleContent}"
+                                 AcceptsReturn="True"
                                  TextWrapping="Wrap"
-                                 IsReadOnly="True"/>
+                                 IsReadOnly="True" />
                     </ScrollViewer>
                 </Border>
             </Grid>
-            
-            <!-- 右侧：文章信息编辑和预览 -->
-            <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*" Margin="5,0,0,0">
+
+            <!-- 右侧：文章信息编辑区域 -->
+            <Grid Grid.Column="1" RowDefinitions="*" Margin="5,0,0,0">
                 <!-- 文章信息编辑区域 -->
-                <Border Grid.Row="0" 
+                <Border Grid.Row="0"
                         Classes="Card"
-                        Margin="0,0,0,10"
                         Background="{DynamicResource SystemAltHighColor}">
-                    <StackPanel Spacing="10" Margin="15">
-                        <TextBlock Text="文章信息" FontWeight="Bold" FontSize="16"/>
-                        
+                    <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="10">
+                        <TextBlock Grid.Row="0" Margin="5"
+                                   Text="文章信息" FontWeight="Bold" FontSize="16" />
+
                         <!-- 标题输入 -->
-                        <StackPanel Spacing="5">
-                            <TextBlock Text="标题" FontWeight="SemiBold"/>
+                        <StackPanel Grid.Row="1" Spacing="5" Margin="5">
+                            <TextBlock Text="标题" FontWeight="SemiBold" />
                             <TextBox Text="{Binding ArticleTitle}"
-                                     Watermark="请输入文章标题"/>
+                                     Watermark="请输入文章标题" />
                         </StackPanel>
-                        
+
                         <!-- 说明输入 -->
-                        <StackPanel Spacing="5">
-                            <TextBlock Text="说明" FontWeight="SemiBold"/>
+                        <StackPanel Grid.Row="2" Spacing="5" Margin="5">
+                            <TextBlock Text="说明" FontWeight="SemiBold" />
                             <TextBox Text="{Binding ArticleDescription}"
                                      Height="60"
                                      AcceptsReturn="True"
                                      TextWrapping="Wrap"
-                                     Watermark="请输入文章说明"/>
+                                     Watermark="请输入文章说明" />
                         </StackPanel>
-                        
+
                         <!-- 分类选择 -->
-                        <StackPanel Spacing="5" IsVisible="{Binding IsLoggedIn}">
-                            <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Grid Grid.Row="3" RowDefinitions="Auto,*" Margin="5"
+                              IsVisible="{Binding IsLoggedIn}">
+                            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,5">
                                 <TextBlock Grid.Column="0" Text="分类" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 <Button Grid.Column="2" Content="🔄" ToolTip.Tip="刷新分类" 
                                         Command="{Binding RefreshCategoriesCommand}"
                                         Classes="IconButton" Padding="5,2"/>
                             </Grid>
-                            <TreeView ItemsSource="{Binding Categories}"
-                                      SelectedItem="{Binding SelectedCategory}"
-                                      Height="120">
+                            <TreeView Grid.Row="1"
+                                      MinHeight="100"
+                                      ItemsSource="{Binding Categories}"
+                                      SelectedItem="{Binding SelectedCategory}">
                                 <TreeView.ItemTemplate>
                                     <TreeDataTemplate ItemsSource="{Binding Nodes}">
                                         <TextBlock Text="{Binding Text}"/>
                                     </TreeDataTemplate>
                                 </TreeView.ItemTemplate>
                             </TreeView>
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
-
-                <!-- 预览标题 -->
-                <TextBlock Grid.Row="1" Text="预览" FontWeight="Bold" Margin="0,0,0,10"/>
-                
-                <!-- Markdown预览区域 -->
-                <Border Grid.Row="2"
-                        BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}"
-                        BorderThickness="1"
-                        CornerRadius="4">
-                    <md:MarkdownScrollViewer Markdown="{Binding ArticleContent}"/>
+                        </Grid>
+                    </Grid>
                 </Border>
             </Grid>
         </Grid>
-        
-        
-        <!-- 底部区域：发布按钮、进度条和状态显示 -->
-        <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="10">
+
+
+        <!-- 底部区域：预览按钮、发布按钮、进度条和状态显示 -->
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*,Auto" Margin="10">
+            <!-- 预览按钮 -->
+            <Button Grid.Column="0"
+                    Content="预览文章"
+                    Command="{Binding PreviewCommand}"
+                    IsEnabled="{Binding CanPublish}"
+                    Padding="15,10"
+                    Margin="0,0,10,0" />
+
             <!-- 发布按钮 -->
-            <Button Grid.Column="0" 
-                    Content="发布文章" 
+            <Button Grid.Column="1"
+                    Content="发布文章"
                     Command="{Binding PublishCommand}"
                     IsEnabled="{Binding CanPublish}"
-                    Padding="15,10"/>
-            
+                    Padding="15,10" />
+
             <!-- 进度条 -->
-            <ProgressBar Grid.Column="1" 
-                         Value="{Binding PublishProgress}" 
+            <ProgressBar Grid.Column="2"
+                         Value="{Binding PublishProgress}"
                          IsVisible="{Binding IsPublishing}"
-                         Margin="10,0"/>
-            
+                         Margin="10,0" />
+
             <!-- 状态显示 -->
-            <TextBlock Grid.Column="2" 
-                       Text="{Binding StatusMessage}" 
-                       VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="3"
+                       Text="{Binding StatusMessage}"
+                       VerticalAlignment="Center" />
         </Grid>
     </Grid>
 </Window>

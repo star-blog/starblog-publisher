@@ -1,0 +1,31 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:StarBlogPublisher.ViewModels"
+        xmlns:md="clr-namespace:Markdown.Avalonia;assembly=Markdown.Avalonia"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+        x:Class="StarBlogPublisher.Views.PreviewWindow"
+        x:DataType="vm:PreviewWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="文章预览"
+        Width="800" Height="600"
+        WindowStartupLocation="CenterOwner">
+
+    <Design.DataContext>
+        <vm:PreviewWindowViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*" Margin="20">
+        <!-- 标题 -->
+        <TextBlock Grid.Row="0" Text="文章预览" FontSize="24" FontWeight="Bold" Margin="0,0,0,20" />
+
+        <!-- 预览内容 -->
+        <Border Grid.Row="1"
+                BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                BorderThickness="1"
+                CornerRadius="4">
+            <md:MarkdownScrollViewer Markdown="{Binding MarkdownContent}"/>
+        </Border>
+    </Grid>
+</Window>

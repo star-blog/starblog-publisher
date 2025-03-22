@@ -16,6 +16,7 @@ using MsBox.Avalonia;
 using MsBox.Avalonia.Enums;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
+using System.Diagnostics;
 
 namespace StarBlogPublisher.ViewModels;
 
@@ -202,6 +203,19 @@ public partial class MainWindowViewModel : ViewModelBase {
     private void Logout() {
         GlobalState.Instance.Logout();
         StatusMessage = "已登出";
+    }
+    
+    // 预览文章命令
+    [RelayCommand]
+    private async Task Preview() {
+        if (string.IsNullOrEmpty(ArticleContent)) {
+            StatusMessage = "没有内容可预览";
+            return;
+        }
+        
+        var previewWindow = new PreviewWindow(ArticleContent);
+        await previewWindow.ShowDialog(App.MainWindow);
+        StatusMessage = "预览已关闭";
     }
 
     // 全局状态变更事件处理
