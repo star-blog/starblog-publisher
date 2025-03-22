@@ -23,4 +23,5 @@ public class ApiService {
     }
 
     public IAuth Auth => RestService.For<IAuth>(BaseUrl);
+    public ICategory Categories => RestService.For<ICategory>(BaseUrl);
 }

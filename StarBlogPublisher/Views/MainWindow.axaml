@@ -139,8 +139,8 @@
                                       SelectedItem="{Binding SelectedCategory}"
                                       Height="120">
                                 <TreeView.ItemTemplate>
-                                    <TreeDataTemplate ItemsSource="{Binding Children}">
-                                        <TextBlock Text="{Binding Name}"/>
+                                    <TreeDataTemplate ItemsSource="{Binding Nodes}">
+                                        <TextBlock Text="{Binding Text}"/>
                                     </TreeDataTemplate>
                                 </TreeView.ItemTemplate>
                             </TreeView>
@@ -152,9 +152,9 @@
                 <TextBlock Grid.Row="1" Text="预览" FontWeight="Bold" Margin="0,0,0,10"/>
                 
                 <!-- Markdown预览区域 -->
-                <Border Grid.Row="2" 
-                        BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}" 
-                        BorderThickness="1" 
+                <Border Grid.Row="2"
+                        BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                        BorderThickness="1"
                         CornerRadius="4">
                     <md:MarkdownScrollViewer Markdown="{Binding ArticleContent}"/>
                 </Border>

@@ -21,17 +21,6 @@ namespace StarBlogPublisher.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase {
     public MainWindowViewModel() {
-        // 初始化分类数据
-        Categories.Add(new Category {
-            Name = "技术博客", Children = new() {
-                new Category { Name = "前端开发" },
-                new Category { Name = "后端开发" },
-                new Category { Name = "移动开发" }
-            }
-        });
-        Categories.Add(new Category { Name = "生活随笔" });
-        Categories.Add(new Category { Name = "读书笔记" });
-
         // 订阅全局状态变更事件
         GlobalState.Instance.StateChanged += OnGlobalStateChanged;
 
@@ -236,21 +225,15 @@ public partial class MainWindowViewModel : ViewModelBase {
             // 清空现有分类
             Categories.Clear();
 
-            // 模拟从服务器获取分类数据的延迟
-            await Task.Delay(1000);
+            // 从服务器获取分类数据的
+            var resp = await ApiService.Instance.Categories.GetNodes();
 
-            // 重新加载分类数据（这里是模拟数据，实际应用中应从API获取）
-            Categories.Add(new Category {
-                Name = "技术博客", Children = new() {
-                    new Category { Name = "前端开发" },
-                    new Category { Name = "后端开发" },
-                    new Category { Name = "移动开发" },
-                    new Category { Name = "DevOps" }
-                }
-            });
-            Categories.Add(new Category { Name = "生活随笔" });
-            Categories.Add(new Category { Name = "读书笔记" });
-            Categories.Add(new Category { Name = "项目管理" });
+            if (resp.Data == null) {
+                StatusMessage = $"分类列表为空：{resp.Message}";
+                return;
+            }
+
+            Categories = new ObservableCollection<Category>(resp.Data);
 
             StatusMessage = "分类刷新成功";
         }
