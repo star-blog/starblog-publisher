@@ -14,6 +14,7 @@ public partial class SettingsWindowViewModel : ViewModelBase {
     private string _username = string.Empty;
     private string _password = string.Empty;
     private int _backendTimeout;
+    private bool _showPassword;
 
     public bool UseProxy {
         get => _useProxy;
@@ -53,6 +54,16 @@ public partial class SettingsWindowViewModel : ViewModelBase {
     public int BackendTimeout {
         get => _backendTimeout;
         set => SetProperty(ref _backendTimeout, value);
+    }
+
+    public bool ShowPassword {
+        get => _showPassword;
+        set => SetProperty(ref _showPassword, value);
+    }
+
+    [RelayCommand]
+    private void TogglePassword() {
+        ShowPassword = !ShowPassword;
     }
 
     public SettingsWindowViewModel() {

@@ -3,6 +3,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:StarBlogPublisher.ViewModels"
+        xmlns:converters="clr-namespace:StarBlogPublisher.Converters"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="700"
         x:Class="StarBlogPublisher.Views.SettingsWindow"
         x:DataType="vm:SettingsWindowViewModel"
@@ -57,9 +58,17 @@
                             <TextBox Watermark="用户名"
                                      Text="{Binding Username}" />
 
-                            <TextBox Watermark="密码"
-                                     PasswordChar="*"
-                                     Text="{Binding Password}" />
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBox Grid.Column="0"
+                                         Watermark="密码"
+                                         PasswordChar="{Binding !ShowPassword, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
+                                         Text="{Binding Password}" />
+                                <Button Grid.Column="1"
+                                        Margin="5,0,0,0"
+                                        Command="{Binding TogglePasswordCommand}"
+                                        Content="{Binding !ShowPassword, Converter={x:Static converters:BooleanToStringConverter.Instance}, ConverterParameter=👁️‍🗨️}"
+                                        Classes="Primary" />
+                            </Grid>
 
                             <NumericUpDown Watermark="超时时间（秒）"
                                            Value="{Binding BackendTimeout}"
