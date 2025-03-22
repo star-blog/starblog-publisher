@@ -1,5 +1,8 @@
 ﻿using Refit;
 using StarBlogPublisher.Services.StarBlogApi;
+using System;
+using System.Net;
+using System.Net.Http;
 
 namespace StarBlogPublisher.Services;
 
@@ -22,6 +25,25 @@ public class ApiService {
         }
     }
 
-    public IAuth Auth => RestService.For<IAuth>(BaseUrl);
-    public ICategory Categories => RestService.For<ICategory>(BaseUrl);
+    private HttpClient ApiHttpClient {
+        get {
+            var handler = new HttpClientHandler();
+
+            // 检查是否需要使用代理
+            if (AppSettings.Instance.UseProxy && !string.IsNullOrWhiteSpace(AppSettings.Instance.ProxyUrl)) {
+                handler.Proxy = new WebProxy(AppSettings.Instance.ProxyUrl);
+                handler.UseProxy = true;
+            }
+
+            var client = new HttpClient(handler) {
+                BaseAddress = new Uri(BaseUrl),
+                Timeout = TimeSpan.FromSeconds(AppSettings.Instance.BackendTimeout)
+            };
+
+            return client;
+        }
+    }
+
+    public IAuth Auth => RestService.For<IAuth>(ApiHttpClient);
+    public ICategory Categories => RestService.For<ICategory>(ApiHttpClient);
 }
