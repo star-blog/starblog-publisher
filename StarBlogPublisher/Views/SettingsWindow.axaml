@@ -61,12 +61,12 @@
                             <Grid ColumnDefinitions="*,Auto">
                                 <TextBox Grid.Column="0"
                                          Watermark="密码"
-                                         PasswordChar="{Binding !ShowPassword, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
+                                         PasswordChar="{Binding ShowPassword, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
                                          Text="{Binding Password}" />
                                 <Button Grid.Column="1"
                                         Margin="5,0,0,0"
                                         Command="{Binding TogglePasswordCommand}"
-                                        Content="{Binding !ShowPassword, Converter={x:Static converters:BooleanToStringConverter.Instance}, ConverterParameter=👁️‍🗨️}"
+                                        Content="{Binding ShowPassword, Converter={x:Static converters:BooleanToStringConverter.Instance}, ConverterParameter=👁️‍🗨️}"
                                         Classes="Primary" />
                             </Grid>
 
