@@ -17,6 +17,7 @@ using MsBox.Avalonia.Enums;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using System.Diagnostics;
+using CodeLab.Share.Extensions;
 
 namespace StarBlogPublisher.ViewModels;
 
@@ -86,6 +87,8 @@ public partial class MainWindowViewModel : ViewModelBase {
                 using var stream = await file.OpenReadAsync();
                 using var reader = new StreamReader(stream);
                 ArticleContent = await reader.ReadToEndAsync();
+                ArticleTitle = Path.GetFileNameWithoutExtension(file.Name);
+                ArticleDescription = ArticleContent.Limit(100);
                 StatusMessage = $"已加载文件: {file.Name}";
                 CanPublish = true;
             }
@@ -204,7 +207,7 @@ public partial class MainWindowViewModel : ViewModelBase {
         GlobalState.Instance.Logout();
         StatusMessage = "已登出";
     }
-    
+
     // 预览文章命令
     [RelayCommand]
     private async Task Preview() {
@@ -212,7 +215,7 @@ public partial class MainWindowViewModel : ViewModelBase {
             StatusMessage = "没有内容可预览";
             return;
         }
-        
+
         var previewWindow = new PreviewWindow(ArticleContent);
         await previewWindow.ShowDialog(App.MainWindow);
         StatusMessage = "预览已关闭";
