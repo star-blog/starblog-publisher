@@ -151,7 +151,7 @@ public partial class MainWindowViewModel : ViewModelBase {
             ButtonEnum.OkCancel,
             Icon.Success
         );
-        
+
         var publishedMsgBoxResult = await publishedMsgBox.ShowWindowDialogAsync(App.MainWindow);
         if (publishedMsgBoxResult == ButtonResult.Ok) {
             // todo 打开博客文章链接
@@ -185,15 +185,21 @@ public partial class MainWindowViewModel : ViewModelBase {
         StatusMessage = "正在登录...";
 
         try {
-            // 模拟登录过程和获取JWT令牌
-            await Task.Delay(1000); // 模拟网络延迟
+            // 登录过程和获取JWT令牌
+            var resp = await ApiService.Instance.Auth.Login(new LoginUser {
+                Username = AppSettings.Instance.Username,
+                Password = AppSettings.Instance.Password
+            });
 
-            // 假设这是从服务器获取的JWT令牌
-            var jwtToken =
-                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ";
+            Console.WriteLine($"token: {resp.Data?.Token}, expiration: {resp.Data?.Expiration}");
+
+            if (string.IsNullOrWhiteSpace(resp.Data?.Token)) {
+                StatusMessage = $"登录失败: {resp.Message}";
+                return;
+            }
 
             // 更新全局状态
-            GlobalState.Instance.SetLoggedIn(jwtToken);
+            GlobalState.Instance.SetLoggedIn(resp.Data.Token);
 
             StatusMessage = "登录成功";
         }
