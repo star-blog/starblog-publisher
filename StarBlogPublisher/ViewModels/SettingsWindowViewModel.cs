@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Windows.Input;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.Input;
@@ -15,6 +16,13 @@ public partial class SettingsWindowViewModel : ViewModelBase {
     private string _password = string.Empty;
     private int _backendTimeout;
     private bool _showPassword;
+    private bool _showAIKey;
+    private bool _enableAI;
+    private string _aiProvider = "openai";
+    private string _aiKey = string.Empty;
+    private string _aiModel = string.Empty;
+    private string _aiApiBase = string.Empty;
+    private List<string> _aiProviders = new() { "openai", "Claude", "DeepSeek", "自定义" };
 
     public bool UseProxy {
         get => _useProxy;
@@ -61,9 +69,55 @@ public partial class SettingsWindowViewModel : ViewModelBase {
         set => SetProperty(ref _showPassword, value);
     }
 
+    public bool ShowAIKey {
+        get => _showAIKey;
+        set => SetProperty(ref _showAIKey, value);
+    }
+
+    public bool EnableAI {
+        get => _enableAI;
+        set => SetProperty(ref _enableAI, value);
+    }
+
+    public string AIProvider {
+        get => _aiProvider;
+        set {
+            if (SetProperty(ref _aiProvider, value)) {
+                // 当AI提供商变化时，通知IsCustomProvider属性已更新
+                OnPropertyChanged(nameof(IsCustomProvider));
+            }
+        }
+    }
+    
+    public List<string> AIProviders {
+        get => _aiProviders;
+    }
+    
+    public bool IsCustomProvider => AIProvider == "自定义";
+
+    public string AIKey {
+        get => _aiKey;
+        set => SetProperty(ref _aiKey, value);
+    }
+
+    public string AIModel {
+        get => _aiModel;
+        set => SetProperty(ref _aiModel, value);
+    }
+
+    public string AIApiBase {
+        get => _aiApiBase;
+        set => SetProperty(ref _aiApiBase, value);
+    }
+
     [RelayCommand]
     private void TogglePassword() {
         ShowPassword = !ShowPassword;
+    }
+
+    [RelayCommand]
+    private void ToggleAIKey() {
+        ShowAIKey = !ShowAIKey;
     }
 
     public SettingsWindowViewModel() {
@@ -81,6 +135,11 @@ public partial class SettingsWindowViewModel : ViewModelBase {
         Username = settings.Username;
         Password = settings.Password;
         BackendTimeout = settings.BackendTimeout;
+        EnableAI = settings.EnableAI;
+        AIProvider = settings.AIProvider;
+        AIKey = settings.AIKey;
+        AIModel = settings.AIModel;
+        AIApiBase = settings.AIApiBase;
     }
 
     [RelayCommand]
@@ -95,6 +154,11 @@ public partial class SettingsWindowViewModel : ViewModelBase {
         settings.Username = Username;
         settings.Password = Password;
         settings.BackendTimeout = BackendTimeout;
+        settings.EnableAI = EnableAI;
+        settings.AIProvider = AIProvider;
+        settings.AIKey = AIKey;
+        settings.AIModel = AIModel;
+        settings.AIApiBase = AIApiBase;
 
         settings.Save();
         CloseWindow();

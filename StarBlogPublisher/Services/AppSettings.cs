@@ -31,6 +31,26 @@ public class AppSettings {
     public bool UseCustomBackend { get; set; }
     public string BackendUrl { get; set; } = string.Empty;
 
+    // AI设置
+    public bool EnableAI { get; set; }
+    public string AIProvider { get; set; } = "openai";
+    private string _encryptedAIKey = string.Empty;
+
+    [JsonIgnore]
+    public string AIKey {
+        get => EncryptionService.Decrypt(_encryptedAIKey);
+        set => _encryptedAIKey = EncryptionService.Encrypt(value);
+    }
+
+    [JsonPropertyName("AIKey")]
+    public string EncryptedAIKey {
+        get => _encryptedAIKey;
+        set => _encryptedAIKey = value;
+    }
+
+    public string AIModel { get; set; } = string.Empty;
+    public string AIApiBase { get; set; } = string.Empty;
+
     public string Username { get; set; } = string.Empty;
 
     // 用于存储加密后的密码

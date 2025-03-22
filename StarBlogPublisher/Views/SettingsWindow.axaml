@@ -76,6 +76,58 @@
                         </StackPanel>
                     </StackPanel>
                 </Border>
+
+                <!-- AI设置卡片 -->
+                <Border Classes="Card">
+                    <StackPanel Spacing="15" Margin="15">
+                        <TextBlock Text="AI设置" FontWeight="Bold" FontSize="16" />
+
+                        <StackPanel Spacing="10">
+                            <ToggleSwitch OnContent="启用AI" OffContent="禁用AI"
+                                          IsChecked="{Binding EnableAI}" />
+
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="选择AI提供商" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                                <ComboBox SelectedItem="{Binding AIProvider}"
+                                          ItemsSource="{Binding AIProviders}"
+                                          IsEnabled="{Binding EnableAI}"
+                                          Width="200"
+                                          HorizontalAlignment="Left" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="API Key" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox Grid.Column="0"
+                                             Watermark="输入对应提供商的API密钥"
+                                             PasswordChar="{Binding ShowAIKey, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
+                                             Text="{Binding AIKey}"
+                                             IsEnabled="{Binding EnableAI}" />
+                                    <Button Grid.Column="1"
+                                            Margin="5,0,0,0"
+                                            Command="{Binding ToggleAIKeyCommand}"
+                                            Content="{Binding ShowAIKey, Converter={x:Static converters:BooleanToStringConverter.Instance}, ConverterParameter=👁️‍🗨️}"
+                                            Classes="Primary"
+                                            IsEnabled="{Binding EnableAI}" />
+                                </Grid>
+                            </StackPanel>
+
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="模型名称" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                                <TextBox Watermark="根据提供商填写对应的模型名称 (如 gpt-4o)"
+                                         Text="{Binding AIModel}"
+                                         IsEnabled="{Binding EnableAI}" />
+                            </StackPanel>
+                            
+                            <StackPanel Spacing="5" IsVisible="{Binding IsCustomProvider}">
+                                <TextBlock Text="API Base URL" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                                <TextBox Watermark="API Base URL (仅自定义提供商需要)"
+                                         Text="{Binding AIApiBase}"
+                                         IsEnabled="{Binding IsCustomProvider, Mode=OneWay}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </ScrollViewer>
 
