@@ -26,5 +26,6 @@
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.1" />
         <PackageReference Include="Markdown.Avalonia" Version="11.0.3-a1" />
         <PackageReference Include="ReactiveUI" Version="19.5.41" />
+        <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.3" />
     </ItemGroup>
 </Project>

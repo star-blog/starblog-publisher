@@ -2,11 +2,11 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using StarBlogPublisher.Services.Security;
 
 namespace StarBlogPublisher.Services;
 
-public class AppSettings
-{
+public class AppSettings {
     private static readonly string ConfigPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "StarBlogPublisher",
@@ -14,10 +14,9 @@ public class AppSettings
     );
 
     private static AppSettings? _instance;
-    public static AppSettings Instance
-    {
-        get
-        {
+
+    public static AppSettings Instance {
+        get {
             _instance ??= Load();
             return _instance;
         }
@@ -31,46 +30,58 @@ public class AppSettings
     // StarBlog后端设置
     public bool UseCustomBackend { get; set; }
     public string BackendUrl { get; set; } = string.Empty;
+
     public string Username { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
+
+    // 用于存储加密后的密码
+    private string _encryptedPassword = string.Empty;
+
+    // 公开属性，读取时解密，设置时不做处理
+    [JsonIgnore]
+    public string Password {
+        get => EncryptionService.Decrypt(_encryptedPassword);
+        set => _encryptedPassword = EncryptionService.Encrypt(value);
+    }
+
+    // 用于JSON序列化的属性
+    [JsonPropertyName("Password")]
+    public string EncryptedPassword {
+        get => _encryptedPassword;
+        set => _encryptedPassword = value;
+    }
+
     public int BackendTimeout { get; set; } = 30;
 
     // 配置变更事件
     public event EventHandler? SettingsChanged;
 
+    [JsonConstructor]
     private AppSettings() { }
 
-    private static AppSettings Load()
-    {
-        try
-        {
-            if (File.Exists(ConfigPath))
-            {
+    private static AppSettings Load() {
+        try {
+            if (File.Exists(ConfigPath)) {
                 var json = File.ReadAllText(ConfigPath);
                 var settings = JsonSerializer.Deserialize<AppSettings>(json);
                 return settings ?? new AppSettings();
             }
         }
-        catch (Exception)
-        {
+        catch (Exception ex) {
             // 如果加载失败，返回默认设置
+            Console.WriteLine($"Failed to load app settings. {ex}");
         }
 
         return new AppSettings();
     }
 
-    public void Save()
-    {
-        try
-        {
+    public void Save() {
+        try {
             var directory = Path.GetDirectoryName(ConfigPath);
-            if (!string.IsNullOrEmpty(directory))
-            {
+            if (!string.IsNullOrEmpty(directory)) {
                 Directory.CreateDirectory(directory);
             }
 
-            var json = JsonSerializer.Serialize(this, new JsonSerializerOptions
-            {
+            var json = JsonSerializer.Serialize(this, new JsonSerializerOptions {
                 WriteIndented = true
             });
             File.WriteAllText(ConfigPath, json);
@@ -78,9 +89,8 @@ public class AppSettings
             // 触发配置变更事件
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
-        catch (Exception)
-        {
-            // 处理保存失败的情况
+        catch (Exception) {
+            // todo 处理保存失败的情况
         }
     }
 }
