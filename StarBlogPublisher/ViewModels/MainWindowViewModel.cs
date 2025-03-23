@@ -17,6 +17,7 @@ using MsBox.Avalonia.Enums;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using System.Diagnostics;
+using System.Text;
 using CodeLab.Share.Extensions;
 using StarBlogPublisher.Models.Dtos;
 using StarBlogPublisher.Views;
@@ -73,6 +74,9 @@ public partial class MainWindowViewModel : ViewModelBase {
     // 文章内容
     [ObservableProperty] private string _articleContent = "";
 
+    // 当前打开的文件路径
+    private string? _currentFilePath;
+
     // 分类相关
     [ObservableProperty] private ObservableCollection<Category> _categories = new();
     [ObservableProperty] private Category? _selectedCategory;
@@ -119,9 +123,12 @@ public partial class MainWindowViewModel : ViewModelBase {
             var file = files[0];
             try {
                 await using var stream = await file.OpenReadAsync();
-                using var reader = new StreamReader(stream);
+                using var reader = new StreamReader(stream, Encoding.UTF8);
                 ArticleContent = await reader.ReadToEndAsync();
                 ArticleTitle = Path.GetFileNameWithoutExtension(file.Name);
+
+                // 保存当前文件路径
+                _currentFilePath = file.Path.LocalPath;
 
                 // 如果AI功能已开启，使用AI生成文章简介
                 if (AppSettings.Instance.EnableAI) {
@@ -162,6 +169,11 @@ public partial class MainWindowViewModel : ViewModelBase {
                 await Login();
             }
 
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_currentFilePath)) {
+            StatusMessage = "没有选择文件";
             return;
         }
 
@@ -208,7 +220,7 @@ public partial class MainWindowViewModel : ViewModelBase {
 
             // 第二步：处理Markdown内容中的图片
             StatusMessage = "正在处理文章中的图片...";
-            var markdownProcessor = new MarkdownProcessor(blogPost);
+            var markdownProcessor = new MarkdownProcessor(_currentFilePath, blogPost);
             var processedContent = await markdownProcessor.MarkdownParse();
             PublishProgress = 80;
 
@@ -217,6 +229,7 @@ public partial class MainWindowViewModel : ViewModelBase {
                 StatusMessage = "正在更新文章内容...";
                 // 调用更新文章API
                 var updateDto = new PostUpdateDto {
+                    Id = blogPost.Id,
                     Title = blogPost.Title,
                     Content = processedContent,
                     Summary = blogPost.Summary,
@@ -226,13 +239,16 @@ public partial class MainWindowViewModel : ViewModelBase {
                     Status = createResp.Data.Status
                 };
 
-                var updateResp = await ApiService.Instance.BlogPost.Update(int.Parse(blogPost.Id), updateDto);
+                var updateResp = await ApiService.Instance.BlogPost.Update(blogPost.Id, updateDto);
 
-                if (updateResp?.Data == null) {
+                if (!updateResp.Successful || updateResp.Data == null) {
                     throw new Exception($"更新文章内容失败: {updateResp?.Message ?? "未知错误"}");
                 }
 
-                ArticleContent = processedContent;
+                if (!string.IsNullOrWhiteSpace(updateResp.Data.Content)) {
+                    ArticleContent = updateResp.Data.Content;
+                    StatusMessage = "已更新文章内容";
+                }
             }
 
             PublishProgress = 100;
@@ -250,11 +266,12 @@ public partial class MainWindowViewModel : ViewModelBase {
                 // 打开博客文章链接
                 var url = createResp.Data.Slug != null
                     ? $"{ApiService.Instance.BaseUrl}/p/{createResp.Data.Slug}"
-                    : $"{ApiService.Instance.BaseUrl}/Blog/Post{createResp.Data.Id}";
+                    : $"{ApiService.Instance.BaseUrl}/Blog/Post/{createResp.Data.Id}";
                 Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
             }
         }
         catch (Exception ex) {
+            Console.WriteLine(ex);
             StatusMessage = $"发布失败: {ex.Message}";
         }
         finally {

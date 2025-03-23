@@ -12,7 +12,7 @@ using StarBlogPublisher.Models;
 
 namespace StarBlogPublisher.Services;
 
-public class MarkdownProcessor(BlogPost post) {
+public class MarkdownProcessor(string filepath, BlogPost post) {
     /// <summary>
     /// Markdown内容解析，上传图片到后端 & 替换图片链接为后端URL
     /// </summary>
@@ -33,7 +33,15 @@ public class MarkdownProcessor(BlogPost post) {
                 if (string.IsNullOrWhiteSpace(linkInline.Url)) continue;
                 var imgUrl = Uri.UnescapeDataString(linkInline.Url);
                 if (imgUrl.StartsWith("http")) continue;
-                
+
+
+                // 规范化路径
+                imgUrl = imgUrl.Replace('/', Path.DirectorySeparatorChar) // 统一路径分隔符
+                    .Replace(".\\", "") // 移除相对路径前缀
+                    .Replace("./", ""); // 移除相对路径前缀
+                var baseDir = Path.GetDirectoryName(filepath) ?? "";
+                imgUrl = Path.GetFullPath(Path.Combine(baseDir, imgUrl));
+
                 // 获取图片文件名
                 var imgFilename = Path.GetFileName(imgUrl);
 
@@ -42,23 +50,25 @@ public class MarkdownProcessor(BlogPost post) {
                     await using var fileStream = File.OpenRead(imgUrl);
                     var streamPart = new StreamPart(fileStream, imgFilename);
                     var response = await ApiService.Instance.BlogPost.UploadImage(post.Id, streamPart);
-                    
+
                     if (response is { Successful: true, Data: not null }) {
                         // 替换图片链接为后端返回的URL
                         linkInline.Url = response.Data.ImgUrl;
                         Console.WriteLine($"上传图片 {imgUrl} 成功，URL: {response.Data.ImgUrl}");
-                    } else {
+                    }
+                    else {
                         // 上传失败，保留原始链接
                         Console.WriteLine($"上传图片 {imgUrl} 失败: {response.Message}");
                     }
-                } catch (Exception ex) {
+                }
+                catch (Exception ex) {
                     Console.WriteLine($"上传图片 {imgUrl} 异常: {ex.Message}");
                 }
             }
         }
 
 
-        using var writer = new StringWriter();
+        await using var writer = new StringWriter();
         var render = new NormalizeRenderer(writer);
         render.Render(document);
         return writer.ToString();

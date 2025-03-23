@@ -42,6 +42,11 @@ public class ApiService {
                 Timeout = TimeSpan.FromSeconds(AppSettings.Instance.BackendTimeout)
             };
 
+            // 如果用户已登录，添加JWT令牌到Authorization头部
+            if (GlobalState.Instance.IsLoggedIn) {
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {GlobalState.Instance.JwtToken}");
+            }
+
             return client;
         }
     }

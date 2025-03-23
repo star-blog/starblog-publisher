@@ -17,7 +17,7 @@ public interface IBlogPost {
     /// 更新文章
     /// </summary>
     [Put("/Api/BlogPost/{id}")]
-    Task<CodeLab.Share.ViewModels.Response.ApiResponse<BlogPost>> Update(int id, PostUpdateDto dto);
+    Task<CodeLab.Share.ViewModels.Response.ApiResponse<BlogPost>> Update(string id, PostUpdateDto dto);
 
     /// <summary>
     /// 上传图片

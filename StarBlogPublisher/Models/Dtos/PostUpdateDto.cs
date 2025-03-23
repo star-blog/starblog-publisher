@@ -1,7 +1,8 @@
 ﻿namespace StarBlogPublisher.Models.Dtos;
 
 public class PostUpdateDto {
-    
+    public string Id { get; set; }
+
     /// <summary>
     /// 标题
     /// </summary>
