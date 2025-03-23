@@ -12,6 +12,12 @@ public interface IBlogPost {
     /// </summary>
     [Post("/Api/BlogPost")]
     Task<CodeLab.Share.ViewModels.Response.ApiResponse<BlogPost>> Add(PostCreationDto dto);
+    
+    /// <summary>
+    /// 获取文章详情
+    /// </summary>
+    [Get("/Api/BlogPost/{id}")]
+    Task<CodeLab.Share.ViewModels.Response.ApiResponse<BlogPost>> Get(string id);
 
     /// <summary>
     /// 更新文章
