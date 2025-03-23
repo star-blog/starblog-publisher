@@ -126,6 +126,11 @@ public partial class SettingsWindowViewModel : ViewModelBase {
     private void OnAIProviderChanged(string value) {
         if (!IsCustomProvider && CurrentProvider != null) {
             AIApiBase = CurrentProvider.DefaultApiBase;
+            
+            // 如果模型字段为空或者切换了提供商，则设置默认模型
+            if (string.IsNullOrEmpty(AIModel) || !string.IsNullOrEmpty(CurrentProvider.DefaultModel)) {
+                AIModel = CurrentProvider.DefaultModel;
+            }
         }
     }
 

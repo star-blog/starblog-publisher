@@ -7,39 +7,50 @@ public class AIProviderInfo {
     public string DisplayName { get; set; }
     public string Description { get; set; }
     public string DefaultApiBase { get; set; }
+    public string DefaultModel { get; set; }
 
-    private static readonly List<AIProviderInfo> _providers = new() {
+    private static readonly List<AIProviderInfo> Providers = [
         new AIProviderInfo {
-            Name = "OpenAI",
+            Name = "openai",
             DisplayName = "OpenAI",
-            Description = "OpenAI的GPT系列模型，包括GPT-3.5和GPT-4等",
-            DefaultApiBase = "https://api.openai.com/v1"
+            Description = "OpenAI的GPT系列模型，包括GPT-4o和GPT-o1等",
+            DefaultApiBase = "https://api.openai.com/v1",
+            DefaultModel = "gpt-4o"
         },
+
         new AIProviderInfo {
-            Name = "Claude",
+            Name = "claude",
             DisplayName = "Claude",
-            Description = "Anthropic的Claude系列模型，包括Claude 2和Claude Instant等",
-            DefaultApiBase = "https://api.anthropic.com"
+            Description = "Anthropic的Claude系列模型，包括Claude 3.5和Claude 3.7等",
+            DefaultApiBase = "https://api.anthropic.com",
+            DefaultModel = "claude-3.5-sonnet"
         },
+
         new AIProviderInfo {
-            Name = "DeepSeek",
+            Name = "deepseek",
             DisplayName = "DeepSeek",
-            Description = "DeepSeek的AI模型，包括DeepSeek-7B和DeepSeek-67B等",
-            DefaultApiBase = "https://api.deepseek.com/v1"
+            Description = "DeepSeek的AI模型，包括DeepSeek-V3和DeepSeek-R1等",
+            DefaultApiBase = "https://api.deepseek.com/v1",
+            DefaultModel = "deepseek-chat"
         },
+
         new AIProviderInfo {
-            Name = "自定义",
+            Name = "custom",
             DisplayName = "自定义",
             Description = "自定义AI提供商，可以配置自己的API地址",
-            DefaultApiBase = ""
+            DefaultApiBase = "",
+            DefaultModel = ""
         }
-    };
+    ];
 
-    public static List<AIProviderInfo> GetProviders() => _providers;
+    public static List<AIProviderInfo> GetProviders() => Providers;
 
     public static AIProviderInfo? GetProvider(string name) =>
-        _providers.Find(p => p.Name == name);
+        Providers.Find(p => p.Name == name);
+    
+    public static AIProviderInfo? GetByDisplayName(string displayName) =>
+        Providers.Find(p => p.DisplayName == displayName);
 
     public static List<string> GetProviderNames() =>
-        _providers.ConvertAll(p => p.Name);
+        Providers.ConvertAll(p => p.Name);
 }

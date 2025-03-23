@@ -33,7 +33,7 @@ public class AppSettings {
 
     // AI设置
     public bool EnableAI { get; set; }
-    public string AIProvider { get; set; } = "openai";
+    public string AIProvider { get; set; }
     private string _encryptedAIKey = string.Empty;
 
     [JsonIgnore]

@@ -122,9 +122,10 @@
 
                             <StackPanel Spacing="5">
                                 <TextBlock Text="模型名称" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
-                                <TextBox Watermark="根据提供商填写对应的模型名称 (如 gpt-4o)"
+                                <TextBox Watermark="根据提供商填写对应的模型名称"
                                          Text="{Binding AIModel}"
-                                         IsEnabled="{Binding EnableAI}" />
+                                         IsEnabled="{Binding EnableAI}"
+                                         ToolTip.Tip="切换AI提供商时会自动设置推荐的默认模型：&#x0a;OpenAI: gpt-4o&#x0a;Claude: claude-3.5-sonnet&#x0a;DeepSeek: deepseek-chat" />
                             </StackPanel>
                             
                             <StackPanel Spacing="5" IsVisible="{Binding IsCustomProvider}">
