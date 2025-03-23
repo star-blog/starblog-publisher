@@ -12,14 +12,20 @@ public interface IBlogPost {
     /// </summary>
     [Post("/Api/BlogPost")]
     Task<CodeLab.Share.ViewModels.Response.ApiResponse<BlogPost>> Add(PostCreationDto dto);
-    
+
+    /// <summary>
+    /// 更新文章
+    /// </summary>
+    [Put("/Api/BlogPost/{id}")]
+    Task<CodeLab.Share.ViewModels.Response.ApiResponse<BlogPost>> Update(int id, PostUpdateDto dto);
+
     /// <summary>
     /// 上传图片
     /// </summary>
     [Multipart]
     [Post("/Api/BlogPost/{id}/UploadImage")]
     Task<CodeLab.Share.ViewModels.Response.ApiResponse<UploadImageResult>> UploadImage(string id, StreamPart file);
-    
+
     /// <summary>
     /// 获取文章里的图片
     /// </summary>

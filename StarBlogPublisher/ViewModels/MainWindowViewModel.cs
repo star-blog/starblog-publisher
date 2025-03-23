@@ -170,28 +170,95 @@ public partial class MainWindowViewModel : ViewModelBase {
             return;
         }
 
+        if (SelectedCategory == null) {
+            StatusMessage = "请选择文章分类";
+            return;
+        }
+
         IsPublishing = true;
         PublishProgress = 0;
         StatusMessage = "正在发布...";
 
-        // 模拟发布过程
-        for (int i = 0; i <= 10; i++) {
-            PublishProgress = i * 10;
-            await Task.Delay(300); // 模拟网络延迟
+        try {
+            // 创建博客文章对象
+            var blogPost = new BlogPost {
+                Title = ArticleTitle,
+                Content = ArticleContent,
+                Summary = ArticleDescription,
+                IsPublish = true
+            };
+
+            // 第一步：创建文章，获取ID
+            PublishProgress = 10;
+            StatusMessage = "正在创建文章...";
+            var createResp = await ApiService.Instance.BlogPost.Add(new PostCreationDto {
+                Title = ArticleTitle,
+                Content = ArticleContent,
+                Summary = ArticleDescription,
+                CategoryId = SelectedCategory.Id
+            });
+
+            if (createResp?.Data == null) {
+                throw new Exception($"创建文章失败: {createResp?.Message ?? "未知错误"}");
+            }
+
+            // 获取创建后的文章ID
+            blogPost.Id = createResp.Data.Id;
+            PublishProgress = 30;
+
+            // 第二步：处理Markdown内容中的图片
+            StatusMessage = "正在处理文章中的图片...";
+            var markdownProcessor = new MarkdownProcessor(blogPost);
+            var processedContent = await markdownProcessor.MarkdownParse();
+            PublishProgress = 80;
+
+            // 如果处理后的内容与原内容不同，说明有图片被上传和替换
+            if (processedContent != ArticleContent) {
+                StatusMessage = "正在更新文章内容...";
+                // 调用更新文章API
+                var updateDto = new PostUpdateDto {
+                    Title = blogPost.Title,
+                    Content = processedContent,
+                    Summary = blogPost.Summary,
+                    CategoryId = SelectedCategory.Id,
+                    IsPublish = true,
+                    Slug = createResp.Data.Slug,
+                    Status = createResp.Data.Status
+                };
+
+                var updateResp = await ApiService.Instance.BlogPost.Update(int.Parse(blogPost.Id), updateDto);
+
+                if (updateResp?.Data == null) {
+                    throw new Exception($"更新文章内容失败: {updateResp?.Message ?? "未知错误"}");
+                }
+
+                ArticleContent = processedContent;
+            }
+
+            PublishProgress = 100;
+            StatusMessage = "发布完成";
+
+            var publishedMsgBox = MessageBoxManager.GetMessageBoxStandard(
+                "发布完成",
+                "文章已经成功发布到博客，点击确定跳转查看",
+                ButtonEnum.OkCancel,
+                Icon.Success
+            );
+
+            var publishedMsgBoxResult = await publishedMsgBox.ShowWindowDialogAsync(App.MainWindow);
+            if (publishedMsgBoxResult == ButtonResult.Ok) {
+                // 打开博客文章链接
+                var url = createResp.Data.Slug != null
+                    ? $"{ApiService.Instance.BaseUrl}/p/{createResp.Data.Slug}"
+                    : $"{ApiService.Instance.BaseUrl}/Blog/Post{createResp.Data.Id}";
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            }
         }
-
-        IsPublishing = false;
-        StatusMessage = "发布完成";
-        var publishedMsgBox = MessageBoxManager.GetMessageBoxStandard(
-            "发布完成",
-            "文章已经成功发布到博客，点击确定跳转查看",
-            ButtonEnum.OkCancel,
-            Icon.Success
-        );
-
-        var publishedMsgBoxResult = await publishedMsgBox.ShowWindowDialogAsync(App.MainWindow);
-        if (publishedMsgBoxResult == ButtonResult.Ok) {
-            // todo 打开博客文章链接
+        catch (Exception ex) {
+            StatusMessage = $"发布失败: {ex.Message}";
+        }
+        finally {
+            IsPublishing = false;
         }
     }
 
@@ -376,7 +443,7 @@ public partial class MainWindowViewModel : ViewModelBase {
                 ArticleTitle = refinedTitle.ToString();
             }
 
-            ArticleTitle = ArticleTitle.Trim('《', '》', '\"', '“', '”');
+            ArticleTitle = ArticleTitle.Trim('《', '》', '\"', '“', '”', '\n');
 
             StatusMessage = "AI已润色文章标题";
         }
