@@ -1,4 +1,4 @@
-﻿namespace StarBlogPublisher.Models;
+﻿namespace StarBlogPublisher.Models.Dtos;
 
 public class LoginUser {
     public string Username { get; set; }

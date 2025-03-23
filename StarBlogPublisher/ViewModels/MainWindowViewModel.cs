@@ -18,6 +18,7 @@ using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using System.Diagnostics;
 using CodeLab.Share.Extensions;
+using StarBlogPublisher.Models.Dtos;
 using StarBlogPublisher.Views;
 
 namespace StarBlogPublisher.ViewModels;

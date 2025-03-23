@@ -7,6 +7,10 @@ using OpenAI;
 
 namespace StarBlogPublisher.Services;
 
+/// <summary>
+/// 大模型服务
+/// <para>https://learn.microsoft.com/en-us/dotnet/ai/quickstarts/build-chat-app</para>
+/// </summary>
 public class AiService {
     private static AiService? _instance;
     private readonly IChatClient _chatClient;
