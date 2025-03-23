@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Input;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.Input;
@@ -22,7 +23,7 @@ public partial class SettingsWindowViewModel : ViewModelBase {
     private string _aiKey = string.Empty;
     private string _aiModel = string.Empty;
     private string _aiApiBase = string.Empty;
-    private List<string> _aiProviders = new() { "openai", "Claude", "DeepSeek", "自定义" };
+    private List<AIProviderInfo> _aiProviders = AIProviderInfo.GetProviders();
 
     public bool UseProxy {
         get => _useProxy;
@@ -82,18 +83,30 @@ public partial class SettingsWindowViewModel : ViewModelBase {
     public string AIProvider {
         get => _aiProvider;
         set {
-            if (SetProperty(ref _aiProvider, value)) {
-                // 当AI提供商变化时，通知IsCustomProvider属性已更新
+            var provider = AIProviders.FirstOrDefault(p => p.DisplayName == value);
+            var providerName = provider?.Name ?? value;
+            if (SetProperty(ref _aiProvider, providerName)) {
                 OnPropertyChanged(nameof(IsCustomProvider));
+                OnAIProviderChanged(providerName);
             }
         }
     }
     
-    public List<string> AIProviders {
+    public List<AIProviderInfo> AIProviders {
         get => _aiProviders;
     }
     
     public bool IsCustomProvider => AIProvider == "自定义";
+
+    private AIProviderInfo? _currentProvider;
+    public AIProviderInfo? CurrentProvider {
+        get {
+            if (_currentProvider?.Name != AIProvider) {
+                _currentProvider = AIProviderInfo.GetProvider(AIProvider);
+            }
+            return _currentProvider;
+        }
+    }
 
     public string AIKey {
         get => _aiKey;
@@ -108,6 +121,12 @@ public partial class SettingsWindowViewModel : ViewModelBase {
     public string AIApiBase {
         get => _aiApiBase;
         set => SetProperty(ref _aiApiBase, value);
+    }
+
+    private void OnAIProviderChanged(string value) {
+        if (!IsCustomProvider && CurrentProvider != null) {
+            AIApiBase = CurrentProvider.DefaultApiBase;
+        }
     }
 
     [RelayCommand]
