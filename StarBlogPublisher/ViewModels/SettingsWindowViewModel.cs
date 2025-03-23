@@ -96,7 +96,7 @@ public partial class SettingsWindowViewModel : ViewModelBase {
         get => _aiProviders;
     }
     
-    public bool IsCustomProvider => AIProvider == "自定义";
+    public bool IsCustomProvider => AIProvider == "custom";
 
     private AIProviderInfo? _currentProvider;
     public AIProviderInfo? CurrentProvider {
@@ -124,14 +124,10 @@ public partial class SettingsWindowViewModel : ViewModelBase {
     }
 
     private void OnAIProviderChanged(string value) {
-        if (!IsCustomProvider && CurrentProvider != null) {
-            AIApiBase = CurrentProvider.DefaultApiBase;
-            
-            // 如果模型字段为空或者切换了提供商，则设置默认模型
-            if (string.IsNullOrEmpty(AIModel) || !string.IsNullOrEmpty(CurrentProvider.DefaultModel)) {
-                AIModel = CurrentProvider.DefaultModel;
-            }
-        }
+        if (CurrentProvider == null) return;
+        
+        AIApiBase = CurrentProvider.DefaultApiBase;
+        AIModel = CurrentProvider.DefaultModel;
     }
 
     [RelayCommand]
