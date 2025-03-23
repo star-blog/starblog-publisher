@@ -30,25 +30,26 @@ public partial class MainWindowViewModel : ViewModelBase {
         var window = new WordCloudWindow();
         window.ShowDialog(App.MainWindow);
     }
+
     public MainWindowViewModel() {
         // 订阅全局状态变更事件
         GlobalState.Instance.StateChanged += OnGlobalStateChanged;
 
         // 初始化登录状态
         UpdateLoginState();
-        
+
         // 如果有凭据，自动登录
         if (HasCredentials) {
             _ = Login();
         }
-        
+
         // 从设置中加载主题
         IsDarkTheme = AppSettings.Instance.IsDarkTheme;
         var app = Application.Current;
         if (app != null) {
             app.RequestedThemeVariant = IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
         }
-        
+
         // 初始化AI功能状态
         IsAIEnabled = AppSettings.Instance.EnableAI;
     }
@@ -62,7 +63,10 @@ public partial class MainWindowViewModel : ViewModelBase {
     // 文章标题和描述
     [ObservableProperty] private string _articleTitle = string.Empty;
     [ObservableProperty] private string _articleDescription = string.Empty;
-    
+
+    // 是否正在润色标题
+    [ObservableProperty] private bool _isRefiningTitle = false;
+
     // AI功能是否启用
     [ObservableProperty] private bool _isAIEnabled = false;
 
@@ -93,7 +97,7 @@ public partial class MainWindowViewModel : ViewModelBase {
         if (app != null) {
             app.RequestedThemeVariant = IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
         }
-        
+
         // 保存主题设置
         AppSettings.Instance.IsDarkTheme = IsDarkTheme;
         AppSettings.Instance.Save();
@@ -118,7 +122,7 @@ public partial class MainWindowViewModel : ViewModelBase {
                 using var reader = new StreamReader(stream);
                 ArticleContent = await reader.ReadToEndAsync();
                 ArticleTitle = Path.GetFileNameWithoutExtension(file.Name);
-                
+
                 // 如果AI功能已开启，使用AI生成文章简介
                 if (AppSettings.Instance.EnableAI) {
                     // 调用RegenerateDescription方法生成简介
@@ -129,7 +133,7 @@ public partial class MainWindowViewModel : ViewModelBase {
                     ArticleDescription = ArticleContent.Limit(100);
                     StatusMessage = $"已加载文件: {file.Name}";
                 }
-                
+
                 CanPublish = true;
             }
             catch {
@@ -204,7 +208,7 @@ public partial class MainWindowViewModel : ViewModelBase {
 
         // 设置窗口关闭后，更新登录状态
         UpdateLoginState();
-        
+
         // 更新AI功能状态
         IsAIEnabled = AppSettings.Instance.EnableAI;
     }
@@ -226,7 +230,7 @@ public partial class MainWindowViewModel : ViewModelBase {
                 Username = AppSettings.Instance.Username,
                 Password = AppSettings.Instance.Password
             });
-            
+
             if (string.IsNullOrWhiteSpace(resp.Data?.Token)) {
                 StatusMessage = $"登录失败: {resp.Message}";
                 return;
@@ -325,7 +329,7 @@ public partial class MainWindowViewModel : ViewModelBase {
             LoginStatusMessage = "未登录 (未配置凭据)";
         }
     }
-    
+
     // 重新生成文章简介命令
     [RelayCommand]
     private async Task RegenerateDescription() {
@@ -333,22 +337,54 @@ public partial class MainWindowViewModel : ViewModelBase {
             StatusMessage = "无法生成简介：AI功能未启用或文章内容为空";
             return;
         }
-        
+
         StatusMessage = "正在使用AI重新生成文章简介...";
         try {
-            var prompt = $"请为以下文章生成一个简短的中文简介（不超过200字）：\n{ArticleContent}";
+            var prompt = $"请为以下文章生成一个简短的中文简介（不超过200字）：{ArticleContent}";
             var textStreamAsync = AiService.Instance.GenerateTextStreamAsync(prompt);
             var description = new System.Text.StringBuilder();
-            
+
             await foreach (var update in textStreamAsync) {
                 description.Append(update.Text);
                 ArticleDescription = description.ToString();
             }
-            
+
             StatusMessage = "AI已重新生成文章简介";
         }
         catch (Exception ex) {
             StatusMessage = $"AI重新生成简介失败: {ex.Message}";
+        }
+    }
+
+    // 润色文章标题命令
+    [RelayCommand]
+    private async Task RefineTitleWithAI() {
+        if (!IsAIEnabled || string.IsNullOrEmpty(ArticleContent) || string.IsNullOrEmpty(ArticleTitle)) {
+            StatusMessage = "无法润色标题：AI功能未启用或文章内容/标题为空";
+            return;
+        }
+
+        IsRefiningTitle = true;
+        StatusMessage = "正在使用AI润色文章标题...";
+        try {
+            var prompt = $"请为以下文章润色标题，使其更加吸引人、专业且符合内容（保持简洁，不超过50字）。\n原标题：{ArticleTitle}\n文章内容：{ArticleContent}";
+            var textStreamAsync = AiService.Instance.GenerateTextStreamAsync(prompt);
+            var refinedTitle = new System.Text.StringBuilder();
+
+            await foreach (var update in textStreamAsync) {
+                refinedTitle.Append(update.Text);
+                ArticleTitle = refinedTitle.ToString();
+            }
+
+            ArticleTitle = ArticleTitle.Trim('《', '》', '\"', '“', '”');
+
+            StatusMessage = "AI已润色文章标题";
+        }
+        catch (Exception ex) {
+            StatusMessage = $"AI润色标题失败: {ex.Message}";
+        }
+        finally {
+            IsRefiningTitle = false;
         }
     }
 }
