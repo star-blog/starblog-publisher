@@ -221,6 +221,13 @@ public partial class MainWindowViewModel : ViewModelBase {
             // 第二步：处理Markdown内容中的图片
             StatusMessage = "正在处理文章中的图片...";
             var markdownProcessor = new MarkdownProcessor(_currentFilePath, blogPost);
+            
+            // 订阅图片上传进度事件
+            markdownProcessor.ImageUploadProgress += (uploaded, total) => {
+                PublishProgress = 30 + (uploaded * 50.0 / total); // 30-80%的进度区间用于图片上传
+                StatusMessage = $"正在上传图片 ({uploaded}/{total})...";
+            };
+            
             var processedContent = await markdownProcessor.MarkdownParse();
             PublishProgress = 80;
 

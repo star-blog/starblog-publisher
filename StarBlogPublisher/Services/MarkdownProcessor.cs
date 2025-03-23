@@ -13,6 +13,7 @@ using StarBlogPublisher.Models;
 namespace StarBlogPublisher.Services;
 
 public class MarkdownProcessor(string filepath, BlogPost post) {
+    public event Action<int, int>? ImageUploadProgress;
     /// <summary>
     /// Markdown内容解析，上传图片到后端 & 替换图片链接为后端URL
     /// </summary>
@@ -22,7 +23,23 @@ public class MarkdownProcessor(string filepath, BlogPost post) {
             return string.Empty;
         }
 
+        // 先统计需要上传的图片总数
         var document = Markdig.Markdown.Parse(post.Content);
+        var totalImages = 0;
+        var uploadedImages = 0;
+
+        foreach (var node in document.AsEnumerable()) {
+            if (node is not ParagraphBlock { Inline: { } } paragraphBlock) continue;
+            foreach (var inline in paragraphBlock.Inline) {
+                if (inline is not LinkInline { IsImage: true } linkInline) continue;
+                if (string.IsNullOrWhiteSpace(linkInline.Url)) continue;
+                var imgUrl = Uri.UnescapeDataString(linkInline.Url);
+                if (!imgUrl.StartsWith("http")) totalImages++;
+            }
+        }
+
+        // 重新解析文档处理图片上传
+        document = Markdig.Markdown.Parse(post.Content);
 
         foreach (var node in document.AsEnumerable()) {
             if (node is not ParagraphBlock { Inline: { } } paragraphBlock) continue;
@@ -55,6 +72,8 @@ public class MarkdownProcessor(string filepath, BlogPost post) {
                         // 替换图片链接为后端返回的URL
                         linkInline.Url = response.Data.ImgUrl;
                         Console.WriteLine($"上传图片 {imgUrl} 成功，URL: {response.Data.ImgUrl}");
+                        uploadedImages++;
+                        ImageUploadProgress?.Invoke(uploadedImages, totalImages);
                     }
                     else {
                         // 上传失败，保留原始链接
