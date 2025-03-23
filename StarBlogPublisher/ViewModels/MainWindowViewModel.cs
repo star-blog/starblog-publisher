@@ -152,38 +152,8 @@ public partial class MainWindowViewModel : ViewModelBase {
     // 发布文章命令
     [RelayCommand]
     private async Task Publish() {
-        if (!IsLoggedIn) {
-            StatusMessage = "请先登录";
-
-            // 弹出消息框提示用户登录
-            var loginRequiredMsgBox = MessageBoxManager.GetMessageBoxStandard(
-                "登录提示",
-                "您需要先登录才能发布文章。",
-                ButtonEnum.OkCancel,
-                Icon.Warning
-            );
-
-            var loginMsgBoxResult = await loginRequiredMsgBox.ShowWindowDialogAsync(App.MainWindow);
-            if (loginMsgBoxResult == ButtonResult.Ok) {
-                // 用户点击确定，执行登录操作
-                await Login();
-            }
-
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(_currentFilePath)) {
-            StatusMessage = "没有选择文件";
-            return;
-        }
-
-        if (string.IsNullOrEmpty(ArticleContent)) {
-            StatusMessage = "没有内容可发布";
-            return;
-        }
-
-        if (SelectedCategory == null) {
-            StatusMessage = "请选择文章分类";
+        // 验证发布前提条件
+        if (!await ValidatePublishPrerequisites()) {
             return;
         }
 
@@ -201,15 +171,7 @@ public partial class MainWindowViewModel : ViewModelBase {
             };
 
             // 第一步：创建文章，获取ID
-            PublishProgress = 10;
-            StatusMessage = "正在创建文章...";
-            var createResp = await ApiService.Instance.BlogPost.Add(new PostCreationDto {
-                Title = ArticleTitle,
-                Content = ArticleContent,
-                Summary = ArticleDescription,
-                CategoryId = SelectedCategory.Id
-            });
-
+            var createResp = await CreateArticle(blogPost);
             if (createResp?.Data == null) {
                 throw new Exception($"创建文章失败: {createResp?.Message ?? "未知错误"}");
             }
@@ -219,66 +181,15 @@ public partial class MainWindowViewModel : ViewModelBase {
             PublishProgress = 30;
 
             // 第二步：处理Markdown内容中的图片
-            StatusMessage = "正在处理文章中的图片...";
-            var markdownProcessor = new MarkdownProcessor(_currentFilePath, blogPost);
-            
-            // 订阅图片上传进度事件
-            markdownProcessor.ImageUploadProgress += (uploaded, total) => {
-                PublishProgress = 30 + (uploaded * 50.0 / total); // 30-80%的进度区间用于图片上传
-                StatusMessage = $"正在上传图片 ({uploaded}/{total})...";
-            };
-            
-            var processedContent = await markdownProcessor.MarkdownParse();
-            PublishProgress = 80;
+            var processedContent = await ProcessArticleImages(blogPost);
 
-            // 如果处理后的内容与原内容不同，说明有图片被上传和替换
+            // 第三步：如果内容有变化，更新文章
             if (processedContent != ArticleContent) {
-                StatusMessage = "正在更新文章内容...";
-                // 调用更新文章API
-                var updateDto = new PostUpdateDto {
-                    Id = blogPost.Id,
-                    Title = blogPost.Title,
-                    Content = processedContent,
-                    Summary = blogPost.Summary,
-                    CategoryId = SelectedCategory.Id,
-                    IsPublish = true,
-                    Slug = createResp.Data.Slug,
-                    Status = createResp.Data.Status
-                };
-
-                var updateResp = await ApiService.Instance.BlogPost.Update(blogPost.Id, updateDto);
-
-                if (!updateResp.Successful || updateResp.Data == null) {
-                    throw new Exception($"更新文章内容失败: {updateResp?.Message ?? "未知错误"}");
-                }
-
-                StatusMessage = "正在重新获取文章详情";
-                var detailResp = await ApiService.Instance.BlogPost.Get(blogPost.Id);
-
-                if (!string.IsNullOrWhiteSpace(detailResp.Data?.Content)) {
-                    ArticleContent = detailResp.Data.Content;
-                    StatusMessage = "已更新文章内容";
-                }
+                await UpdateArticleContent(blogPost, processedContent, createResp.Data);
             }
 
-            PublishProgress = 100;
-            StatusMessage = "发布完成";
-
-            var publishedMsgBox = MessageBoxManager.GetMessageBoxStandard(
-                "发布完成",
-                "文章已经成功发布到博客，点击确定跳转查看",
-                ButtonEnum.OkCancel,
-                Icon.Success
-            );
-
-            var publishedMsgBoxResult = await publishedMsgBox.ShowWindowDialogAsync(App.MainWindow);
-            if (publishedMsgBoxResult == ButtonResult.Ok) {
-                // 打开博客文章链接
-                var url = createResp.Data.Slug != null
-                    ? $"{ApiService.Instance.BaseUrl}/p/{createResp.Data.Slug}"
-                    : $"{ApiService.Instance.BaseUrl}/Blog/Post/{createResp.Data.Id}";
-                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-            }
+            // 第四步：完成发布并提示用户
+            await FinishPublishing(createResp.Data);
         }
         catch (Exception ex) {
             Console.WriteLine(ex);
@@ -288,6 +199,150 @@ public partial class MainWindowViewModel : ViewModelBase {
             IsPublishing = false;
         }
     }
+
+    /// <summary>
+    /// 完成发布并提示用户
+    /// </summary>
+    /// <param name="createdPost">创建的文章数据</param>
+    /// <returns></returns>
+    private async Task FinishPublishing(BlogPost createdPost) {
+        PublishProgress = 100;
+        StatusMessage = "发布完成";
+
+        var publishedMsgBox = MessageBoxManager.GetMessageBoxStandard(
+            "发布完成",
+            "文章已经成功发布到博客，点击确定跳转查看",
+            ButtonEnum.OkCancel,
+            Icon.Success
+        );
+
+        var publishedMsgBoxResult = await publishedMsgBox.ShowWindowDialogAsync(App.MainWindow);
+        if (publishedMsgBoxResult == ButtonResult.Ok) {
+            // 打开博客文章链接
+            var url = createdPost.Slug != null
+                ? $"{ApiService.Instance.BaseUrl}/p/{createdPost.Slug}"
+                : $"{ApiService.Instance.BaseUrl}/Blog/Post/{createdPost.Id}";
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+    }
+
+    /// <summary>
+    /// 验证发布前的必要条件
+    /// </summary>
+    /// <returns>是否满足所有发布条件</returns>
+    private async Task<bool> ValidatePublishPrerequisites() {
+        if (!IsLoggedIn) {
+            StatusMessage = "请先登录";
+
+            // 弹出消息框提示用户登录
+            var loginRequiredMsgBox = MessageBoxManager.GetMessageBoxStandard(
+                "登录提示",
+                "您需要先登录才能发布文章。",
+                ButtonEnum.OkCancel,
+                Icon.Warning
+            );
+
+            var loginMsgBoxResult = await loginRequiredMsgBox.ShowWindowDialogAsync(App.MainWindow);
+            if (loginMsgBoxResult == ButtonResult.Ok) {
+                // 用户点击确定，执行登录操作
+                await Login();
+            }
+
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(_currentFilePath)) {
+            StatusMessage = "没有选择文件";
+            return false;
+        }
+
+        if (string.IsNullOrEmpty(ArticleContent)) {
+            StatusMessage = "没有内容可发布";
+            return false;
+        }
+
+        if (SelectedCategory == null) {
+            StatusMessage = "请选择文章分类";
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 创建文章
+    /// </summary>
+    /// <param name="blogPost">博客文章对象</param>
+    /// <returns>API响应</returns>
+    private async Task<CodeLab.Share.ViewModels.Response.ApiResponse<BlogPost>> CreateArticle(BlogPost blogPost) {
+        PublishProgress = 10;
+        StatusMessage = "正在创建文章...";
+        
+        return await ApiService.Instance.BlogPost.Add(new PostCreationDto {
+            Title = blogPost.Title,
+            Content = blogPost.Content,
+            Summary = blogPost.Summary,
+            CategoryId = SelectedCategory!.Id
+        });
+    }
+
+    /// <summary>
+    /// 处理文章中的图片
+    /// </summary>
+    /// <param name="blogPost">博客文章对象</param>
+    /// <returns>处理后的文章内容</returns>
+    private async Task<string> ProcessArticleImages(BlogPost blogPost) {
+        StatusMessage = "正在处理文章中的图片...";
+        var markdownProcessor = new MarkdownProcessor(_currentFilePath!, blogPost);
+        
+        // 订阅图片上传进度事件
+        markdownProcessor.ImageUploadProgress += (uploaded, total) => {
+            PublishProgress = 30 + (uploaded * 50.0 / total); // 30-80%的进度区间用于图片上传
+            StatusMessage = $"正在上传图片 ({uploaded}/{total})...";
+        };
+        
+        var processedContent = await markdownProcessor.MarkdownParse();
+        PublishProgress = 80;
+        return processedContent;
+    }
+
+    /// <summary>
+    /// 更新文章内容
+    /// </summary>
+    /// <param name="blogPost">博客文章对象</param>
+    /// <param name="processedContent">处理后的内容</param>
+    /// <param name="createdPost">创建后的文章数据</param>
+    /// <returns></returns>
+    private async Task UpdateArticleContent(BlogPost blogPost, string processedContent, BlogPost createdPost) {
+        StatusMessage = "正在更新文章内容...";
+        // 调用更新文章API
+        var updateDto = new PostUpdateDto {
+            Id = blogPost.Id,
+            Title = blogPost.Title,
+            Content = processedContent,
+            Summary = blogPost.Summary,
+            CategoryId = SelectedCategory!.Id,
+            IsPublish = true,
+            Slug = createdPost.Slug,
+            Status = createdPost.Status
+        };
+
+        var updateResp = await ApiService.Instance.BlogPost.Update(blogPost.Id, updateDto);
+
+        if (!updateResp.Successful || updateResp.Data == null) {
+            throw new Exception($"更新文章内容失败: {updateResp?.Message ?? "未知错误"}");
+        }
+
+        StatusMessage = "正在重新获取文章详情";
+        var detailResp = await ApiService.Instance.BlogPost.Get(blogPost.Id);
+
+        if (!string.IsNullOrWhiteSpace(detailResp.Data?.Content)) {
+            ArticleContent = detailResp.Data.Content;
+            StatusMessage = "已更新文章内容";
+        }
+    }
+
+    /// <summary
 
     [RelayCommand]
     private async Task ShowAbout() {
