@@ -111,8 +111,33 @@ public partial class MainWindowViewModel : ViewModelBase {
                 using var reader = new StreamReader(stream);
                 ArticleContent = await reader.ReadToEndAsync();
                 ArticleTitle = Path.GetFileNameWithoutExtension(file.Name);
-                ArticleDescription = ArticleContent.Limit(100);
-                StatusMessage = $"已加载文件: {file.Name}";
+                
+                // 如果AI功能已开启，使用AI生成文章简介
+                if (AppSettings.Instance.EnableAI) {
+                    StatusMessage = "正在使用AI生成文章简介...";
+                    try {
+                        var prompt = $"请为以下文章生成一个简短的中文简介（不超过100字）：\n{ArticleContent}";
+                        var textStreamAsync = AiService.Instance.GenerateTextStreamAsync(prompt);
+                        var description = new System.Text.StringBuilder();
+                        
+                        await foreach (var update in textStreamAsync) {
+                            description.Append(update.Text);
+                            ArticleDescription = description.ToString();
+                        }
+                        
+                        StatusMessage = $"已加载文件: {file.Name}（AI已生成简介）";
+                    }
+                    catch (Exception ex) {
+                        // AI生成失败时使用默认简介
+                        ArticleDescription = ArticleContent.Limit(100);
+                        StatusMessage = $"已加载文件: {file.Name}（AI生成简介失败: {ex.Message}）";
+                    }
+                }
+                else {
+                    ArticleDescription = ArticleContent.Limit(100);
+                    StatusMessage = $"已加载文件: {file.Name}";
+                }
+                
                 CanPublish = true;
             }
             catch {
