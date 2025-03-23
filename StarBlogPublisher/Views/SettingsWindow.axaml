@@ -33,13 +33,18 @@
 
                             <StackPanel Spacing="5">
                                 <TextBlock Text="代理类型" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
-                                <ComboBox SelectedValue="{Binding ProxyType}"
+                                <ComboBox SelectedItem="{Binding ProxyType}"
                                       IsEnabled="{Binding UseProxy}"
                                       Width="200"
                                       HorizontalAlignment="Left">
-                                    <ComboBoxItem>http</ComboBoxItem>
-                                    <ComboBoxItem>https</ComboBoxItem>
-                                    <ComboBoxItem>socks5</ComboBoxItem>
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                    <x:String>http</x:String>
+                                    <x:String>https</x:String>
+                                    <x:String>socks5</x:String>
                                 </ComboBox>
                             </StackPanel>
 
