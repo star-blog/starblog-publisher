@@ -245,8 +245,11 @@ public partial class MainWindowViewModel : ViewModelBase {
                     throw new Exception($"更新文章内容失败: {updateResp?.Message ?? "未知错误"}");
                 }
 
-                if (!string.IsNullOrWhiteSpace(updateResp.Data.Content)) {
-                    ArticleContent = updateResp.Data.Content;
+                StatusMessage = "正在重新获取文章详情";
+                var detailResp = await ApiService.Instance.BlogPost.Get(blogPost.Id);
+
+                if (!string.IsNullOrWhiteSpace(detailResp.Data?.Content)) {
+                    ArticleContent = detailResp.Data.Content;
                     StatusMessage = "已更新文章内容";
                 }
             }
