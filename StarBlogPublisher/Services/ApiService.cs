@@ -31,7 +31,8 @@ public class ApiService {
 
             // 检查是否需要使用代理
             if (AppSettings.Instance.UseProxy && !string.IsNullOrWhiteSpace(AppSettings.Instance.ProxyHost)) {
-                var proxyUri = $"{AppSettings.Instance.ProxyType}://{AppSettings.Instance.ProxyHost}:{AppSettings.Instance.ProxyPort}";
+                var proxyUri =
+                    $"{AppSettings.Instance.ProxyType}://{AppSettings.Instance.ProxyHost}:{AppSettings.Instance.ProxyPort}";
                 handler.Proxy = new WebProxy(proxyUri);
                 handler.UseProxy = true;
             }
@@ -47,4 +48,5 @@ public class ApiService {
 
     public IAuth Auth => RestService.For<IAuth>(ApiHttpClient);
     public ICategory Categories => RestService.For<ICategory>(ApiHttpClient);
+    public IBlogPost BlogPost => RestService.For<IBlogPost>(ApiHttpClient);
 }
