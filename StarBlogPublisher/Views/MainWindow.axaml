@@ -32,9 +32,11 @@
                 <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8"
                             VerticalAlignment="Center">
                     <!-- 登录状态和按钮 -->
-                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,10,0">
-                        <TextBlock Text="{Binding LoginStatusMessage}" FontSize="12" HorizontalAlignment="Right" />
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="5">
+                    <Border Grid.Column="2" Classes="Card" Padding="8,4" Margin="0,0,10,0">
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding LoginStatusMessage}" 
+                                     VerticalAlignment="Center"
+                                     FontSize="12" />
                             <Button Content="登录"
                                     Command="{Binding LoginCommand}"
                                     IsVisible="{Binding !IsLoggedIn}"
@@ -46,7 +48,7 @@
                                     Classes="IconButton"
                                     Padding="8,3" />
                         </StackPanel>
-                    </StackPanel>
+                    </Border>
 
                     <Button Command="{Binding ToggleThemeCommand}"
                             Content="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}"
