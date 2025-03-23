@@ -199,9 +199,7 @@ public partial class MainWindowViewModel : ViewModelBase {
                 Username = AppSettings.Instance.Username,
                 Password = AppSettings.Instance.Password
             });
-
-            Console.WriteLine($"token: {resp.Data?.Token}, expiration: {resp.Data?.Expiration}");
-
+            
             if (string.IsNullOrWhiteSpace(resp.Data?.Token)) {
                 StatusMessage = $"登录失败: {resp.Message}";
                 return;
