@@ -122,7 +122,16 @@
 
                         <!-- 说明输入 -->
                         <StackPanel Grid.Row="2" Spacing="5" Margin="5">
-                            <TextBlock Text="说明" FontWeight="SemiBold" />
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <TextBlock Grid.Column="0" Text="说明" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <Button Grid.Column="2" 
+                                        Content="🔄 重新生成" 
+                                        ToolTip.Tip="使用AI重新生成文章简介"
+                                        Command="{Binding RegenerateDescriptionCommand}"
+                                        IsVisible="{Binding IsAIEnabled}"
+                                        Classes="IconButton" 
+                                        Padding="5,2" />
+                            </Grid>
                             <TextBox Text="{Binding ArticleDescription}"
                                      Height="60"
                                      AcceptsReturn="True"

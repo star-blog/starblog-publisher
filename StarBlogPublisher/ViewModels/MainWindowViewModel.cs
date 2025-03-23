@@ -48,6 +48,9 @@ public partial class MainWindowViewModel : ViewModelBase {
         if (app != null) {
             app.RequestedThemeVariant = IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
         }
+        
+        // 初始化AI功能状态
+        IsAIEnabled = AppSettings.Instance.EnableAI;
     }
 
     // 软件版本信息
@@ -59,6 +62,9 @@ public partial class MainWindowViewModel : ViewModelBase {
     // 文章标题和描述
     [ObservableProperty] private string _articleTitle = string.Empty;
     [ObservableProperty] private string _articleDescription = string.Empty;
+    
+    // AI功能是否启用
+    [ObservableProperty] private bool _isAIEnabled = false;
 
     // 文章内容
     [ObservableProperty] private string _articleContent = "";
@@ -108,31 +114,16 @@ public partial class MainWindowViewModel : ViewModelBase {
         if (files.Count > 0) {
             var file = files[0];
             try {
-                using var stream = await file.OpenReadAsync();
+                await using var stream = await file.OpenReadAsync();
                 using var reader = new StreamReader(stream);
                 ArticleContent = await reader.ReadToEndAsync();
                 ArticleTitle = Path.GetFileNameWithoutExtension(file.Name);
                 
                 // 如果AI功能已开启，使用AI生成文章简介
                 if (AppSettings.Instance.EnableAI) {
-                    StatusMessage = "正在使用AI生成文章简介...";
-                    try {
-                        var prompt = $"请为以下文章生成一个简短的中文简介（不超过200字）：\n{ArticleContent}";
-                        var textStreamAsync = AiService.Instance.GenerateTextStreamAsync(prompt);
-                        var description = new System.Text.StringBuilder();
-                        
-                        await foreach (var update in textStreamAsync) {
-                            description.Append(update.Text);
-                            ArticleDescription = description.ToString();
-                        }
-                        
-                        StatusMessage = $"已加载文件: {file.Name}（AI已生成简介）";
-                    }
-                    catch (Exception ex) {
-                        // AI生成失败时使用默认简介
-                        ArticleDescription = ArticleContent.Limit(100);
-                        StatusMessage = $"已加载文件: {file.Name}（AI生成简介失败: {ex.Message}）";
-                    }
+                    // 调用RegenerateDescription方法生成简介
+                    await RegenerateDescription();
+                    StatusMessage = $"已加载文件: {file.Name}（AI已生成简介）";
                 }
                 else {
                     ArticleDescription = ArticleContent.Limit(100);
@@ -213,6 +204,9 @@ public partial class MainWindowViewModel : ViewModelBase {
 
         // 设置窗口关闭后，更新登录状态
         UpdateLoginState();
+        
+        // 更新AI功能状态
+        IsAIEnabled = AppSettings.Instance.EnableAI;
     }
 
     // 登录命令
@@ -329,6 +323,32 @@ public partial class MainWindowViewModel : ViewModelBase {
         }
         else {
             LoginStatusMessage = "未登录 (未配置凭据)";
+        }
+    }
+    
+    // 重新生成文章简介命令
+    [RelayCommand]
+    private async Task RegenerateDescription() {
+        if (!IsAIEnabled || string.IsNullOrEmpty(ArticleContent)) {
+            StatusMessage = "无法生成简介：AI功能未启用或文章内容为空";
+            return;
+        }
+        
+        StatusMessage = "正在使用AI重新生成文章简介...";
+        try {
+            var prompt = $"请为以下文章生成一个简短的中文简介（不超过200字）：\n{ArticleContent}";
+            var textStreamAsync = AiService.Instance.GenerateTextStreamAsync(prompt);
+            var description = new System.Text.StringBuilder();
+            
+            await foreach (var update in textStreamAsync) {
+                description.Append(update.Text);
+                ArticleDescription = description.ToString();
+            }
+            
+            StatusMessage = "AI已重新生成文章简介";
+        }
+        catch (Exception ex) {
+            StatusMessage = $"AI重新生成简介失败: {ex.Message}";
         }
     }
 }
