@@ -29,6 +29,11 @@ public partial class MainWindowViewModel : ViewModelBase {
         // 初始化登录状态
         UpdateLoginState();
         
+        // 如果有凭据，自动登录
+        if (HasCredentials) {
+            _ = Login();
+        }
+        
         // 从设置中加载主题
         IsDarkTheme = AppSettings.Instance.IsDarkTheme;
         var app = Application.Current;
