@@ -28,6 +28,13 @@ public partial class MainWindowViewModel : ViewModelBase {
 
         // 初始化登录状态
         UpdateLoginState();
+        
+        // 从设置中加载主题
+        IsDarkTheme = AppSettings.Instance.IsDarkTheme;
+        var app = Application.Current;
+        if (app != null) {
+            app.RequestedThemeVariant = IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
+        }
     }
 
     // 软件版本信息
@@ -67,6 +74,10 @@ public partial class MainWindowViewModel : ViewModelBase {
         if (app != null) {
             app.RequestedThemeVariant = IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
         }
+        
+        // 保存主题设置
+        AppSettings.Instance.IsDarkTheme = IsDarkTheme;
+        AppSettings.Instance.Save();
     }
 
     // 选择文件命令

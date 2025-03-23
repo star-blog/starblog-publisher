@@ -72,6 +72,9 @@ public class AppSettings {
 
     public int BackendTimeout { get; set; } = 30;
 
+    // 主题设置
+    public bool IsDarkTheme { get; set; } = false;
+
     // 配置变更事件
     public event EventHandler? SettingsChanged;
 
