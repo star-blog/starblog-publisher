@@ -21,7 +21,7 @@ public class AiService {
     private AiService() {
         var settings = AppSettings.Instance;
 
-        var provider = AIProviderInfo.GetByDisplayName(settings.AIProvider);
+        var provider = AIProviderInfo.GetProvider(settings.AIProvider);
         var key = settings.AIKey;
         var model = settings.AIModel;
 

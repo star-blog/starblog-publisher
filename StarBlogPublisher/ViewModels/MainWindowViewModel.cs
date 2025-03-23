@@ -116,7 +116,7 @@ public partial class MainWindowViewModel : ViewModelBase {
                 if (AppSettings.Instance.EnableAI) {
                     StatusMessage = "正在使用AI生成文章简介...";
                     try {
-                        var prompt = $"请为以下文章生成一个简短的中文简介（不超过100字）：\n{ArticleContent}";
+                        var prompt = $"请为以下文章生成一个简短的中文简介（不超过200字）：\n{ArticleContent}";
                         var textStreamAsync = AiService.Instance.GenerateTextStreamAsync(prompt);
                         var description = new System.Text.StringBuilder();
                         
