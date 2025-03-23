@@ -24,7 +24,9 @@ public class AppSettings {
 
     // 代理设置
     public bool UseProxy { get; set; }
-    public string ProxyUrl { get; set; } = string.Empty;
+    public string ProxyType { get; set; } = "http";
+    public string ProxyHost { get; set; } = string.Empty;
+    public int ProxyPort { get; set; } = 0;
     public int ProxyTimeout { get; set; } = 30;
 
     // StarBlog后端设置

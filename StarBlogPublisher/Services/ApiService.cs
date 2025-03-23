@@ -30,8 +30,9 @@ public class ApiService {
             var handler = new HttpClientHandler();
 
             // 检查是否需要使用代理
-            if (AppSettings.Instance.UseProxy && !string.IsNullOrWhiteSpace(AppSettings.Instance.ProxyUrl)) {
-                handler.Proxy = new WebProxy(AppSettings.Instance.ProxyUrl);
+            if (AppSettings.Instance.UseProxy && !string.IsNullOrWhiteSpace(AppSettings.Instance.ProxyHost)) {
+                var proxyUri = $"{AppSettings.Instance.ProxyType}://{AppSettings.Instance.ProxyHost}:{AppSettings.Instance.ProxyPort}";
+                handler.Proxy = new WebProxy(proxyUri);
                 handler.UseProxy = true;
             }
 

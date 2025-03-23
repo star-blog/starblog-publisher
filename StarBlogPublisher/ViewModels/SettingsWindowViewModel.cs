@@ -9,7 +9,9 @@ namespace StarBlogPublisher.ViewModels;
 
 public partial class SettingsWindowViewModel : ViewModelBase {
     private bool _useProxy;
-    private string _proxyUrl = string.Empty;
+    private string _proxyType = "http";
+    private string _proxyHost = string.Empty;
+    private int _proxyPort;
     private int _proxyTimeout;
     private bool _useCustomBackend;
     private string _backendUrl = string.Empty;
@@ -30,9 +32,19 @@ public partial class SettingsWindowViewModel : ViewModelBase {
         set => SetProperty(ref _useProxy, value);
     }
 
-    public string ProxyUrl {
-        get => _proxyUrl;
-        set => SetProperty(ref _proxyUrl, value);
+    public string ProxyType {
+        get => _proxyType;
+        set => SetProperty(ref _proxyType, value);
+    }
+
+    public string ProxyHost {
+        get => _proxyHost;
+        set => SetProperty(ref _proxyHost, value);
+    }
+
+    public int ProxyPort {
+        get => _proxyPort;
+        set => SetProperty(ref _proxyPort, value);
     }
 
     public int ProxyTimeout {
@@ -148,7 +160,9 @@ public partial class SettingsWindowViewModel : ViewModelBase {
 
     private void LoadSettings(AppSettings settings) {
         UseProxy = settings.UseProxy;
-        ProxyUrl = settings.ProxyUrl;
+        ProxyType = settings.ProxyType;
+        ProxyHost = settings.ProxyHost;
+        ProxyPort = settings.ProxyPort;
         ProxyTimeout = settings.ProxyTimeout;
         UseCustomBackend = settings.UseCustomBackend;
         BackendUrl = settings.BackendUrl;
@@ -167,7 +181,9 @@ public partial class SettingsWindowViewModel : ViewModelBase {
         var settings = AppSettings.Instance;
 
         settings.UseProxy = UseProxy;
-        settings.ProxyUrl = ProxyUrl;
+        settings.ProxyType = ProxyType;
+        settings.ProxyHost = ProxyHost;
+        settings.ProxyPort = ProxyPort;
         settings.ProxyTimeout = ProxyTimeout;
         settings.UseCustomBackend = UseCustomBackend;
         settings.BackendUrl = BackendUrl;

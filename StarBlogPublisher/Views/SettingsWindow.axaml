@@ -31,13 +31,39 @@
                             <ToggleSwitch OnContent="启用代理" OffContent="禁用代理"
                                           IsChecked="{Binding UseProxy}" />
 
-                            <TextBox Watermark="代理URL" Text="{Binding ProxyUrl}"
-                                     IsEnabled="{Binding UseProxy}" />
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="代理类型" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                                <ComboBox SelectedValue="{Binding ProxyType}"
+                                      IsEnabled="{Binding UseProxy}"
+                                      Width="200"
+                                      HorizontalAlignment="Left">
+                                    <ComboBoxItem>http</ComboBoxItem>
+                                    <ComboBoxItem>https</ComboBoxItem>
+                                    <ComboBoxItem>socks5</ComboBoxItem>
+                                </ComboBox>
+                            </StackPanel>
 
-                            <NumericUpDown Watermark="代理超时时间（秒）"
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="代理主机名" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                                <TextBox Watermark="代理主机名" Text="{Binding ProxyHost}"
+                                     IsEnabled="{Binding UseProxy}" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="代理端口" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                                <NumericUpDown Watermark="代理端口"
+                                           Value="{Binding ProxyPort}"
+                                           Minimum="1" Maximum="65535"
+                                           IsEnabled="{Binding UseProxy}" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="代理超时时间（秒）" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                                <NumericUpDown Watermark="代理超时时间（秒）"
                                            Value="{Binding ProxyTimeout}"
                                            Minimum="1" Maximum="600"
                                            IsEnabled="{Binding UseProxy}" />
+                            </StackPanel>
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -50,29 +76,41 @@
                         <StackPanel Spacing="10">
                             <ToggleSwitch OnContent="使用自定义后端" OffContent="使用默认后端"
                                           IsChecked="{Binding UseCustomBackend}" />
+                            
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="StarBlog后端URL" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                                <TextBox Watermark="StarBlog后端URL"
+                                         Text="{Binding BackendUrl}"
+                                         IsEnabled="{Binding UseCustomBackend}" />
+                            </StackPanel>
 
-                            <TextBox Watermark="StarBlog后端URL"
-                                     Text="{Binding BackendUrl}"
-                                     IsEnabled="{Binding UseCustomBackend}" />
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="用户名" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                                <TextBox Watermark="用户名"
+                                         Text="{Binding Username}" />
+                            </StackPanel>
 
-                            <TextBox Watermark="用户名"
-                                     Text="{Binding Username}" />
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="密码" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox Grid.Column="0"
+                                             Watermark="密码"
+                                             PasswordChar="{Binding ShowPassword, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
+                                             Text="{Binding Password}" />
+                                    <Button Grid.Column="1"
+                                            Margin="5,0,0,0"
+                                            Command="{Binding TogglePasswordCommand}"
+                                            Content="{Binding ShowPassword, Converter={x:Static converters:BooleanToStringConverter.Instance}, ConverterParameter=👁️‍🗨️}"
+                                            Classes="Primary" />
+                                </Grid>
+                            </StackPanel>
 
-                            <Grid ColumnDefinitions="*,Auto">
-                                <TextBox Grid.Column="0"
-                                         Watermark="密码"
-                                         PasswordChar="{Binding ShowPassword, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
-                                         Text="{Binding Password}" />
-                                <Button Grid.Column="1"
-                                        Margin="5,0,0,0"
-                                        Command="{Binding TogglePasswordCommand}"
-                                        Content="{Binding ShowPassword, Converter={x:Static converters:BooleanToStringConverter.Instance}, ConverterParameter=👁️‍🗨️}"
-                                        Classes="Primary" />
-                            </Grid>
-
-                            <NumericUpDown Watermark="超时时间（秒）"
-                                           Value="{Binding BackendTimeout}"
-                                           Minimum="1" Maximum="600" />
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="超时时间（秒）" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                                <NumericUpDown Watermark="超时时间（秒）"
+                                               Value="{Binding BackendTimeout}"
+                                               Minimum="1" Maximum="600" />
+                            </StackPanel>
                         </StackPanel>
                     </StackPanel>
                 </Border>
