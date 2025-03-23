@@ -103,19 +103,21 @@ public partial class SettingsWindowViewModel : ViewModelBase {
             }
         }
     }
-    
+
     public List<AIProviderInfo> AIProviders {
         get => _aiProviders;
     }
-    
+
     public bool IsCustomProvider => AIProvider == "custom";
 
     private AIProviderInfo? _currentProvider;
+
     public AIProviderInfo? CurrentProvider {
         get {
             if (_currentProvider?.Name != AIProvider) {
                 _currentProvider = AIProviderInfo.GetProvider(AIProvider);
             }
+
             return _currentProvider;
         }
     }
@@ -137,9 +139,16 @@ public partial class SettingsWindowViewModel : ViewModelBase {
 
     private void OnAIProviderChanged(string value) {
         if (CurrentProvider == null) return;
-        
-        AIApiBase = CurrentProvider.DefaultApiBase;
-        AIModel = CurrentProvider.DefaultModel;
+
+        if (!IsCustomProvider) {
+            if (string.IsNullOrWhiteSpace(AIApiBase)) {
+                AIApiBase = CurrentProvider.DefaultApiBase;
+            }
+
+            if (string.IsNullOrWhiteSpace(AIKey)) {
+                AIModel = CurrentProvider.DefaultModel;
+            }
+        }
     }
 
     [RelayCommand]
