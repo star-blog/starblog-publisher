@@ -1,0 +1,45 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:StarBlogPublisher.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="StarBlogPublisher.Views.WordCloudWindow"
+        x:DataType="vm:WordCloudWindowViewModel"
+        Title="分类词云"
+        Width="800" Height="600"
+        WindowStartupLocation="CenterOwner">
+
+    <Design.DataContext>
+        <vm:WordCloudWindowViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="*" Margin="20">
+        <Panel IsVisible="{Binding IsLoading}">
+            <ProgressBar IsIndeterminate="True"
+                         VerticalAlignment="Center"
+                         HorizontalAlignment="Center"
+                         Width="200" />
+        </Panel>
+
+        <ItemsControl ItemsSource="{Binding WordClouds}"
+                      IsVisible="{Binding !IsLoading}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Margin="5" Padding="10,5"
+                            Background="{DynamicResource SystemAccentColor}"
+                            CornerRadius="4">
+                        <TextBlock Text="{Binding Name}"
+                                 FontSize="{Binding Value}"
+                                 Foreground="White" />
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Grid>
+</Window>

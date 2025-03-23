@@ -133,9 +133,13 @@
                         <!-- 分类选择 -->
                         <Grid Grid.Row="3" RowDefinitions="Auto,*" Margin="5"
                               IsVisible="{Binding IsLoggedIn}">
-                            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,5">
+                            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,5">
                                 <TextBlock Grid.Column="0" Text="分类" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                <Button Grid.Column="2" Content="🔄" ToolTip.Tip="刷新分类" 
+                                <Button Grid.Column="2" Content="☁️" ToolTip.Tip="查看词云" 
+                                        Command="{Binding ShowWordCloudCommand}"
+                                        Classes="IconButton" Padding="5,2"
+                                        Margin="0,0,5,0"/>
+                                <Button Grid.Column="3" Content="🔄" ToolTip.Tip="刷新分类" 
                                         Command="{Binding RefreshCategoriesCommand}"
                                         Classes="IconButton" Padding="5,2"/>
                             </Grid>

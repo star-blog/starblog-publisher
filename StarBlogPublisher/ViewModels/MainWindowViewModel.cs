@@ -18,10 +18,17 @@ using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using System.Diagnostics;
 using CodeLab.Share.Extensions;
+using StarBlogPublisher.Views;
 
 namespace StarBlogPublisher.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase {
+    [RelayCommand]
+    private void ShowWordCloud() {
+        if (!IsLoggedIn) return;
+        var window = new WordCloudWindow();
+        window.ShowDialog(App.MainWindow);
+    }
     public MainWindowViewModel() {
         // 订阅全局状态变更事件
         GlobalState.Instance.StateChanged += OnGlobalStateChanged;
