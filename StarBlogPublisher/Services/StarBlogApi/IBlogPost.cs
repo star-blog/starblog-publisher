@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Refit;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Models.Dtos;
@@ -23,5 +24,5 @@ public interface IBlogPost {
     /// 获取文章里的图片
     /// </summary>
     [Get("/Api/BlogPost/{id}/Images")]
-    Task<CodeLab.Share.ViewModels.Response.ApiResponse<BlogPost>> GetImages(string id);
+    Task<CodeLab.Share.ViewModels.Response.ApiResponse<List<string>>> GetImages(string id);
 }

@@ -1,37 +1,28 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using CodeLab.Share.Extensions;
 using Markdig;
 using Markdig.Renderers.Normalize;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Refit;
 using StarBlogPublisher.Models;
-using StarBlogPublisher.Utils;
 
 namespace StarBlogPublisher.Services;
 
-public class MarkdownProcessor {
-    private readonly BlogPost _post;
-    private readonly string _importPath;
-    private readonly string _assetsPath;
-
-    public MarkdownProcessor(string importPath, string assetsPath, BlogPost post) {
-        _post = post;
-        _assetsPath = assetsPath;
-        _importPath = importPath;
-    }
-
+public class MarkdownProcessor(BlogPost post) {
     /// <summary>
-    /// Markdown内容解析，复制图片 & 替换图片链接
+    /// Markdown内容解析，上传图片到后端 & 替换图片链接为后端URL
     /// </summary>
     /// <returns></returns>
-    public string MarkdownParse() {
-        if (_post.Content == null) {
+    public async Task<string> MarkdownParse() {
+        if (post.Content == null) {
             return string.Empty;
         }
 
-        var document = Markdig.Markdown.Parse(_post.Content);
+        var document = Markdig.Markdown.Parse(post.Content);
 
         foreach (var node in document.AsEnumerable()) {
             if (node is not ParagraphBlock { Inline: { } } paragraphBlock) continue;
@@ -42,27 +33,27 @@ public class MarkdownProcessor {
                 if (string.IsNullOrWhiteSpace(linkInline.Url)) continue;
                 var imgUrl = Uri.UnescapeDataString(linkInline.Url);
                 if (imgUrl.StartsWith("http")) continue;
-
-                // 路径处理
-                var imgPath = Path.Combine(_importPath, _post.Path ?? "", imgUrl);
+                
+                // 获取图片文件名
                 var imgFilename = Path.GetFileName(imgUrl);
-                var destDir = Path.Combine(_assetsPath, _post.Id);
-                if (!Directory.Exists(destDir)) Directory.CreateDirectory(destDir);
-                var destPath = Path.Combine(destDir, imgFilename);
-                if (File.Exists(destPath)) {
-                    // 图片重名处理
-                    var imgId = GuidUtils.GuidTo16String();
-                    imgFilename =
-                        $"{Path.GetFileNameWithoutExtension(imgFilename)}-{imgId}.{Path.GetExtension(imgFilename)}";
-                    destPath = Path.Combine(destDir, imgFilename);
+
+                try {
+                    // 直接从原始路径读取图片并上传到后端
+                    await using var fileStream = File.OpenRead(imgUrl);
+                    var streamPart = new StreamPart(fileStream, imgFilename);
+                    var response = await ApiService.Instance.BlogPost.UploadImage(post.Id, streamPart);
+                    
+                    if (response is { Successful: true, Data: not null }) {
+                        // 替换图片链接为后端返回的URL
+                        linkInline.Url = response.Data.ImgUrl;
+                        Console.WriteLine($"上传图片 {imgUrl} 成功，URL: {response.Data.ImgUrl}");
+                    } else {
+                        // 上传失败，保留原始链接
+                        Console.WriteLine($"上传图片 {imgUrl} 失败: {response.Message}");
+                    }
+                } catch (Exception ex) {
+                    Console.WriteLine($"上传图片 {imgUrl} 异常: {ex.Message}");
                 }
-
-                // 替换图片链接
-                linkInline.Url = imgFilename;
-                // 复制图片
-                File.Copy(imgPath, destPath);
-
-                Console.WriteLine($"复制 {imgPath} 到 {destPath}");
             }
         }
 
@@ -79,8 +70,8 @@ public class MarkdownProcessor {
     /// <param name="length"></param>
     /// <returns></returns>
     public string GetSummary(int length) {
-        return _post.Content == null
+        return post.Content == null
             ? string.Empty
-            : Markdig.Markdown.ToPlainText(_post.Content).Limit(length);
+            : Markdig.Markdown.ToPlainText(post.Content).Limit(length);
     }
 }
