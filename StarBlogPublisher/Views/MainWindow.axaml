@@ -34,9 +34,9 @@
                     <!-- 登录状态和按钮 -->
                     <Border Grid.Column="2" Classes="Card" Padding="8,4" Margin="0,0,10,0">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding LoginStatusMessage}" 
-                                     VerticalAlignment="Center"
-                                     FontSize="12" />
+                            <TextBlock Text="{Binding LoginStatusMessage}"
+                                       VerticalAlignment="Center"
+                                       FontSize="12" />
                             <Button Content="登录"
                                     Command="{Binding LoginCommand}"
                                     IsVisible="{Binding !IsLoggedIn}"
@@ -115,16 +115,23 @@
 
                         <!-- 标题输入 -->
                         <StackPanel Grid.Row="1" Spacing="5" Margin="5">
-                            <Grid ColumnDefinitions="Auto,*,Auto">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                                 <TextBlock Grid.Column="0" Text="标题" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                <Button Grid.Column="2" 
-                                        Content="🔄 AI润色" 
+                                <Button Grid.Column="2"
+                                        Content="↩️ 重置"
+                                        ToolTip.Tip="重置为文件名"
+                                        Command="{Binding ResetTitleCommand}"
+                                        Classes="IconButton"
+                                        Padding="5,2" />
+                                <Button Grid.Column="3"
+                                        Content="🔄 AI润色"
                                         ToolTip.Tip="使用AI润色文章标题"
                                         Command="{Binding RefineTitleWithAICommand}"
                                         IsVisible="{Binding IsAIEnabled}"
                                         IsEnabled="{Binding !IsRefiningTitle}"
-                                        Classes="IconButton" 
-                                        Padding="5,2" />
+                                        Classes="IconButton"
+                                        Padding="5,2"
+                                        Margin="0,0,5,0" />
                             </Grid>
                             <TextBox Text="{Binding ArticleTitle}"
                                      Watermark="请输入文章标题" />
@@ -134,12 +141,12 @@
                         <StackPanel Grid.Row="2" Spacing="5" Margin="5">
                             <Grid ColumnDefinitions="Auto,*,Auto">
                                 <TextBlock Grid.Column="0" Text="说明" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                <Button Grid.Column="2" 
-                                        Content="🔄 重新生成" 
+                                <Button Grid.Column="2"
+                                        Content="🔄 重新生成"
                                         ToolTip.Tip="使用AI重新生成文章简介"
                                         Command="{Binding RegenerateDescriptionCommand}"
                                         IsVisible="{Binding IsAIEnabled}"
-                                        Classes="IconButton" 
+                                        Classes="IconButton"
                                         Padding="5,2" />
                             </Grid>
                             <TextBox Text="{Binding ArticleDescription}"
@@ -153,14 +160,14 @@
                         <Grid Grid.Row="3" RowDefinitions="Auto,*" Margin="5"
                               IsVisible="{Binding IsLoggedIn}">
                             <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,5">
-                                <TextBlock Grid.Column="0" Text="分类" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                <Button Grid.Column="2" Content="☁️" ToolTip.Tip="查看词云" 
+                                <TextBlock Grid.Column="0" Text="分类" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <Button Grid.Column="2" Content="☁️" ToolTip.Tip="查看词云"
                                         Command="{Binding ShowWordCloudCommand}"
                                         Classes="IconButton" Padding="5,2"
-                                        Margin="0,0,5,0"/>
-                                <Button Grid.Column="3" Content="🔄" ToolTip.Tip="刷新分类" 
+                                        Margin="0,0,5,0" />
+                                <Button Grid.Column="3" Content="🔄" ToolTip.Tip="刷新分类"
                                         Command="{Binding RefreshCategoriesCommand}"
-                                        Classes="IconButton" Padding="5,2"/>
+                                        Classes="IconButton" Padding="5,2" />
                             </Grid>
                             <TreeView Grid.Row="1"
                                       MinHeight="100"
@@ -168,7 +175,7 @@
                                       SelectedItem="{Binding SelectedCategory}">
                                 <TreeView.ItemTemplate>
                                     <TreeDataTemplate ItemsSource="{Binding Nodes}">
-                                        <TextBlock Text="{Binding Text}"/>
+                                        <TextBlock Text="{Binding Text}" />
                                     </TreeDataTemplate>
                                 </TreeView.ItemTemplate>
                             </TreeView>
@@ -180,10 +187,10 @@
 
 
         <!-- 底部区域：预览按钮、发布按钮、进度条和状态显示 -->
-        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*,Auto" Margin="10">
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="10">
             <!-- 预览按钮 -->
             <Button Grid.Column="0"
-                    Content="预览文章"
+                    Content="👀 预览文章"
                     Command="{Binding PreviewCommand}"
                     IsEnabled="{Binding CanPublish}"
                     Padding="15,10"
@@ -191,19 +198,27 @@
 
             <!-- 发布按钮 -->
             <Button Grid.Column="1"
-                    Content="发布文章"
+                    Content="⏫ 发布文章"
                     Command="{Binding PublishCommand}"
                     IsEnabled="{Binding CanPublish}"
-                    Padding="15,10" />
+                    Padding="15,10"
+                    Margin="0,0,10,0" />
+
+            <!-- 复制按钮 -->
+            <Button Grid.Column="2"
+                    Content="📋 复制内容"
+                    Command="{Binding CopyContentCommand}"
+                    Padding="15,10"
+                    Margin="0,0,10,0" />
 
             <!-- 进度条 -->
-            <ProgressBar Grid.Column="2"
+            <ProgressBar Grid.Column="3"
                          Value="{Binding PublishProgress}"
                          IsVisible="{Binding IsPublishing}"
                          Margin="10,0" />
 
             <!-- 状态显示 -->
-            <TextBlock Grid.Column="3"
+            <TextBlock Grid.Column="4"
                        Text="{Binding StatusMessage}"
                        VerticalAlignment="Center" />
         </Grid>

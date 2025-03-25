@@ -148,6 +148,23 @@ public partial class MainWindowViewModel : ViewModelBase {
             }
         }
     }
+    
+    // 复制内容命令
+    [RelayCommand]
+    private async Task CopyContent() {
+        if (string.IsNullOrEmpty(ArticleContent)) {
+            StatusMessage = "没有内容可复制";
+            return;
+        }
+
+        try {
+            await App.MainWindow.Clipboard.SetTextAsync(ArticleContent);
+            StatusMessage = "内容已复制到剪贴板";
+        }
+        catch (Exception ex) {
+            StatusMessage = $"复制失败: {ex.Message}";
+        }
+    }
 
     // 发布文章命令
     [RelayCommand]
@@ -503,6 +520,14 @@ public partial class MainWindowViewModel : ViewModelBase {
         catch (Exception ex) {
             StatusMessage = $"AI重新生成简介失败: {ex.Message}";
         }
+    }
+    
+    // 重置标题命令
+    [RelayCommand]
+    private void ResetTitle() {
+        if (string.IsNullOrEmpty(_currentFilePath)) return;
+        ArticleTitle = Path.GetFileNameWithoutExtension(_currentFilePath);
+        StatusMessage = "已重置标题为文件名";
     }
 
     // 润色文章标题命令
