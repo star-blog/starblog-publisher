@@ -4,6 +4,20 @@
         <Assembly Name="StarBlogPublisher" Dynamic="Required All" />
         <Assembly Name="Avalonia.Markup.Xaml" Dynamic="Required All" />
         <Assembly Name="Avalonia" Dynamic="Required All" />
-        <!-- 可能需要添加其他使用反射的程序集 -->
+
+        <!-- Refit相关程序集 -->
+        <Assembly Name="Refit" Dynamic="Required All" />
+        <Assembly Name="Newtonsoft.Json" Dynamic="Required All" />
+
+        <!-- 添加API接口和模型类型 -->
+        <Assembly Name="StarBlogPublisher">
+            <Type Name="StarBlogPublisher.Services.StarBlogApi.IAuth" Dynamic="Required All" />
+            <Type Name="StarBlogPublisher.Services.StarBlogApi.ICategory" Dynamic="Required All" />
+            <Type Name="StarBlogPublisher.Services.StarBlogApi.IBlogPost" Dynamic="Required All" />
+        </Assembly>
+        
+        <Assembly Name="CodeLab.Share">
+            <Type Name="CodeLab.Share.ViewModels.Response.ApiResponse`1" Dynamic="Required All" />
+        </Assembly>
     </Application>
 </Directives>

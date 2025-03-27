@@ -4,6 +4,7 @@ using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
 using System.Linq;
 using Avalonia.Markup.Xaml;
+using StarBlogPublisher.Services;
 using StarBlogPublisher.ViewModels;
 using StarBlogPublisher.Views;
 
@@ -18,6 +19,9 @@ public partial class App : Application {
     }
 
     public override void OnFrameworkInitializationCompleted() {
+        // 确保Refit类型被注册
+        RefitTypeRegistration.RegisterTypes();
+        
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
             // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
             // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins

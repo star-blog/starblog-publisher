@@ -46,6 +46,7 @@
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="ReactiveUI" Version="19.5.41" />
         <PackageReference Include="Refit" Version="8.0.0" />
+        <PackageReference Include="Refit.Newtonsoft.Json" Version="8.0.0" />
         <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.3" />
     </ItemGroup>
 </Project>

@@ -3,6 +3,7 @@ using StarBlogPublisher.Services.StarBlogApi;
 using System;
 using System.Net;
 using System.Net.Http;
+using Newtonsoft.Json;
 
 namespace StarBlogPublisher.Services;
 
@@ -16,7 +17,22 @@ public class ApiService {
         }
     }
 
-    private ApiService() { }
+    private readonly RefitSettings _refitSettings;
+
+
+    private ApiService() {
+        // 确保类型被注册
+        RefitTypeRegistration.RegisterTypes();
+
+        // 配置Refit设置
+        _refitSettings = new RefitSettings(new NewtonsoftJsonContentSerializer(
+            new JsonSerializerSettings {
+                TypeNameHandling = TypeNameHandling.Auto,
+                // 禁用反射优化，这在AOT环境中很重要
+                TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple
+            }
+        ));
+    }
 
     public string BaseUrl {
         get {
@@ -51,7 +67,7 @@ public class ApiService {
         }
     }
 
-    public IAuth Auth => RestService.For<IAuth>(ApiHttpClient);
-    public ICategory Categories => RestService.For<ICategory>(ApiHttpClient);
-    public IBlogPost BlogPost => RestService.For<IBlogPost>(ApiHttpClient);
+    public IAuth Auth => RestService.For<IAuth>(ApiHttpClient, _refitSettings);
+    public ICategory Categories => RestService.For<ICategory>(ApiHttpClient, _refitSettings);
+    public IBlogPost BlogPost => RestService.For<IBlogPost>(ApiHttpClient, _refitSettings);
 }
