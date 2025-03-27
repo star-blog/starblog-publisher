@@ -131,6 +131,16 @@ StarBlog Publisher 是一款专为 [StarBlog博客系统](https://github.com/Dea
 - 项目主页：[StarBlog Publisher](https://github.com/star-blog/starblog-publisher)
 - 配套博客系统：[StarBlog](https://github.com/Deali-Axy/StarBlog)
 
+## 更新记录
+
+### 1.1
+
+- 优化对 AOT 的支持，目前在 AOT 下已经正常可用了
+
+### 1.0
+
+- 第一个发布的版本
+
 ---
 
 **StarBlog Publisher** - 为StarBlog打造的专业发布工具，让博客发布变得简单高效！

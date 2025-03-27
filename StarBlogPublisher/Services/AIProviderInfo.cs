@@ -35,6 +35,14 @@ public class AIProviderInfo {
         },
 
         new AIProviderInfo {
+            Name = "zhipu",
+            DisplayName = "清华智谱AI",
+            Description = "清华智谱，例如 ChatGLM",
+            DefaultApiBase = "https://open.bigmodel.cn/api/paas/v4",
+            DefaultModel = "glm-4-flash"
+        },
+
+        new AIProviderInfo {
             Name = "custom",
             DisplayName = "自定义",
             Description = "自定义AI提供商，可以配置自己的API地址",
@@ -47,7 +55,7 @@ public class AIProviderInfo {
 
     public static AIProviderInfo? GetProvider(string name) =>
         Providers.Find(p => p.Name == name);
-    
+
     public static AIProviderInfo? GetByDisplayName(string displayName) =>
         Providers.Find(p => p.DisplayName == displayName);
 
