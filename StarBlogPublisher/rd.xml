@@ -1,0 +1,9 @@
+﻿<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+    <Application>
+        <!-- 添加需要在AOT中保留的程序集和类型 -->
+        <Assembly Name="StarBlogPublisher" Dynamic="Required All" />
+        <Assembly Name="Avalonia.Markup.Xaml" Dynamic="Required All" />
+        <Assembly Name="Avalonia" Dynamic="Required All" />
+        <!-- 可能需要添加其他使用反射的程序集 -->
+    </Application>
+</Directives>

@@ -2,7 +2,9 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 using StarBlogPublisher.Services.Security;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace StarBlogPublisher.Services;
 
@@ -38,7 +40,7 @@ public class AppSettings {
     public string AIProvider { get; set; }
     private string _encryptedAIKey = string.Empty;
 
-    [JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
     public string AIKey {
         get => EncryptionService.Decrypt(_encryptedAIKey);
         set => _encryptedAIKey = EncryptionService.Encrypt(value);
@@ -59,7 +61,7 @@ public class AppSettings {
     private string _encryptedPassword = string.Empty;
 
     // 公开属性，读取时解密，设置时不做处理
-    [JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
     public string Password {
         get => EncryptionService.Decrypt(_encryptedPassword);
         set => _encryptedPassword = EncryptionService.Encrypt(value);
@@ -80,14 +82,16 @@ public class AppSettings {
     // 配置变更事件
     public event EventHandler? SettingsChanged;
 
-    [JsonConstructor]
+    [System.Text.Json.Serialization.JsonConstructor]
     private AppSettings() { }
 
     private static AppSettings Load() {
         try {
             if (File.Exists(ConfigPath)) {
                 var json = File.ReadAllText(ConfigPath);
-                var settings = JsonSerializer.Deserialize<AppSettings>(json);
+                // var settings = JsonSerializer.Deserialize<AppSettings>(json);
+                var settings = JsonConvert.DeserializeObject<AppSettings>(json);
+
                 return settings ?? new AppSettings();
             }
         }
@@ -105,10 +109,12 @@ public class AppSettings {
             if (!string.IsNullOrEmpty(directory)) {
                 Directory.CreateDirectory(directory);
             }
-
-            var json = JsonSerializer.Serialize(this, new JsonSerializerOptions {
-                WriteIndented = true
-            });
+            
+            // var json = JsonSerializer.Serialize(this, new JsonSerializerOptions {
+            //     WriteIndented = true
+            // });
+            
+            var json = JsonConvert.SerializeObject(this, Formatting.Indented);
             File.WriteAllText(ConfigPath, json);
 
             // 触发配置变更事件
