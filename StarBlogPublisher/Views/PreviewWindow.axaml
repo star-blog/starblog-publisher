@@ -4,12 +4,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:StarBlogPublisher.ViewModels"
         xmlns:md="clr-namespace:Markdown.Avalonia;assembly=Markdown.Avalonia"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+        mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
         x:Class="StarBlogPublisher.Views.PreviewWindow"
         x:DataType="vm:PreviewWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="文章预览"
-        Width="800" Height="600"
+        Width="1000" Height="700"
         WindowStartupLocation="CenterOwner">
 
     <Design.DataContext>
@@ -20,12 +20,41 @@
         <!-- 标题 -->
         <TextBlock Grid.Row="0" Text="文章预览" FontSize="24" FontWeight="Bold" Margin="0,0,0,20" />
 
-        <!-- 预览内容 -->
-        <Border Grid.Row="1"
-                BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}"
-                BorderThickness="1"
-                CornerRadius="4">
-            <md:MarkdownScrollViewer Markdown="{Binding MarkdownContent}"/>
-        </Border>
+        <!-- 内容区域：左右两栏布局 -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto,*">
+            <!-- 左侧：原始Markdown内容 -->
+            <Border Grid.Column="0"
+                    BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Margin="0,0,5,0">
+                <TextBox Text="{Binding MarkdownContent}" 
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         FontFamily="Consolas, Menlo, Monospace"
+                         Padding="10"
+                         VerticalAlignment="Stretch"
+                         HorizontalAlignment="Stretch"/>
+            </Border>
+            
+            <!-- 中间：分隔线 -->
+            <GridSplitter Grid.Column="1" 
+                          Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                          Width="5"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Stretch" />
+            
+            <!-- 右侧：HTML预览 -->
+            <Border Grid.Column="2"
+                    BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Margin="5,0,0,0">
+                <ScrollViewer HorizontalAlignment="Stretch" 
+                          VerticalAlignment="Stretch">
+                    <md:MarkdownScrollViewer Markdown="{Binding MarkdownContent}"/>
+                </ScrollViewer>
+            </Border>
+        </Grid>
     </Grid>
 </Window>
