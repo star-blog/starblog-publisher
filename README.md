@@ -133,6 +133,11 @@ StarBlog Publisher 是一款专为 [StarBlog博客系统](https://github.com/Dea
 
 ## 更新记录
 
+### 1.2
+
+- 更新Avalonia相关依赖到11.2.6版本
+- 预览窗口引入双栏布局，左侧显示原始Markdown内容，右侧显示HTML预览
+
 ### 1.1
 
 - 优化对 AOT 的支持，目前在 AOT 下已经正常可用了

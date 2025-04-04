@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <TargetFramework>net8.0</TargetFramework>
@@ -44,7 +44,6 @@
         <PackageReference Include="MessageBox.Avalonia" Version="3.1.5" />
         <PackageReference Include="Microsoft.Extensions.AI" Version="9.3.0-preview.1.25161.3" />
         <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="9.3.0-preview.1.25161.3" />
-        <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3124.44" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="ReactiveUI" Version="19.5.41" />
         <PackageReference Include="Refit" Version="8.0.0" />
