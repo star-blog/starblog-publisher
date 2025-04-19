@@ -1,0 +1,52 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:StarBlogPublisher.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="450"
+        x:Class="StarBlogPublisher.Views.AddCategoryWindow"
+        x:DataType="vm:AddCategoryWindowViewModel"
+        Title="添加分类"
+        Width="400" Height="450"
+        WindowStartupLocation="CenterOwner">
+
+    <Design.DataContext>
+        <vm:AddCategoryWindowViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="20">
+        <!-- 分类名称输入 -->
+        <StackPanel Grid.Row="0" Spacing="10">
+            <TextBlock Text="分类名称" FontWeight="SemiBold" />
+            <TextBox Text="{Binding CategoryName}" 
+                     Watermark="请输入分类名称"
+                     MaxLength="50" />
+        </StackPanel>
+
+        <!-- 父级分类选择 -->
+        <Grid Grid.Row="1" RowDefinitions="Auto,*" Margin="0,20,0,0">
+            <TextBlock Grid.Row="0" Text="选择父级分类" FontWeight="SemiBold" Margin="0,0,0,10" />
+            <TreeView Grid.Row="1"
+                      ItemsSource="{Binding Categories}"
+                      SelectedItem="{Binding SelectedParentCategory}">
+                <TreeView.ItemTemplate>
+                    <TreeDataTemplate ItemsSource="{Binding Nodes}">
+                        <TextBlock Text="{Binding Text}" />
+                    </TreeDataTemplate>
+                </TreeView.ItemTemplate>
+            </TreeView>
+        </Grid>
+
+        <!-- 按钮区域 -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,20,0,0">
+            <Button Content="取消"
+                    Command="{Binding CancelCommand}"
+                    Classes="IconButton"
+                    Padding="15,10" />
+            <Button Content="确定"
+                    Command="{Binding ConfirmCommand}"
+                    Classes="accent"
+                    Padding="15,10" />
+        </StackPanel>
+    </Grid>
+</Window>

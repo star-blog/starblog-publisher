@@ -32,6 +32,13 @@ public partial class MainWindowViewModel : ViewModelBase {
         window.ShowDialog(App.MainWindow);
     }
 
+    [RelayCommand]
+    private async Task ShowAddCategory() {
+        if (!IsLoggedIn) return;
+        var window = new AddCategoryWindow();
+        await window.ShowDialog(App.MainWindow);
+    }
+
     public MainWindowViewModel() {
         // 订阅全局状态变更事件
         GlobalState.Instance.StateChanged += OnGlobalStateChanged;
