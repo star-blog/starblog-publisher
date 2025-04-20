@@ -70,6 +70,8 @@ StarBlog Publisher 是一款专为 [StarBlog博客系统](https://github.com/Dea
 - **HTTP客户端**：Refit 8.0.0
 - **AI集成**：Microsoft.Extensions.AI 9.3.0
 - **对话框**：MessageBox.Avalonia 3.1.5
+- **词云生成**：Sdcb.WordCloud
+- **加载中指示器**：LoadingIndicators.Avalonia
 
 ## 安装与使用
 
@@ -135,7 +137,7 @@ StarBlog Publisher 是一款专为 [StarBlog博客系统](https://github.com/Dea
 
 ### 1.4
 
-- 重构词云生成逻辑并添加加载指示器
+- 重构词云生成(Sdcb.WordCloud)逻辑并添加加载指示器(LoadingIndicators.Avalonia)
 - 添加GitHub Actions发布工作流和构建脚本
 
 ### 1.3
