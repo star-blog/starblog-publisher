@@ -3,11 +3,22 @@ import shutil
 import subprocess
 import zipfile
 from datetime import datetime
+import platform
 
 # 配置信息
 VERSION = "1.4"
 
-import platform
+def get_aot_platforms():
+    """获取支持AOT的平台列表"""
+    p = platform.system().lower()
+    if p == "windows":
+        return ["win-x64"]
+    elif p == "linux":
+        return ["linux-x64"]
+    elif p == "darwin":
+        return ["osx-x64"]
+    else:
+        raise ValueError(f"不支持的平台: {p}")
 
 # 构建配置
 BUILD_CONFIGS = {
@@ -17,9 +28,17 @@ BUILD_CONFIGS = {
     },
     "aot": {
         "args": "/p:PublishAot=true /p:TrimMode=full /p:InvariantGlobalization=true /p:IlcGenerateStackTraceData=false /p:IlcOptimizationPreference=Size /p:IlcFoldIdenticalMethodBodies=true /p:JsonSerializerIsReflectionEnabledByDefault=true",
-        "platforms": [platform.system().lower() + "-x64"]
+        "platforms": get_aot_platforms()
     }
 }
+
+# 默认构建配置
+active_profiles = ["self-contained", "aot"]
+
+# 如果在 GitHub Actions 中运行，只构建指定平台
+if "GITHUB_PLATFORM" in os.environ:
+    BUILD_CONFIGS["self-contained"]["platforms"] = [os.environ["GITHUB_PLATFORM"]]
+
 
 def get_build_command(profile, target_system):
     """根据配置和目标系统生成构建命令"""
@@ -31,13 +50,6 @@ def get_build_command(profile, target_system):
         raise ValueError(f"在 {profile} 模式下不支持目标系统: {target_system}")
     
     return f"dotnet publish -c Release -r {target_system} {config['args']}"
-
-# 默认构建配置
-active_profile = "self-contained"
-
-# 如果在 GitHub Actions 中运行，只构建指定平台
-if "GITHUB_PLATFORM" in os.environ:
-    BUILD_CONFIGS["self-contained"]["platforms"] = [os.environ["GITHUB_PLATFORM"]]
 
 
 def clean_publish_dir(publish_dir):
@@ -96,17 +108,21 @@ def main():
     if os.path.exists(dist_dir):
         shutil.rmtree(dist_dir)
     os.makedirs(dist_dir)
+    
+    success_count = 0
+    total_systems = 0
 
     # 获取当前配置支持的目标系统
-    target_systems = BUILD_CONFIGS[active_profile]["platforms"]
-    success_count = 0
+    for active_profile in active_profiles:
+        target_systems = BUILD_CONFIGS[active_profile]["platforms"]
+        total_systems += len(target_systems)
+    
+        # 构建所有支持的目标系统
+        for system in target_systems:
+            if build_and_package(active_profile, system):
+                success_count += 1
 
-    # 构建所有支持的目标系统
-    for system in target_systems:
-        if build_and_package(active_profile, system):
-            success_count += 1
-
-    print(f"\n构建完成！成功: {success_count}/{len(target_systems)}")
+    print(f"\n构建完成！成功: {success_count}/{total_systems}")
 
 
 
