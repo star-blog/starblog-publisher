@@ -5,7 +5,7 @@ import zipfile
 from datetime import datetime
 
 # 配置信息
-VERSION = "1.3"
+VERSION = "1.4"
 
 import platform
 
