@@ -26,6 +26,10 @@ StarBlog Publisher 是一款专为 [StarBlog博客系统](https://github.com/Dea
 
 ![设置界面](docs/images/设置界面.jpg)
 
+### 分类词云
+
+![分类词云](docs/images/分类词云.png)
+
 ## 解决Markdown写作的痛点
 
 在使用Markdown进行博客写作时，我们经常会遇到以下痛点：
