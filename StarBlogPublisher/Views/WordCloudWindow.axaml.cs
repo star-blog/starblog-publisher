@@ -6,6 +6,9 @@ namespace StarBlogPublisher.Views;
 public partial class WordCloudWindow : Window {
     public WordCloudWindow() {
         InitializeComponent();
-        DataContext = new WordCloudWindowViewModel();
+        var vm = new WordCloudWindowViewModel {
+            View = this
+        };
+        DataContext = vm;
     }
 }

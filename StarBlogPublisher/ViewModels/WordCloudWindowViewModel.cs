@@ -1,40 +1,75 @@
+using System;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
-using StarBlogPublisher.Models;
+using Sdcb.WordClouds;
+using SkiaSharp;
 using StarBlogPublisher.Services;
 
 namespace StarBlogPublisher.ViewModels;
 
 public partial class WordCloudWindowViewModel : ViewModelBase {
-    [ObservableProperty] private List<WordCloud> _wordClouds = new();
-
     [ObservableProperty] private bool _isLoading;
+    [ObservableProperty] private bool _hasError;
+    [ObservableProperty] private string _errorMessage;
+    [ObservableProperty] private Bitmap _wordCloudImage;
 
     public WordCloudWindowViewModel() {
-        LoadWordCloudData();
+        _ = GenerateWordCloudImage();
     }
 
-    private async Task LoadWordCloudData() {
-        IsLoading = true;
+    private async Task<List<WordScore>?> GetWordScores() {
         try {
             var response = await ApiService.Instance.Categories.GetWordCloud();
-            if (response is { Successful: true, Data: not null }) {
-                // 计算字体大小
-                var maxCount = response.Data.Max(w => w.Value);
-                var minCount = response.Data.Min(w => w.Value);
-                var fontScale = 30.0; // 最大字体大小
-                var minFontSize = 12.0; // 最小字体大小
-
-                foreach (var word in response.Data) {
-                    // 使用线性插值计算字体大小
-                    var normalizedValue = (double)(word.Value - minCount) / (maxCount - minCount);
-                    word.Value = (int)(minFontSize + normalizedValue * (fontScale - minFontSize));
-                }
-
-                WordClouds = response.Data;
+            if (response.Data == null) {
+                throw new Exception("获取词云数据失败：服务器返回数据为空");
             }
+
+            return response.Data.Select(e => new WordScore(Score: e.Value, Word: e.Name)).ToList();
+        }
+        catch (Exception e) {
+            HasError = true;
+            ErrorMessage = $"获取词云数据失败：{e.Message}";
+            return null;
+        }
+    }
+
+    private async Task GenerateWordCloudImage() {
+        IsLoading = true;
+        HasError = false;
+        ErrorMessage = string.Empty;
+        
+        try {
+            var wordScores = await GetWordScores();
+            if (wordScores == null || !wordScores.Any()) {
+                HasError = true;
+                ErrorMessage = "没有可用的词云数据";
+                return;
+            }
+            
+            var wc = WordCloud.Create(new WordCloudOptions(900, 900, wordScores) {
+                FontManager = new FontManager([SKTypeface.FromFamilyName("Times New Roman")]),
+                Mask = MaskOptions.CreateWithForegroundColor(SKBitmap.Decode(
+                        await new HttpClient().GetByteArrayAsync(
+                            "https://io.starworks.cc:88/cv-public/2024/alice_mask.png")
+                    ),
+                    SKColors.White
+                )
+            });
+
+            using var skImage = wc.ToSKBitmap();
+            using var data = skImage.Encode(SKEncodedImageFormat.Png, 100);
+            using var stream = new MemoryStream(data.ToArray());
+            WordCloudImage = new Bitmap(stream);
+        }
+        catch (Exception ex) {
+            HasError = true;
+            ErrorMessage = $"生成词云图片失败：{ex.Message}";
         }
         finally {
             IsLoading = false;

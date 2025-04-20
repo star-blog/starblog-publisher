@@ -3,6 +3,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:StarBlogPublisher.ViewModels"
+        xmlns:li="using:LoadingIndicators.Avalonia"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="StarBlogPublisher.Views.WordCloudWindow"
         x:DataType="vm:WordCloudWindowViewModel"
@@ -16,30 +17,26 @@
 
     <Grid RowDefinitions="*" Margin="20">
         <Panel IsVisible="{Binding IsLoading}">
-            <ProgressBar IsIndeterminate="True"
-                         VerticalAlignment="Center"
-                         HorizontalAlignment="Center"
-                         Width="200" />
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10">
+                <li:LoadingIndicator IsActive="True" Mode="Ring" SpeedRatio="1.2" Width="128" Height="128" />
+                <TextBlock Text="正在生成词云..." HorizontalAlignment="Center" />
+            </StackPanel>
         </Panel>
 
-        <ItemsControl ItemsSource="{Binding WordClouds}"
-                      IsVisible="{Binding !IsLoading}">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <WrapPanel />
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <Border Margin="5" Padding="10,5"
-                            Background="{DynamicResource SystemAccentColor}"
-                            CornerRadius="4">
-                        <TextBlock Text="{Binding Name}"
-                                 FontSize="{Binding Value}"
-                                 Foreground="White" />
-                    </Border>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <Panel IsVisible="{Binding !IsLoading}">
+            <Image Source="{Binding WordCloudImage}"
+                   IsVisible="{Binding !HasError}"
+                   Stretch="Uniform"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center" />
+            
+            <TextBlock Text="{Binding ErrorMessage}"
+                       IsVisible="{Binding HasError}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource SystemErrorTextColor}"
+                       TextWrapping="Wrap"
+                       MaxWidth="400" />
+        </Panel>
     </Grid>
 </Window>

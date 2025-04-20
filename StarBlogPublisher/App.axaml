@@ -11,7 +11,12 @@
     </Application.DataTemplates>
     
     <Application.Resources>
-        <converters:BoolToThemeTextConverter x:Key="BoolToThemeTextConverter"/>
+        <ResourceDictionary>
+            <converters:BoolToThemeTextConverter x:Key="BoolToThemeTextConverter"/>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://LoadingIndicators.Avalonia/LoadingIndicators.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Application.Resources>
   
     <Application.Styles>
