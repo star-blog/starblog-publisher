@@ -30,7 +30,18 @@ public partial class WordCloudWindowViewModel : ViewModelBase {
                 throw new Exception("获取词云数据失败：服务器返回数据为空");
             }
 
-            return response.Data.Select(e => new WordScore(Score: e.Value, Word: e.Name)).ToList();
+            var originalScores = response.Data.Select(e => new WordScore(Score: e.Value, Word: e.Name)).ToList();
+
+            // 扩充数据，复制原始数据以增加词云密度
+            var extendedScores = new List<WordScore>();
+            foreach (var score in originalScores) {
+                // 根据需要调整复制次数
+                for (var i = 0; i < 10; i++) {
+                    extendedScores.Add(score);
+                }
+            }
+
+            return extendedScores;
         }
         catch (Exception e) {
             HasError = true;

@@ -133,6 +133,11 @@ StarBlog Publisher 是一款专为 [StarBlog博客系统](https://github.com/Dea
 
 ## 更新记录
 
+### 1.4
+
+- 重构词云生成逻辑并添加加载指示器
+- 添加GitHub Actions发布工作流和构建脚本
+
 ### 1.3
 
 - 添加分类功能，现在可以直接在发布工具里快速添加分类了！
