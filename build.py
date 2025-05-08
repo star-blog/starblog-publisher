@@ -52,12 +52,24 @@ def get_build_command(profile, target_system):
     return f"dotnet publish -c Release -r {target_system} {config['args']}"
 
 
+# 符号文件扩展名列表
+SYMBOL_FILE_EXTENSIONS = [
+    '.pdb',    # Windows符号文件
+    '.dbg',    # Linux符号文件
+    '.dSYM',   # macOS符号文件
+    '.dwarf',  # DWARF调试信息文件
+    '.sym'     # 通用符号文件
+]
+
 def clean_publish_dir(publish_dir):
-    """清理发布目录，移除PDB文件"""
+    """清理发布目录，移除所有平台的符号文件"""
     for root, _, files in os.walk(publish_dir):
         for file in files:
-            if file.endswith('.pdb'):
-                os.remove(os.path.join(root, file))
+            # 检查文件是否为任何已知的符号文件类型
+            if any(file.endswith(ext) for ext in SYMBOL_FILE_EXTENSIONS):
+                file_path = os.path.join(root, file)
+                print(f"移除符号文件: {file_path}")
+                os.remove(file_path)
 
 
 def create_zip(source_dir, output_file):
