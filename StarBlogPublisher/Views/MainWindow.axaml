@@ -109,7 +109,7 @@
                 <Border Grid.Row="0"
                         Classes="Card"
                         Background="{DynamicResource SystemAltHighColor}">
-                    <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="10">
+                    <Grid RowDefinitions="Auto,Auto,*" Margin="10">
                         <TextBlock Grid.Row="0" Margin="5"
                                    Text="文章信息" FontWeight="Bold" FontSize="16" />
 
@@ -137,52 +137,80 @@
                                      Watermark="请输入文章标题" />
                         </StackPanel>
 
-                        <!-- 说明输入 -->
-                        <StackPanel Grid.Row="2" Spacing="5" Margin="5">
-                            <Grid ColumnDefinitions="Auto,*,Auto">
-                                <TextBlock Grid.Column="0" Text="说明" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                <Button Grid.Column="2"
-                                        Content="🔄 重新生成"
-                                        ToolTip.Tip="使用AI重新生成文章简介"
-                                        Command="{Binding RegenerateDescriptionCommand}"
-                                        IsVisible="{Binding IsAIEnabled}"
-                                        Classes="IconButton"
-                                        Padding="5,2" />
-                            </Grid>
-                            <TextBox Text="{Binding ArticleDescription}"
-                                     Height="60"
-                                     AcceptsReturn="True"
-                                     TextWrapping="Wrap"
-                                     Watermark="请输入文章说明" />
-                        </StackPanel>
+                        <!-- 说明和分类区域（左右两栏） -->
+                        <Grid Grid.Row="2" ColumnDefinitions="*,*" Margin="5">
+                            <!-- 左侧 -->
+                            <Grid Grid.Row="0" Grid.Column="0" RowDefinitions="*,Auto">
+                                <!-- 左侧：说明输入 -->
+                                <Grid Grid.Row="0" RowDefinitions="Auto,*" Margin="0,0,5,0">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,5">
+                                        <TextBlock Grid.Column="0" Text="说明" FontWeight="SemiBold"
+                                                   VerticalAlignment="Center" />
+                                        <Button Grid.Column="2"
+                                                Content="🔄 重新生成"
+                                                ToolTip.Tip="使用AI重新生成文章简介"
+                                                Command="{Binding RegenerateDescriptionCommand}"
+                                                IsVisible="{Binding IsAIEnabled}"
+                                                Classes="IconButton"
+                                                Padding="5,2" />
+                                    </Grid>
+                                    <TextBox Grid.Row="1"
+                                             Text="{Binding ArticleDescription}"
+                                             AcceptsReturn="True"
+                                             TextWrapping="Wrap"
+                                             Watermark="请输入文章说明" />
+                                </Grid>
 
-                        <!-- 分类选择 -->
-                        <Grid Grid.Row="3" RowDefinitions="Auto,*" Margin="5"
-                              IsVisible="{Binding IsLoggedIn}">
-                            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="0,0,0,5">
-                                <TextBlock Grid.Column="0" Text="分类" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                <Button Grid.Column="2" Content="➕" ToolTip.Tip="添加分类"
-                                        Command="{Binding ShowAddCategoryCommand}"
-                                        Classes="IconButton" Padding="5,2"
-                                        Margin="0,0,5,0" />
-                                <Button Grid.Column="3" Content="☁️" ToolTip.Tip="查看词云"
-                                        Command="{Binding ShowWordCloudCommand}"
-                                        Classes="IconButton" Padding="5,2"
-                                        Margin="0,0,5,0" />
-                                <Button Grid.Column="4" Content="🔄" ToolTip.Tip="刷新分类"
-                                        Command="{Binding RefreshCategoriesCommand}"
-                                        Classes="IconButton" Padding="5,2" />
+                                <!-- Slug输入 -->
+                                <StackPanel Grid.Row="1" Spacing="5" Margin="0,5,5,0">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <TextBlock Grid.Column="0" Text="Slug" FontWeight="SemiBold"
+                                                   VerticalAlignment="Center" />
+                                        <Button Grid.Column="2"
+                                                Content="🔄 生成"
+                                                ToolTip.Tip="使用AI生成文章Slug"
+                                                Command="{Binding GenerateSlugCommand}"
+                                                IsVisible="{Binding IsAIEnabled}"
+                                                Classes="IconButton"
+                                                Padding="5,2" />
+                                    </Grid>
+                                    <TextBox Text="{Binding ArticleSlug}"
+                                             Watermark="用于URL的文章标识（如：my-first-article）" />
+                                </StackPanel>
                             </Grid>
-                            <TreeView Grid.Row="1"
-                                      MinHeight="100"
-                                      ItemsSource="{Binding Categories}"
-                                      SelectedItem="{Binding SelectedCategory}">
-                                <TreeView.ItemTemplate>
-                                    <TreeDataTemplate ItemsSource="{Binding Nodes}">
-                                        <TextBlock Text="{Binding Text}" />
-                                    </TreeDataTemplate>
-                                </TreeView.ItemTemplate>
-                            </TreeView>
+
+                            <!-- 右侧：分类选择 -->
+                            <Grid Grid.Column="1" RowDefinitions="Auto,*" Margin="5,0,0,0"
+                                  IsVisible="{Binding IsLoggedIn}">
+                                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="0,0,0,5">
+                                    <TextBlock Grid.Column="0" Text="分类" FontWeight="SemiBold"
+                                               VerticalAlignment="Center" />
+                                    <Button Grid.Column="2" Content="➕" ToolTip.Tip="添加分类"
+                                            Command="{Binding ShowAddCategoryCommand}"
+                                            Classes="IconButton" Padding="5,2"
+                                            Margin="0,0,5,0" />
+                                    <Button Grid.Column="3" Content="☁️" ToolTip.Tip="查看词云"
+                                            Command="{Binding ShowWordCloudCommand}"
+                                            Classes="IconButton" Padding="5,2"
+                                            Margin="0,0,5,0" />
+                                    <Button Grid.Column="4" Content="🔄" ToolTip.Tip="刷新分类"
+                                            Command="{Binding RefreshCategoriesCommand}"
+                                            Classes="IconButton" Padding="5,2" />
+                                </Grid>
+                                <TreeView Grid.Row="1"
+                                          MinHeight="100"
+                                          BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                                          BorderThickness="2"
+                                          CornerRadius="4"
+                                          ItemsSource="{Binding Categories}"
+                                          SelectedItem="{Binding SelectedCategory}">
+                                    <TreeView.ItemTemplate>
+                                        <TreeDataTemplate ItemsSource="{Binding Nodes}">
+                                            <TextBlock Text="{Binding Text}" />
+                                        </TreeDataTemplate>
+                                    </TreeView.ItemTemplate>
+                                </TreeView>
+                            </Grid>
                         </Grid>
                     </Grid>
                 </Border>

@@ -71,6 +71,7 @@ public partial class MainWindowViewModel : ViewModelBase {
     // 文章标题和描述
     [ObservableProperty] private string _articleTitle = string.Empty;
     [ObservableProperty] private string _articleDescription = string.Empty;
+    [ObservableProperty] private string _articleSlug = string.Empty;
 
     // 是否正在润色标题
     [ObservableProperty] private bool _isRefiningTitle = false;
@@ -137,11 +138,13 @@ public partial class MainWindowViewModel : ViewModelBase {
                 // 保存当前文件路径
                 _currentFilePath = file.Path.LocalPath;
 
-                // 如果AI功能已开启，使用AI生成文章简介
+                // 如果AI功能已开启，使用AI生成相关信息
                 if (AppSettings.Instance.EnableAI) {
-                    // 调用RegenerateDescription方法生成简介
+                    // 生成简介
                     await RegenerateDescription();
-                    StatusMessage = $"已加载文件: {file.Name}（AI已生成简介）";
+                    // 生成Slug
+                    await GenerateSlug();
+                    StatusMessage = $"已加载文件: {file.Name}（AI已生成简介和Slug）";
                 }
                 else {
                     ArticleDescription = ArticleContent.Limit(100);
@@ -306,7 +309,8 @@ public partial class MainWindowViewModel : ViewModelBase {
             Title = blogPost.Title,
             Content = blogPost.Content,
             Summary = blogPost.Summary,
-            CategoryId = SelectedCategory!.Id
+            CategoryId = SelectedCategory!.Id,
+            Slug = string.IsNullOrWhiteSpace(ArticleSlug) ? null : ArticleSlug
         });
     }
 
@@ -347,7 +351,7 @@ public partial class MainWindowViewModel : ViewModelBase {
             Summary = blogPost.Summary,
             CategoryId = SelectedCategory!.Id,
             IsPublish = true,
-            Slug = createdPost.Slug,
+            Slug = string.IsNullOrWhiteSpace(ArticleSlug) ? createdPost.Slug : ArticleSlug,
             Status = createdPost.Status
         };
 
@@ -557,7 +561,7 @@ public partial class MainWindowViewModel : ViewModelBase {
                 ArticleTitle = refinedTitle.ToString();
             }
 
-            ArticleTitle = ArticleTitle.Trim('《', '》', '\"', '“', '”', '\n');
+            ArticleTitle = ArticleTitle.Trim('《', '》', '\"', '"', '"', '\n');
 
             StatusMessage = "AI已润色文章标题";
         }
@@ -567,5 +571,54 @@ public partial class MainWindowViewModel : ViewModelBase {
         finally {
             IsRefiningTitle = false;
         }
+    }
+    
+    // 生成文章Slug命令
+    [RelayCommand]
+    private async Task GenerateSlug() {
+        if (!IsAIEnabled || string.IsNullOrEmpty(ArticleTitle)) {
+            StatusMessage = "无法生成Slug：AI功能未启用或文章标题为空";
+            return;
+        }
+
+        StatusMessage = "正在使用AI生成文章Slug...";
+        try {
+            var prompt = $"请为标题为\"{ArticleTitle}\"的文章生成一个合适的URL友好的slug。要求：\n1. 全部小写字母\n2. 使用连字符'-'代替空格\n3. 只包含字母、数字和连字符\n4. 不超过50个字符\n5. 保留标题中的英文关键词，中文需翻译成英文\n6. 简洁且有意义\n仅返回slug，不要有任何解释或其他内容";
+            
+            var textStreamAsync = AiService.Instance.GenerateTextStreamAsync(prompt);
+            var generatedSlug = new System.Text.StringBuilder();
+
+            await foreach (var update in textStreamAsync) {
+                generatedSlug.Append(update.Text);
+                ArticleSlug = generatedSlug.ToString().Trim();
+            }
+
+            // 清理slug，确保符合规范
+            ArticleSlug = CleanSlug(ArticleSlug);
+            
+            StatusMessage = "AI已生成文章Slug";
+        }
+        catch (Exception ex) {
+            StatusMessage = $"AI生成Slug失败: {ex.Message}";
+        }
+    }
+    
+    /// <summary>
+    /// 清理Slug，确保符合URL友好格式
+    /// </summary>
+    /// <param name="slug">原始slug</param>
+    /// <returns>清理后的slug</returns>
+    private string CleanSlug(string slug) {
+        // 移除非字母数字连字符的字符
+        var cleaned = System.Text.RegularExpressions.Regex.Replace(slug, @"[^a-z0-9\-]", "");
+        // 替换连续的连字符为单个连字符
+        cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"\-+", "-");
+        // 移除开头和结尾的连字符
+        cleaned = cleaned.Trim('-');
+        // 确保不超过50个字符
+        if (cleaned.Length > 50) {
+            cleaned = cleaned.Substring(0, 50).TrimEnd('-');
+        }
+        return cleaned;
     }
 }
