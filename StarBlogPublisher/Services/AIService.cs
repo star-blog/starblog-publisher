@@ -3,6 +3,7 @@ using System.ClientModel;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging;
 using OpenAI;
 
 namespace StarBlogPublisher.Services;
@@ -13,7 +14,7 @@ namespace StarBlogPublisher.Services;
 /// </summary>
 public class AiService {
     private static AiService? _instance;
-    private readonly IChatClient _chatClient;
+    private IChatClient _chatClient;
 
     public static AiService Instance {
         get {
@@ -23,20 +24,31 @@ public class AiService {
     }
 
     private AiService() {
-        var settings = AppSettings.Instance;
+        InitializeClient();
+        
+        // 订阅设置变更事件
+        AppSettings.Instance.SettingsChanged += (_, _) => {
+            InitializeClient();
+        };
+    }
 
+    private void InitializeClient() {
+        var settings = AppSettings.Instance;
+        
         var provider = AIProviderInfo.GetProvider(settings.AIProvider);
         var key = settings.AIKey;
         var model = settings.AIModel;
-
+        
         if (provider == null) {
             throw new ApplicationException("AI provider not found");
         }
-
-        // 根据配置的AI提供商初始化相应的服务
+        
         var endpoint = settings.AIProvider.ToLower() == "custom"
             ? new Uri(settings.AIApiBase)
             : new Uri(provider.DefaultApiBase);
+
+        Console.WriteLine($"InitializeChatClient, endpoint: {endpoint}");
+        
         _chatClient = new OpenAIClient(
             new ApiKeyCredential(key),
             new OpenAIClientOptions {
