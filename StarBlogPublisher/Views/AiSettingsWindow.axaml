@@ -79,6 +79,11 @@
                                               Text="{Binding AIModel}" 
                                               ItemsSource="{Binding AvailableModels}"
                                               IsEnabled="{Binding EnableAI}"
+                                              MinimumPopulateDelay="0"
+                                              MinimumPrefixLength="0"
+                                              IsTextCompletionEnabled="True"
+                                              FilterMode="ContainsOrdinal"
+                                              GotFocus="AutoCompleteBox_GotFocus"
                                               HorizontalAlignment="Stretch" />
                                     <ProgressBar Grid.Column="1" 
                                                  Margin="5,0,0,0"
