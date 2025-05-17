@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading.Tasks;
+using FluentResults;
 
 namespace StarBlogPublisher.Services;
 
@@ -73,62 +74,66 @@ public class AIProviderInfo {
 
     public static List<string> GetProviderNames() =>
         Providers.ConvertAll(p => p.Name);
-        
+
     /// <summary>
     /// 获取模型列表
     /// </summary>
     /// <param name="apiKey">API密钥</param>
     /// <param name="apiBase">API基础地址</param>
-    /// <returns>模型列表</returns>
-    public async Task<List<string>> GetModelsAsync(string apiKey, string apiBase = null) {
-        if (string.IsNullOrEmpty(apiKey)) {
-            return DefaultModels;
-        }
-        
+    /// <returns>包含模型列表和状态的元组：(模型列表, 是否成功, 错误信息)</returns>
+    public async Task<(List<string> Models, bool Success, string ErrorMessage)> GetModelsAsync(string apiKey, string apiBase = null) {
         try {
+            // 如果未提供API密钥，直接返回默认模型
+            if (string.IsNullOrEmpty(apiKey)) {
+                return (DefaultModels, false, "未提供API密钥");
+            }
+
             var baseUrl = !string.IsNullOrEmpty(apiBase) ? apiBase : DefaultApiBase;
-            
+
             // 创建HttpClient并配置代理
             var handler = new HttpClientHandler();
             var settings = AppSettings.Instance;
-            
+
             // 如果启用了代理，配置代理
             if (settings.UseProxy && !string.IsNullOrEmpty(settings.ProxyHost) && settings.ProxyPort > 0) {
                 var proxyUri = $"{settings.ProxyType}://{settings.ProxyHost}:{settings.ProxyPort}";
                 handler.Proxy = new WebProxy(proxyUri);
                 handler.UseProxy = true;
             }
-            
+
             using var client = new HttpClient(handler) {
                 Timeout = TimeSpan.FromSeconds(settings.ProxyTimeout > 0 ? settings.ProxyTimeout : 30)
             };
-            
+
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-            
+
             var response = await client.GetAsync($"{baseUrl.TrimEnd('/')}/models");
-            
+
             if (response.IsSuccessStatusCode) {
                 var content = await response.Content.ReadAsStringAsync();
                 var modelsData = JsonSerializer.Deserialize<ModelsResponse>(content);
-                
+
                 if (modelsData?.Data != null && modelsData.Data.Count > 0) {
-                    return modelsData.Data.ConvertAll(m => m.Id);
+                    var modelList = modelsData.Data.ConvertAll(m => m.Id);
+                    return (modelList, true, string.Empty);
                 }
             }
-            
-            return DefaultModels;
+
+            // API调用成功但返回失败状态码或无数据
+            string errorMessage = $"获取模型列表失败：{response.ReasonPhrase}";
+            return (DefaultModels, false, errorMessage);
         }
         catch (Exception ex) {
-            Console.WriteLine($"获取模型列表失败: {ex.Message}");
-            // 如果API调用失败，返回默认模型列表
-            return DefaultModels;
+            string errorMessage = $"获取模型列表报错：{ex.Message}";
+            Console.WriteLine(errorMessage);
+            return (DefaultModels, false, errorMessage);
         }
     }
-    
+
     private class ModelsResponse {
         public List<ModelInfo> Data { get; set; }
     }
-    
+
     private class ModelInfo {
         public string Id { get; set; }
     }

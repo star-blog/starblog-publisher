@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -20,6 +21,7 @@ public partial class AiSettingsWindowViewModel : ViewModelBase {
     private bool _isLoadingModels;
     private List<AIProviderInfo> _aiProviders = AIProviderInfo.GetProviders();
     private ObservableCollection<string> _availableModels = new();
+    private string _statusMessage = "准备就绪";
 
     public bool EnableAI {
         get => _enableAI;
@@ -72,6 +74,11 @@ public partial class AiSettingsWindowViewModel : ViewModelBase {
     public ObservableCollection<string> AvailableModels {
         get => _availableModels;
         set => SetProperty(ref _availableModels, value);
+    }
+    
+    public string StatusMessage {
+        get => _statusMessage;
+        set => SetProperty(ref _statusMessage, value);
     }
 
     private AIProviderInfo? _currentProvider;
@@ -130,29 +137,37 @@ public partial class AiSettingsWindowViewModel : ViewModelBase {
         if (CurrentProvider == null) return;
         
         IsLoadingModels = true;
+        StatusMessage = "正在加载模型列表...";
         
-        try {
-            // 清空当前模型列表
-            AvailableModels.Clear();
-            
-            // 获取模型列表
-            var apiBase = IsCustomProvider ? AIApiBase : CurrentProvider.DefaultApiBase;
-            var models = await CurrentProvider.GetModelsAsync(AIKey, apiBase);
-            
-            // 更新模型列表
-            foreach (var model in models) {
-                AvailableModels.Add(model);
-            }
-            
-            // 如果当前选择的模型不在列表中，且列表不为空
-            if (!string.IsNullOrEmpty(AIModel) && !AvailableModels.Contains(AIModel) && AvailableModels.Count > 0) {
-                // 如果当前所选模型不在列表中，可以将其添加到列表末尾
-                AvailableModels.Add(AIModel);
-            }
+        // 清空当前模型列表
+        AvailableModels.Clear();
+        
+        // 获取模型列表
+        var apiBase = IsCustomProvider ? AIApiBase : CurrentProvider.DefaultApiBase;
+        
+        var result = await CurrentProvider.GetModelsAsync(AIKey, apiBase);
+        var models = result.Models;
+        
+        // 更新模型列表
+        foreach (var model in models) {
+            AvailableModels.Add(model);
         }
-        finally {
-            IsLoadingModels = false;
+        
+        // 如果当前选择的模型不在列表中，且列表不为空
+        if (!string.IsNullOrEmpty(AIModel) && !AvailableModels.Contains(AIModel) && AvailableModels.Count > 0) {
+            // 如果当前所选模型不在列表中，可以将其添加到列表末尾
+            AvailableModels.Add(AIModel);
         }
+        
+        // 根据成功状态设置消息
+        if (result.Success) {
+            StatusMessage = $"已加载 {AvailableModels.Count} 个模型";
+        } else {
+            StatusMessage = $"获取模型列表失败: {result.ErrorMessage}，\n已加载默认模型列表";
+            Console.WriteLine($"获取模型列表失败: {result.ErrorMessage}");
+        }
+        
+        IsLoadingModels = false;
     }
 
     [RelayCommand]
