@@ -9,7 +9,7 @@
         x:DataType="vm:AboutWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="关于 StarBlog Publisher"
-        Width="450" Height="500"
+        Width="450" Height="750"
         WindowStartupLocation="CenterOwner"
         CanResize="False">
 

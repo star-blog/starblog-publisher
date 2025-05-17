@@ -4,31 +4,38 @@
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-StarBlog Publisher 是一款专为 [StarBlog博客系统](https://github.com/Deali-Axy/StarBlog) 设计的专业文章发布工具，提供比传统打包上传更便捷的文章发布方式。
+StarBlog Publisher 是一款专为 [StarBlog博客系统](https://github.com/Deali-Axy/StarBlog) 设计的专业文章发布工具，它彻底告别传统的打包上传，带来更高效、更友好的文章发布体验。
 
-它支持Markdown格式文章的预览和发布，提供直观的用户界面，让您能够轻松管理和发布博客内容。
+✨ 核心亮点：
 
-基于C#和.NET 8.0构建，充分利用Microsoft.Extensions.AI框架，集成了多种领先的AI大模型（包括OpenAI的ChatGPT、Anthropic的Claude和DeepSeek等），为内容创作提供智能辅助功能。
+* Markdown 文章即写即发： 编辑、预览和发布一气呵成。
+* 直观界面： 简洁易用，内容管理一目了然。
+* AI 智能创作助手： 内置 OpenAI ChatGPT、Anthropic Claude、Google Gemini、DeepSeek 等主流大模型，助你灵感不断，写作更高效。
+* 全平台兼容： 基于 C# 和 .NET 8.0，支持 Windows、macOS 和 Linux，体验一致。
+* 现代 AI 深度集成： 利用 Microsoft.Extensions.AI，驱动新一代内容创作体验。
 
-跨平台设计让您可以在Windows、macOS和Linux上享受一致的体验，展现了.NET生态系统对现代AI应用开发的强大支持。
+让内容创作更轻松高效，StarBlog Publisher 是你值得信赖的博客发布助手！
+
 
 ## 界面预览
 
-### 主界面（浅色模式）
+### 主界面
 
-![主界面-浅色模式](docs/images/主界面-浅色模式.jpg)
-
-### 主界面（深色模式）
-
-![主界面-深色模式](docs/images/主界面-深色模式.jpg)
+| 主界面（浅色模式）                                  | 主界面（深色模式）                                  |
+| --------------------------------------------------- | --------------------------------------------------- |
+| ![主界面-浅色模式](docs/images/主界面-浅色模式.jpg) | ![主界面-深色模式](docs/images/主界面-深色模式.jpg) |
 
 ### 设置界面
 
-![设置界面](docs/images/设置界面.jpg)
+| 主设置                                | AI设置                              |
+| ------------------------------------- | ----------------------------------- |
+| ![设置界面](docs/images/设置界面.jpg) | ![设置界面](docs/images/AI设置.jpg) |
 
-### 分类词云
+### 其他功能
 
-![分类词云](docs/images/分类词云.png)
+| 分类词云                              | 关于                              |
+| ------------------------------------- | --------------------------------- |
+| ![分类词云](docs/images/分类词云.jpg) | ![分类词云](docs/images/关于.jpg) |
 
 ## 解决Markdown写作的痛点
 
@@ -55,27 +62,30 @@ StarBlog Publisher 是一款专为 [StarBlog博客系统](https://github.com/Dea
 ## 功能特点
 
 - **Markdown支持**：完整支持Markdown格式，包括图片、链接、代码块等
-- **图片上传**：自动处理Markdown中的本地图片，上传至博客服务器
+- **图片上传**：自动处理Markdown中的本地图片，上传至StarBlog服务实例
 - **文章预览**：实时预览Markdown渲染效果
 - **文章管理**：支持文章的创建、编辑、发布和删除
-- **分类管理**：支持对文章进行分类
-- **AI辅助**：集成多种AI模型（OpenAI、Claude、DeepSeek等），提供基于大模型的文章标题润色、文章总结和简介自动生成功能，大幅提升内容创作效率
+- **分类管理**：支持按树状图显示StarBlog文章分类，并支持添加分类
+- **AI辅助**：集成多种AI模型（OpenAI、Claude、DeepSeek等），提供基于大模型的文章标题润色、文章总结、Slug/简介自动生成功能，大幅提升内容创作效率
 - **词云生成**：可视化展示博客内容关键词
 - **主题切换**：支持亮色/暗色主题切换
 - **代理设置**：支持配置HTTP代理，解决网络访问问题
-- **自定义后端**：可配置自定义的博客后端API地址
+- **自定义后端**：可配置自定义的StarBlog博客后端API地址
 
 ## 技术栈
 
-- **UI框架**：Avalonia 11.2.1
+- **UI框架**：Avalonia 11.2.6
 - **开发语言**：C# (.NET 8.0)
 - **MVVM框架**：CommunityToolkit.Mvvm 8.2.1 + ReactiveUI 19.5.41
-- **Markdown处理**：Markdig 0.40.0 + Markdown.Avalonia 11.0.3
-- **HTTP客户端**：Refit 8.0.0
-- **AI集成**：Microsoft.Extensions.AI 9.3.0
+- **Markdown处理**：Markdig 0.40.0 + Markdown.Avalonia 11.0.3-a1
+- **HTTP客户端**：Refit 8.0.0 + Refit.Newtonsoft.Json 8.0.0
+- **AI集成**：Microsoft.Extensions.AI 9.3.0-preview.1.25161.3
 - **对话框**：MessageBox.Avalonia 3.1.5
-- **词云生成**：Sdcb.WordCloud
-- **加载中指示器**：LoadingIndicators.Avalonia
+- **词云生成**：Sdcb.WordCloud 2.0.1
+- **加载中指示器**：LoadingIndicators.Avalonia 11.0.11.1
+- **JSON处理**：Newtonsoft.Json 13.0.3
+- **工具库**：CodeLab.Share 1.4.1
+- **安全加密**：System.Security.Cryptography.ProtectedData 9.0.3
 
 ## 安装与使用
 
