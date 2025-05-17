@@ -5,7 +5,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading.Tasks;
-using FluentResults;
 
 namespace StarBlogPublisher.Services;
 
@@ -18,24 +17,56 @@ public class AIProviderInfo {
     public List<string> DefaultModels { get; set; } = new List<string>();
 
     private static readonly List<AIProviderInfo> Providers = [
+        // https://platform.openai.com/docs/pricing
         new AIProviderInfo {
             Name = "openai",
             DisplayName = "OpenAI",
             Description = "OpenAI的GPT系列模型，包括GPT-4o和GPT-o1等",
             DefaultApiBase = "https://api.openai.com/v1",
             DefaultModel = "gpt-4o",
-            DefaultModels = ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"]
+            DefaultModels = [
+                "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", 
+                "gpt-4.5-preview", 
+                "gpt-4o", "gpt-4o-mini", 
+                "gpt-4o-audio-preview", "gpt-4o-realtime-preview",
+                "gpt-4o-mini-audio-preview", "gpt-4o-mini-realtime-preview",
+                "o1", "o1-pro", "o1-mini",
+                "o3", "o3-mini",
+                "o4-mini"
+            ]
         },
 
+        // https://docs.anthropic.com/en/docs/about-claude/pricing
         new AIProviderInfo {
             Name = "claude",
             DisplayName = "Claude",
             Description = "Anthropic的Claude系列模型，包括Claude 3.5和Claude 3.7等",
             DefaultApiBase = "https://api.anthropic.com",
             DefaultModel = "claude-3.5-sonnet",
-            DefaultModels = ["claude-3.5-sonnet", "claude-3-haiku", "claude-3-opus", "claude-3.7-sonnet"]
+            DefaultModels = ["claude-3.7-sonnet", "claude-3.5-sonnet", "claude-3-haiku", "claude-3-opus"]
         },
 
+        // https://docs.x.ai/docs/models#models-and-pricing
+        new AIProviderInfo {
+            Name = "grok",
+            DisplayName = "Grok",
+            Description = "X公司(原Twitter)开发的Grok AI模型",
+            DefaultApiBase = "https://api.grok.x.ai/v1",
+            DefaultModel = "grok-1",
+            DefaultModels = ["grok-3-latest", "grok-3-fast-latest", "grok-3-mini-latest", "grok-3-mini-fast-latest"]
+        },
+
+        // https://ai.google.dev/gemini-api/docs/models
+        new AIProviderInfo {
+            Name = "gemini",
+            DisplayName = "Google Gemini",
+            Description = "Google的Gemini系列模型，包括Gemini Pro和Gemini Ultra等",
+            DefaultApiBase = "https://generativelanguage.googleapis.com",
+            DefaultModel = "gemini-1.5-pro",
+            DefaultModels = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"]
+        },
+
+        // https://api-docs.deepseek.com/zh-cn/quick_start/pricing
         new AIProviderInfo {
             Name = "deepseek",
             DisplayName = "DeepSeek",
@@ -45,13 +76,14 @@ public class AIProviderInfo {
             DefaultModels = ["deepseek-chat", "deepseek-coder"]
         },
 
+        // https://open.bigmodel.cn/console/modelcenter/square
         new AIProviderInfo {
             Name = "zhipu",
             DisplayName = "清华智谱AI",
             Description = "清华智谱的AI模型，可以申请完全免费模型接口，具有代表性的模型是 ChatGLM",
             DefaultApiBase = "https://open.bigmodel.cn/api/paas/v4",
             DefaultModel = "glm-4-flash",
-            DefaultModels = ["glm-4-flash", "glm-4", "glm-3-turbo"]
+            DefaultModels = ["glm-z1-flash", "glm-4-flash-250414", "glm-4-flashx", "glm-4-flash", "glm-4v-flash"]
         },
 
         new AIProviderInfo {
@@ -81,7 +113,8 @@ public class AIProviderInfo {
     /// <param name="apiKey">API密钥</param>
     /// <param name="apiBase">API基础地址</param>
     /// <returns>包含模型列表和状态的元组：(模型列表, 是否成功, 错误信息)</returns>
-    public async Task<(List<string> Models, bool Success, string ErrorMessage)> GetModelsAsync(string apiKey, string apiBase = null) {
+    public async Task<(List<string> Models, bool Success, string ErrorMessage)> GetModelsAsync(string apiKey,
+        string apiBase = null) {
         try {
             // 如果未提供API密钥，直接返回默认模型
             if (string.IsNullOrEmpty(apiKey)) {
