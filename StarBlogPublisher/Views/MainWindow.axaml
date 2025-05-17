@@ -57,6 +57,9 @@
                     <Button Content="⚙️ 设置" Padding="10"
                             Classes="IconButton"
                             Command="{Binding ShowSettingsCommand}" />
+                    <Button Content="🤖 AI配置" Padding="10"
+                            Classes="IconButton"
+                            Command="{Binding ShowAiSettingsCommand}" />
                     <Button Content="ℹ️ 关于" Padding="10"
                             Classes="IconButton"
                             Command="{Binding ShowAboutCommand}" />

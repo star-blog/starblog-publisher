@@ -379,6 +379,15 @@ public partial class MainWindowViewModel : ViewModelBase {
     }
 
     [RelayCommand]
+    private async Task ShowAiSettings() {
+        var aiSettingsWindow = new AiSettingsWindow();
+        await aiSettingsWindow.ShowDialog(App.MainWindow);
+        
+        // 更新AI功能状态
+        IsAIEnabled = AppSettings.Instance.EnableAI;
+    }
+
+    [RelayCommand]
     private async Task ShowSettings() {
         var settingsWindow = new SettingsWindow();
         await settingsWindow.ShowDialog(App.MainWindow);

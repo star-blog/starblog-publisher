@@ -1,0 +1,120 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:StarBlogPublisher.ViewModels"
+        xmlns:converters="clr-namespace:StarBlogPublisher.Converters"
+        mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="600"
+        x:Class="StarBlogPublisher.Views.AiSettingsWindow"
+        x:DataType="vm:AiSettingsWindowViewModel"
+        Title="AI设置"
+        Width="500" Height="600"
+        WindowStartupLocation="CenterOwner">
+
+    <Design.DataContext>
+        <vm:AiSettingsWindowViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="20">
+        <!-- 标题 -->
+        <TextBlock Grid.Row="0" Text="AI设置" FontSize="24" FontWeight="Bold" Margin="0,0,0,20" />
+
+        <!-- 主要内容区域 -->
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="20">
+                <!-- AI设置卡片 -->
+                <Border Classes="Card">
+                    <StackPanel Spacing="15" Margin="15">
+                        <TextBlock Text="基本设置" FontWeight="Bold" FontSize="16" />
+
+                        <StackPanel Spacing="10">
+                            <ToggleSwitch OnContent="启用AI" OffContent="禁用AI"
+                                          IsChecked="{Binding EnableAI}" />
+
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="选择AI提供商" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                                <ComboBox SelectedValue="{Binding AIProvider}"
+                                          SelectedValueBinding="{Binding Name}"
+                                          ItemsSource="{Binding AIProviders}"
+                                          IsEnabled="{Binding EnableAI}"
+                                          Width="200"
+                                          HorizontalAlignment="Left">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding DisplayName}"
+                                                       ToolTip.Tip="{Binding Description}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="API Key" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                                <Grid ColumnDefinitions="*,Auto,Auto">
+                                    <TextBox Grid.Column="0"
+                                             Watermark="输入对应提供商的API密钥"
+                                             PasswordChar="{Binding ShowAIKey, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
+                                             Text="{Binding AIKey}"
+                                             IsEnabled="{Binding EnableAI}" />
+                                    <Button Grid.Column="1"
+                                            Margin="5,0,0,0"
+                                            Command="{Binding ToggleAIKeyCommand}"
+                                            Content="{Binding ShowAIKey, Converter={x:Static converters:BooleanToStringConverter.Instance}, ConverterParameter=👁️‍🗨️}"
+                                            Classes="Primary"
+                                            IsEnabled="{Binding EnableAI}" />
+                                    <Button Grid.Column="2"
+                                            Margin="5,0,0,0"
+                                            Command="{Binding TestConnectionCommand}"
+                                            Content="测试"
+                                            ToolTip.Tip="测试API连接并加载模型列表"
+                                            Classes="Primary"
+                                            IsEnabled="{Binding EnableAI}" />
+                                </Grid>
+                            </StackPanel>
+
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="模型名称" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <AutoCompleteBox Grid.Column="0"
+                                              Text="{Binding AIModel}" 
+                                              ItemsSource="{Binding AvailableModels}"
+                                              IsEnabled="{Binding EnableAI}"
+                                              HorizontalAlignment="Stretch" />
+                                    <ProgressBar Grid.Column="1" 
+                                                 Margin="5,0,0,0"
+                                                 IsIndeterminate="True"
+                                                 IsVisible="{Binding IsLoadingModels}"
+                                                 Width="20"
+                                                 Height="20" />
+                                </Grid>
+                            </StackPanel>
+                            
+                            <StackPanel Spacing="5" IsVisible="{Binding IsCustomProvider}">
+                                <TextBlock Text="API Base URL" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                                <TextBox Watermark="API Base URL (仅自定义提供商需要)"
+                                         Text="{Binding AIApiBase}"
+                                         IsEnabled="{Binding IsCustomProvider, Mode=OneWay}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="Card">
+                    <StackPanel Spacing="15" Margin="15">
+                        <TextBlock Text="提示" FontWeight="Bold" FontSize="16" />
+                        <TextBlock Text="点击测试按钮可以根据提供商和API密钥自动加载可用的模型列表。如果加载失败，将显示默认的模型列表。" 
+                                  TextWrapping="Wrap" />
+                        <TextBlock Text="模型名称支持手动输入，如果API支持，但未在列表中显示的模型，您可以直接输入名称。" 
+                                  TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- 底部按钮 -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,20,0,0">
+            <Button Content="取消" Command="{Binding CancelCommand}" />
+            <Button Content="保存" Command="{Binding SaveCommand}" Classes="Primary" />
+        </StackPanel>
+    </Grid>
+</Window> 

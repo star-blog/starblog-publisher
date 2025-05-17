@@ -4,6 +4,7 @@ using System.Windows.Input;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.Input;
 using StarBlogPublisher.Services;
+using StarBlogPublisher.Views;
 
 namespace StarBlogPublisher.ViewModels;
 
@@ -19,13 +20,6 @@ public partial class SettingsWindowViewModel : ViewModelBase {
     private string _password = string.Empty;
     private int _backendTimeout;
     private bool _showPassword;
-    private bool _showAIKey;
-    private bool _enableAI;
-    private string _aiProvider = "openai";
-    private string _aiKey = string.Empty;
-    private string _aiModel = string.Empty;
-    private string _aiApiBase = string.Empty;
-    private List<AIProviderInfo> _aiProviders = AIProviderInfo.GetProviders();
 
     public bool UseProxy {
         get => _useProxy;
@@ -82,83 +76,9 @@ public partial class SettingsWindowViewModel : ViewModelBase {
         set => SetProperty(ref _showPassword, value);
     }
 
-    public bool ShowAIKey {
-        get => _showAIKey;
-        set => SetProperty(ref _showAIKey, value);
-    }
-
-    public bool EnableAI {
-        get => _enableAI;
-        set => SetProperty(ref _enableAI, value);
-    }
-
-    public string AIProvider {
-        get => _aiProvider;
-        set {
-            var provider = AIProviders.FirstOrDefault(p => p.DisplayName == value);
-            var providerName = provider?.Name ?? value;
-            if (SetProperty(ref _aiProvider, providerName)) {
-                OnPropertyChanged(nameof(IsCustomProvider));
-                OnAIProviderChanged(providerName);
-            }
-        }
-    }
-
-    public List<AIProviderInfo> AIProviders {
-        get => _aiProviders;
-    }
-
-    public bool IsCustomProvider => AIProvider == "custom";
-
-    private AIProviderInfo? _currentProvider;
-
-    public AIProviderInfo? CurrentProvider {
-        get {
-            if (_currentProvider?.Name != AIProvider) {
-                _currentProvider = AIProviderInfo.GetProvider(AIProvider);
-            }
-
-            return _currentProvider;
-        }
-    }
-
-    public string AIKey {
-        get => _aiKey;
-        set => SetProperty(ref _aiKey, value);
-    }
-
-    public string AIModel {
-        get => _aiModel;
-        set => SetProperty(ref _aiModel, value);
-    }
-
-    public string AIApiBase {
-        get => _aiApiBase;
-        set => SetProperty(ref _aiApiBase, value);
-    }
-
-    private void OnAIProviderChanged(string value) {
-        if (CurrentProvider == null) return;
-
-        if (!IsCustomProvider) {
-            if (string.IsNullOrWhiteSpace(AIApiBase)) {
-                AIApiBase = CurrentProvider.DefaultApiBase;
-            }
-
-            if (string.IsNullOrWhiteSpace(AIKey)) {
-                AIModel = CurrentProvider.DefaultModel;
-            }
-        }
-    }
-
     [RelayCommand]
     private void TogglePassword() {
         ShowPassword = !ShowPassword;
-    }
-
-    [RelayCommand]
-    private void ToggleAIKey() {
-        ShowAIKey = !ShowAIKey;
     }
 
     public SettingsWindowViewModel() {
@@ -178,11 +98,6 @@ public partial class SettingsWindowViewModel : ViewModelBase {
         Username = settings.Username;
         Password = settings.Password;
         BackendTimeout = settings.BackendTimeout;
-        EnableAI = settings.EnableAI;
-        AIProvider = settings.AIProvider;
-        AIKey = settings.AIKey;
-        AIModel = settings.AIModel;
-        AIApiBase = settings.AIApiBase;
     }
 
     [RelayCommand]
@@ -199,11 +114,6 @@ public partial class SettingsWindowViewModel : ViewModelBase {
         settings.Username = Username;
         settings.Password = Password;
         settings.BackendTimeout = BackendTimeout;
-        settings.EnableAI = EnableAI;
-        settings.AIProvider = AIProvider;
-        settings.AIKey = AIKey;
-        settings.AIModel = AIModel;
-        settings.AIApiBase = AIApiBase;
 
         settings.Save();
         CloseWindow();
@@ -212,6 +122,14 @@ public partial class SettingsWindowViewModel : ViewModelBase {
     [RelayCommand]
     private void Cancel() {
         CloseWindow();
+    }
+    
+    [RelayCommand]
+    private void OpenAiSettings() {
+        if (View is Window ownerWindow) {
+            var aiSettingsWindow = new AiSettingsWindow();
+            aiSettingsWindow.ShowDialog(ownerWindow);
+        }
     }
 
     private void CloseWindow() {

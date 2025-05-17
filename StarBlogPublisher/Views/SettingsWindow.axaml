@@ -124,60 +124,13 @@
                 <Border Classes="Card">
                     <StackPanel Spacing="15" Margin="15">
                         <TextBlock Text="AI设置" FontWeight="Bold" FontSize="16" />
-
-                        <StackPanel Spacing="10">
-                            <ToggleSwitch OnContent="启用AI" OffContent="禁用AI"
-                                          IsChecked="{Binding EnableAI}" />
-
-                            <StackPanel Spacing="5">
-                                <TextBlock Text="选择AI提供商" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
-                                <ComboBox SelectedValue="{Binding AIProvider}"
-                                          SelectedValueBinding="{Binding Name}"
-                                          ItemsSource="{Binding AIProviders}"
-                                          IsEnabled="{Binding EnableAI}"
-                                          Width="200"
-                                          HorizontalAlignment="Left">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding DisplayName}"
-                                                       ToolTip.Tip="{Binding Description}" />
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
-                            </StackPanel>
-
-                            <StackPanel Spacing="5">
-                                <TextBlock Text="API Key" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <TextBox Grid.Column="0"
-                                             Watermark="输入对应提供商的API密钥"
-                                             PasswordChar="{Binding ShowAIKey, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
-                                             Text="{Binding AIKey}"
-                                             IsEnabled="{Binding EnableAI}" />
-                                    <Button Grid.Column="1"
-                                            Margin="5,0,0,0"
-                                            Command="{Binding ToggleAIKeyCommand}"
-                                            Content="{Binding ShowAIKey, Converter={x:Static converters:BooleanToStringConverter.Instance}, ConverterParameter=👁️‍🗨️}"
-                                            Classes="Primary"
-                                            IsEnabled="{Binding EnableAI}" />
-                                </Grid>
-                            </StackPanel>
-
-                            <StackPanel Spacing="5">
-                                <TextBlock Text="模型名称" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
-                                <TextBox Watermark="根据提供商填写对应的模型名称"
-                                         Text="{Binding AIModel}"
-                                         IsEnabled="{Binding EnableAI}"
-                                         ToolTip.Tip="切换AI提供商时会自动设置推荐的默认模型：&#x0a;OpenAI: gpt-4o&#x0a;Claude: claude-3.5-sonnet&#x0a;DeepSeek: deepseek-chat" />
-                            </StackPanel>
-                            
-                            <StackPanel Spacing="5" IsVisible="{Binding IsCustomProvider}">
-                                <TextBlock Text="API Base URL" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
-                                <TextBox Watermark="API Base URL (仅自定义提供商需要)"
-                                         Text="{Binding AIApiBase}"
-                                         IsEnabled="{Binding IsCustomProvider, Mode=OneWay}"/>
-                            </StackPanel>
-                        </StackPanel>
+                        <TextBlock Text="可以启用AI功能来辅助您编写博客内容、生成摘要、改进文章等。" 
+                                   TextWrapping="Wrap" Margin="0,0,0,10" />
+                        
+                        <Button Content="打开AI设置" 
+                                Command="{Binding OpenAiSettingsCommand}"
+                                Classes="Primary"
+                                HorizontalAlignment="Left" />
                     </StackPanel>
                 </Border>
             </StackPanel>
