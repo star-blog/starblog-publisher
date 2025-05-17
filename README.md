@@ -139,6 +139,13 @@ StarBlog Publisher 是一款专为 [StarBlog博客系统](https://github.com/Dea
 
 ## 更新记录
 
+### 1.5
+
+* 新增 AI 设置窗口 及相关功能，支持 AI 服务的初始化与配置，带来更智能的内容辅助体验。
+* AI 设置界面 支持自动完成，下拉建议框在输入框获取焦点时自动弹出，提升交互效率。
+* 新增 文章 Slug 生成功能，便于文章 URL 自动化与 SEO 优化。
+* 支持显示和切换多种 AI 服务模型，并完善清华智谱模型描述信息。
+
 ### 1.4
 
 - 重构词云生成(Sdcb.WordCloud)逻辑并添加加载指示器(LoadingIndicators.Avalonia)
