@@ -37,7 +37,7 @@ public class AIProviderInfo {
         new AIProviderInfo {
             Name = "zhipu",
             DisplayName = "清华智谱AI",
-            Description = "清华智谱，例如 ChatGLM",
+            Description = "清华智谱的AI模型，可以申请完全免费模型接口，具有代表性的模型是 ChatGLM",
             DefaultApiBase = "https://open.bigmodel.cn/api/paas/v4",
             DefaultModel = "glm-4-flash"
         },
