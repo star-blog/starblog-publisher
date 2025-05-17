@@ -2,8 +2,10 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Collections.Generic;
 using Newtonsoft.Json;
 using StarBlogPublisher.Services.Security;
+using StarBlogPublisher.Models;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace StarBlogPublisher.Services;
@@ -37,7 +39,7 @@ public class AppSettings {
 
     // AI设置
     public bool EnableAI { get; set; }
-    public string AIProvider { get; set; }
+    public string AIProvider { get; set; } = "openai";
     private string _encryptedAIKey = string.Empty;
 
     [System.Text.Json.Serialization.JsonIgnore]
@@ -54,6 +56,10 @@ public class AppSettings {
 
     public string AIModel { get; set; } = string.Empty;
     public string AIApiBase { get; set; } = string.Empty;
+
+    // AI配置文件
+    public List<AIProfile> AIProfiles { get; set; } = new List<AIProfile>();
+    public string CurrentAIProfile { get; set; } = "默认";
 
     public string Username { get; set; } = string.Empty;
 
@@ -92,7 +98,14 @@ public class AppSettings {
                 // var settings = JsonSerializer.Deserialize<AppSettings>(json);
                 var settings = JsonConvert.DeserializeObject<AppSettings>(json);
 
-                return settings ?? new AppSettings();
+                if (settings != null) {
+                    // 确保至少有一个默认配置文件
+                    if (settings.AIProfiles == null || settings.AIProfiles.Count == 0) {
+                        settings.MigrateToProfiles();
+                    }
+                    
+                    return settings;
+                }
             }
         }
         catch (Exception ex) {
@@ -100,7 +113,26 @@ public class AppSettings {
             Console.WriteLine($"Failed to load app settings. {ex}");
         }
 
-        return new AppSettings();
+        var defaultSettings = new AppSettings();
+        defaultSettings.MigrateToProfiles();
+        return defaultSettings;
+    }
+
+    // 将旧的AI设置迁移到配置文件
+    private void MigrateToProfiles() {
+        AIProfiles = new List<AIProfile>
+        {
+            new AIProfile
+            {
+                Name = "默认",
+                EnableAI = this.EnableAI,
+                Provider = this.AIProvider,
+                Key = this.AIKey,
+                Model = this.AIModel,
+                ApiBase = this.AIApiBase
+            }
+        };
+        CurrentAIProfile = "默认";
     }
 
     public void Save() {

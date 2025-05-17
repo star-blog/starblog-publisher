@@ -4,11 +4,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:StarBlogPublisher.ViewModels"
         xmlns:converters="clr-namespace:StarBlogPublisher.Converters"
-        mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="600"
+        mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="700"
         x:Class="StarBlogPublisher.Views.AiSettingsWindow"
         x:DataType="vm:AiSettingsWindowViewModel"
         Title="AI设置"
-        Width="500" Height="600"
+        Width="500" Height="700"
         WindowStartupLocation="CenterOwner">
 
     <Design.DataContext>
@@ -22,6 +22,35 @@
         <!-- 主要内容区域 -->
         <ScrollViewer Grid.Row="1">
             <StackPanel Spacing="20">
+                <!-- 配置文件管理卡片 -->
+                <Border Classes="Card">
+                    <StackPanel Spacing="15" Margin="15">
+                        <TextBlock Text="配置文件管理" FontWeight="Bold" FontSize="16" />
+
+                        <Grid ColumnDefinitions="*,Auto">
+                            <ComboBox Grid.Column="0"
+                                      ItemsSource="{Binding Profiles}"
+                                      SelectedItem="{Binding CurrentProfile}"
+                                      HorizontalAlignment="Stretch"
+                                      DisplayMemberBinding="{Binding Name}" />
+                            
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5" Margin="5,0,0,0">
+                                <Button Content="+" 
+                                        ToolTip.Tip="添加新配置"
+                                        Command="{Binding AddProfileCommand}"
+                                        Classes="Primary"/>
+                                <Button Content="-" 
+                                        ToolTip.Tip="删除当前配置"
+                                        Command="{Binding DeleteProfileCommand}"
+                                        Classes="Danger"/>
+                                <Button Content="✏" 
+                                        ToolTip.Tip="重命名当前配置"
+                                        Command="{Binding RenameProfileCommand}"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
                 <!-- AI设置卡片 -->
                 <Border Classes="Card">
                     <StackPanel Spacing="15" Margin="15">
@@ -110,6 +139,8 @@
                         <TextBlock Text="点击测试按钮可以根据提供商和API密钥自动加载可用的模型列表。如果加载失败，将显示默认的模型列表。" 
                                   TextWrapping="Wrap" />
                         <TextBlock Text="模型名称支持手动输入，如果API支持，但未在列表中显示的模型，您可以直接输入名称。" 
+                                  TextWrapping="Wrap" />
+                        <TextBlock Text="您可以创建多个配置文件，快速切换不同的AI提供商和模型。" 
                                   TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>

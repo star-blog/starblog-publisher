@@ -54,7 +54,7 @@ public class AiService {
             new OpenAIClientOptions {
                 Endpoint = endpoint
             }
-        ).AsChatClient(model);
+        ).GetChatClient(model).AsIChatClient();
     }
 
     public IChatClient ChatClient => _chatClient;
