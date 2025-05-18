@@ -21,7 +21,7 @@
     <Grid RowDefinitions="Auto,*" Margin="20">
         <!-- 头部：软件图标和名称 -->
         <StackPanel Grid.Row="0" Spacing="15" HorizontalAlignment="Center" Margin="0,0,0,20">
-            <Image Source="/Assets/avalonia-logo.ico" Width="64" Height="64" />
+            <Image Source="/Assets/logo.png" Width="200" Height="200" />
             <TextBlock Text="{Binding AppName}"
                        FontSize="24"
                        FontWeight="Bold"

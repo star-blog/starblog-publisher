@@ -8,6 +8,7 @@
         mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="700"
         x:Class="StarBlogPublisher.Views.AiSettingsWindow"
         x:DataType="vm:AiSettingsWindowViewModel"
+        Icon="/Assets/logo.png"
         Title="AI设置"
         Width="500" Height="700"
         WindowStartupLocation="CenterOwner">

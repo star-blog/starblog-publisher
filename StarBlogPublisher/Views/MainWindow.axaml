@@ -8,7 +8,7 @@
         mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="650"
         x:Class="StarBlogPublisher.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/logo.ico"
         Title="StarBlogPublisher"
         WindowStartupLocation="CenterOwner"
         MinWidth="800" MinHeight="600">
