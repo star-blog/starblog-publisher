@@ -55,15 +55,27 @@
                             Content="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}"
                             Padding="10"
                             Classes="IconButton" />
-                    <Button Content="⚙️ 设置" Padding="10"
-                            Classes="IconButton"
-                            Command="{Binding ShowSettingsCommand}" />
-                    <Button Content="🤖 AI配置" Padding="10"
-                            Classes="IconButton"
-                            Command="{Binding ShowAiSettingsCommand}" />
-                    <Button Content="ℹ️ 关于" Padding="10"
-                            Classes="IconButton"
-                            Command="{Binding ShowAboutCommand}" />
+                    <Button Padding="10" Classes="IconButton"
+                            Command="{Binding ShowSettingsCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <i:Icon Value="fa-solid fa-gear" Foreground="#1E88E5" />    
+                            <TextBlock>设置</TextBlock>
+                        </StackPanel>
+                    </Button>
+                    <Button Padding="10" Classes="IconButton"
+                            Command="{Binding ShowAiSettingsCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <i:Icon Value="fa-solid fa-robot" Foreground="#9C27B0" />    
+                            <TextBlock>AI配置</TextBlock>
+                        </StackPanel>
+                    </Button>
+                    <Button Padding="10" Classes="IconButton"
+                            Command="{Binding ShowAboutCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <i:Icon Value="fa-solid fa-circle-info" Foreground="#2196F3" />    
+                            <TextBlock>关于</TextBlock>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>
@@ -122,20 +134,28 @@
                             <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                                 <TextBlock Grid.Column="0" Text="标题" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 <Button Grid.Column="2"
-                                        Content="↩️ 重置"
                                         ToolTip.Tip="重置为文件名"
                                         Command="{Binding ResetTitleCommand}"
                                         Classes="IconButton"
-                                        Padding="5,2" />
+                                        Padding="5,2">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <i:Icon Value="fa-solid fa-rotate-left" Foreground="#757575" />
+                                        <TextBlock>重置</TextBlock>
+                                    </StackPanel>
+                                </Button>
                                 <Button Grid.Column="3"
-                                        Content="🔄 AI润色"
                                         ToolTip.Tip="使用AI润色文章标题"
                                         Command="{Binding RefineTitleWithAICommand}"
                                         IsVisible="{Binding IsAIEnabled}"
                                         IsEnabled="{Binding !IsRefiningTitle}"
                                         Classes="IconButton"
                                         Padding="5,2"
-                                        Margin="0,0,5,0" />
+                                        Margin="0,0,5,0">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <i:Icon Value="fa-solid fa-wand-magic-sparkles" Foreground="#9C27B0" />
+                                        <TextBlock>AI润色</TextBlock>
+                                    </StackPanel>
+                                </Button>
                             </Grid>
                             <TextBox Text="{Binding ArticleTitle}"
                                      Watermark="请输入文章标题" />
@@ -151,12 +171,16 @@
                                         <TextBlock Grid.Column="0" Text="说明" FontWeight="SemiBold"
                                                    VerticalAlignment="Center" />
                                         <Button Grid.Column="2"
-                                                Content="🔄 重新生成"
                                                 ToolTip.Tip="使用AI重新生成文章简介"
                                                 Command="{Binding RegenerateDescriptionCommand}"
                                                 IsVisible="{Binding IsAIEnabled}"
                                                 Classes="IconButton"
-                                                Padding="5,2" />
+                                                Padding="5,2">
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                <i:Icon Value="fa-solid fa-rotate" Foreground="#4CAF50" />
+                                                <TextBlock>重新生成</TextBlock>
+                                            </StackPanel>
+                                        </Button>
                                     </Grid>
                                     <TextBox Grid.Row="1"
                                              Text="{Binding ArticleDescription}"
@@ -171,12 +195,16 @@
                                         <TextBlock Grid.Column="0" Text="Slug" FontWeight="SemiBold"
                                                    VerticalAlignment="Center" />
                                         <Button Grid.Column="2"
-                                                Content="🔄 生成"
                                                 ToolTip.Tip="使用AI生成文章Slug"
                                                 Command="{Binding GenerateSlugCommand}"
                                                 IsVisible="{Binding IsAIEnabled}"
                                                 Classes="IconButton"
-                                                Padding="5,2" />
+                                                Padding="5,2">
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                <i:Icon Value="fa-solid fa-magic" Foreground="#9C27B0" />
+                                                <TextBlock>生成</TextBlock>
+                                            </StackPanel>
+                                        </Button>
                                     </Grid>
                                     <TextBox Text="{Binding ArticleSlug}"
                                              Watermark="用于URL的文章标识（如：my-first-article）" />
@@ -189,17 +217,23 @@
                                 <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="0,0,0,5">
                                     <TextBlock Grid.Column="0" Text="分类" FontWeight="SemiBold"
                                                VerticalAlignment="Center" />
-                                    <Button Grid.Column="2" Content="➕" ToolTip.Tip="添加分类"
+                                    <Button Grid.Column="2" ToolTip.Tip="添加分类"
                                             Command="{Binding ShowAddCategoryCommand}"
                                             Classes="IconButton" Padding="5,2"
-                                            Margin="0,0,5,0" />
-                                    <Button Grid.Column="3" Content="☁️" ToolTip.Tip="查看词云"
+                                            Margin="0,0,5,0">
+                                        <i:Icon Value="fa-solid fa-plus" Foreground="#4CAF50" />
+                                    </Button>
+                                    <Button Grid.Column="3" ToolTip.Tip="查看词云"
                                             Command="{Binding ShowWordCloudCommand}"
                                             Classes="IconButton" Padding="5,2"
-                                            Margin="0,0,5,0" />
-                                    <Button Grid.Column="4" Content="🔄" ToolTip.Tip="刷新分类"
+                                            Margin="0,0,5,0">
+                                        <i:Icon Value="fa-solid fa-cloud" Foreground="#42A5F5" />
+                                    </Button>
+                                    <Button Grid.Column="4" ToolTip.Tip="刷新分类"
                                             Command="{Binding RefreshCategoriesCommand}"
-                                            Classes="IconButton" Padding="5,2" />
+                                            Classes="IconButton" Padding="5,2">
+                                        <i:Icon Value="fa-solid fa-arrows-rotate" Foreground="#4CAF50" />
+                                    </Button>
                                 </Grid>
                                 <TreeView Grid.Row="1"
                                           MinHeight="100"
@@ -226,26 +260,38 @@
         <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="10">
             <!-- 预览按钮 -->
             <Button Grid.Column="0"
-                    Content="👀 预览文章"
                     Command="{Binding PreviewCommand}"
                     IsEnabled="{Binding CanPublish}"
                     Padding="15,10"
-                    Margin="0,0,10,0" />
+                    Margin="0,0,10,0">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <i:Icon Value="fa-solid fa-eye" Foreground="#2196F3" />
+                    <TextBlock>预览文章</TextBlock>
+                </StackPanel>
+            </Button>
 
             <!-- 发布按钮 -->
             <Button Grid.Column="1"
-                    Content="⏫ 发布文章"
                     Command="{Binding PublishCommand}"
                     IsEnabled="{Binding CanPublish}"
                     Padding="15,10"
-                    Margin="0,0,10,0" />
+                    Margin="0,0,10,0">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <i:Icon Value="fa-solid fa-upload" Foreground="#4CAF50" />
+                    <TextBlock>发布文章</TextBlock>
+                </StackPanel>
+            </Button>
 
             <!-- 复制按钮 -->
             <Button Grid.Column="2"
-                    Content="📋 复制内容"
                     Command="{Binding CopyContentCommand}"
                     Padding="15,10"
-                    Margin="0,0,10,0" />
+                    Margin="0,0,10,0">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <i:Icon Value="fa-solid fa-clipboard" Foreground="#FF9800" />
+                    <TextBlock>复制内容</TextBlock>
+                </StackPanel>
+            </Button>
 
             <!-- 进度条 -->
             <ProgressBar Grid.Column="3"
