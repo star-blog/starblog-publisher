@@ -4,6 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:StarBlogPublisher.ViewModels"
         xmlns:li="using:LoadingIndicators.Avalonia"
+        xmlns:i="https://github.com/projektanker/icons.avalonia"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="StarBlogPublisher.Views.WordCloudWindow"
         x:DataType="vm:WordCloudWindowViewModel"
@@ -15,28 +16,38 @@
         <vm:WordCloudWindowViewModel />
     </Design.DataContext>
 
-    <Grid RowDefinitions="*" Margin="20">
-        <Panel IsVisible="{Binding IsLoading}">
+    <Grid RowDefinitions="Auto,*" Margin="20">
+        <!-- 标题 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,20">
+            <i:Icon Value="fa-solid fa-cloud" FontSize="24" Foreground="#42A5F5" />
+            <TextBlock Text="分类词云" FontSize="24" FontWeight="Bold" />
+        </StackPanel>
+        
+        <Panel Grid.Row="1" IsVisible="{Binding IsLoading}">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10">
                 <li:LoadingIndicator IsActive="True" Mode="Ring" SpeedRatio="1.2" Width="128" Height="128" />
                 <TextBlock Text="正在生成词云..." HorizontalAlignment="Center" />
             </StackPanel>
         </Panel>
 
-        <Panel IsVisible="{Binding !IsLoading}">
+        <Panel Grid.Row="1" IsVisible="{Binding !IsLoading}">
             <Image Source="{Binding WordCloudImage}"
                    IsVisible="{Binding !HasError}"
                    Stretch="Uniform"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center" />
             
-            <TextBlock Text="{Binding ErrorMessage}"
-                       IsVisible="{Binding HasError}"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Foreground="{DynamicResource SystemErrorTextColor}"
-                       TextWrapping="Wrap"
-                       MaxWidth="400" />
+            <StackPanel IsVisible="{Binding HasError}"
+                        HorizontalAlignment="Center" 
+                        VerticalAlignment="Center"
+                        Spacing="10">
+                <i:Icon Value="fa-solid fa-circle-exclamation" FontSize="32" Foreground="#F44336" />
+                <TextBlock Text="{Binding ErrorMessage}"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource SystemErrorTextColor}"
+                           TextWrapping="Wrap"
+                           MaxWidth="400" />
+            </StackPanel>
         </Panel>
     </Grid>
 </Window>

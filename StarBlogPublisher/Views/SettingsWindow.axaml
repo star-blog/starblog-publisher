@@ -4,6 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:StarBlogPublisher.ViewModels"
         xmlns:converters="clr-namespace:StarBlogPublisher.Converters"
+        xmlns:i="https://github.com/projektanker/icons.avalonia"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="700"
         x:Class="StarBlogPublisher.Views.SettingsWindow"
         x:DataType="vm:SettingsWindowViewModel"
@@ -17,7 +18,10 @@
 
     <Grid RowDefinitions="Auto,*,Auto" Margin="20">
         <!-- 标题 -->
-        <TextBlock Grid.Row="0" Text="设置" FontSize="24" FontWeight="Bold" Margin="0,0,0,20" />
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,20">
+            <i:Icon Value="fa-solid fa-gear" FontSize="24" Foreground="#1E88E5" />
+            <TextBlock Text="设置" FontSize="24" FontWeight="Bold" />
+        </StackPanel>
 
         <!-- 主要内容区域 -->
         <ScrollViewer Grid.Row="1">
@@ -25,7 +29,10 @@
                 <!-- 代理设置卡片 -->
                 <Border Classes="Card">
                     <StackPanel Spacing="15" Margin="15">
-                        <TextBlock Text="代理设置" FontWeight="Bold" FontSize="16" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <i:Icon Value="fa-solid fa-network-wired" Foreground="#FF9800" />
+                            <TextBlock Text="代理设置" FontWeight="Bold" FontSize="16" />
+                        </StackPanel>
 
                         <StackPanel Spacing="10">
                             <ToggleSwitch OnContent="启用代理" OffContent="禁用代理"
@@ -76,7 +83,10 @@
                 <!-- StarBlog后端配置卡片 -->
                 <Border Classes="Card">
                     <StackPanel Spacing="15" Margin="15">
-                        <TextBlock Text="StarBlog后端配置" FontWeight="Bold" FontSize="16" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <i:Icon Value="fa-solid fa-server" Foreground="#2196F3" />
+                            <TextBlock Text="StarBlog后端配置" FontWeight="Bold" FontSize="16" />
+                        </StackPanel>
 
                         <StackPanel Spacing="10">
                             <ToggleSwitch OnContent="使用自定义后端" OffContent="使用默认后端"
@@ -105,8 +115,9 @@
                                     <Button Grid.Column="1"
                                             Margin="5,0,0,0"
                                             Command="{Binding TogglePasswordCommand}"
-                                            Content="{Binding ShowPassword, Converter={x:Static converters:BooleanToStringConverter.Instance}, ConverterParameter=👁️‍🗨️}"
-                                            Classes="Primary" />
+                                            Classes="Primary">
+                                        <i:Icon Value="fa-solid fa-eye" Foreground="#2196F3" />
+                                    </Button>
                                 </Grid>
                             </StackPanel>
 
@@ -123,14 +134,21 @@
                 <!-- AI设置卡片 -->
                 <Border Classes="Card">
                     <StackPanel Spacing="15" Margin="15">
-                        <TextBlock Text="AI设置" FontWeight="Bold" FontSize="16" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <i:Icon Value="fa-solid fa-robot" Foreground="#9C27B0" />
+                            <TextBlock Text="AI设置" FontWeight="Bold" FontSize="16" />
+                        </StackPanel>
                         <TextBlock Text="可以启用AI功能来辅助您编写博客内容、生成摘要、改进文章等。" 
                                    TextWrapping="Wrap" Margin="0,0,0,10" />
                         
-                        <Button Content="打开AI设置" 
-                                Command="{Binding OpenAiSettingsCommand}"
+                        <Button Command="{Binding OpenAiSettingsCommand}"
                                 Classes="Primary"
-                                HorizontalAlignment="Left" />
+                                HorizontalAlignment="Left">
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <i:Icon Value="fa-solid fa-cog" Foreground="#FFFFFF" />
+                                <TextBlock>打开AI设置</TextBlock>
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </Border>
             </StackPanel>
@@ -138,8 +156,18 @@
 
         <!-- 底部按钮 -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,20,0,0">
-            <Button Content="取消" Command="{Binding CancelCommand}" />
-            <Button Content="保存" Command="{Binding SaveCommand}" Classes="Primary" />
+            <Button Command="{Binding CancelCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <i:Icon Value="fa-solid fa-ban" Foreground="#F44336" />
+                    <TextBlock>取消</TextBlock>
+                </StackPanel>
+            </Button>
+            <Button Command="{Binding SaveCommand}" Classes="Primary">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <i:Icon Value="fa-solid fa-save" Foreground="#4CAF50" />
+                    <TextBlock>保存</TextBlock>
+                </StackPanel>
+            </Button>
         </StackPanel>
     </Grid>
 </Window>

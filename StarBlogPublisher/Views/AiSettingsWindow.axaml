@@ -4,6 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:StarBlogPublisher.ViewModels"
         xmlns:converters="clr-namespace:StarBlogPublisher.Converters"
+        xmlns:i="https://github.com/projektanker/icons.avalonia"
         mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="700"
         x:Class="StarBlogPublisher.Views.AiSettingsWindow"
         x:DataType="vm:AiSettingsWindowViewModel"
@@ -17,7 +18,10 @@
 
     <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="20">
         <!-- 标题 -->
-        <TextBlock Grid.Row="0" Text="AI设置" FontSize="24" FontWeight="Bold" Margin="0,0,0,20" />
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,20">
+            <i:Icon Value="fa-solid fa-robot" FontSize="24" Foreground="#9C27B0" />
+            <TextBlock Text="AI设置" FontSize="24" FontWeight="Bold" />
+        </StackPanel>
 
         <!-- 主要内容区域 -->
         <ScrollViewer Grid.Row="1">
@@ -25,7 +29,10 @@
                 <!-- 配置文件管理卡片 -->
                 <Border Classes="Card">
                     <StackPanel Spacing="15" Margin="15">
-                        <TextBlock Text="配置文件管理" FontWeight="Bold" FontSize="16" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <i:Icon Value="fa-solid fa-folder" Foreground="#FFC107" />
+                            <TextBlock Text="配置文件管理" FontWeight="Bold" FontSize="16" />
+                        </StackPanel>
 
                         <Grid ColumnDefinitions="*,Auto">
                             <ComboBox Grid.Column="0"
@@ -35,17 +42,20 @@
                                       DisplayMemberBinding="{Binding Name}" />
                             
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5" Margin="5,0,0,0">
-                                <Button Content="+" 
-                                        ToolTip.Tip="添加新配置"
+                                <Button ToolTip.Tip="添加新配置"
                                         Command="{Binding AddProfileCommand}"
-                                        Classes="Primary"/>
-                                <Button Content="-" 
-                                        ToolTip.Tip="删除当前配置"
+                                        Classes="Primary">
+                                    <i:Icon Value="fa-solid fa-plus" Foreground="#4CAF50" />
+                                </Button>
+                                <Button ToolTip.Tip="删除当前配置"
                                         Command="{Binding DeleteProfileCommand}"
-                                        Classes="Danger"/>
-                                <Button Content="✏" 
-                                        ToolTip.Tip="重命名当前配置"
-                                        Command="{Binding RenameProfileCommand}"/>
+                                        Classes="Danger">
+                                    <i:Icon Value="fa-solid fa-trash" Foreground="#F44336" />
+                                </Button>
+                                <Button ToolTip.Tip="重命名当前配置"
+                                        Command="{Binding RenameProfileCommand}">
+                                    <i:Icon Value="fa-solid fa-pen-to-square" Foreground="#2196F3" />
+                                </Button>
                             </StackPanel>
                         </Grid>
                     </StackPanel>
@@ -54,7 +64,10 @@
                 <!-- AI设置卡片 -->
                 <Border Classes="Card">
                     <StackPanel Spacing="15" Margin="15">
-                        <TextBlock Text="基本设置" FontWeight="Bold" FontSize="16" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <i:Icon Value="fa-solid fa-sliders" Foreground="#1E88E5" />
+                            <TextBlock Text="基本设置" FontWeight="Bold" FontSize="16" />
+                        </StackPanel>
 
                         <StackPanel Spacing="10">
                             <ToggleSwitch OnContent="启用AI" OffContent="禁用AI"
@@ -88,16 +101,21 @@
                                     <Button Grid.Column="1"
                                             Margin="5,0,0,0"
                                             Command="{Binding ToggleAIKeyCommand}"
-                                            Content="{Binding ShowAIKey, Converter={x:Static converters:BooleanToStringConverter.Instance}, ConverterParameter=👁️‍🗨️}"
                                             Classes="Primary"
-                                            IsEnabled="{Binding EnableAI}" />
+                                            IsEnabled="{Binding EnableAI}">
+                                        <i:Icon Value="fa-solid fa-eye" Foreground="#2196F3" />
+                                    </Button>
                                     <Button Grid.Column="2"
                                             Margin="5,0,0,0"
                                             Command="{Binding TestConnectionCommand}"
-                                            Content="测试"
                                             ToolTip.Tip="测试API连接并加载模型列表"
                                             Classes="Primary"
-                                            IsEnabled="{Binding EnableAI}" />
+                                            IsEnabled="{Binding EnableAI}">
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <i:Icon Value="fa-solid fa-vial" Foreground="#FF9800" />
+                                            <TextBlock>测试</TextBlock>
+                                        </StackPanel>
+                                    </Button>
                                 </Grid>
                             </StackPanel>
 
@@ -135,7 +153,10 @@
 
                 <Border Classes="Card">
                     <StackPanel Spacing="15" Margin="15">
-                        <TextBlock Text="提示" FontWeight="Bold" FontSize="16" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <i:Icon Value="fa-solid fa-lightbulb" Foreground="#FFC107" />
+                            <TextBlock Text="提示" FontWeight="Bold" FontSize="16" />
+                        </StackPanel>
                         <TextBlock Text="点击测试按钮可以根据提供商和API密钥自动加载可用的模型列表。如果加载失败，将显示默认的模型列表。" 
                                   TextWrapping="Wrap" />
                         <TextBlock Text="模型名称支持手动输入，如果API支持，但未在列表中显示的模型，您可以直接输入名称。" 
@@ -149,13 +170,26 @@
         
         <!-- 状态信息 -->
         <Border Grid.Row="2" Classes="Card" Margin="0,10,0,10">
-            <TextBlock Text="{Binding StatusMessage}" Margin="10" HorizontalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="10" HorizontalAlignment="Center">
+                <i:Icon Value="fa-solid fa-circle-info" Foreground="#2196F3" />
+                <TextBlock Text="{Binding StatusMessage}" />
+            </StackPanel>
         </Border>
 
         <!-- 底部按钮 -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,10,0,0">
-            <Button Content="取消" Command="{Binding CancelCommand}" />
-            <Button Content="保存" Command="{Binding SaveCommand}" Classes="Primary" />
+            <Button Command="{Binding CancelCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <i:Icon Value="fa-solid fa-ban" Foreground="#F44336" />
+                    <TextBlock>取消</TextBlock>
+                </StackPanel>
+            </Button>
+            <Button Command="{Binding SaveCommand}" Classes="Primary">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <i:Icon Value="fa-solid fa-save" Foreground="#4CAF50" />
+                    <TextBlock>保存</TextBlock>
+                </StackPanel>
+            </Button>
         </StackPanel>
     </Grid>
 </Window> 

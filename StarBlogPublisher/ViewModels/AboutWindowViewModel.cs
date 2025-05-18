@@ -8,7 +8,7 @@ namespace StarBlogPublisher.ViewModels;
 public partial class AboutWindowViewModel : ViewModelBase {
     // 软件基本信息
     [ObservableProperty] private string _appName = "StarBlog Publisher";
-    [ObservableProperty] private string _appVersion = "版本 1.5";
+    [ObservableProperty] private string _appVersion = "版本 1.6";
     [ObservableProperty] private string _copyright = "© 2025 DealiAxy. All rights reserved.";
     [ObservableProperty] private string _description = "StarBlog Publisher 是一款专业的博客文章发布工具，支持Markdown格式文章的预览和发布。";
 
@@ -21,9 +21,9 @@ public partial class AboutWindowViewModel : ViewModelBase {
 
     // 相关链接
     [ObservableProperty] private ObservableCollection<LinkItem> _links = [
-        new() { Icon = "🌐", Text = "访问项目主页", Url = "https://github.com/star-blog/starblog-publisher" },
-        new() { Icon = "📖", Text = "查看文档", Url = "https://github.com/star-blog/starblog-publisher/wiki" },
-        new() { Icon = "🐛", Text = "报告问题", Url = "https://github.com/star-blog/starblog-publisher/issues" }
+        new() { IconClass = "fa-solid fa-globe", IconColor = "#2196F3", Text = "访问项目主页", Url = "https://github.com/star-blog/starblog-publisher" },
+        new() { IconClass = "fa-solid fa-book", IconColor = "#4CAF50", Text = "查看文档", Url = "https://github.com/star-blog/starblog-publisher/wiki" },
+        new() { IconClass = "fa-solid fa-bug", IconColor = "#F44336", Text = "报告问题", Url = "https://github.com/star-blog/starblog-publisher/issues" }
     ];
 }
 
@@ -35,7 +35,8 @@ public class TechStackItem {
 
 // 链接项目类
 public partial class LinkItem : ObservableObject {
-    public string Icon { get; set; } = string.Empty;
+    public string IconClass { get; set; } = string.Empty;
+    public string IconColor { get; set; } = string.Empty;
     public string Text { get; set; } = string.Empty;
     public string Url { get; set; } = string.Empty;
 

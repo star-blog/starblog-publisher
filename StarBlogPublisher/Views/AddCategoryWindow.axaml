@@ -3,6 +3,7 @@
         xmlns:vm="using:StarBlogPublisher.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:i="https://github.com/projektanker/icons.avalonia"
         mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="450"
         x:Class="StarBlogPublisher.Views.AddCategoryWindow"
         x:DataType="vm:AddCategoryWindowViewModel"
@@ -14,18 +15,30 @@
         <vm:AddCategoryWindowViewModel />
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,*,Auto" Margin="20">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="20">
+        <!-- 标题 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,20">
+            <i:Icon Value="fa-solid fa-folder-plus" FontSize="24" Foreground="#4CAF50" />
+            <TextBlock Text="添加分类" FontSize="24" FontWeight="Bold" />
+        </StackPanel>
+        
         <!-- 分类名称输入 -->
-        <StackPanel Grid.Row="0" Spacing="10">
-            <TextBlock Text="分类名称" FontWeight="SemiBold" />
+        <StackPanel Grid.Row="1" Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="5">
+                <i:Icon Value="fa-solid fa-tag" Foreground="#FF9800" />
+                <TextBlock Text="分类名称" FontWeight="SemiBold" />
+            </StackPanel>
             <TextBox Text="{Binding CategoryName}" 
                      Watermark="请输入分类名称"
                      MaxLength="50" />
         </StackPanel>
 
         <!-- 父级分类选择 -->
-        <Grid Grid.Row="1" RowDefinitions="Auto,*" Margin="0,20,0,0">
-            <TextBlock Grid.Row="0" Text="选择父级分类" FontWeight="SemiBold" Margin="0,0,0,10" />
+        <Grid Grid.Row="2" RowDefinitions="Auto,*" Margin="0,20,0,0">
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="5" Margin="0,0,0,10">
+                <i:Icon Value="fa-solid fa-sitemap" Foreground="#2196F3" />
+                <TextBlock Text="选择父级分类" FontWeight="SemiBold" />
+            </StackPanel>
             <TreeView Grid.Row="1"
                       ItemsSource="{Binding Categories}"
                       SelectedItem="{Binding SelectedParentCategory}">
@@ -38,15 +51,23 @@
         </Grid>
 
         <!-- 按钮区域 -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,20,0,0">
-            <Button Content="取消"
-                    Command="{Binding CancelCommand}"
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,20,0,0">
+            <Button Command="{Binding CancelCommand}"
                     Classes="IconButton"
-                    Padding="15,10" />
-            <Button Content="确定"
-                    Command="{Binding ConfirmCommand}"
+                    Padding="15,10">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <i:Icon Value="fa-solid fa-ban" Foreground="#F44336" />
+                    <TextBlock>取消</TextBlock>
+                </StackPanel>
+            </Button>
+            <Button Command="{Binding ConfirmCommand}"
                     Classes="accent"
-                    Padding="15,10" />
+                    Padding="15,10">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <i:Icon Value="fa-solid fa-check" Foreground="#FFFFFF" />
+                    <TextBlock>确定</TextBlock>
+                </StackPanel>
+            </Button>
         </StackPanel>
     </Grid>
 </Window>
