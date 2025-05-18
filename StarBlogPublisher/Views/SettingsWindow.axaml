@@ -156,15 +156,15 @@
 
         <!-- 底部按钮 -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,20,0,0">
-            <Button Command="{Binding CancelCommand}">
+            <Button Command="{Binding CancelCommand}" Classes="IconButton">
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <i:Icon Value="fa-solid fa-ban" Foreground="#F44336" />
                     <TextBlock>取消</TextBlock>
                 </StackPanel>
             </Button>
-            <Button Command="{Binding SaveCommand}" Classes="Primary">
+            <Button Command="{Binding SaveCommand}" Classes="IconButton Primary">
                 <StackPanel Orientation="Horizontal" Spacing="5">
-                    <i:Icon Value="fa-solid fa-save" Foreground="#4CAF50" />
+                    <i:Icon Value="fa-solid fa-save" Foreground="#FFFFFF" />
                     <TextBlock>保存</TextBlock>
                 </StackPanel>
             </Button>

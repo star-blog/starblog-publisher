@@ -44,16 +44,17 @@
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5" Margin="5,0,0,0">
                                 <Button ToolTip.Tip="添加新配置"
                                         Command="{Binding AddProfileCommand}"
-                                        Classes="Primary">
-                                    <i:Icon Value="fa-solid fa-plus" Foreground="#4CAF50" />
+                                        Classes="IconButton Primary">
+                                    <i:Icon Value="fa-solid fa-plus" Foreground="#FFFFFF" />
                                 </Button>
                                 <Button ToolTip.Tip="删除当前配置"
                                         Command="{Binding DeleteProfileCommand}"
-                                        Classes="Danger">
-                                    <i:Icon Value="fa-solid fa-trash" Foreground="#F44336" />
+                                        Classes="IconButton Danger">
+                                    <i:Icon Value="fa-solid fa-trash" Foreground="#FFFFFF" />
                                 </Button>
                                 <Button ToolTip.Tip="重命名当前配置"
-                                        Command="{Binding RenameProfileCommand}">
+                                        Command="{Binding RenameProfileCommand}"
+                                        Classes="IconButton">
                                     <i:Icon Value="fa-solid fa-pen-to-square" Foreground="#2196F3" />
                                 </Button>
                             </StackPanel>
@@ -101,7 +102,7 @@
                                     <Button Grid.Column="1"
                                             Margin="5,0,0,0"
                                             Command="{Binding ToggleAIKeyCommand}"
-                                            Classes="Primary"
+                                            Classes="IconButton"
                                             IsEnabled="{Binding EnableAI}">
                                         <i:Icon Value="fa-solid fa-eye" Foreground="#2196F3" />
                                     </Button>
@@ -109,7 +110,7 @@
                                             Margin="5,0,0,0"
                                             Command="{Binding TestConnectionCommand}"
                                             ToolTip.Tip="测试API连接并加载模型列表"
-                                            Classes="Primary"
+                                            Classes="IconButton"
                                             IsEnabled="{Binding EnableAI}">
                                         <StackPanel Orientation="Horizontal" Spacing="5">
                                             <i:Icon Value="fa-solid fa-vial" Foreground="#FF9800" />
@@ -178,15 +179,15 @@
 
         <!-- 底部按钮 -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,10,0,0">
-            <Button Command="{Binding CancelCommand}">
+            <Button Command="{Binding CancelCommand}" Classes="IconButton">
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <i:Icon Value="fa-solid fa-ban" Foreground="#F44336" />
                     <TextBlock>取消</TextBlock>
                 </StackPanel>
             </Button>
-            <Button Command="{Binding SaveCommand}" Classes="Primary">
+            <Button Command="{Binding SaveCommand}" Classes="IconButton Primary">
                 <StackPanel Orientation="Horizontal" Spacing="5">
-                    <i:Icon Value="fa-solid fa-save" Foreground="#4CAF50" />
+                    <i:Icon Value="fa-solid fa-save" Foreground="#FFFFFF" />
                     <TextBlock>保存</TextBlock>
                 </StackPanel>
             </Button>

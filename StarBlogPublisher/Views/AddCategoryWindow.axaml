@@ -61,7 +61,7 @@
                 </StackPanel>
             </Button>
             <Button Command="{Binding ConfirmCommand}"
-                    Classes="accent"
+                    Classes="IconButton accent"
                     Padding="15,10">
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <i:Icon Value="fa-solid fa-check" Foreground="#FFFFFF" />

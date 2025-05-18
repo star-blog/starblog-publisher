@@ -262,6 +262,7 @@
             <Button Grid.Column="0"
                     Command="{Binding PreviewCommand}"
                     IsEnabled="{Binding CanPublish}"
+                    Classes="IconButton"
                     Padding="15,10"
                     Margin="0,0,10,0">
                 <StackPanel Orientation="Horizontal" Spacing="5">
@@ -274,6 +275,7 @@
             <Button Grid.Column="1"
                     Command="{Binding PublishCommand}"
                     IsEnabled="{Binding CanPublish}"
+                    Classes="IconButton"
                     Padding="15,10"
                     Margin="0,0,10,0">
                 <StackPanel Orientation="Horizontal" Spacing="5">
@@ -285,6 +287,7 @@
             <!-- 复制按钮 -->
             <Button Grid.Column="2"
                     Command="{Binding CopyContentCommand}"
+                    Classes="IconButton"
                     Padding="15,10"
                     Margin="0,0,10,0">
                 <StackPanel Orientation="Horizontal" Spacing="5">

@@ -92,6 +92,7 @@
                                     <Button Command="{Binding OpenLinkCommand}"
                                             CommandParameter="{Binding Url}"
                                             Classes="IconButton"
+                                            Background="Transparent"
                                             HorizontalAlignment="Left"
                                             Padding="8"
                                             Margin="0,5,0,0">
