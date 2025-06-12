@@ -6,7 +6,7 @@ from datetime import datetime
 import platform
 
 # 配置信息
-VERSION = "1.6"
+VERSION = "1.7"
 
 def get_aot_platforms():
     """获取支持AOT的平台列表"""
@@ -33,7 +33,10 @@ BUILD_CONFIGS = {
 }
 
 # 默认构建配置
-active_profiles = ["self-contained", "aot"]
+active_profiles = [
+    # "self-contained",
+    "aot"
+]
 
 # 如果在 GitHub Actions 中运行，只构建指定平台
 if "GITHUB_PLATFORM" in os.environ:
