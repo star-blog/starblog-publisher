@@ -20,6 +20,7 @@ using System.Diagnostics;
 using System.Text;
 using CodeLab.Share.Extensions;
 using StarBlogPublisher.Models.Dtos;
+using StarBlogPublisher.Utils;
 using StarBlogPublisher.Views;
 
 namespace StarBlogPublisher.ViewModels;
@@ -158,7 +159,7 @@ public partial class MainWindowViewModel : ViewModelBase {
             }
         }
     }
-    
+
     // 复制内容命令
     [RelayCommand]
     private async Task CopyContent() {
@@ -304,7 +305,7 @@ public partial class MainWindowViewModel : ViewModelBase {
     private async Task<CodeLab.Share.ViewModels.Response.ApiResponse<BlogPost>> CreateArticle(BlogPost blogPost) {
         PublishProgress = 10;
         StatusMessage = "正在创建文章...";
-        
+
         return await ApiService.Instance.BlogPost.Add(new PostCreationDto {
             Title = blogPost.Title,
             Content = blogPost.Content,
@@ -322,13 +323,13 @@ public partial class MainWindowViewModel : ViewModelBase {
     private async Task<string> ProcessArticleImages(BlogPost blogPost) {
         StatusMessage = "正在处理文章中的图片...";
         var markdownProcessor = new MarkdownProcessor(_currentFilePath!, blogPost);
-        
+
         // 订阅图片上传进度事件
         markdownProcessor.ImageUploadProgress += (uploaded, total) => {
             PublishProgress = 30 + (uploaded * 50.0 / total); // 30-80%的进度区间用于图片上传
             StatusMessage = $"正在上传图片 ({uploaded}/{total})...";
         };
-        
+
         var processedContent = await markdownProcessor.MarkdownParse();
         PublishProgress = 80;
         return processedContent;
@@ -371,7 +372,6 @@ public partial class MainWindowViewModel : ViewModelBase {
     }
 
     /// <summary
-
     [RelayCommand]
     private async Task ShowAbout() {
         var aboutWindow = new AboutWindow();
@@ -382,7 +382,7 @@ public partial class MainWindowViewModel : ViewModelBase {
     private async Task ShowAiSettings() {
         var aiSettingsWindow = new AiSettingsWindow();
         await aiSettingsWindow.ShowDialog(App.MainWindow);
-        
+
         // 更新AI功能状态
         IsAIEnabled = AppSettings.Instance.EnableAI;
     }
@@ -526,9 +526,13 @@ public partial class MainWindowViewModel : ViewModelBase {
 
         StatusMessage = "正在使用AI重新生成文章简介...";
         try {
-            var prompt = $"请为以下文章生成一个简短的中文简介（不超过200字）：{ArticleContent}";
+            var prompt = PromptBuilder
+                .Create(PromptTemplates.ArticleDesc2)
+                .AddParameter("title", ArticleTitle)
+                .AddParameter("content", ArticleContent)
+                .Build();
             var textStreamAsync = AiService.Instance.GenerateTextStreamAsync(prompt);
-            var description = new System.Text.StringBuilder();
+            var description = new StringBuilder();
 
             await foreach (var update in textStreamAsync) {
                 description.Append(update.Text);
@@ -541,7 +545,7 @@ public partial class MainWindowViewModel : ViewModelBase {
             StatusMessage = $"AI重新生成简介失败: {ex.Message}";
         }
     }
-    
+
     // 重置标题命令
     [RelayCommand]
     private void ResetTitle() {
@@ -561,7 +565,11 @@ public partial class MainWindowViewModel : ViewModelBase {
         IsRefiningTitle = true;
         StatusMessage = "正在使用AI润色文章标题...";
         try {
-            var prompt = $"请为以下文章润色标题，使其更加吸引人、专业且符合内容（保持简洁，不超过50字）。\n原标题：{ArticleTitle}\n文章内容：{ArticleContent}";
+            var prompt = PromptBuilder
+                .Create(PromptTemplates.RefineTitle)
+                .AddParameter("title", ArticleTitle)
+                .AddParameter("content", ArticleContent)
+                .Build();
             var textStreamAsync = AiService.Instance.GenerateTextStreamAsync(prompt);
             var refinedTitle = new System.Text.StringBuilder();
 
@@ -581,7 +589,7 @@ public partial class MainWindowViewModel : ViewModelBase {
             IsRefiningTitle = false;
         }
     }
-    
+
     // 生成文章Slug命令
     [RelayCommand]
     private async Task GenerateSlug() {
@@ -592,8 +600,11 @@ public partial class MainWindowViewModel : ViewModelBase {
 
         StatusMessage = "正在使用AI生成文章Slug...";
         try {
-            var prompt = $"请为标题为\"{ArticleTitle}\"的文章生成一个合适的URL友好的slug。要求：\n1. 全部小写字母\n2. 使用连字符'-'代替空格\n3. 只包含字母、数字和连字符\n4. 不超过50个字符\n5. 保留标题中的英文关键词，中文需翻译成英文\n6. 简洁且有意义\n仅返回slug，不要有任何解释或其他内容";
-            
+            var prompt = PromptBuilder
+                .Create(PromptTemplates.ArticleSlug)
+                .AddParameter("title", ArticleTitle)
+                .Build();
+
             var textStreamAsync = AiService.Instance.GenerateTextStreamAsync(prompt);
             var generatedSlug = new System.Text.StringBuilder();
 
@@ -604,14 +615,14 @@ public partial class MainWindowViewModel : ViewModelBase {
 
             // 清理slug，确保符合规范
             ArticleSlug = CleanSlug(ArticleSlug);
-            
+
             StatusMessage = "AI已生成文章Slug";
         }
         catch (Exception ex) {
             StatusMessage = $"AI生成Slug失败: {ex.Message}";
         }
     }
-    
+
     /// <summary>
     /// 清理Slug，确保符合URL友好格式
     /// </summary>
@@ -628,6 +639,7 @@ public partial class MainWindowViewModel : ViewModelBase {
         if (cleaned.Length > 50) {
             cleaned = cleaned.Substring(0, 50).TrimEnd('-');
         }
+
         return cleaned;
     }
 }
