@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -73,6 +74,7 @@ public partial class MainWindowViewModel : ViewModelBase {
     [ObservableProperty] private string _articleTitle = string.Empty;
     [ObservableProperty] private string _articleDescription = string.Empty;
     [ObservableProperty] private string _articleSlug = string.Empty;
+    [ObservableProperty] private string _articleKeywords = string.Empty;
 
     // 是否正在润色标题
     [ObservableProperty] private bool _isRefiningTitle = false;
@@ -568,6 +570,7 @@ public partial class MainWindowViewModel : ViewModelBase {
             var prompt = PromptBuilder
                 .Create(PromptTemplates.RefineTitle)
                 .AddParameter("title", ArticleTitle)
+                .AddParameter("keywords", ArticleKeywords)
                 .AddParameter("content", ArticleContent)
                 .Build();
             var textStreamAsync = AiService.Instance.GenerateTextStreamAsync(prompt);
@@ -590,6 +593,88 @@ public partial class MainWindowViewModel : ViewModelBase {
         }
     }
 
+    // 生成文章关键词命令
+    [RelayCommand]
+    private async Task GenerateKeywords() {
+        if (!IsAIEnabled || string.IsNullOrEmpty(ArticleContent) || string.IsNullOrEmpty(ArticleTitle)) {
+            StatusMessage = "无法生成关键词：AI功能未启用或文章内容/标题为空";
+            return;
+        }
+
+        StatusMessage = "正在使用AI生成文章关键词...";
+        try {
+            var prompt = PromptBuilder
+                .Create(PromptTemplates.ExtraceKeywords)
+                .AddParameter("title", ArticleTitle)
+                .AddParameter("content", ArticleContent)
+                .Build();
+
+            var textStreamAsync = AiService.Instance.GenerateTextStreamAsync(prompt);
+            var generatedKeywords = new System.Text.StringBuilder();
+
+            await foreach (var update in textStreamAsync) {
+                generatedKeywords.Append(update.Text);
+                // 实时更新显示原始AI输出
+                var rawOutput = generatedKeywords.ToString();
+                // 尝试提取JSON数组中的关键词
+                var extractedKeywords = ExtractKeywordsFromJson(rawOutput);
+                if (!string.IsNullOrEmpty(extractedKeywords)) {
+                    ArticleKeywords = extractedKeywords;
+                }
+            }
+
+            Console.WriteLine($"keywords: {generatedKeywords}");
+
+            // 最终处理，确保格式正确
+            var finalKeywords = ExtractKeywordsFromJson(generatedKeywords.ToString());
+            if (!string.IsNullOrEmpty(finalKeywords)) {
+                ArticleKeywords = finalKeywords;
+                StatusMessage = "AI已生成文章关键词";
+            } else {
+                StatusMessage = "AI生成关键词格式异常，请手动编辑";
+            }
+        }
+        catch (Exception ex) {
+            StatusMessage = $"AI生成关键词失败: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// 从AI返回的JSON格式中提取关键词
+    /// </summary>
+    /// <param name="jsonOutput">AI返回的原始输出</param>
+    /// <returns>提取的关键词字符串，用逗号分隔</returns>
+    private string ExtractKeywordsFromJson(string jsonOutput) {
+        try {
+            // 查找JSON数组的开始和结束
+            var startIndex = jsonOutput.IndexOf('[');
+            var endIndex = jsonOutput.LastIndexOf(']');
+            
+            if (startIndex >= 0 && endIndex > startIndex) {
+                var jsonArray = jsonOutput.Substring(startIndex, endIndex - startIndex + 1);
+                
+                // 简单的JSON解析，提取引号内的内容
+                var keywords = new List<string>();
+                var matches = System.Text.RegularExpressions.Regex.Matches(jsonArray, @"""([^""]+)""");
+                
+                foreach (System.Text.RegularExpressions.Match match in matches) {
+                    var keyword = match.Groups[1].Value.Trim();
+                    if (!string.IsNullOrEmpty(keyword) && !keyword.StartsWith("//")) {
+                        keywords.Add(keyword);
+                    }
+                }
+                
+                return string.Join(", ", keywords);
+            }
+        }
+        catch (Exception ex) {
+            // 如果JSON解析失败，返回空字符串
+            Console.WriteLine($"ExtractKeywordsFromJson Failed: {ex.Message}");
+        }
+        
+        return string.Empty;
+    }
+    
     // 生成文章Slug命令
     [RelayCommand]
     private async Task GenerateSlug() {

@@ -18,16 +18,12 @@ public static class PromptTemplates {
 
         ---
 
-        原标题：{title}
-        文章内容：{content}
+        原标题：{{title}}
+        文章内容：{{content}}
 
         请直接输出 JSON 格式的关键词数组：
 
-        ```json
-        [  
-          // 在此填写提取结果  
-        ]
-        ```
+        ["word1", "word2", "word3"]
         """;
 
     public const string RefineTitle =

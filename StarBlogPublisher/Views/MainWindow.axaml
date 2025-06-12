@@ -164,7 +164,7 @@
                         <!-- 说明和分类区域（左右两栏） -->
                         <Grid Grid.Row="2" ColumnDefinitions="*,*" Margin="5">
                             <!-- 左侧 -->
-                            <Grid Grid.Row="0" Grid.Column="0" RowDefinitions="*,Auto">
+                            <Grid Grid.Row="0" Grid.Column="0" RowDefinitions="*,Auto,Auto">
                                 <!-- 左侧：说明输入 -->
                                 <Grid Grid.Row="0" RowDefinitions="Auto,*" Margin="0,0,5,0">
                                     <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,5">
@@ -189,8 +189,29 @@
                                              Watermark="请输入文章说明" />
                                 </Grid>
 
-                                <!-- Slug输入 -->
+                                <!-- 关键词输入 -->
                                 <StackPanel Grid.Row="1" Spacing="5" Margin="0,5,5,0">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <TextBlock Grid.Column="0" Text="关键词" FontWeight="SemiBold"
+                                                   VerticalAlignment="Center" />
+                                        <Button Grid.Column="2"
+                                                ToolTip.Tip="使用AI生成文章关键词"
+                                                Command="{Binding GenerateKeywordsCommand}"
+                                                IsVisible="{Binding IsAIEnabled}"
+                                                Classes="IconButton"
+                                                Padding="5,2">
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                <i:Icon Value="fa-solid fa-tags" Foreground="#FF9800" />
+                                                <TextBlock>生成</TextBlock>
+                                            </StackPanel>
+                                        </Button>
+                                    </Grid>
+                                    <TextBox Text="{Binding ArticleKeywords}"
+                                             Watermark="请输入文章关键词，用逗号分隔（如：技术,编程,教程）" />
+                                </StackPanel>
+
+                                <!-- Slug输入 -->
+                                <StackPanel Grid.Row="2" Spacing="5" Margin="0,5,5,0">
                                     <Grid ColumnDefinitions="Auto,*,Auto">
                                         <TextBlock Grid.Column="0" Text="Slug" FontWeight="SemiBold"
                                                    VerticalAlignment="Center" />
