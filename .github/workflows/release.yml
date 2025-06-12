@@ -80,6 +80,20 @@ jobs:
           echo "正在为 ${{ matrix.kind }} 平台进行AOT编译..."
           dotnet publish ./StarBlogPublisher/StarBlogPublisher.csproj -c Release -r ${{ matrix.target }} --self-contained true /p:PublishAot=true /p:TrimMode=full /p:InvariantGlobalization=true /p:IlcGenerateStackTraceData=false /p:IlcOptimizationPreference=Size /p:IlcFoldIdenticalMethodBodies=true /p:JsonSerializerIsReflectionEnabledByDefault=true /p:Version=${{ steps.get_version.outputs.VERSION }} -o ./publish/${{ matrix.kind }}
       
+      - name: 清理调试文件
+        shell: bash
+        run: |
+          echo "清理调试文件以减小发布包大小..."
+          cd ./publish/${{ matrix.kind }}
+          # 删除Windows调试文件
+          rm -f *.pdb
+          # 删除Linux调试文件
+          rm -f *.dbg
+          # 删除macOS调试文件目录
+          rm -rf *.dsym
+          # 列出剩余文件
+          ls -la
+      
       - name: 打包Windows可执行文件
         if: matrix.kind == 'windows'
         run: |
