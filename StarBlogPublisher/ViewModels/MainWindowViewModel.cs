@@ -604,7 +604,7 @@ public partial class MainWindowViewModel : ViewModelBase {
         StatusMessage = "正在使用AI生成文章关键词...";
         try {
             var prompt = PromptBuilder
-                .Create(PromptTemplates.ExtraceKeywords)
+                .Create(PromptTemplates.ExtractKeywords)
                 .AddParameter("title", ArticleTitle)
                 .AddParameter("content", ArticleContent)
                 .Build();
