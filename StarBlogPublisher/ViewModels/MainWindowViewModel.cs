@@ -529,7 +529,7 @@ public partial class MainWindowViewModel : ViewModelBase {
         StatusMessage = "正在使用AI重新生成文章简介...";
         try {
             var prompt = PromptBuilder
-                .Create(PromptTemplates.ArticleDesc2)
+                .Create(PromptTemplates.ArticleDescriptionTechnical)
                 .AddParameter("title", ArticleTitle)
                 .AddParameter("content", ArticleContent)
                 .Build();
@@ -568,7 +568,7 @@ public partial class MainWindowViewModel : ViewModelBase {
         StatusMessage = "正在使用AI润色文章标题...";
         try {
             var prompt = PromptBuilder
-                .Create(PromptTemplates.RefineTitle)
+                .Create(PromptTemplates.TitleOptimization)
                 .AddParameter("title", ArticleTitle)
                 .AddParameter("keywords", ArticleKeywords)
                 .AddParameter("content", ArticleContent)
@@ -604,7 +604,7 @@ public partial class MainWindowViewModel : ViewModelBase {
         StatusMessage = "正在使用AI生成文章关键词...";
         try {
             var prompt = PromptBuilder
-                .Create(PromptTemplates.ExtractKeywords)
+                .Create(PromptTemplates.KeywordExtraction)
                 .AddParameter("title", ArticleTitle)
                 .AddParameter("content", ArticleContent)
                 .Build();
@@ -686,7 +686,7 @@ public partial class MainWindowViewModel : ViewModelBase {
         StatusMessage = "正在使用AI生成文章Slug...";
         try {
             var prompt = PromptBuilder
-                .Create(PromptTemplates.ArticleSlug)
+                .Create(PromptTemplates.UrlSlugGeneration)
                 .AddParameter("title", ArticleTitle)
                 .Build();
 
