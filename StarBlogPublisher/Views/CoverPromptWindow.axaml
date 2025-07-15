@@ -5,6 +5,7 @@
         xmlns:vm="using:StarBlogPublisher.ViewModels"
         xmlns:converters="clr-namespace:StarBlogPublisher.Converters"
         xmlns:i="https://github.com/projektanker/icons.avalonia"
+        xmlns:utils="clr-namespace:StarBlogPublisher.Utils"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="700"
         x:Class="StarBlogPublisher.Views.CoverPromptWindow"
         x:DataType="vm:CoverPromptWindowViewModel"
@@ -33,13 +34,13 @@
                 <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,5">
                     <ComboBox
                         ItemsSource="{Binding CoverStyleOptions}"
-                        SelectedItem="{Binding SelectedCoverStyleOption}"
+                        SelectedItem="{Binding SelectedTemplate}"
                         IsEnabled="{Binding IsAIEnabled}"
                         Width="200"
                         HorizontalAlignment="Left">
                         <ComboBox.ItemTemplate>
-                            <DataTemplate x:DataType="vm:CoverStyleOption">
-                                <TextBlock Text="{Binding Display}" />
+                            <DataTemplate x:DataType="utils:PromptTemplate">
+                                <TextBlock Text="{Binding Name}" />
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>

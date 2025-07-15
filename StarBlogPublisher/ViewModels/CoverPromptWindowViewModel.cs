@@ -24,30 +24,15 @@ public partial class CoverPromptWindowViewModel : ViewModelBase {
     public string ArticleDescription { get; set; }
     public string ArticleContent { get; set; }
 
-    public ObservableCollection<CoverStyleOption> CoverStyleOptions { get; } = new() {
-        new CoverStyleOption
-            { Display = "极简风 Minimalism", Value = "Minimalism", Prompt = PromptTemplates.CoverPromptMinimalism },
-        new CoverStyleOption
-            { Display = "科技感 Tech Vibes", Value = "Tech", Prompt = PromptTemplates.CoverPromptTechStyle },
-        new CoverStyleOption
-            { Display = "吸引眼球（美女版）👩✨", Value = "Beauty", Prompt = PromptTemplates.CoverPromptAttractiveFemale },
-        new CoverStyleOption
-            { Display = "开源纪念海报风格", Value = "OpenSourcePoster", Prompt = PromptTemplates.CoverPromptOpenSourcePoster },
-        new CoverStyleOption
-            { Display = "未来感（Future/AIGC）", Value = "Future", Prompt = PromptTemplates.CoverPromptFuturistic },
-        new CoverStyleOption {
-            Display = "Urban Elegance（城市优雅风）",
-            Value = "Urban Elegance",
-            Prompt = PromptTemplates.CoverPromptUrbanElegance
-        }
-    };
+    public ObservableCollection<PromptTemplate> CoverStyleOptions { get; } =
+        new ObservableCollection<PromptTemplate>(PromptTemplates.Cover);
 
-    public CoverStyleOption SelectedCoverStyleOption { get; set; }
+    public PromptTemplate SelectedTemplate { get; set; }
 
     public CoverPromptWindowViewModel() {
         // 初始化AI功能状态
         IsAIEnabled = AppSettings.Instance.EnableAI;
-        SelectedCoverStyleOption = CoverStyleOptions.First(e => e.Value == "Beauty");
+        SelectedTemplate = CoverStyleOptions.First(e => e.Key == "UrbanElegance");
     }
 
     // 重新生成文章简介命令
@@ -58,14 +43,14 @@ public partial class CoverPromptWindowViewModel : ViewModelBase {
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(SelectedCoverStyleOption.Prompt)) {
+        if (string.IsNullOrWhiteSpace(SelectedTemplate.Prompt)) {
             await ShowMessageBox("错误", "未选择风格，或者所选风格的提示词为空！");
             return;
         }
 
         try {
             var prompt = PromptBuilder
-                .Create(SelectedCoverStyleOption.Prompt)
+                .Create(SelectedTemplate.Prompt)
                 .AddParameter("title", ArticleTitle)
                 .AddParameter("summary", ArticleDescription)
                 .AddParameter("content", ArticleContent)
@@ -95,12 +80,4 @@ public partial class CoverPromptWindowViewModel : ViewModelBase {
 
         return await msgbox.ShowWindowDialogAsync(App.MainWindow);
     }
-}
-
-public class CoverStyleOption {
-    public string Display { get; set; } // 显示的文字
-    public string Value { get; set; } // 实际绑定的值
-    public string Prompt { get; set; } // 提示词
-
-    public override string ToString() => Display; // 为了调试方便
 }
