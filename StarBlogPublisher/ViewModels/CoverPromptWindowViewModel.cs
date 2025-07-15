@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -24,29 +25,24 @@ public partial class CoverPromptWindowViewModel : ViewModelBase {
     public string ArticleContent { get; set; }
 
     public ObservableCollection<CoverStyleOption> CoverStyleOptions { get; } = new() {
-        new CoverStyleOption { Display = "极简风 Minimalism", Value = "Minimalism" },
-        new CoverStyleOption { Display = "科技感 Tech Vibes", Value = "Tech" },
-        new CoverStyleOption { Display = "吸引眼球（美女版）👩✨", Value = "Beauty" },
-        new CoverStyleOption { Display = "开源纪念海报风格", Value = "OpenSourcePoster" },
-        new CoverStyleOption { Display = "未来感（Future/AIGC）", Value = "Future" },
+        new CoverStyleOption
+            { Display = "极简风 Minimalism", Value = "Minimalism", Prompt = PromptTemplates.CoverPromptMinimalism },
+        new CoverStyleOption
+            { Display = "科技感 Tech Vibes", Value = "Tech", Prompt = PromptTemplates.CoverPromptTechStyle },
+        new CoverStyleOption
+            { Display = "吸引眼球（美女版）👩✨", Value = "Beauty", Prompt = PromptTemplates.CoverPromptAttractiveFemale },
+        new CoverStyleOption
+            { Display = "开源纪念海报风格", Value = "OpenSourcePoster", Prompt = PromptTemplates.CoverPromptOpenSourcePoster },
+        new CoverStyleOption
+            { Display = "未来感（Future/AIGC）", Value = "Future", Prompt = PromptTemplates.CoverPromptFuturistic },
     };
 
-    public string SelectedCoverStyle { get; set; } // 绑定的实际值
-
-    private CoverStyleOption _selected;
-
-    public CoverStyleOption SelectedCoverStyleOption {
-        get => _selected;
-        set {
-            _selected = value;
-            SelectedCoverStyle = value?.Value;
-            // OnPropertyChanged 触发通知
-        }
-    }
+    public CoverStyleOption SelectedCoverStyleOption { get; set; }
 
     public CoverPromptWindowViewModel() {
         // 初始化AI功能状态
         IsAIEnabled = AppSettings.Instance.EnableAI;
+        SelectedCoverStyleOption = CoverStyleOptions.First(e => e.Value == "Beauty");
     }
 
     // 重新生成文章简介命令
@@ -57,9 +53,14 @@ public partial class CoverPromptWindowViewModel : ViewModelBase {
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(SelectedCoverStyleOption.Prompt)) {
+            await ShowMessageBox("错误", "未选择风格，或者所选风格的提示词为空！");
+            return;
+        }
+
         try {
             var prompt = PromptBuilder
-                .Create(PromptTemplates.CoverPromptAttractiveFemale)
+                .Create(SelectedCoverStyleOption.Prompt)
                 .AddParameter("title", ArticleTitle)
                 .AddParameter("summary", ArticleDescription)
                 .AddParameter("content", ArticleContent)
@@ -94,6 +95,7 @@ public partial class CoverPromptWindowViewModel : ViewModelBase {
 public class CoverStyleOption {
     public string Display { get; set; } // 显示的文字
     public string Value { get; set; } // 实际绑定的值
+    public string Prompt { get; set; } // 提示词
 
     public override string ToString() => Display; // 为了调试方便
 }

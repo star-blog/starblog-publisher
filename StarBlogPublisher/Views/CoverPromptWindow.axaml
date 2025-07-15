@@ -62,7 +62,7 @@
                              Text="{Binding GeneratedPrompt}"
                              AcceptsReturn="True"
                              TextWrapping="Wrap"
-                             MinLines="5"
+                             MinLines="10"
                              Watermark="提示词" />
                 </Grid>
             </StackPanel>
