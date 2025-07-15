@@ -278,7 +278,7 @@
 
 
         <!-- 底部区域：预览按钮、发布按钮、进度条和状态显示 -->
-        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="10">
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="10">
             <!-- 预览按钮 -->
             <Button Grid.Column="0"
                     Command="{Binding PreviewCommand}"
@@ -316,15 +316,27 @@
                     <TextBlock>复制内容</TextBlock>
                 </StackPanel>
             </Button>
+            
+            <!-- 复制按钮 -->
+            <Button Grid.Column="3"
+                    Command="{Binding ShowCoverPromptWindow}"
+                    Classes="IconButton"
+                    Padding="15,10"
+                    Margin="0,0,10,0">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <i:Icon Value="fa-solid fa-clipboard" Foreground="#FF9800" />
+                    <TextBlock>生成封面</TextBlock>
+                </StackPanel>
+            </Button>
 
             <!-- 进度条 -->
-            <ProgressBar Grid.Column="3"
+            <ProgressBar Grid.Column="4"
                          Value="{Binding PublishProgress}"
                          IsVisible="{Binding IsPublishing}"
                          Margin="10,0" />
 
             <!-- 状态显示 -->
-            <TextBlock Grid.Column="4"
+            <TextBlock Grid.Column="5"
                        Text="{Binding StatusMessage}"
                        VerticalAlignment="Center" />
         </Grid>

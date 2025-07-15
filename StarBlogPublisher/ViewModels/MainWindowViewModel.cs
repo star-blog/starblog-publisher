@@ -179,6 +179,20 @@ public partial class MainWindowViewModel : ViewModelBase {
         }
     }
 
+    // 显示封面提示词窗口
+    [RelayCommand]
+    private async Task ShowCoverPromptWindow() {
+        var viewmodel = new CoverPromptWindowViewModel {
+            ArticleTitle = ArticleTitle,
+            ArticleContent = ArticleContent,
+            ArticleDescription = ArticleDescription
+        };
+        var window = new CoverPromptWindow {
+            DataContext = viewmodel
+        };
+        await window.ShowDialog(App.MainWindow);
+    }
+
     // 发布文章命令
     [RelayCommand]
     private async Task Publish() {
@@ -373,7 +387,6 @@ public partial class MainWindowViewModel : ViewModelBase {
         }
     }
 
-    /// <summary
     [RelayCommand]
     private async Task ShowAbout() {
         var aboutWindow = new AboutWindow();
@@ -630,7 +643,8 @@ public partial class MainWindowViewModel : ViewModelBase {
             if (!string.IsNullOrEmpty(finalKeywords)) {
                 ArticleKeywords = finalKeywords;
                 StatusMessage = "AI已生成文章关键词";
-            } else {
+            }
+            else {
                 StatusMessage = "AI生成关键词格式异常，请手动编辑";
             }
         }
@@ -649,21 +663,21 @@ public partial class MainWindowViewModel : ViewModelBase {
             // 查找JSON数组的开始和结束
             var startIndex = jsonOutput.IndexOf('[');
             var endIndex = jsonOutput.LastIndexOf(']');
-            
+
             if (startIndex >= 0 && endIndex > startIndex) {
                 var jsonArray = jsonOutput.Substring(startIndex, endIndex - startIndex + 1);
-                
+
                 // 简单的JSON解析，提取引号内的内容
                 var keywords = new List<string>();
                 var matches = System.Text.RegularExpressions.Regex.Matches(jsonArray, @"""([^""]+)""");
-                
+
                 foreach (System.Text.RegularExpressions.Match match in matches) {
                     var keyword = match.Groups[1].Value.Trim();
                     if (!string.IsNullOrEmpty(keyword) && !keyword.StartsWith("//")) {
                         keywords.Add(keyword);
                     }
                 }
-                
+
                 return string.Join(", ", keywords);
             }
         }
@@ -671,10 +685,10 @@ public partial class MainWindowViewModel : ViewModelBase {
             // 如果JSON解析失败，返回空字符串
             Console.WriteLine($"ExtractKeywordsFromJson Failed: {ex.Message}");
         }
-        
+
         return string.Empty;
     }
-    
+
     // 生成文章Slug命令
     [RelayCommand]
     private async Task GenerateSlug() {

@@ -1,0 +1,63 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:StarBlogPublisher.ViewModels"
+        xmlns:converters="clr-namespace:StarBlogPublisher.Converters"
+        xmlns:i="https://github.com/projektanker/icons.avalonia"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="700"
+        x:Class="StarBlogPublisher.Views.CoverPromptWindow"
+        x:DataType="vm:CoverPromptWindowViewModel"
+        Icon="/Assets/logo.png"
+        Title="文章封面提示词"
+        Width="600" Height="700"
+        WindowStartupLocation="CenterOwner">
+
+    <Design.DataContext>
+        <vm:CoverPromptWindowViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="20">
+        <!-- 标题 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,20">
+            <i:Icon Value="fa-solid fa-gear" FontSize="24" Foreground="#1E88E5" />
+            <TextBlock Text="文章封面提示词" FontSize="24" FontWeight="Bold" />
+        </StackPanel>
+
+        <!-- 主要内容区域 -->
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="10">
+                <TextBlock Text="封面风格选择" FontSize="12"
+                           Foreground="{DynamicResource SystemBaseMediumColor}" />
+
+                <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,5">
+                    <ComboBox
+                        Items="{Binding CoverStyleOptions}"
+                        SelectedItem="{Binding SelectedCoverStyleOption}"
+                        IsEnabled="{Binding IsAIEnabled}"
+                        Width="200"
+                        HorizontalAlignment="Left">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Display}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Button Grid.Column="2"
+                            ToolTip.Tip="生成AI画图提示词"
+                            Command="{Binding GeneratePrompt}"
+                            IsVisible="{Binding IsAIEnabled}"
+                            Classes="IconButton"
+                            Padding="5,2">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <i:Icon Value="fa-solid fa-rotate" Foreground="#4CAF50" />
+                            <TextBlock>生成</TextBlock>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+                <TextBlock Grid.Column="0" Text="说明" FontWeight="SemiBold"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>
