@@ -35,6 +35,11 @@ public partial class CoverPromptWindowViewModel : ViewModelBase {
             { Display = "开源纪念海报风格", Value = "OpenSourcePoster", Prompt = PromptTemplates.CoverPromptOpenSourcePoster },
         new CoverStyleOption
             { Display = "未来感（Future/AIGC）", Value = "Future", Prompt = PromptTemplates.CoverPromptFuturistic },
+        new CoverStyleOption {
+            Display = "Urban Elegance（城市优雅风）",
+            Value = "Urban Elegance",
+            Prompt = PromptTemplates.CoverPromptUrbanElegance
+        }
     };
 
     public CoverStyleOption SelectedCoverStyleOption { get; set; }

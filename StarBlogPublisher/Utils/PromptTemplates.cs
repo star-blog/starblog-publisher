@@ -177,6 +177,7 @@ public static class PromptTemplates {
     #endregion
 
     #region 文章封面 AI 画图
+
     /// <summary>
     /// 极简风格封面图提示词模板
     /// </summary>
@@ -191,7 +192,7 @@ public static class PromptTemplates {
         风格关键词：极简、留白、现代、抽象、图标风  
         画面比例：16:9，仅图像，不含文字
         """;
-    
+
     /// <summary>
     /// 科技感封面图提示词模板
     /// </summary>
@@ -252,6 +253,110 @@ public static class PromptTemplates {
         风格关键词：未来、AI、AIGC、虚拟空间、赛博朋克、数字人、科幻  
         画面比例：16:9，仅图像，不含文字
         """;
-    
+
+    /// <summary>
+    /// 美女吸睛封面图提示词模板: Urban Elegance（城市优雅风）
+    /// </summary>
+    public const string CoverPromptUrbanElegance =
+        """
+        a beautiful woman walking confidently on a modern city street, fashion photography, cinematic lighting, shallow depth of field, stylish outfit, realistic, 16:9  
+        
+        inspired by: 
+        
+        article title: {{title}}
+        summary: {{summary}}
+        """;
+
+    /// <summary>
+    /// 美女吸睛封面图提示词模板: Warm Smile & Cozy Vibes（温暖治愈风）
+    /// </summary>
+    public const string CoverPromptWarmCozy =
+        """
+        a cute girl smiling warmly in a cozy cafe, soft lighting, warm color tones, casual outfit, photorealistic, relaxing mood, 16:9  
+        
+        inspired by: 
+        
+        article title: {{title}}
+        summary: {{summary}}
+        """;
+
+    /// <summary>
+    /// 美女吸睛封面图提示词模板: Beach Charm（夏日清新风）
+    /// </summary>
+    public const string CoverPromptBeachCharm =
+        """
+        a beautiful girl with long hair on a sunny beach, wind blowing gently, natural smile, bright colors, summer vibes, high quality photo style, 16:9  
+        
+        inspired by: 
+        
+        article title: {{title}}
+        summary: {{summary}}
+        """;
+
+    /// <summary>
+    /// 美女吸睛封面图提示词模板: Elegant Portrait（高质人像风）
+    /// </summary>
+    public const string CoverPromptElegantPortrait =
+        """
+        portrait of a stunning woman with perfect skin, soft studio lighting, elegant pose, close-up, clean background, ultra-detailed face, 16:9  
+        
+        inspired by: 
+        
+        article title: {{title}}
+        summary: {{summary}}
+        """;
+
+    /// <summary>
+    /// 美女吸睛封面图提示词模板: Girl Next Door（邻家女孩风）
+    /// </summary>
+    public const string CoverPromptGirlNextDoor =
+        """
+        a natural-looking girl sitting by the window with sunlight, reading a book, soft smile, everyday outfit, peaceful mood, photorealistic, 16:9  
+        
+        inspired by: 
+        
+        article title: {{title}}
+        summary: {{summary}}
+        """;
+
+    /// <summary>
+    /// 美女吸睛封面图提示词模板: Dynamic Street Style（动感街拍风）
+    /// </summary>
+    public const string CoverPromptStreetStyle =
+        """
+        a confident girl posing on a vibrant street, fashion streetwear, cool attitude, urban background, natural light, cinematic vibe, 16:9  
+        
+        inspired by: 
+        
+        article title: {{title}}
+        summary: {{summary}}
+        """;
+
+    /// <summary>
+    /// 美女吸睛封面图提示词模板: Romantic Garden Scene（浪漫花园风）
+    /// </summary>
+    public const string CoverPromptRomanticGarden =
+        """
+        a beautiful woman in a floral dress standing in a blooming garden, dreamy lighting, pastel colors, peaceful and romantic mood, 16:9  
+        
+        inspired by: 
+        
+        article title: {{title}}
+        summary: {{summary}}
+        """;
+
+    /// <summary>
+    /// 美女吸睛封面图提示词模板: Classic Magazine Cover（杂志封面感）
+    /// </summary>
+    public const string CoverPromptMagazineCover =
+        """
+        a glamorous woman posing like a fashion magazine cover, neutral background, professional lighting, stylish and confident expression, realistic, 16:9  
+        
+        inspired by: 
+        
+        article title: {{title}}
+        summary: {{summary}}
+        """;
+
     #endregion
 }
