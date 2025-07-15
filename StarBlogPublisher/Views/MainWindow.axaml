@@ -324,7 +324,7 @@
                     Padding="15,10"
                     Margin="0,0,10,0">
                 <StackPanel Orientation="Horizontal" Spacing="5">
-                    <i:Icon Value="fa-solid fa-clipboard" Foreground="#FF9800" />
+                    <i:Icon Value="fa-solid fa-image" Foreground="#FF9800" />
                     <TextBlock>生成封面</TextBlock>
                 </StackPanel>
             </Button>
