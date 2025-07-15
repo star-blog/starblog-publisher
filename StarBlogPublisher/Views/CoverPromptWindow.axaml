@@ -31,20 +31,19 @@
                 <TextBlock Text="封面风格选择" FontSize="12"
                            Foreground="{DynamicResource SystemBaseMediumColor}" />
 
-                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,5">
+                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,5" ColumnSpacing="10">
                     <ComboBox
                         ItemsSource="{Binding CoverStyleOptions}"
                         SelectedItem="{Binding SelectedTemplate}"
                         IsEnabled="{Binding IsAIEnabled}"
-                        Width="200"
-                        HorizontalAlignment="Left">
+                        HorizontalAlignment="Stretch">
                         <ComboBox.ItemTemplate>
                             <DataTemplate x:DataType="utils:PromptTemplate">
                                 <TextBlock Text="{Binding Name}" />
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
-                    <Button Grid.Column="2"
+                    <Button Grid.Column="1"
                             ToolTip.Tip="生成AI画图提示词"
                             Command="{Binding GeneratePromptCommand}"
                             IsVisible="{Binding IsAIEnabled}"
@@ -64,6 +63,7 @@
                              AcceptsReturn="True"
                              TextWrapping="Wrap"
                              MinLines="10"
+                             lin
                              Watermark="提示词" />
                 </Grid>
             </StackPanel>
