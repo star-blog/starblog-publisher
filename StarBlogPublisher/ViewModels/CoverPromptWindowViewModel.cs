@@ -17,6 +17,7 @@ public partial class CoverPromptWindowViewModel : ViewModelBase {
 
     // 文章封面风格
     [ObservableProperty] private string _coverStyle = "";
+    [ObservableProperty] private string _generatedPrompt = "";
 
     public string ArticleTitle { get; set; }
     public string ArticleDescription { get; set; }
@@ -58,16 +59,17 @@ public partial class CoverPromptWindowViewModel : ViewModelBase {
 
         try {
             var prompt = PromptBuilder
-                .Create(PromptTemplates.ArticleDescriptionTechnical)
+                .Create(PromptTemplates.CoverPromptAttractiveFemale)
                 .AddParameter("title", ArticleTitle)
+                .AddParameter("summary", ArticleDescription)
                 .AddParameter("content", ArticleContent)
                 .Build();
             var textStreamAsync = AiService.Instance.GenerateTextStreamAsync(prompt);
-            var description = new StringBuilder();
+            var result = new StringBuilder();
 
             await foreach (var update in textStreamAsync) {
-                description.Append(update.Text);
-                ArticleDescription = description.ToString();
+                result.Append(update.Text);
+                GeneratedPrompt = result.ToString();
             }
 
             await ShowMessageBox("成功", "已生成AI画图提示词");
