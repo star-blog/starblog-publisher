@@ -47,7 +47,7 @@
                             ToolTip.Tip="生成AI画图提示词"
                             Command="{Binding GeneratePromptCommand}"
                             IsVisible="{Binding IsAIEnabled}"
-                            Classes="IconButton"
+                            Classes="icon"
                             Padding="5,2">
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <i:Icon Value="fa-solid fa-rotate" Foreground="#4CAF50" />
@@ -63,7 +63,6 @@
                              AcceptsReturn="True"
                              TextWrapping="Wrap"
                              MinLines="10"
-                             lin
                              Watermark="提示词" />
                 </Grid>
             </StackPanel>
