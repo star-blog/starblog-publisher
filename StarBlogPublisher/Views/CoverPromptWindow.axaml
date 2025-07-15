@@ -32,13 +32,13 @@
 
                 <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,5">
                     <ComboBox
-                        Items="{Binding CoverStyleOptions}"
+                        ItemsSource="{Binding CoverStyleOptions}"
                         SelectedItem="{Binding SelectedCoverStyleOption}"
                         IsEnabled="{Binding IsAIEnabled}"
                         Width="200"
                         HorizontalAlignment="Left">
                         <ComboBox.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate x:DataType="vm:CoverStyleOption">
                                 <TextBlock Text="{Binding Display}" />
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
