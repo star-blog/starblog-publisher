@@ -32,7 +32,7 @@ public partial class CoverPromptWindowViewModel : ViewModelBase {
     public CoverPromptWindowViewModel() {
         // 初始化AI功能状态
         IsAIEnabled = AppSettings.Instance.EnableAI;
-        SelectedTemplate = CoverStyleOptions.First(e => e.Key == "UrbanElegance");
+        SelectedTemplate = CoverStyleOptions.First(e => e.Key == "BeCreativeGirl");
     }
 
     // 重新生成文章简介命令

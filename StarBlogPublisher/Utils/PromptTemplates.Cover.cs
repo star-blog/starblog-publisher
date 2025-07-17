@@ -219,6 +219,20 @@ public static partial class PromptTemplates {
                 Style Keywords: fashion model, editorial style, dramatic pose, neutral background, high-end vibe
                 Aspect Ratio: 16:9, image only, no text
                 """
+        },
+        
+        new PromptTemplate {
+            Key = "BeCreativeGirl",
+            Name = "妹子 - 自由发挥",
+            Prompt = 
+                """
+                请为这篇文章生成纯英文的AI画图提示词，画面主体是一个可爱的年轻女高中生，风格、内容请自由发挥。
+                
+                标题：{{title}}
+                简介：{{summary}}
+                
+                要求：不要输出多余的说明、解释或其他格式。
+                """
         }
     ];
 }
