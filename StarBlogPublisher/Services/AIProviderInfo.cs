@@ -75,7 +75,19 @@ public class AIProviderInfo {
             DefaultModel = "deepseek-chat",
             DefaultModels = ["deepseek-chat", "deepseek-coder"]
         },
-
+        // https://platform.moonshot.cn/docs/pricing/chat
+        new AIProviderInfo {
+          Name  = "kimi",
+          DisplayName = "Moonshot Kimi",
+          Description = "Moonshot的AI模型，最近很火的 Kimi-K2",
+          DefaultApiBase = "https://api.moonshot.cn/v1",
+          DefaultModel = "moonshot-v1-8k",
+          DefaultModels = [
+              "kimi-latest-8k","kimi-latest-32k","kimi-latest-128k",
+              "kimi-k2-0711-preview",
+              "moonshot-v1-8k","moonshot-v1-32k","moonshot-v1-128k",
+          ]
+        },
         // https://open.bigmodel.cn/console/modelcenter/square
         new AIProviderInfo {
             Name = "zhipu",
