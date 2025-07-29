@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -39,6 +39,49 @@ public partial class MainWindowViewModel : ViewModelBase {
         if (!IsLoggedIn) return;
         var window = new AddCategoryWindow();
         await window.ShowDialog(App.MainWindow);
+    }
+
+    /// <summary>
+    /// 分析文章图片命令
+    /// </summary>
+    [RelayCommand]
+    private void AnalyzeImages() {
+        if (string.IsNullOrEmpty(_currentFilePath) || string.IsNullOrEmpty(ArticleContent)) {
+            StatusMessage = "请先选择并加载Markdown文件";
+            return;
+        }
+
+        try {
+            StatusMessage = "正在分析文章中的图片...";
+            
+            // 创建BlogPost对象
+            var blogPost = new BlogPost {
+                Content = ArticleContent
+            };
+            
+            // 创建MarkdownProcessor并提取图片路径
+            var processor = new MarkdownProcessor(_currentFilePath, blogPost);
+            var imagePaths = processor.ExtractImagePaths();
+            
+            if (imagePaths.Length == 0) {
+                StatusMessage = "文章中未找到本地图片";
+                return;
+            }
+            
+            // 创建并显示图片画廊窗口
+            var viewModel = new ImageGalleryWindowViewModel();
+            var window = new ImageGalleryWindow(viewModel);
+            viewModel.SetWindow(window);
+            viewModel.LoadImages(imagePaths);
+            
+            window.ShowDialog(App.MainWindow);
+            StatusMessage = $"图片分析完成，共找到 {imagePaths.Length} 张图片";
+        }
+        catch (Exception ex) {
+            StatusMessage = $"分析图片失败: {ex.Message}";
+            // 输出完整的异常堆栈信息到控制台，便于调试
+            Console.WriteLine($"分析图片异常详情:\n{ex}");
+        }
     }
 
     public MainWindowViewModel() {

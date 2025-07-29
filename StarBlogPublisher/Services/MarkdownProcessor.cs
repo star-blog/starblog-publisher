@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -102,5 +103,42 @@ public class MarkdownProcessor(string filepath, BlogPost post) {
         return post.Content == null
             ? string.Empty
             : Markdig.Markdown.ToPlainText(post.Content).Limit(length);
+    }
+    
+    /// <summary>
+    /// 从Markdown内容中提取所有图片路径
+    /// </summary>
+    /// <returns>图片路径数组</returns>
+    public string[] ExtractImagePaths() {
+        if (post.Content == null) {
+            return Array.Empty<string>();
+        }
+
+        var document = Markdig.Markdown.Parse(post.Content);
+        var imagePaths = new List<string>();
+        var baseDir = Path.GetDirectoryName(filepath) ?? "";
+
+        foreach (var node in document.AsEnumerable()) {
+            if (node is not ParagraphBlock { Inline: { } } paragraphBlock) continue;
+            foreach (var inline in paragraphBlock.Inline) {
+                if (inline is not LinkInline { IsImage: true } linkInline) continue;
+                if (string.IsNullOrWhiteSpace(linkInline.Url)) continue;
+                
+                var imgUrl = Uri.UnescapeDataString(linkInline.Url);
+                
+                // 如果是本地图片路径，转换为绝对路径
+                if (!imgUrl.StartsWith("http")) {
+                    // 规范化路径
+                    imgUrl = imgUrl.Replace('/', Path.DirectorySeparatorChar) // 统一路径分隔符
+                        .Replace(".\\\\", "") // 移除相对路径前缀
+                        .Replace("./", ""); // 移除相对路径前缀
+                    
+                    imgUrl = Path.GetFullPath(Path.Combine(baseDir, imgUrl));
+                    imagePaths.Add(imgUrl);
+                }
+            }
+        }
+
+        return imagePaths.ToArray();
     }
 }

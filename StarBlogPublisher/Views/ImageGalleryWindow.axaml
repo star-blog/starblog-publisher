@@ -1,0 +1,147 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:StarBlogPublisher.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:i="https://github.com/projektanker/icons.avalonia"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+        x:Class="StarBlogPublisher.Views.ImageGalleryWindow"
+        x:DataType="vm:ImageGalleryWindowViewModel"
+        Icon="/Assets/logo.ico"
+        Title="图片画廊"
+        WindowStartupLocation="CenterOwner"
+        MinWidth="600" MinHeight="400">
+
+    <Design.DataContext>
+        <vm:ImageGalleryWindowViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource SystemChromeLowColor}">
+        <!-- 顶部标题栏 -->
+        <Border Classes="Card" Grid.Row="0" Margin="10">
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="10">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <i:Icon Value="fa-solid fa-images" Foreground="#4CAF50" Margin="0,0,8,0" />
+                    <TextBlock Text="文章图片画廊" FontSize="18" FontWeight="Bold" />
+                </StackPanel>
+                
+                <TextBlock Grid.Column="1" 
+                          Text="{Binding ImageCount, StringFormat='共 {0} 张图片'}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          FontSize="14"
+                          Foreground="{DynamicResource SystemBaseMediumColor}" />
+                
+                <Button Grid.Column="2"
+                        Content="关闭"
+                        Command="{Binding CloseCommand}"
+                        Classes="IconButton"
+                        Padding="10,5" />
+            </Grid>
+        </Border>
+
+        <!-- 图片网格区域 -->
+        <ScrollViewer Grid.Row="1" Margin="10">
+            <ItemsControl ItemsSource="{Binding Images}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Classes="Card" 
+                                Margin="5" 
+                                Padding="10"
+                                MaxWidth="250"
+                                CornerRadius="8">
+                            <StackPanel Spacing="8">
+                                <!-- 图片 -->
+                                <Border CornerRadius="4" 
+                                        ClipToBounds="True"
+                                        MaxHeight="200">
+                                    <Image Source="{Binding ImageBitmap}"
+                                           Stretch="Uniform"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                                </Border>
+                                
+                                <!-- 图片信息 -->
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="{Binding FileName}"
+                                              FontWeight="SemiBold"
+                                              TextWrapping="Wrap"
+                                              MaxLines="2" />
+                                    
+                                    <TextBlock Text="{Binding FilePath}"
+                                              FontSize="11"
+                                              Foreground="{DynamicResource SystemBaseMediumColor}"
+                                              TextWrapping="Wrap"
+                                              MaxLines="2" />
+                                    
+                                    <TextBlock Text="{Binding FileSize}"
+                                              FontSize="10"
+                                              Foreground="{DynamicResource SystemBaseMediumColor}" />
+                                </StackPanel>
+                                
+                                <!-- 操作按钮 -->
+                                <StackPanel Orientation="Horizontal" Spacing="5">
+                                    <Button Content="打开文件夹"
+                                            Command="{Binding $parent[Window].DataContext.OpenFolderCommand}"
+                                            CommandParameter="{Binding FilePath}"
+                                            Classes="IconButton"
+                                            FontSize="10"
+                                            Padding="8,4">
+                                        <Button.Content>
+                                            <StackPanel Orientation="Horizontal" Spacing="3">
+                                                <i:Icon Value="fa-solid fa-folder-open" FontSize="10" />
+                                                <TextBlock Text="打开" FontSize="10" />
+                                            </StackPanel>
+                                        </Button.Content>
+                                    </Button>
+                                    
+                                    <Button Content="复制路径"
+                                            Command="{Binding $parent[Window].DataContext.CopyPathCommand}"
+                                            CommandParameter="{Binding FilePath}"
+                                            Classes="IconButton"
+                                            FontSize="10"
+                                            Padding="8,4">
+                                        <Button.Content>
+                                            <StackPanel Orientation="Horizontal" Spacing="3">
+                                                <i:Icon Value="fa-solid fa-copy" FontSize="10" />
+                                                <TextBlock Text="复制" FontSize="10" />
+                                            </StackPanel>
+                                        </Button.Content>
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- 底部状态栏 -->
+        <Border Classes="Card" Grid.Row="2" Margin="10">
+            <Grid ColumnDefinitions="*,Auto" Margin="10">
+                <TextBlock Grid.Column="0"
+                          Text="{Binding StatusMessage}"
+                          VerticalAlignment="Center"
+                          FontSize="12" />
+                
+                <Button Grid.Column="1"
+                        Content="刷新"
+                        Command="{Binding RefreshCommand}"
+                        Classes="IconButton"
+                        Padding="10,5">
+                    <Button.Content>
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <i:Icon Value="fa-solid fa-rotate-right" />
+                            <TextBlock Text="刷新" />
+                        </StackPanel>
+                    </Button.Content>
+                </Button>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
