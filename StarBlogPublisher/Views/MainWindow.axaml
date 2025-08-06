@@ -131,6 +131,17 @@
 
                         <!-- 标题输入 -->
                         <StackPanel Grid.Row="1" Spacing="5" Margin="5">
+                            <!-- 标题优化模板选择 -->
+                            <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding IsAIEnabled}" Margin="0,0,0,5">
+                                <TextBlock Grid.Column="0" Text="优化模板" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <ComboBox Grid.Column="1"
+                                          ItemsSource="{Binding TitleOptimizationTemplates}"
+                                          SelectedItem="{Binding SelectedTitleOptimizationTemplate}"
+                                          DisplayMemberBinding="{Binding Name}"
+                                          ToolTip.Tip="{Binding SelectedTitleOptimizationTemplate.Description}"
+                                          MinWidth="200" />
+                            </Grid>
+                            
                             <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                                 <TextBlock Grid.Column="0" Text="标题" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 <Button Grid.Column="2"

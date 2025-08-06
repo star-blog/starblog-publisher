@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia;
@@ -105,6 +106,25 @@ public partial class MainWindowViewModel : ViewModelBase {
 
         // 初始化AI功能状态
         IsAIEnabled = AppSettings.Instance.EnableAI;
+        
+        // 初始化标题优化模板
+        InitializeTitleOptimizationTemplates();
+    }
+    
+    /// <summary>
+    /// 初始化标题优化模板列表
+    /// </summary>
+    private void InitializeTitleOptimizationTemplates()
+    {
+        TitleOptimizationTemplates.Clear();
+        foreach (var template in PromptTemplates.TitleOptimizationTemplates)
+        {
+            TitleOptimizationTemplates.Add(template);
+        }
+        
+        // 设置默认选中的模板
+        SelectedTitleOptimizationTemplate = TitleOptimizationTemplates.FirstOrDefault(t => t.IsDefault) 
+                                          ?? TitleOptimizationTemplates.FirstOrDefault();
     }
 
     // 软件版本信息
@@ -124,6 +144,10 @@ public partial class MainWindowViewModel : ViewModelBase {
 
     // AI功能是否启用
     [ObservableProperty] private bool _isAIEnabled = false;
+
+    // 标题优化模板选项
+    [ObservableProperty] private ObservableCollection<TitleOptimizationTemplate> _titleOptimizationTemplates = new();
+    [ObservableProperty] private TitleOptimizationTemplate? _selectedTitleOptimizationTemplate;
 
     // 文章内容
     [ObservableProperty] private string _articleContent = "";
@@ -612,19 +636,26 @@ public partial class MainWindowViewModel : ViewModelBase {
         StatusMessage = "已重置标题为文件名";
     }
 
-    // 润色文章标题命令
+    /// <summary>
+    /// 润色文章标题命令
+    /// </summary>
     [RelayCommand]
     private async Task RefineTitleWithAI() {
         if (!IsAIEnabled || string.IsNullOrEmpty(ArticleContent) || string.IsNullOrEmpty(ArticleTitle)) {
             StatusMessage = "无法润色标题：AI功能未启用或文章内容/标题为空";
             return;
         }
+        
+        if (SelectedTitleOptimizationTemplate == null) {
+            StatusMessage = "请选择标题优化模板";
+            return;
+        }
 
         IsRefiningTitle = true;
-        StatusMessage = "正在使用AI润色文章标题...";
+        StatusMessage = $"正在使用AI润色文章标题（{SelectedTitleOptimizationTemplate.Name}）...";
         try {
             var prompt = PromptBuilder
-                .Create(PromptTemplates.TitleOptimization)
+                .Create(SelectedTitleOptimizationTemplate.Template)
                 .AddParameter("title", ArticleTitle)
                 .AddParameter("keywords", ArticleKeywords)
                 .AddParameter("content", ArticleContent)
@@ -637,7 +668,7 @@ public partial class MainWindowViewModel : ViewModelBase {
                 ArticleTitle = refinedTitle.ToString();
             }
 
-            ArticleTitle = ArticleTitle.Trim('《', '》', '\"', '"', '"', '\n');
+            ArticleTitle = ArticleTitle.Trim('《', '》', '"', '"', '"', '\n');
 
             StatusMessage = "AI已润色文章标题";
         }
