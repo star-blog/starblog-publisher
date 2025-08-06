@@ -131,18 +131,7 @@
 
                         <!-- 标题输入 -->
                         <StackPanel Grid.Row="1" Spacing="5" Margin="5">
-                            <!-- 标题优化模板选择 -->
-                            <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding IsAIEnabled}" Margin="0,0,0,5">
-                                <TextBlock Grid.Column="0" Text="优化模板" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0" />
-                                <ComboBox Grid.Column="1"
-                                          ItemsSource="{Binding TitleOptimizationTemplates}"
-                                          SelectedItem="{Binding SelectedTitleOptimizationTemplate}"
-                                          DisplayMemberBinding="{Binding Name}"
-                                          ToolTip.Tip="{Binding SelectedTitleOptimizationTemplate.Description}"
-                                          MinWidth="200" />
-                            </Grid>
-                            
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                                 <TextBlock Grid.Column="0" Text="标题" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 <Button Grid.Column="2"
                                         ToolTip.Tip="重置为文件名"
@@ -167,6 +156,15 @@
                                         <TextBlock>AI润色</TextBlock>
                                     </StackPanel>
                                 </Button>
+                                <!-- 标题优化模板选择 -->
+                                <ComboBox Grid.Column="4"
+                                          ItemsSource="{Binding TitleOptimizationTemplates}"
+                                          SelectedItem="{Binding SelectedTitleOptimizationTemplate}"
+                                          DisplayMemberBinding="{Binding Name}"
+                                          ToolTip.Tip="{Binding SelectedTitleOptimizationTemplate.Description}"
+                                          IsVisible="{Binding IsAIEnabled}"
+                                          Width="120"
+                                          Margin="5,0,5,0" />
                             </Grid>
                             <TextBox Text="{Binding ArticleTitle}"
                                      Watermark="请输入文章标题" />
