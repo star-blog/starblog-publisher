@@ -413,7 +413,15 @@ public partial class MainWindowViewModel : ViewModelBase {
             StatusMessage = $"正在上传图片 ({uploaded}/{total})...";
         };
 
-        var processedContent = await markdownProcessor.MarkdownParse();
+        // 自定义压缩配置
+        var config = new ImageCompressionConfig(
+            MaxWidth: 1200,
+            MaxHeight: 800, 
+            Quality: 85,
+            PreferWebP: false
+        );
+
+        var processedContent = await markdownProcessor.MarkdownParse(true, config);
         PublishProgress = 80;
         return processedContent;
     }
