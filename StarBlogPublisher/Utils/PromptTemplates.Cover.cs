@@ -233,6 +233,20 @@ public static partial class PromptTemplates {
                 
                 要求：不要输出多余的说明、解释或其他格式。
                 """
-        }
+        },
+        
+        new PromptTemplate {
+            Key = "BeCreativeGirl",
+            Name = "喵喵 - 自由发挥",
+            Prompt = 
+                """
+                请为这篇文章生成纯英文的AI画图提示词，画面主体是可爱的猫猫，风格、内容请自由发挥。
+
+                标题：{{title}}
+                简介：{{summary}}
+
+                要求：不要输出多余的说明、解释或其他格式。
+                """
+        },
     ];
 }
