@@ -6,7 +6,7 @@ from datetime import datetime
 import platform
 
 # 配置信息
-VERSION = "1.9.0"
+VERSION = "1.10.2"
 
 def get_aot_platforms():
     """获取支持AOT的平台列表"""
