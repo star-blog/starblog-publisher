@@ -85,6 +85,12 @@ public class AppSettings {
     // 主题设置
     public bool IsDarkTheme { get; set; } = false;
 
+    // 图片解析设置
+    /// <summary>
+    /// 是否启用正则表达式方式识别图片路径（用于处理带空格的图片路径）
+    /// </summary>
+    public bool EnableRegexImageParsing { get; set; } = false;
+
     // 配置变更事件
     public event EventHandler? SettingsChanged;
 

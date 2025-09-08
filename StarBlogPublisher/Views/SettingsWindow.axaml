@@ -130,6 +130,26 @@
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
+                </Border>                
+
+                <!-- 图片解析设置卡片 -->
+                <Border Classes="Card">
+                    <StackPanel Spacing="15" Margin="15">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <i:Icon Value="fa-solid fa-image" Foreground="#FF9800" />
+                            <TextBlock Text="图片解析设置" FontWeight="Bold" FontSize="16" />
+                        </StackPanel>
+                        
+                        <StackPanel Spacing="10">
+                            <ToggleSwitch OnContent="启用正则识别" OffContent="仅使用标准识别"
+                                          IsChecked="{Binding EnableRegexImageParsing}" />
+                            <TextBlock Text="启用后将使用正则表达式额外识别带空格的图片路径，但可能会过度识别。建议仅在需要处理特殊路径时开启。" 
+                                       TextWrapping="Wrap" 
+                                       FontSize="12" 
+                                       Foreground="{DynamicResource SystemBaseMediumColor}" 
+                                       Margin="0,5,0,0" />
+                        </StackPanel>
+                    </StackPanel>
                 </Border>
 
                 <!-- AI设置卡片 -->

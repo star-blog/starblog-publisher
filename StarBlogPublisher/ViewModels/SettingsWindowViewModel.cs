@@ -20,6 +20,7 @@ public partial class SettingsWindowViewModel : ViewModelBase {
     private string _password = string.Empty;
     private int _backendTimeout;
     private bool _showPassword;
+    private bool _enableRegexImageParsing;
 
     public bool UseProxy {
         get => _useProxy;
@@ -76,6 +77,14 @@ public partial class SettingsWindowViewModel : ViewModelBase {
         set => SetProperty(ref _showPassword, value);
     }
 
+    /// <summary>
+    /// 是否启用正则表达式方式识别图片路径
+    /// </summary>
+    public bool EnableRegexImageParsing {
+        get => _enableRegexImageParsing;
+        set => SetProperty(ref _enableRegexImageParsing, value);
+    }
+
     [RelayCommand]
     private void TogglePassword() {
         ShowPassword = !ShowPassword;
@@ -98,6 +107,7 @@ public partial class SettingsWindowViewModel : ViewModelBase {
         Username = settings.Username;
         Password = settings.Password;
         BackendTimeout = settings.BackendTimeout;
+        EnableRegexImageParsing = settings.EnableRegexImageParsing;
     }
 
     [RelayCommand]
@@ -114,6 +124,7 @@ public partial class SettingsWindowViewModel : ViewModelBase {
         settings.Username = Username;
         settings.Password = Password;
         settings.BackendTimeout = BackendTimeout;
+        settings.EnableRegexImageParsing = EnableRegexImageParsing;
 
         settings.Save();
         CloseWindow();

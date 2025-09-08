@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:i="https://github.com/projektanker/icons.avalonia"
+        xmlns:converters="using:StarBlogPublisher.Converters"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
         x:Class="StarBlogPublisher.Views.ImageGalleryWindow"
         x:DataType="vm:ImageGalleryWindowViewModel"
@@ -54,24 +55,52 @@
                                 Margin="5" 
                                 Padding="10"
                                 MaxWidth="250"
-                                CornerRadius="8">
+                                CornerRadius="8"
+                                BorderBrush="{Binding Exists, Converter={x:Static converters:BooleanToValueConverter.Instance}, ConverterParameter='Transparent|#F44336'}"
+                                BorderThickness="{Binding Exists, Converter={x:Static converters:BooleanToValueConverter.Instance}, ConverterParameter='0|2'}">
                             <StackPanel Spacing="8">
                                 <!-- 图片 -->
                                 <Border CornerRadius="4" 
                                         ClipToBounds="True"
                                         MaxHeight="200">
-                                    <Image Source="{Binding ImageBitmap}"
-                                           Stretch="Uniform"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center" />
+                                    <Grid>
+                                        <Image Source="{Binding ImageBitmap}"
+                                               Stretch="Uniform"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
+                                        
+                                        <!-- 不存在文件的警告覆盖层 -->
+                                        <Border Background="#80000000" 
+                                                CornerRadius="4"
+                                                IsVisible="{Binding !Exists}">
+                                            <StackPanel HorizontalAlignment="Center" 
+                                                       VerticalAlignment="Center"
+                                                       Spacing="8">
+                                                <i:Icon Value="fa-solid fa-exclamation-triangle" 
+                                                       Foreground="#F44336" 
+                                                       FontSize="32" />
+                                                <TextBlock Text="文件不存在" 
+                                                          Foreground="#F44336" 
+                                                          FontWeight="Bold" 
+                                                          HorizontalAlignment="Center" />
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
                                 </Border>
                                 
                                 <!-- 图片信息 -->
                                 <StackPanel Spacing="4">
-                                    <TextBlock Text="{Binding FileName}"
-                                              FontWeight="SemiBold"
-                                              TextWrapping="Wrap"
-                                              MaxLines="2" />
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <i:Icon Value="fa-solid fa-exclamation-triangle" 
+                                               Foreground="#F44336" 
+                                               FontSize="12"
+                                               IsVisible="{Binding !Exists}" />
+                                        <TextBlock Text="{Binding FileName}"
+                                                  FontWeight="SemiBold"
+                                                  TextWrapping="Wrap"
+                                                  MaxLines="2"
+                                                  Foreground="{Binding Exists, Converter={x:Static converters:BooleanToValueConverter.Instance}, ConverterParameter='{DynamicResource SystemBaseHighColor}|#F44336'}" />
+                                    </StackPanel>
                                     
                                     <TextBlock Text="{Binding FilePath}"
                                               FontSize="11"

@@ -68,6 +68,12 @@ public class MarkdownProcessor(string filepath, BlogPost post) {
                     var baseDir = Path.GetDirectoryName(filepath) ?? "";
                     imgUrl = Path.GetFullPath(Path.Combine(baseDir, imgUrl));
 
+                    // 检查文件是否存在，跳过不存在的图片
+                    if (!File.Exists(imgUrl)) {
+                        Console.WriteLine($"跳过不存在的图片文件: {imgUrl}");
+                        continue;
+                    }
+
                     try {
                         string actualImagePath = imgUrl;
                         string actualImageFilename = Path.GetFileName(imgUrl);
@@ -165,10 +171,13 @@ public class MarkdownProcessor(string filepath, BlogPost post) {
             }
         }
 
-        // 添加自定义解析逻辑处理带空格的图片路径
-        // Markdig 无法正确解析带空格的图片路径，需要手动处理
-        var customPaths = ExtractImagePathsWithSpaces(post.Content, baseDir);
-        imagePaths.AddRange(customPaths);
+        // 根据设置决定是否使用正则方式识别图片路径
+        if (AppSettings.Instance.EnableRegexImageParsing) {
+            // 添加自定义解析逻辑处理带空格的图片路径
+            // Markdig 无法正确解析带空格的图片路径，需要手动处理
+            var customPaths = ExtractImagePathsWithSpaces(post.Content, baseDir);
+            imagePaths.AddRange(customPaths);
+        }
         
         // 去重并返回
         return imagePaths.Distinct().ToArray();
