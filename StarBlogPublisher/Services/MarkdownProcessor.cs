@@ -165,6 +165,55 @@ public class MarkdownProcessor(string filepath, BlogPost post) {
             }
         }
 
-        return imagePaths.ToArray();
+        // 添加自定义解析逻辑处理带空格的图片路径
+        // Markdig 无法正确解析带空格的图片路径，需要手动处理
+        var customPaths = ExtractImagePathsWithSpaces(post.Content, baseDir);
+        imagePaths.AddRange(customPaths);
+        
+        // 去重并返回
+        return imagePaths.Distinct().ToArray();
+    }
+    
+    /// <summary>
+    /// 提取带空格的图片路径（Markdig 无法正确解析的情况）
+    /// </summary>
+    /// <param name="content">Markdown 内容</param>
+    /// <param name="baseDir">基础目录</param>
+    /// <returns>图片路径列表</returns>
+    private List<string> ExtractImagePathsWithSpaces(string content, string baseDir) {
+        var imagePaths = new List<string>();
+        
+        // 使用正则表达式匹配图片语法：![alt](path)
+        // 支持路径中包含空格、中文字符等
+        var imagePattern = @"!\[([^\]]*)\]\(([^)]+)\)";
+        var matches = System.Text.RegularExpressions.Regex.Matches(content, imagePattern);
+        
+        foreach (System.Text.RegularExpressions.Match match in matches) {
+            if (match.Groups.Count >= 3) {
+                var imagePath = match.Groups[2].Value.Trim();
+                
+                // 移除可能的引号
+                if ((imagePath.StartsWith('"') && imagePath.EndsWith('"')) ||
+                    (imagePath.StartsWith('\'') && imagePath.EndsWith('\''))) {
+                    imagePath = imagePath.Substring(1, imagePath.Length - 2);
+                }
+                
+                // URL 解码
+                imagePath = Uri.UnescapeDataString(imagePath);
+                
+                // 只处理本地路径
+                if (!imagePath.StartsWith("http")) {
+                    // 规范化路径
+                    imagePath = imagePath.Replace('/', Path.DirectorySeparatorChar)
+                         .Replace(".\\\\", "")
+                         .Replace("./", "");
+                    
+                    var fullPath = Path.GetFullPath(Path.Combine(baseDir, imagePath));
+                    imagePaths.Add(fullPath);
+                }
+            }
+        }
+        
+        return imagePaths;
     }
 }
