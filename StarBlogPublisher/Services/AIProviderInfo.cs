@@ -95,7 +95,10 @@ public class AIProviderInfo {
             Description = "清华智谱的AI模型，可以申请完全免费模型接口，具有代表性的模型是 ChatGLM",
             DefaultApiBase = "https://open.bigmodel.cn/api/paas/v4",
             DefaultModel = "glm-4-flash",
-            DefaultModels = ["glm-z1-flash", "glm-4-flash-250414", "glm-4-flashx", "glm-4-flash", "glm-4v-flash"]
+            DefaultModels = [
+                "glm-z1-flash", "glm-4-flash-250414", "glm-4-flashx", "glm-4-flash", "glm-4v-flash",
+                "glm-4.5-flash", "glm4.5", "glm-4.6v-flash", "glm-4.6"
+            ]
         },
 
         new AIProviderInfo {
