@@ -25,9 +25,9 @@ public class AIProviderInfo {
             DefaultApiBase = "https://api.openai.com/v1",
             DefaultModel = "gpt-4o",
             DefaultModels = [
-                "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", 
-                "gpt-4.5-preview", 
-                "gpt-4o", "gpt-4o-mini", 
+                "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano",
+                "gpt-4.5-preview",
+                "gpt-4o", "gpt-4o-mini",
                 "gpt-4o-audio-preview", "gpt-4o-realtime-preview",
                 "gpt-4o-mini-audio-preview", "gpt-4o-mini-realtime-preview",
                 "o1", "o1-pro", "o1-mini",
@@ -57,13 +57,14 @@ public class AIProviderInfo {
         },
 
         // https://ai.google.dev/gemini-api/docs/models
+        // https://ai.google.dev/gemini-api/docs/openai?hl=zh-cn
         new AIProviderInfo {
             Name = "gemini",
             DisplayName = "Google Gemini",
             Description = "Google的Gemini系列模型，包括Gemini Pro和Gemini Ultra等",
-            DefaultApiBase = "https://generativelanguage.googleapis.com",
-            DefaultModel = "gemini-1.5-pro",
-            DefaultModels = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"]
+            DefaultApiBase = "https://generativelanguage.googleapis.com/v1beta/openai/",
+            DefaultModel = "gemini-2.5-flash",
+            DefaultModels = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3-flash-preview"]
         },
 
         // https://api-docs.deepseek.com/zh-cn/quick_start/pricing
@@ -77,16 +78,16 @@ public class AIProviderInfo {
         },
         // https://platform.moonshot.cn/docs/pricing/chat
         new AIProviderInfo {
-          Name  = "kimi",
-          DisplayName = "Moonshot Kimi",
-          Description = "Moonshot的AI模型，最近很火的 Kimi-K2",
-          DefaultApiBase = "https://api.moonshot.cn/v1",
-          DefaultModel = "moonshot-v1-8k",
-          DefaultModels = [
-              "kimi-latest-8k","kimi-latest-32k","kimi-latest-128k",
-              "kimi-k2-0711-preview",
-              "moonshot-v1-8k","moonshot-v1-32k","moonshot-v1-128k",
-          ]
+            Name = "kimi",
+            DisplayName = "Moonshot Kimi",
+            Description = "Moonshot的AI模型，最近很火的 Kimi-K2",
+            DefaultApiBase = "https://api.moonshot.cn/v1",
+            DefaultModel = "moonshot-v1-8k",
+            DefaultModels = [
+                "kimi-latest-8k", "kimi-latest-32k", "kimi-latest-128k",
+                "kimi-k2-0711-preview",
+                "moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k",
+            ]
         },
         // https://open.bigmodel.cn/console/modelcenter/square
         new AIProviderInfo {
@@ -128,7 +129,8 @@ public class AIProviderInfo {
     /// <param name="apiKey">API密钥</param>
     /// <param name="apiBase">API基础地址</param>
     /// <returns>包含模型列表和状态的元组：(模型列表, 是否成功, 错误信息)</returns>
-    public async Task<(List<string> Models, bool Success, string ErrorMessage)> GetModelsAsync(string apiKey,
+    public async Task<(List<string> Models, bool Success, string ErrorMessage)> GetModelsAsync(
+        string apiKey,
         string apiBase = null) {
         try {
             // 如果未提供API密钥，直接返回默认模型
@@ -170,8 +172,7 @@ public class AIProviderInfo {
             // API调用成功但返回失败状态码或无数据
             string errorMessage = $"获取模型列表失败：{response.ReasonPhrase}";
             return (DefaultModels, false, errorMessage);
-        }
-        catch (Exception ex) {
+        } catch (Exception ex) {
             string errorMessage = $"获取模型列表报错：{ex.Message}";
             Console.WriteLine(errorMessage);
             return (DefaultModels, false, errorMessage);
