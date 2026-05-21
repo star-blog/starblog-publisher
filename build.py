@@ -106,7 +106,10 @@ def build_and_package(profile, system):
         os.makedirs(dist_dir, exist_ok=True)
 
         # 创建zip文件
-        zip_filename = f"StarBlogPublisher_{VERSION}-{system}-{profile}.zip"
+        if profile == "aot" and system == "win-x64":
+            zip_filename = f"StarBlogPublisher-windows-{VERSION}.zip"
+        else:
+            zip_filename = f"StarBlogPublisher_{VERSION}-{system}-{profile}.zip"
         zip_path = os.path.join(dist_dir, zip_filename)
         create_zip(publish_dir, zip_path)
 

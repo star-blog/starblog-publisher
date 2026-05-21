@@ -100,6 +100,18 @@ StarBlog Publisher 是一款专为 [StarBlog博客系统](https://github.com/Dea
 2. 解压缩下载的文件
 3. 运行 `StarBlogPublisher.exe`
 
+### Scoop 安装
+
+本软件支持通过 [Scoop](https://scoop.sh/) 包管理器安装：
+
+```powershell
+# 添加 bucket
+scoop bucket add starblog-publisher https://github.com/star-blog/starblog-publisher.git
+
+# 安装
+scoop install starblog-publisher/starblog-publisher
+```
+
 ### 配置说明
 
 1. 首次运行时，点击设置按钮配置博客后端API地址

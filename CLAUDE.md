@@ -115,6 +115,12 @@ StarBlogPublisher/
 - **注意**: AOT 相关配置在 csproj 中已注释，CI 构建时通过命令行参数启用
 - 当前框架目标为 net10.0，CI 使用 .NET 8.0（需要更新）
 
+## Scoop 安装
+- 本仓库 `bucket/` 目录包含 Scoop 包管理器的安装清单 (`starblog-publisher.json`)
+- 通过将此仓库添加为 Scoop bucket 安装：`scoop bucket add starblog-publisher <repo-url> && scoop install starblog-publisher/starblog-publisher`
+- Windows 发布包命名格式：`StarBlogPublisher-windows-<VERSION>.zip`
+- 更新版本时需同步更新 `bucket/starblog-publisher.json` 中的 version 和 hash 值
+
 ## 常见命令
 - 构建：`dotnet build StarBlogPublisher/StarBlogPublisher.csproj`
 - 运行：`dotnet run --project StarBlogPublisher/StarBlogPublisher.csproj`

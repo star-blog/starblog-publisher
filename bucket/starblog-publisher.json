@@ -1,0 +1,30 @@
+{
+    "version": "1.10.7",
+    "description": "为StarBlog博客系统设计的专业文章发布工具，支持Markdown编辑、AI辅助创作、一键发布等功能",
+    "homepage": "https://github.com/star-blog/starblog-publisher",
+    "license": "MIT",
+    "notes": "使用前请先配置StarBlog后端API地址",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/star-blog/starblog-publisher/releases/download/v1.10.7/StarBlogPublisher-windows-1.10.7.zip",
+            "hash": "765884181672ef74ed94426b116f8c01ebdb085c22383414e3a5d908502e8153"
+        }
+    },
+    "bin": "StarBlogPublisher.exe",
+    "shortcuts": [
+        [
+            "StarBlogPublisher.exe",
+            "StarBlog Publisher"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/star-blog/starblog-publisher"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/star-blog/starblog-publisher/releases/download/v$version/StarBlogPublisher-windows-$version.zip"
+            }
+        }
+    }
+}
