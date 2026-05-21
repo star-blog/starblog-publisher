@@ -8,7 +8,8 @@ using System.Threading.Tasks;
 
 namespace StarBlogPublisher.Services;
 
-public class AIProviderInfo {
+public class AIProviderInfo
+{
     public string Name { get; set; }
     public string DisplayName { get; set; }
     public string Description { get; set; }
@@ -23,16 +24,14 @@ public class AIProviderInfo {
             DisplayName = "OpenAI",
             Description = "OpenAI的GPT系列模型，包括GPT-4o和GPT-o1等",
             DefaultApiBase = "https://api.openai.com/v1",
-            DefaultModel = "gpt-4o",
+            DefaultModel = "gpt-5-mini",
             DefaultModels = [
-                "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano",
-                "gpt-4.5-preview",
-                "gpt-4o", "gpt-4o-mini",
-                "gpt-4o-audio-preview", "gpt-4o-realtime-preview",
-                "gpt-4o-mini-audio-preview", "gpt-4o-mini-realtime-preview",
-                "o1", "o1-pro", "o1-mini",
-                "o3", "o3-mini",
-                "o4-mini"
+                "gpt-4.1",
+                "gpt-4o",
+                "gpt-5-mini",
+                "gpt-5.4-mini",
+                "gpt-5.4",
+                "gpt-5.5"
             ]
         },
 
@@ -40,10 +39,12 @@ public class AIProviderInfo {
         new AIProviderInfo {
             Name = "claude",
             DisplayName = "Claude",
-            Description = "Anthropic的Claude系列模型，包括Claude 3.5和Claude 3.7等",
+            Description = "Anthropic的Claude系列模型，包括Claude 4.6等",
             DefaultApiBase = "https://api.anthropic.com",
-            DefaultModel = "claude-3.5-sonnet",
-            DefaultModels = ["claude-3.7-sonnet", "claude-3.5-sonnet", "claude-3-haiku", "claude-3-opus"]
+            DefaultModel = "claude-4.6-haiku",
+            DefaultModels = [
+                "claude-4.6-haiku", "claude-4.6-sonnet", "claude-4.6-opus"
+            ]
         },
 
         // https://docs.x.ai/docs/models#models-and-pricing
@@ -71,10 +72,10 @@ public class AIProviderInfo {
         new AIProviderInfo {
             Name = "deepseek",
             DisplayName = "DeepSeek",
-            Description = "DeepSeek的AI模型，包括DeepSeek-V3和DeepSeek-R1等",
+            Description = "DeepSeek的AI模型，包括DeepSeek-V4-flash和DeepSeek-V4-pro等",
             DefaultApiBase = "https://api.deepseek.com/v1",
-            DefaultModel = "deepseek-chat",
-            DefaultModels = ["deepseek-chat", "deepseek-coder"]
+            DefaultModel = "deepseek-v4-flash",
+            DefaultModels = ["deepseek-v4-flash", "deepseek-v4-pro"]
         },
         // https://platform.moonshot.cn/docs/pricing/chat
         new AIProviderInfo {
@@ -131,10 +132,13 @@ public class AIProviderInfo {
     /// <returns>包含模型列表和状态的元组：(模型列表, 是否成功, 错误信息)</returns>
     public async Task<(List<string> Models, bool Success, string ErrorMessage)> GetModelsAsync(
         string apiKey,
-        string apiBase = null) {
-        try {
+        string apiBase = null)
+    {
+        try
+        {
             // 如果未提供API密钥，直接返回默认模型
-            if (string.IsNullOrEmpty(apiKey)) {
+            if (string.IsNullOrEmpty(apiKey))
+            {
                 return (DefaultModels, false, "未提供API密钥");
             }
 
@@ -145,13 +149,15 @@ public class AIProviderInfo {
             var settings = AppSettings.Instance;
 
             // 如果启用了代理，配置代理
-            if (settings.UseProxy && !string.IsNullOrEmpty(settings.ProxyHost) && settings.ProxyPort > 0) {
+            if (settings.UseProxy && !string.IsNullOrEmpty(settings.ProxyHost) && settings.ProxyPort > 0)
+            {
                 var proxyUri = $"{settings.ProxyType}://{settings.ProxyHost}:{settings.ProxyPort}";
                 handler.Proxy = new WebProxy(proxyUri);
                 handler.UseProxy = true;
             }
 
-            using var client = new HttpClient(handler) {
+            using var client = new HttpClient(handler)
+            {
                 Timeout = TimeSpan.FromSeconds(settings.ProxyTimeout > 0 ? settings.ProxyTimeout : 30)
             };
 
@@ -159,11 +165,13 @@ public class AIProviderInfo {
 
             var response = await client.GetAsync($"{baseUrl.TrimEnd('/')}/models");
 
-            if (response.IsSuccessStatusCode) {
+            if (response.IsSuccessStatusCode)
+            {
                 var content = await response.Content.ReadAsStringAsync();
                 var modelsData = JsonSerializer.Deserialize<ModelsResponse>(content);
 
-                if (modelsData?.Data != null && modelsData.Data.Count > 0) {
+                if (modelsData?.Data != null && modelsData.Data.Count > 0)
+                {
                     var modelList = modelsData.Data.ConvertAll(m => m.Id);
                     return (modelList, true, string.Empty);
                 }
@@ -172,18 +180,22 @@ public class AIProviderInfo {
             // API调用成功但返回失败状态码或无数据
             string errorMessage = $"获取模型列表失败：{response.ReasonPhrase}";
             return (DefaultModels, false, errorMessage);
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             string errorMessage = $"获取模型列表报错：{ex.Message}";
             Console.WriteLine(errorMessage);
             return (DefaultModels, false, errorMessage);
         }
     }
 
-    private class ModelsResponse {
+    private class ModelsResponse
+    {
         public List<ModelInfo> Data { get; set; }
     }
 
-    private class ModelInfo {
+    private class ModelInfo
+    {
         public string Id { get; set; }
     }
 }
