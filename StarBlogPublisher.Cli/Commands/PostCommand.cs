@@ -12,15 +12,17 @@ public static class PostCommand {
         var fileArg = new Argument<string>("file") { Description = "Markdown 文件路径" };
         var categoryOpt = new Option<int>("--category") { Description = "分类 ID", Required = true };
         var titleOpt = new Option<string?>("--title") { Description = "文章标题（默认使用文件名）" };
+        var summaryOpt = new Option<string?>("--summary") { Description = "文章摘要" };
         var slugOpt = new Option<string?>("--slug") { Description = "URL slug" };
         var draftOpt = new Option<bool>("--draft") { Description = "保存为草稿（不直接发布）" };
 
-        var publishCmd = new Command("publish", "发布文章") { categoryOpt, titleOpt, slugOpt, draftOpt };
+        var publishCmd = new Command("publish", "发布文章") { categoryOpt, titleOpt, summaryOpt, slugOpt, draftOpt };
         publishCmd.Arguments.Add(fileArg);
         publishCmd.SetAction(parseResult => {
             var file = parseResult.GetValue(fileArg)!;
             var categoryId = parseResult.GetValue(categoryOpt);
             var title = parseResult.GetValue(titleOpt);
+            var summary = parseResult.GetValue(summaryOpt);
             var slug = parseResult.GetValue(slugOpt);
             var draft = parseResult.GetValue(draftOpt);
 
@@ -41,7 +43,7 @@ public static class PostCommand {
 
             Task.Run(async () => {
                 var result = await publishService.PublishAsync(
-                    file, postTitle, content, "",
+                    file, postTitle, content, summary ?? "",
                     categoryId, slug, !draft,
                     onProgress: (step, msg) => {
                         Console.WriteLine($"  [{step}%] {msg}");

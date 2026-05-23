@@ -13,6 +13,7 @@ public static class PostTools {
         [Description("Markdown 文件的绝对路径")] string filePath,
         [Description("分类 ID")] int categoryId,
         [Description("文章标题（可选，默认使用文件名）")] string? title = null,
+        [Description("文章摘要（可选）")] string? summary = null,
         [Description("URL slug（可选）")] string? slug = null,
         [Description("是否直接发布，false 则保存为草稿")] bool publish = true) {
 
@@ -27,7 +28,7 @@ public static class PostTools {
             ApiService.Instance, authService, AppSettings.Instance);
 
         var result = await publishService.PublishAsync(
-            filePath, postTitle, content, "", categoryId, slug, publish);
+            filePath, postTitle, content, summary ?? "", categoryId, slug, publish);
 
         if (result.Success && result.Post != null) {
             return JsonSerializer.Serialize(new {
