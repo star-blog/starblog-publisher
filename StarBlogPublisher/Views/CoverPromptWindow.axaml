@@ -5,7 +5,7 @@
         xmlns:vm="using:StarBlogPublisher.ViewModels"
         xmlns:converters="clr-namespace:StarBlogPublisher.Converters"
         xmlns:i="https://github.com/projektanker/icons.avalonia"
-        xmlns:utils="clr-namespace:StarBlogPublisher.Utils"
+        xmlns:utils="clr-namespace:StarBlogPublisher.Utils;assembly=StarBlogPublisher.Core"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="700"
         x:Class="StarBlogPublisher.Views.CoverPromptWindow"
         x:DataType="vm:CoverPromptWindowViewModel"

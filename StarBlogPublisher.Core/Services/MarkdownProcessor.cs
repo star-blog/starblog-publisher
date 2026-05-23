@@ -8,12 +8,15 @@ using Markdig;
 using Markdig.Renderers.Normalize;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Refit;
 using StarBlogPublisher.Models;
 
 namespace StarBlogPublisher.Services;
 
-public class MarkdownProcessor(string filepath, BlogPost post) {
+public class MarkdownProcessor(string filepath, BlogPost post, ILogger? logger = null) {
+    private readonly ILogger _logger = logger ?? NullLogger.Instance;
     public event Action<int, int>? ImageUploadProgress;
 
     private ImageCompressionService? _compressionService;
@@ -70,7 +73,7 @@ public class MarkdownProcessor(string filepath, BlogPost post) {
 
                     // 检查文件是否存在，跳过不存在的图片
                     if (!File.Exists(imgUrl)) {
-                        Console.WriteLine($"跳过不存在的图片文件: {imgUrl}");
+                        _logger.LogDebug("跳过不存在的图片文件: {ImgUrl}", imgUrl);
                         continue;
                     }
 
@@ -84,10 +87,10 @@ public class MarkdownProcessor(string filepath, BlogPost post) {
                             if (compressionResult.Success) {
                                 actualImagePath = compressionResult.CompressedPath;
                                 actualImageFilename = Path.GetFileName(actualImagePath);
-                                Console.WriteLine($"图片压缩成功: {imgUrl} -> {actualImagePath}, 压缩率: {compressionResult.CompressionRatio:P2}");
+                                _logger.LogDebug("图片压缩成功: {ImgUrl} -> {CompressedPath}, 压缩率: {Ratio:P2}", imgUrl, actualImagePath, compressionResult.CompressionRatio);
                             }
                             else {
-                                Console.WriteLine($"图片压缩失败，使用原图: {imgUrl}");
+                                _logger.LogWarning("图片压缩失败，使用原图: {ImgUrl}", imgUrl);
                             }
                         }
 
@@ -99,17 +102,17 @@ public class MarkdownProcessor(string filepath, BlogPost post) {
                         if (response is { Successful: true, Data: not null }) {
                             // 替换图片链接为后端返回的URL
                             linkInline.Url = response.Data.ImgUrl;
-                            Console.WriteLine($"上传图片 {actualImageFilename} 成功，URL: {response.Data.ImgUrl}");
+                            _logger.LogInformation("上传图片 {Filename} 成功，URL: {Url}", actualImageFilename, response.Data.ImgUrl);
                             uploadedImages++;
                             ImageUploadProgress?.Invoke(uploadedImages, totalImages);
                         }
                         else {
                             // 上传失败，保留原始链接
-                            Console.WriteLine($"上传图片 {actualImageFilename} 失败: {response.Message}");
+                            _logger.LogWarning("上传图片 {Filename} 失败: {Message}", actualImageFilename, response.Message);
                         }
                     }
                     catch (Exception ex) {
-                        Console.WriteLine($"处理图片 {imgUrl} 异常: {ex.Message}");
+                        _logger.LogError(ex, "处理图片 {ImgUrl} 异常", imgUrl);
                     }
                 }
             }

@@ -29,6 +29,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\StarBlogPublisher.Core\StarBlogPublisher.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="Avalonia" Version="11.3.10" />
         <PackageReference Include="Avalonia.Browser" Version="11.3.10" />
         <PackageReference Include="Avalonia.Controls.ColorPicker" Version="11.3.10" />
@@ -40,20 +44,12 @@
             <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
             <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="CodeLab.Share" Version="1.4.2" />
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
         <PackageReference Include="LoadingIndicators.Avalonia" Version="11.0.11.1" />
-        <PackageReference Include="Markdig" Version="0.44.0" />
         <PackageReference Include="Markdown.Avalonia" Version="11.0.3-a1" />
         <PackageReference Include="MessageBox.Avalonia" Version="3.3.1" />
-        <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.1.1-preview.1.25612.2" />
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
         <PackageReference Include="Projektanker.Icons.Avalonia.FontAwesome" Version="9.6.2" />
         <PackageReference Include="ReactiveUI" Version="22.3.1" />
-        <PackageReference Include="Refit" Version="9.0.2" />
-        <PackageReference Include="Refit.Newtonsoft.Json" Version="9.0.2" />
         <PackageReference Include="Sdcb.WordCloud" Version="2.0.1" />
-        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
-        <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.1" />
     </ItemGroup>
 </Project>

@@ -184,7 +184,7 @@ public class AIProviderInfo
         catch (Exception ex)
         {
             string errorMessage = $"获取模型列表报错：{ex.Message}";
-            Console.WriteLine(errorMessage);
+            System.Diagnostics.Trace.TraceWarning(errorMessage);
             return (DefaultModels, false, errorMessage);
         }
     }

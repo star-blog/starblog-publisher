@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using OpenAI;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace StarBlogPublisher.Services;
 
@@ -15,6 +16,7 @@ namespace StarBlogPublisher.Services;
 public class AiService {
     private static AiService? _instance;
     private IChatClient _chatClient;
+    private readonly ILogger _logger;
 
     public static AiService Instance {
         get {
@@ -23,9 +25,10 @@ public class AiService {
         }
     }
 
-    private AiService() {
+    private AiService(ILogger? logger = null) {
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
         InitializeClient();
-        
+
         // 订阅设置变更事件
         AppSettings.Instance.SettingsChanged += (_, _) => {
             InitializeClient();
@@ -34,21 +37,21 @@ public class AiService {
 
     private void InitializeClient() {
         var settings = AppSettings.Instance;
-        
+
         var provider = AIProviderInfo.GetProvider(settings.AIProvider);
         var key = settings.AIKey;
         var model = settings.AIModel;
-        
+
         if (provider == null) {
             throw new ApplicationException("AI provider not found");
         }
-        
+
         var endpoint = settings.AIProvider.ToLower() == "custom"
             ? new Uri(settings.AIApiBase)
             : new Uri(provider.DefaultApiBase);
 
-        Console.WriteLine($"InitializeChatClient, endpoint: {endpoint}");
-        
+        _logger.LogInformation("InitializeChatClient, endpoint: {Endpoint}", endpoint);
+
         _chatClient = new OpenAIClient(
             new ApiKeyCredential(key),
             new OpenAIClientOptions {

@@ -116,7 +116,7 @@ public class AppSettings {
         }
         catch (Exception ex) {
             // 如果加载失败，返回默认设置
-            Console.WriteLine($"Failed to load app settings. {ex}");
+            System.Diagnostics.Trace.TraceWarning($"Failed to load app settings. {ex}");
         }
 
         var defaultSettings = new AppSettings();

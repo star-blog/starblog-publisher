@@ -124,7 +124,7 @@ public class ImageCompressionService : IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"压缩图片失败 {imagePath}: {ex.Message}");
+            System.Diagnostics.Trace.TraceWarning($"压缩图片失败 {imagePath}: {ex.Message}");
             return new ImageCompressionResult(false, imagePath, string.Empty, 0, 0, 0);
         }
     }
@@ -269,7 +269,7 @@ public class ImageCompressionService : IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"清理临时目录失败: {ex.Message}");
+            System.Diagnostics.Trace.TraceWarning($"清理临时目录失败: {ex.Message}");
         }
 
         _disposed = true;

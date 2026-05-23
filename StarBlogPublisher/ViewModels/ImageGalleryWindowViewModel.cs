@@ -21,7 +21,7 @@ public partial class ImageGalleryWindowViewModel : ViewModelBase
     /// 图片集合
     /// </summary>
     [ObservableProperty]
-    private ObservableCollection<ImageInfo> _images = new();
+    private ObservableCollection<AvaloniaImageInfo> _images = new();
 
     /// <summary>
     /// 图片数量
@@ -66,7 +66,7 @@ public partial class ImageGalleryWindowViewModel : ViewModelBase
         
         foreach (var imagePath in imagePaths)
         {
-            var imageInfo = ImageInfo.Create(imagePath);
+            var imageInfo = AvaloniaImageInfo.Create(imagePath);
             Images.Add(imageInfo);
         }
         
@@ -95,7 +95,7 @@ public partial class ImageGalleryWindowViewModel : ViewModelBase
         for (int i = 0; i < Images.Count; i++)
         {
             var currentImage = Images[i];
-            var updatedImage = ImageInfo.Create(currentImage.FilePath);
+            var updatedImage = AvaloniaImageInfo.Create(currentImage.FilePath);
             Images[i] = updatedImage;
         }
         
