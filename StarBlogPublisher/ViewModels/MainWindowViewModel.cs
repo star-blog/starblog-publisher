@@ -519,7 +519,7 @@ public partial class MainWindowViewModel : ViewModelBase {
                 sb.Append(chunk);
                 ArticleSlug = sb.ToString().Trim();
             }
-            ArticleSlug = _aiService.GenerateSlugAsync(ArticleTitle).Result;
+            ArticleSlug = AiApplicationService.CleanSlug(ArticleSlug);
             StatusMessage = "AI已生成文章Slug";
         }
         catch (Exception ex) {

@@ -84,9 +84,12 @@ public class ArticlePublishApplicationService {
             var processedContent = await processor.MarkdownParse(true, compressionConfig);
             onProgress?.Invoke(80, "图片处理完成");
 
-            // 第三步：如果内容有变化，更新文章
-            if (processedContent != content) {
-                onProgress?.Invoke(85, "正在更新文章内容...");
+            // 第三步：如果内容有变化或需要修正发布状态，更新文章
+            var needsContentUpdate = processedContent != content;
+            var needsStatusUpdate = blogPost.IsPublish != publish;
+
+            if (needsContentUpdate || needsStatusUpdate) {
+                onProgress?.Invoke(85, needsContentUpdate ? "正在更新文章内容..." : "正在更新发布状态...");
                 var updateDto = new PostUpdateDto {
                     Id = blogPost.Id,
                     Title = title,
@@ -100,7 +103,7 @@ public class ArticlePublishApplicationService {
 
                 var updateResp = await _api.BlogPost.Update(blogPost.Id, updateDto);
                 if (!updateResp.Successful || updateResp.Data == null) {
-                    return PublishResult.Fail($"更新文章内容失败: {updateResp?.Message ?? "未知错误"}");
+                    return PublishResult.Fail($"更新文章失败: {updateResp?.Message ?? "未知错误"}");
                 }
 
                 // 重新获取文章详情

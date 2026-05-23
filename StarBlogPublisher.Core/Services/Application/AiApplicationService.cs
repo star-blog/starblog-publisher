@@ -193,7 +193,7 @@ public class AiApplicationService {
     /// <summary>
     /// 清理 Slug，确保符合 URL 友好格式
     /// </summary>
-    private static string CleanSlug(string slug) {
+    public static string CleanSlug(string slug) {
         var cleaned = System.Text.RegularExpressions.Regex.Replace(slug, @"[^a-z0-9\-]", "");
         cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"\-+", "-");
         cleaned = cleaned.Trim('-');

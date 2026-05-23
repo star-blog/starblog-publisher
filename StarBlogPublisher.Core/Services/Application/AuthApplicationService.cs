@@ -13,6 +13,11 @@ public class AuthApplicationService {
     private readonly GlobalState _globalState;
     private readonly ApiService _api;
 
+    /// <summary>
+    /// 用户是否已显式登出（用于阻止自动重新登录）
+    /// </summary>
+    private bool _userExplicitlyLoggedOut;
+
     public AuthApplicationService(AppSettings settings, GlobalState globalState, ApiService api) {
         _settings = settings;
         _globalState = globalState;
@@ -64,6 +69,7 @@ public class AuthApplicationService {
             }
 
             _globalState.SetLoggedIn(resp.Data.Token);
+            _userExplicitlyLoggedOut = false;
             return AuthResult.Ok(resp.Data.Token);
         }
         catch (Exception ex) {
@@ -72,17 +78,20 @@ public class AuthApplicationService {
     }
 
     /// <summary>
-    /// 登出
+    /// 登出（仅清理会话状态，保留已保存的凭据）
     /// </summary>
     public void Logout() {
         _globalState.Logout();
+        _userExplicitlyLoggedOut = true;
     }
 
     /// <summary>
-    /// 确保已登录：如果未登录但有凭据，自动登录
+    /// 确保已登录：如果未登录但有凭据，且用户未显式登出，则自动登录。
+    /// 仅用于业务命令（如 post publish），不用于 status 等查询命令。
     /// </summary>
     public async Task<AuthResult> EnsureLoggedInAsync() {
         if (_globalState.IsLoggedIn) return AuthResult.Ok();
+        if (_userExplicitlyLoggedOut) return AuthResult.Fail("用户已登出，请先执行登录");
         if (!_globalState.HasCredentials()) return AuthResult.Fail("未配置凭据");
         return await LoginAsync();
     }
