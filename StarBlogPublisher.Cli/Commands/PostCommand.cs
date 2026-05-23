@@ -15,8 +15,10 @@ public static class PostCommand {
         var summaryOpt = new Option<string?>("--summary") { Description = "文章摘要" };
         var slugOpt = new Option<string?>("--slug") { Description = "URL slug" };
         var draftOpt = new Option<bool>("--draft") { Description = "保存为草稿（不直接发布）" };
+        var autoOpt = new Option<bool>("--auto") { Description = "AI 自动生成标题、摘要、Slug（覆盖手动指定的值）" };
+        var yesOpt = new Option<bool>("-y") { Description = "跳过确认，直接发布" };
 
-        var publishCmd = new Command("publish", "发布文章") { categoryOpt, titleOpt, summaryOpt, slugOpt, draftOpt };
+        var publishCmd = new Command("publish", "发布文章") { categoryOpt, titleOpt, summaryOpt, slugOpt, draftOpt, autoOpt, yesOpt };
         publishCmd.Arguments.Add(fileArg);
         publishCmd.SetAction(parseResult => {
             var file = parseResult.GetValue(fileArg)!;
@@ -25,6 +27,8 @@ public static class PostCommand {
             var summary = parseResult.GetValue(summaryOpt);
             var slug = parseResult.GetValue(slugOpt);
             var draft = parseResult.GetValue(draftOpt);
+            var auto = parseResult.GetValue(autoOpt);
+            var skipConfirm = parseResult.GetValue(yesOpt);
 
             if (!File.Exists(file)) {
                 Console.Error.WriteLine($"文件不存在: {file}");
@@ -32,7 +36,87 @@ public static class PostCommand {
             }
 
             var content = File.ReadAllText(file);
-            var postTitle = title ?? Path.GetFileNameWithoutExtension(file);
+            string postTitle;
+
+            if (auto) {
+                var ai = new AiApplicationService(AiService.Instance, AppSettings.Instance);
+                if (!ai.IsEnabled) {
+                    Console.Error.WriteLine("AI 功能未启用，请先在设置中配置 AI");
+                    return 1;
+                }
+
+                try {
+                    var originalTitle = title ?? Path.GetFileNameWithoutExtension(file);
+
+                    Console.WriteLine("AI 正在生成标题...");
+                    var generatedTitle = Task.Run(() => ai.RefineTitleAsync(originalTitle, content)).Result;
+                    if (string.IsNullOrWhiteSpace(generatedTitle)) generatedTitle = originalTitle;
+
+                    Console.WriteLine("AI 正在生成 Slug...");
+                    var generatedSlug = Task.Run(() => ai.GenerateSlugAsync(generatedTitle)).Result;
+
+                    Console.WriteLine("AI 正在生成摘要...");
+                    var generatedSummary = Task.Run(() => ai.GenerateSummaryAsync(generatedTitle, content)).Result;
+
+                    postTitle = generatedTitle;
+                    slug = generatedSlug;
+                    summary = generatedSummary;
+                }
+                catch (Exception ex) {
+                    Console.Error.WriteLine($"AI 生成失败: {ex.Message}");
+                    return 1;
+                }
+
+                while (true) {
+                    Console.WriteLine();
+                    Console.WriteLine("========== AI 生成结果 ==========");
+                    Console.WriteLine($"  标题: {postTitle}");
+                    Console.WriteLine($"  摘要: {summary}");
+                    Console.WriteLine($"  Slug: {slug}");
+                    Console.WriteLine("=================================");
+
+                    if (skipConfirm) {
+                        Console.WriteLine("已跳过确认，直接发布。");
+                        break;
+                    }
+
+                    Console.Write("确认发布？(y=确认, 其他键=编辑) ");
+                    var input = Console.ReadLine()?.Trim().ToLower();
+                    if (input == "y") break;
+
+                    Console.WriteLine();
+                    Console.WriteLine("请选择要修改的字段:");
+                    Console.WriteLine("  1. 标题");
+                    Console.WriteLine("  2. 摘要");
+                    Console.WriteLine("  3. Slug");
+                    Console.Write("输入编号 (1/2/3): ");
+                    var choice = Console.ReadLine()?.Trim();
+
+                    switch (choice) {
+                        case "1":
+                            Console.Write($"当前标题: {postTitle}\n新标题: ");
+                            var newTitle = Console.ReadLine()?.Trim();
+                            if (!string.IsNullOrEmpty(newTitle)) postTitle = newTitle;
+                            break;
+                        case "2":
+                            Console.Write($"当前摘要: {summary}\n新摘要: ");
+                            var newSummary = Console.ReadLine()?.Trim();
+                            if (!string.IsNullOrEmpty(newSummary)) summary = newSummary;
+                            break;
+                        case "3":
+                            Console.Write($"当前 Slug: {slug}\n新 Slug: ");
+                            var newSlug = Console.ReadLine()?.Trim();
+                            if (!string.IsNullOrEmpty(newSlug)) slug = newSlug;
+                            break;
+                        default:
+                            Console.WriteLine("无效选择，返回确认。");
+                            break;
+                    }
+                }
+            }
+            else {
+                postTitle = title ?? Path.GetFileNameWithoutExtension(file);
+            }
 
             var authService = new AuthApplicationService(
                 AppSettings.Instance, GlobalState.Instance, ApiService.Instance);
