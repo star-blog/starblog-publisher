@@ -104,6 +104,8 @@ dotnet run --project StarBlogPublisher.Cli -- category create --name "技术笔�
 # 文章发布
 dotnet run --project StarBlogPublisher.Cli -- post publish ./hello.md --category 1
 dotnet run --project StarBlogPublisher.Cli -- post publish ./hello.md --category 1 --draft
+dotnet run --project StarBlogPublisher.Cli -- post publish ./hello.md --category 1 --auto       # AI 自动生成标题/摘要/Slug，交互确认后发布
+dotnet run --project StarBlogPublisher.Cli -- post publish ./hello.md --category 1 --auto -y    # 自动挡 + 跳过确认直接发布
 dotnet run --project StarBlogPublisher.Cli -- post get <article-id>
 
 # AI 辅助
@@ -161,6 +163,7 @@ dotnet run --project StarBlogPublisher.Cli -- mcp
 - **文章管理**：支持文章的创建、编辑、发布和删除
 - **分类管理**：支持按树状图显示文章分类，并支持添加分类
 - **AI 辅助**：集成多种 AI 模型，提供标题润色、内容总结、关键词提取、Slug 自动生成
+- **AI 自动挡发布**：`--auto` 模式一键生成标题/摘要/Slug，交互确认后发布，支持 `-y` 跳过确认
 - **词云生成**：可视化展示博客内容关键词
 - **主题切换**：支持亮色/暗色主题切换
 - **代理设置**：支持配置 HTTP 代理
