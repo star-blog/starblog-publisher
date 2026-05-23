@@ -2,7 +2,7 @@
 
 ![Avalonia](https://img.shields.io/badge/UI-Avalonia-blue)
 ![.NET](https://img.shields.io/badge/.NET-10.0-purple)
-![License](https://img.shields.io/badge/License-MIT-green)
+![License](https://img.shields.io/badge/License-Apache%202.0-green)
 ![CLI](https://img.shields.io/badge/CLI-Supported-brightgreen)
 ![MCP](https://img.shields.io/badge/MCP-Server-orange)
 
@@ -222,7 +222,7 @@ dotnet run --project StarBlogPublisher.Cli -- mcp
 
 ## 许可证
 
-本项目采用 MIT 许可证 - 详情请参阅 [LICENSE](LICENSE) 文件
+本项目采用 Apache License 2.0 - 详情请参阅 [LICENSE](LICENSE) 文件
 
 ## 联系方式
 
@@ -269,6 +269,8 @@ dotnet run --project StarBlogPublisher.Cli -- mcp
 ### 1.0
 
 - 第一个发布的版本
+
+> 完整的开发日志请参阅 [Development Log](docs/development-log.md)。
 
 ---
 
