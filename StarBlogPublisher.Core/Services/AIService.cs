@@ -35,6 +35,11 @@ public class AiService {
         };
     }
 
+    internal AiService(IChatClient chatClient) {
+        _logger = Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
+        _chatClient = chatClient;
+    }
+
     private void InitializeClient() {
         var settings = AppSettings.Instance;
 

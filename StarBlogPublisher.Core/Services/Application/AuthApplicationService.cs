@@ -32,14 +32,14 @@ public class AuthApplicationService {
     /// <summary>
     /// 是否已配置凭据
     /// </summary>
-    public bool HasCredentials => _globalState.HasCredentials();
+    public bool HasCredentials => !string.IsNullOrEmpty(_settings.Username) && !string.IsNullOrEmpty(_settings.Password);
 
     /// <summary>
     /// 获取当前登录状态描述
     /// </summary>
     public string GetStatusMessage() {
         if (_globalState.IsLoggedIn) return "已登录";
-        if (_globalState.HasCredentials()) return "未登录 (已配置凭据)";
+        if (HasCredentials) return "未登录 (已配置凭据)";
         return "未登录 (未配置凭据)";
     }
 
@@ -47,7 +47,7 @@ public class AuthApplicationService {
     /// 使用已保存的凭据登录
     /// </summary>
     public async Task<AuthResult> LoginAsync() {
-        if (!_globalState.HasCredentials()) {
+        if (!HasCredentials) {
             return AuthResult.Fail("未配置用户名和密码，请先在设置中配置");
         }
 
@@ -92,7 +92,7 @@ public class AuthApplicationService {
     public async Task<AuthResult> EnsureLoggedInAsync() {
         if (_globalState.IsLoggedIn) return AuthResult.Ok();
         if (_userExplicitlyLoggedOut) return AuthResult.Fail("用户已登出，请先执行登录");
-        if (!_globalState.HasCredentials()) return AuthResult.Fail("未配置凭据");
+        if (!HasCredentials) return AuthResult.Fail("未配置凭据");
         return await LoginAsync();
     }
 }

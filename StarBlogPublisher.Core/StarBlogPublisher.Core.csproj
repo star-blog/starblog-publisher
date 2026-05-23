@@ -6,6 +6,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="StarBlogPublisher.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
         <PackageReference Include="Refit" Version="9.0.2" />
         <PackageReference Include="Refit.Newtonsoft.Json" Version="9.0.2" />

@@ -163,7 +163,7 @@ public class AiApplicationService {
     /// <summary>
     /// 从 AI 返回的 JSON 格式中提取关键词
     /// </summary>
-    private static string ExtractKeywordsFromJson(string jsonOutput) {
+    internal static string ExtractKeywordsFromJson(string jsonOutput) {
         try {
             var startIndex = jsonOutput.IndexOf('[');
             var endIndex = jsonOutput.LastIndexOf(']');

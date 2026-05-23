@@ -41,8 +41,8 @@ public class GlobalState {
     // 状态变更事件
     public event EventHandler? StateChanged;
     
-    private GlobalState() {
-        // 私有构造函数，防止外部实例化
+    internal GlobalState() {
+        // 内部构造函数，供测试创建实例
     }
     
     // 设置登录状态和JWT令牌

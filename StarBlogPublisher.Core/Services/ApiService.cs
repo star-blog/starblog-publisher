@@ -17,8 +17,16 @@ public class ApiService {
         }
     }
 
-    private readonly RefitSettings _refitSettings;
+    private readonly RefitSettings? _refitSettings;
+    private IAuth? _mockAuth;
+    private IBlogPost? _mockBlogPost;
+    private ICategory? _mockCategories;
 
+    internal ApiService(IAuth auth, IBlogPost blogPost, ICategory categories) {
+        _mockAuth = auth;
+        _mockBlogPost = blogPost;
+        _mockCategories = categories;
+    }
 
     private ApiService() {
         // 确保类型被注册
@@ -67,7 +75,7 @@ public class ApiService {
         }
     }
 
-    public IAuth Auth => RestService.For<IAuth>(ApiHttpClient, _refitSettings);
-    public ICategory Categories => RestService.For<ICategory>(ApiHttpClient, _refitSettings);
-    public IBlogPost BlogPost => RestService.For<IBlogPost>(ApiHttpClient, _refitSettings);
+    public IAuth Auth => _mockAuth ?? RestService.For<IAuth>(ApiHttpClient, _refitSettings!);
+    public ICategory Categories => _mockCategories ?? RestService.For<ICategory>(ApiHttpClient, _refitSettings!);
+    public IBlogPost BlogPost => _mockBlogPost ?? RestService.For<IBlogPost>(ApiHttpClient, _refitSettings!);
 }

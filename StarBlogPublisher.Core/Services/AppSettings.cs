@@ -95,7 +95,7 @@ public class AppSettings {
     public event EventHandler? SettingsChanged;
 
     [System.Text.Json.Serialization.JsonConstructor]
-    private AppSettings() { }
+    internal AppSettings() { }
 
     private static AppSettings Load() {
         try {
