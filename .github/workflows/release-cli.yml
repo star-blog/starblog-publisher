@@ -1,0 +1,300 @@
+name: 发布 CLI
+run-name: ${{ github.actor }} 正在发布 CLI ⚡
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  publish-nuget:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.VERSION }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 提取版本号
+        id: get_version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: 恢复依赖
+        run: dotnet restore ./StarBlogPublisher.Cli/StarBlogPublisher.Cli.csproj
+
+      - name: 构建
+        run: dotnet build ./StarBlogPublisher.Cli/StarBlogPublisher.Cli.csproj -c Release --no-restore
+
+      - name: 打包 NuGet Tool
+        run: >
+          dotnet pack ./StarBlogPublisher.Cli/StarBlogPublisher.Cli.csproj
+          -c Release --no-build
+          -p:PackageVersion=${{ steps.get_version.outputs.VERSION }}
+          --output ./nupkg
+
+      - name: 发布到 NuGet.org
+        run: >
+          dotnet nuget push ./nupkg/*.nupkg
+          --api-key ${{ secrets.NUGET_GALLERY_TOKEN }}
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
+
+  build-cli:
+    needs: publish-nuget
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: ['windows', 'linux', 'macOS', 'macOS-arm64']
+        include:
+          - kind: windows
+            os: windows-latest
+            target: win-x64
+            extension: '.zip'
+          - kind: linux
+            os: ubuntu-latest
+            target: linux-x64
+            extension: '.tar.gz'
+          - kind: macOS
+            os: macos-latest
+            target: osx-x64
+            extension: '.tar.gz'
+          - kind: macOS-arm64
+            os: macos-latest
+            target: osx-arm64
+            extension: '.tar.gz'
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 提取版本号
+        id: get_version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: 缓存NuGet包
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-cli-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-cli-nuget-
+
+      - name: 发布 CLI 自包含二进制
+        shell: bash
+        run: |
+          dotnet publish ./StarBlogPublisher.Cli/StarBlogPublisher.Cli.csproj \
+            -c Release -r ${{ matrix.target }} --self-contained true \
+            -p:PublishTrimmed=true -p:PublishSingleFile=true \
+            -p:EnableCompressionInSingleFile=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:Version=${{ steps.get_version.outputs.VERSION }} \
+            -o ./publish/${{ matrix.kind }}
+
+      - name: 清理调试文件
+        shell: bash
+        run: |
+          cd ./publish/${{ matrix.kind }}
+          rm -f *.pdb *.dbg
+          rm -rf *.dsym
+
+      - name: 打包Windows二进制
+        if: matrix.kind == 'windows'
+        shell: bash
+        run: |
+          cd ./publish/${{ matrix.kind }}
+          7z a -tzip ../../StarBlogCli-${{ matrix.kind }}-${{ steps.get_version.outputs.VERSION }}${{ matrix.extension }} *
+
+      - name: 打包Linux/macOS二进制
+        if: matrix.kind != 'windows'
+        shell: bash
+        run: |
+          cd ./publish/${{ matrix.kind }}
+          tar -czvf ../../StarBlogCli-${{ matrix.kind }}-${{ steps.get_version.outputs.VERSION }}${{ matrix.extension }} *
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: StarBlogCli-${{ matrix.kind }}-${{ steps.get_version.outputs.VERSION }}
+          path: ./StarBlogCli-${{ matrix.kind }}-${{ steps.get_version.outputs.VERSION }}${{ matrix.extension }}
+          retention-days: 1
+
+  upload-cli-assets:
+    needs: build-cli
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 提取版本号
+        id: get_version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: 下载所有CLI构建产物
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: 列出下载的文件
+        run: ls -la ./artifacts/
+
+      - name: 上传CLI资产到GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          files: ./artifacts/**/*
+          fail_on_unmatched_files: true
+
+  update-scoop:
+    needs: upload-cli-assets
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: star-blog/scoop-bucket
+          token: ${{ secrets.GH_PAT }}
+          path: scoop-bucket
+
+      - name: 提取版本号
+        id: get_version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: 下载 Windows CLI 产物
+        uses: actions/download-artifact@v4
+        with:
+          name: StarBlogCli-windows-${{ steps.get_version.outputs.VERSION }}
+          path: ./cli-artifact
+
+      - name: 计算 SHA256 并更新 manifest
+        shell: bash
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          ZIP_FILE="./cli-artifact/StarBlogCli-windows-${VERSION}.zip"
+          HASH=$(sha256sum "$ZIP_FILE" | awk '{print $1}')
+
+          cat > scoop-bucket/bucket/starblog.json << EOF
+          {
+            "version": "${VERSION}",
+            "description": "StarBlog Publisher CLI - 博客发布命令行工具和 MCP Server",
+            "homepage": "https://github.com/star-blog/starblog-publisher",
+            "license": "Apache-2.0",
+            "architecture": {
+              "64bit": {
+                "url": "https://github.com/star-blog/starblog-publisher/releases/download/v${VERSION}/StarBlogCli-windows-${VERSION}.zip",
+                "hash": "${HASH}"
+              }
+            },
+            "bin": "StarBlogPublisher.Cli.exe",
+            "checkver": {
+              "github": "https://github.com/star-blog/starblog-publisher"
+            },
+            "autoupdate": {
+              "architecture": {
+                "64bit": {
+                  "url": "https://github.com/star-blog/starblog-publisher/releases/download/v\$version/StarBlogCli-windows-\$version.zip"
+                }
+              }
+            }
+          }
+          EOF
+
+      - name: 提交并推送 manifest 更新
+        working-directory: scoop-bucket
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add bucket/starblog.json
+          git diff --cached --quiet || git commit -m "chore: update starblog to v${{ steps.get_version.outputs.VERSION }}"
+          git push
+
+  update-homebrew:
+    needs: upload-cli-assets
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: star-blog/homebrew-tap
+          token: ${{ secrets.GH_PAT }}
+          path: homebrew-tap
+
+      - name: 提取版本号
+        id: get_version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: 下载 macOS/Linux CLI 产物
+        uses: actions/download-artifact@v4
+        with:
+          path: ./cli-artifact
+
+      - name: 计算 SHA256 并更新 formula
+        shell: bash
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          DIR="./cli-artifact"
+
+          HASH_MACOS=$(sha256sum "$DIR/StarBlogCli-macOS-${VERSION}.tar.gz" | awk '{print $1}')
+          HASH_MACOS_ARM64=$(sha256sum "$DIR/StarBlogCli-macOS-arm64-${VERSION}.tar.gz" | awk '{print $1}')
+          HASH_LINUX=$(sha256sum "$DIR/StarBlogCli-linux-${VERSION}.tar.gz" | awk '{print $1}')
+
+          mkdir -p homebrew-tap/Formula
+
+          cat > homebrew-tap/Formula/starblog.rb << EOF
+          class Starblog < Formula
+            desc "StarBlog Publisher CLI - 博客发布命令行工具和 MCP Server"
+            homepage "https://github.com/star-blog/starblog-publisher"
+            license "Apache-2.0"
+            version "${VERSION}"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/star-blog/starblog-publisher/releases/download/v${VERSION}/StarBlogCli-macOS-arm64-${VERSION}.tar.gz"
+                sha256 "${HASH_MACOS_ARM64}"
+              else
+                url "https://github.com/star-blog/starblog-publisher/releases/download/v${VERSION}/StarBlogCli-macOS-${VERSION}.tar.gz"
+                sha256 "${HASH_MACOS}"
+              end
+            end
+
+            on_linux do
+              url "https://github.com/star-blog/starblog-publisher/releases/download/v${VERSION}/StarBlogCli-linux-${VERSION}.tar.gz"
+              sha256 "${HASH_LINUX}"
+            end
+
+            def install
+              bin.install "StarBlogPublisher.Cli" => "starblog"
+            end
+
+            test do
+              system "#{bin}/starblog", "--help"
+            end
+          end
+          EOF
+
+      - name: 提交并推送 formula 更新
+        working-directory: homebrew-tap
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/starblog.rb
+          git diff --cached --quiet || git commit -m "chore: update starblog to v${{ steps.get_version.outputs.VERSION }}"
+          git push

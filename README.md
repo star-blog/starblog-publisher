@@ -63,12 +63,7 @@ StarBlogPublisher.Tests/      # 单元测试（xunit + Moq）
 
 ## 安装与使用
 
-### 系统要求
-
-- .NET 10.0 运行时
-- Windows 10+ / macOS / Linux
-
-### 安装方式
+### GUI 安装
 
 **Scoop（Windows）：**
 
@@ -79,40 +74,67 @@ scoop install starblog-publisher/starblog-publisher
 
 **手动安装：**
 
-从 [Releases](https://github.com/star-blog/starblog-publisher/releases) 页面下载最新版本，解压后运行。
-
-### GUI 使用
+从 [Releases](https://github.com/star-blog/starblog-publisher/releases) 页面下载最新版本（`StarBlogPublisher-*.zip` / `StarBlogPublisher-*.tar.gz`），解压后运行。
 
 ```bash
+# 或从源码运行
 dotnet run --project StarBlogPublisher
 ```
 
 首次运行点击设置按钮配置博客后端 API 地址，如需 AI 功能请配置 AI 提供商和 API 密钥。
 
+### CLI 安装
+
+CLI 工具支持多种安装方式，命令名为 `starblog`。
+
+**Homebrew（macOS / Linux）：**
+
+```bash
+brew tap star-blog/tap
+brew install starblog
+```
+
+**Scoop（Windows）：**
+
+```powershell
+scoop bucket add starblog https://github.com/star-blog/scoop-bucket.git
+scoop install starblog
+```
+
+**.NET Global Tool（需要 .NET 10.0 运行时）：**
+
+```bash
+dotnet tool install --global StarBlogPublisher.Cli
+```
+
+**手动安装：**
+
+从 [Releases](https://github.com/star-blog/starblog-publisher/releases) 页面下载对应平台的 CLI 二进制文件（`StarBlogCli-*.zip` / `StarBlogCli-*.tar.gz`），解压后将可执行文件加入 PATH。
+
 ### CLI 使用
 
 ```bash
 # 认证
-dotnet run --project StarBlogPublisher.Cli -- auth login --username admin --password 123456
-dotnet run --project StarBlogPublisher.Cli -- auth status
-dotnet run --project StarBlogPublisher.Cli -- auth logout
+starblog auth login --username admin --password 123456
+starblog auth status
+starblog auth logout
 
 # 分类管理
-dotnet run --project StarBlogPublisher.Cli -- category list
-dotnet run --project StarBlogPublisher.Cli -- category create --name "技术笔记"
+starblog category list
+starblog category create --name "技术笔记"
 
 # 文章发布
-dotnet run --project StarBlogPublisher.Cli -- post publish ./hello.md --category 1
-dotnet run --project StarBlogPublisher.Cli -- post publish ./hello.md --category 1 --draft
-dotnet run --project StarBlogPublisher.Cli -- post publish ./hello.md --category 1 --auto       # AI 自动生成标题/摘要/Slug，交互确认后发布
-dotnet run --project StarBlogPublisher.Cli -- post publish ./hello.md --category 1 --auto -y    # 自动挡 + 跳过确认直接发布
-dotnet run --project StarBlogPublisher.Cli -- post get <article-id>
+starblog post publish ./hello.md --category 1
+starblog post publish ./hello.md --category 1 --draft
+starblog post publish ./hello.md --category 1 --auto       # AI 自动生成标题/摘要/Slug，交互确认后发布
+starblog post publish ./hello.md --category 1 --auto -y    # 自动挡 + 跳过确认直接发布
+starblog post get <article-id>
 
 # AI 辅助
-dotnet run --project StarBlogPublisher.Cli -- ai generate-summary ./hello.md
-dotnet run --project StarBlogPublisher.Cli -- ai optimize-title "原始标题"
-dotnet run --project StarBlogPublisher.Cli -- ai suggest-tags ./hello.md
-dotnet run --project StarBlogPublisher.Cli -- ai generate-slug "文章标题"
+starblog ai generate-summary ./hello.md
+starblog ai optimize-title "原始标题"
+starblog ai suggest-tags ./hello.md
+starblog ai generate-slug "文章标题"
 ```
 
 ### MCP Server
@@ -122,7 +144,7 @@ MCP Server 模式让 AI Agent（Claude Desktop、Cursor 等）可以直接操作
 **启动 MCP Server：**
 
 ```bash
-dotnet run --project StarBlogPublisher.Cli -- mcp
+starblog mcp
 ```
 
 **在 Claude Desktop / Cursor 中配置：**
@@ -131,12 +153,14 @@ dotnet run --project StarBlogPublisher.Cli -- mcp
 {
   "mcpServers": {
     "starblog": {
-      "command": "dotnet",
-      "args": ["run", "--project", "/path/to/StarBlogPublisher.Cli", "--", "mcp"]
+      "command": "starblog",
+      "args": ["mcp"]
     }
   }
 }
 ```
+
+> 如果使用 `dotnet tool install` 安装，MCP 配置中 command 改为 `"dotnet"`，args 改为 `["tool", "run", "starblog", "mcp"]`。
 
 **可用的 MCP Tools：**
 

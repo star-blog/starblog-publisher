@@ -1,0 +1,86 @@
+name: Release 入口
+run-name: ${{ github.actor }} 正在创建 Release 🚀
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.VERSION }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 提取版本号
+        id: get_version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: 生成 Release Notes
+        id: generate_notes
+        shell: bash
+        run: |
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -2 | tail -1)
+
+          if [ -z "$PREVIOUS_TAG" ]; then
+            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+
+          echo "## 🚀 新功能 (Features)" > release_notes.md
+          git log $PREVIOUS_TAG..$CURRENT_TAG --pretty=format:"- %s ([%h](https://github.com/${{ github.repository }}/commit/%H))" --grep="feat" --grep="add" --grep="新增" --grep="功能" -i >> release_notes.md
+
+          echo "" >> release_notes.md
+          echo "## 🐛 问题修复 (Bug Fixes)" >> release_notes.md
+          git log $PREVIOUS_TAG..$CURRENT_TAG --pretty=format:"- %s ([%h](https://github.com/${{ github.repository }}/commit/%H))" --grep="fix" --grep="bug" --grep="修复" --grep="解决" -i >> release_notes.md
+
+          echo "" >> release_notes.md
+          echo "## 🔧 改进优化 (Improvements)" >> release_notes.md
+          git log $PREVIOUS_TAG..$CURRENT_TAG --pretty=format:"- %s ([%h](https://github.com/${{ github.repository }}/commit/%H))" --grep="improve" --grep="enhance" --grep="优化" --grep="改进" --grep="更新" -i >> release_notes.md
+
+          echo "" >> release_notes.md
+          echo "## 📝 文档更新 (Documentation)" >> release_notes.md
+          git log $PREVIOUS_TAG..$CURRENT_TAG --pretty=format:"- %s ([%h](https://github.com/${{ github.repository }}/commit/%H))" --grep="doc" --grep="readme" --grep="文档" -i >> release_notes.md
+
+          echo "" >> release_notes.md
+          echo "## 🔄 其他变更 (Other Changes)" >> release_notes.md
+          git log $PREVIOUS_TAG..$CURRENT_TAG --pretty=format:"- %s ([%h](https://github.com/${{ github.repository }}/commit/%H))" --invert-grep --grep="feat\|add\|新增\|功能\|fix\|bug\|修复\|解决\|improve\|enhance\|优化\|改进\|更新\|doc\|readme\|文档" -i >> release_notes.md
+
+          echo "" >> release_notes.md
+          echo "## 📊 统计信息 (Statistics)" >> release_notes.md
+          COMMIT_COUNT=$(git rev-list --count $PREVIOUS_TAG..$CURRENT_TAG)
+          AUTHOR_COUNT=$(git log $PREVIOUS_TAG..$CURRENT_TAG --pretty=format:"%an" | sort -u | wc -l)
+          echo "- 📈 本次发布包含 **$COMMIT_COUNT** 个提交" >> release_notes.md
+          echo "- 👥 共有 **$AUTHOR_COUNT** 位贡献者参与了本次发布" >> release_notes.md
+
+          echo "" >> release_notes.md
+          echo "## 🔗 完整变更日志" >> release_notes.md
+          echo "查看完整的变更对比: [$PREVIOUS_TAG...$CURRENT_TAG](https://github.com/${{ github.repository }}/compare/$PREVIOUS_TAG...$CURRENT_TAG)" >> release_notes.md
+
+          sed -i '/^## /N;/\n$/d' release_notes.md
+
+          {
+            echo 'RELEASE_NOTES<<EOF'
+            cat release_notes.md
+            echo EOF
+          } >> $GITHUB_OUTPUT
+
+      - name: 创建 GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          name: StarBlogPublisher 版本 ${{ steps.get_version.outputs.VERSION }}
+          body: ${{ steps.generate_notes.outputs.RELEASE_NOTES }}
+          draft: false
+          prerelease: false

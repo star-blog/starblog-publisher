@@ -1,0 +1,118 @@
+name: 发布 GUI
+run-name: ${{ github.actor }} 正在发布 GUI 🖥️
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-gui:
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: ['windows', 'linux', 'macOS']
+        include:
+          - kind: windows
+            os: windows-latest
+            target: win-x64
+            extension: '.zip'
+          - kind: linux
+            os: ubuntu-latest
+            target: linux-x64
+            extension: '.tar.gz'
+          - kind: macOS
+            os: macos-latest
+            target: osx-x64
+            extension: '.tar.gz'
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 提取版本号
+        id: get_version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: 缓存NuGet包
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: 安装Linux依赖
+        if: matrix.kind == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang zlib1g-dev libkrb5-dev libfontconfig1-dev libx11-dev libxrandr-dev libxi-dev libxcursor-dev libxinerama-dev
+
+      - name: 恢复依赖
+        run: dotnet restore ./StarBlogPublisher/StarBlogPublisher.csproj
+
+      - name: AOT编译
+        run: |
+          dotnet publish ./StarBlogPublisher/StarBlogPublisher.csproj -c Release -r ${{ matrix.target }} --self-contained true /p:PublishAot=true /p:TrimMode=full /p:InvariantGlobalization=true /p:IlcGenerateStackTraceData=false /p:IlcOptimizationPreference=Size /p:IlcFoldIdenticalMethodBodies=true /p:JsonSerializerIsReflectionEnabledByDefault=true /p:Version=${{ steps.get_version.outputs.VERSION }} -o ./publish/${{ matrix.kind }}
+
+      - name: 清理调试文件
+        shell: bash
+        run: |
+          cd ./publish/${{ matrix.kind }}
+          rm -f *.pdb *.dbg
+          rm -rf *.dsym
+
+      - name: 打包Windows可执行文件
+        if: matrix.kind == 'windows'
+        run: |
+          cd ./publish/${{ matrix.kind }}
+          7z a -tzip ../../StarBlogPublisher-${{ matrix.kind }}-${{ steps.get_version.outputs.VERSION }}${{ matrix.extension }} *
+
+      - name: 打包Linux/macOS可执行文件
+        if: matrix.kind != 'windows'
+        run: |
+          cd ./publish/${{ matrix.kind }}
+          tar -czvf ../../StarBlogPublisher-${{ matrix.kind }}-${{ steps.get_version.outputs.VERSION }}${{ matrix.extension }} *
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: StarBlogPublisher-${{ matrix.kind }}-${{ steps.get_version.outputs.VERSION }}
+          path: ./StarBlogPublisher-${{ matrix.kind }}-${{ steps.get_version.outputs.VERSION }}${{ matrix.extension }}
+          retention-days: 1
+
+  upload-gui-assets:
+    needs: build-gui
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 提取版本号
+        id: get_version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: 下载所有构建产物
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: 上传GUI资产到GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          files: ./artifacts/**/*
+          fail_on_unmatched_files: true

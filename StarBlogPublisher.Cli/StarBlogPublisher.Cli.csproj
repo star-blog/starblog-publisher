@@ -5,7 +5,35 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <LangVersion>default</LangVersion>
+        <InvariantGlobalization>true</InvariantGlobalization>
+
+        <!-- .NET Tool configuration -->
+        <PackAsTool>true</PackAsTool>
+        <ToolCommandName>starblog</ToolCommandName>
+        <PackageOutputPath>./nupkg</PackageOutputPath>
+
+        <!-- NuGet package metadata (Version/PackageVersion 由 CI tag 注入) -->
+        <PackageId>StarBlogPublisher.Cli</PackageId>
+        <Authors>Deali-Axy</Authors>
+        <Description>StarBlog Publisher CLI - 博客发布命令行工具和 MCP Server，支持 Markdown 文章发布、AI 辅助创作、一键发布等。</Description>
+        <PackageTags>starblog;cli;blog;publish;mcp;dotnet-tool</PackageTags>
+        <PackageProjectUrl>https://github.com/star-blog/starblog-publisher</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/star-blog/starblog-publisher</RepositoryUrl>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
+
+    <!-- 自包含发布设置 (Phase 1: Trimmed SingleFile, Phase 2: AOT) -->
+    <PropertyGroup Condition="'$(SelfContained)' == 'true'">
+        <PublishTrimmed>true</PublishTrimmed>
+        <PublishSingleFile>true</PublishSingleFile>
+        <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+        <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\StarBlogPublisher.Core\StarBlogPublisher.Core.csproj" />
