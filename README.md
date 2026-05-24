@@ -135,7 +135,41 @@ starblog ai generate-summary ./hello.md
 starblog ai optimize-title "原始标题"
 starblog ai suggest-tags ./hello.md
 starblog ai generate-slug "文章标题"
+
+# 安装到 AI Agent（不传 --agent 时会交互选择）
+starblog install skills
+starblog install skills --agent claude-code
+starblog install skills --agent codex
+starblog install skills --agent openclaw
+
+starblog install mcp
+starblog install mcp --agent claude-code
+starblog install mcp --agent codex
+starblog install mcp --agent claude-code --command starblog --args mcp
 ```
+
+### AI Agent 安装
+
+`starblog install` 用于把 StarBlog Publisher 的 skill 或 MCP 配置安装到常见 AI Agent 的用户目录，默认会进入交互式选择。
+
+当前支持：
+
+- `skills`：Claude Code、Codex、OpenClaw
+- `mcp`：Claude Code、Codex
+
+默认安装位置：
+
+- Claude Code skill：`~/.claude/skills/starblog-publisher/SKILL.md`
+- Codex skill：`~/.agents/skills/starblog-publisher/SKILL.md`
+- OpenClaw skill：`~/.openclaw/skills/starblog-publisher/SKILL.md`
+- Claude Code MCP：`~/.claude.json`
+- Codex MCP：`~/.codex/config.toml`
+
+说明：
+
+- `mcp` 默认注册命令为 `starblog mcp`，适用于已把 CLI 加入 PATH 的安装方式
+- 如果你使用的是自定义可执行路径，可通过 `--command` 和 `--args` 覆盖
+- OpenClaw 当前仅集成了 skill 安装，因为其公开文档没有提供稳定的通用 MCP 客户端配置契约
 
 ### MCP Server
 

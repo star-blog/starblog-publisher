@@ -36,6 +36,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <EmbeddedResource Include="..\docs\SKILLS.md" LogicalName="StarBlogPublisher.Cli.Resources.StarBlogSkillBody.md" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\StarBlogPublisher.Core\StarBlogPublisher.Core.csproj" />
         <PackageReference Include="System.CommandLine" Version="2.0.8" />
         <PackageReference Include="ModelContextProtocol" Version="1.3.0" />

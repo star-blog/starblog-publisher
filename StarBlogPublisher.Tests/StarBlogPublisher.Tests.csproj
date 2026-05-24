@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\StarBlogPublisher.Core\StarBlogPublisher.Core.csproj" />
+    <ProjectReference Include="..\StarBlogPublisher.Cli\StarBlogPublisher.Cli.csproj" />
   </ItemGroup>
 
 </Project>

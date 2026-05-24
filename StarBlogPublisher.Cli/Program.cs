@@ -16,6 +16,7 @@ class Program {
         rootCommand.Subcommands.Add(CategoryCommand.Build());
         rootCommand.Subcommands.Add(PostCommand.Build());
         rootCommand.Subcommands.Add(AiCommand.Build());
+        rootCommand.Subcommands.Add(InstallCommand.Build());
 
         return rootCommand.Parse(args).Invoke();
     }
