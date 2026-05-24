@@ -9,8 +9,8 @@
         <Assembly Name="Refit" Dynamic="Required All" />
         <Assembly Name="Newtonsoft.Json" Dynamic="Required All" />
 
-        <!-- 添加API接口和模型类型 -->
-        <Assembly Name="StarBlogPublisher">
+        <!-- 添加API接口和模型类型 (重构后这些接口在 Core 程序集中) -->
+        <Assembly Name="StarBlogPublisher.Core">
             <Type Name="StarBlogPublisher.Services.StarBlogApi.IAuth" Dynamic="Required All" />
             <Type Name="StarBlogPublisher.Services.StarBlogApi.ICategory" Dynamic="Required All" />
             <Type Name="StarBlogPublisher.Services.StarBlogApi.IBlogPost" Dynamic="Required All" />
