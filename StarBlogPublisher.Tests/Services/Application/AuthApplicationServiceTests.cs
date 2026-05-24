@@ -221,4 +221,22 @@ public class AuthApplicationServiceTests {
         var result = await _service.EnsureLoggedInAsync();
         result.Success.Should().BeTrue();
     }
+
+    [Fact]
+    public void LogoutAndClearCredentials_ClearsLoginStateAndSavedCredentials() {
+        _settings.Username = "user";
+        _settings.Password = "pass";
+        _mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
+            .ReturnsAsync(new ApiResponse<LoginToken> {
+                Data = new LoginToken { Token = "token" }
+            });
+        _service.LoginAsync("user", "pass").Wait();
+
+        _service.LogoutAndClearCredentials();
+
+        _service.IsLoggedIn.Should().BeFalse();
+        _settings.Username.Should().BeEmpty();
+        _settings.Password.Should().BeEmpty();
+        _service.HasCredentials.Should().BeFalse();
+    }
 }

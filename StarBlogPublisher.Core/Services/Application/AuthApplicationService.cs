@@ -86,6 +86,16 @@ public class AuthApplicationService {
     }
 
     /// <summary>
+    /// 登出并清除已保存的凭据。
+    /// </summary>
+    public void LogoutAndClearCredentials() {
+        Logout();
+        _settings.Username = string.Empty;
+        _settings.Password = string.Empty;
+        _settings.Save();
+    }
+
+    /// <summary>
     /// 确保已登录：如果未登录但有凭据，且用户未显式登出，则自动登录。
     /// 仅用于业务命令（如 post publish），不用于 status 等查询命令。
     /// </summary>
