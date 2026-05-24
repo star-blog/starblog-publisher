@@ -45,7 +45,7 @@ public class ApiService {
     public string BaseUrl {
         get {
             var backendUrl = AppSettings.Instance.BackendUrl;
-            return string.IsNullOrWhiteSpace(backendUrl) ? "http://localhost:5038" : backendUrl;
+            return string.IsNullOrWhiteSpace(backendUrl) ? "https://blog.deali.cn/" : backendUrl;
         }
     }
 

@@ -30,6 +30,13 @@ public class AuthApplicationService {
     public bool IsLoggedIn => _globalState.IsLoggedIn;
 
     /// <summary>
+    /// 当前生效的后端地址
+    /// </summary>
+    public string BackendUrl => string.IsNullOrWhiteSpace(_settings.BackendUrl)
+        ? "https://blog.deali.cn/"
+        : _settings.BackendUrl;
+
+    /// <summary>
     /// 是否已配置凭据
     /// </summary>
     public bool HasCredentials => !string.IsNullOrEmpty(_settings.Username) && !string.IsNullOrEmpty(_settings.Password);
@@ -41,6 +48,24 @@ public class AuthApplicationService {
         if (_globalState.IsLoggedIn) return "已登录";
         if (HasCredentials) return "未登录 (已配置凭据)";
         return "未登录 (未配置凭据)";
+    }
+
+    /// <summary>
+    /// 获取详细登录状态信息
+    /// </summary>
+    public AuthStatusInfo GetStatusInfo() {
+        var credentialSource = _globalState.IsLoggedIn
+            ? "当前会话令牌"
+            : HasCredentials
+                ? "已保存凭据"
+                : "未配置凭据";
+
+        return new AuthStatusInfo(
+            GetStatusMessage(),
+            BackendUrl,
+            credentialSource,
+            _globalState.IsLoggedIn,
+            HasCredentials);
     }
 
     /// <summary>
@@ -118,3 +143,10 @@ public class AuthResult {
     public static AuthResult Ok(string? token = null) => new() { Success = true, Token = token };
     public static AuthResult Fail(string message) => new() { Success = false, ErrorMessage = message };
 }
+
+public sealed record AuthStatusInfo(
+    string StatusMessage,
+    string BackendUrl,
+    string CredentialSource,
+    bool IsLoggedIn,
+    bool HasSavedCredentials);

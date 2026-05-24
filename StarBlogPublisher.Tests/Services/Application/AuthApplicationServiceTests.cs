@@ -44,6 +44,20 @@ public class AuthApplicationServiceTests {
     }
 
     [Fact]
+    public void GetStatusInfo_NotLoggedIn_HasCredentials_ReturnsBackendAndSavedCredentialSource() {
+        _settings.BackendUrl = "https://blog.example.com";
+        _settings.Username = "user";
+        _settings.Password = "pass";
+
+        var status = _service.GetStatusInfo();
+
+        status.StatusMessage.Should().Be("未登录 (已配置凭据)");
+        status.BackendUrl.Should().Be("https://blog.example.com");
+        status.CredentialSource.Should().Be("已保存凭据");
+        status.HasSavedCredentials.Should().BeTrue();
+    }
+
+    [Fact]
     public void GetStatusMessage_LoggedIn_ReturnsLoggedIn() {
         _settings.Username = "user";
         _settings.Password = "pass";
@@ -54,6 +68,24 @@ public class AuthApplicationServiceTests {
 
         _service.LoginAsync("user", "pass").Wait();
         _service.GetStatusMessage().Should().Be("已登录");
+    }
+
+    [Fact]
+    public void GetStatusInfo_LoggedIn_ReturnsSessionCredentialSource() {
+        _settings.Username = "user";
+        _settings.Password = "pass";
+        _mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
+            .ReturnsAsync(new ApiResponse<LoginToken> {
+                Data = new LoginToken { Token = "test-token" }
+            });
+
+        _service.LoginAsync("user", "pass").Wait();
+
+        var status = _service.GetStatusInfo();
+
+        status.StatusMessage.Should().Be("已登录");
+        status.CredentialSource.Should().Be("当前会话令牌");
+        status.IsLoggedIn.Should().BeTrue();
     }
 
     // === LoginAsync ===

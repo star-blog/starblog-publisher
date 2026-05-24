@@ -23,6 +23,15 @@ public class AuthCommandTests {
     }
 
     [Fact]
+    public void LoginCommand_WithNoPromptFlag_DoesNotFailAtParseTime() {
+        var command = AuthCommand.Build();
+
+        var parseResult = command.Parse("login --no-prompt");
+
+        parseResult.Errors.Should().BeEmpty();
+    }
+
+    [Fact]
     public void LogoutCommand_WithClearCredentialsFlag_DoesNotFailAtParseTime() {
         var command = AuthCommand.Build();
 

@@ -115,9 +115,12 @@ dotnet tool install --global StarBlogPublisher.Cli
 
 ```bash
 # 认证
+starblog auth login                          # 复用已保存凭据；未配置时进入交互输入
 starblog auth login --username admin --password 123456
+starblog auth login --username admin --password 123456 --no-prompt
 starblog auth status
 starblog auth logout
+starblog auth logout --clear-credentials
 
 # 分类管理
 starblog category list
