@@ -232,7 +232,12 @@ internal static class ClaudeCodeMcpInstaller {
 
     private static void SaveJsonObject(string path, JsonObject root) {
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
-        var json = root.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true })) {
+            root.WriteTo(writer);
+        }
+
+        var json = Encoding.UTF8.GetString(stream.ToArray());
         File.WriteAllText(path, json + Environment.NewLine, new UTF8Encoding(false));
     }
 
