@@ -252,9 +252,9 @@ jobs:
           VERSION=${{ steps.get_version.outputs.VERSION }}
           DIR="./cli-artifact"
 
-          HASH_MACOS=$(sha256sum "$DIR/StarBlogCli-macOS-${VERSION}.tar.gz" | awk '{print $1}')
-          HASH_MACOS_ARM64=$(sha256sum "$DIR/StarBlogCli-macOS-arm64-${VERSION}.tar.gz" | awk '{print $1}')
-          HASH_LINUX=$(sha256sum "$DIR/StarBlogCli-linux-${VERSION}.tar.gz" | awk '{print $1}')
+          HASH_MACOS=$(sha256sum "$DIR/StarBlogCli-macOS-${VERSION}/StarBlogCli-macOS-${VERSION}.tar.gz" | awk '{print $1}')
+          HASH_MACOS_ARM64=$(sha256sum "$DIR/StarBlogCli-macOS-arm64-${VERSION}/StarBlogCli-macOS-arm64-${VERSION}.tar.gz" | awk '{print $1}')
+          HASH_LINUX=$(sha256sum "$DIR/StarBlogCli-linux-${VERSION}/StarBlogCli-linux-${VERSION}.tar.gz" | awk '{print $1}')
 
           mkdir -p homebrew-tap/Formula
 
