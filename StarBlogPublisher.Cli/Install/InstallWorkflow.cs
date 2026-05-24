@@ -2,6 +2,8 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Diagnostics;
+using System.ComponentModel;
 
 namespace StarBlogPublisher.Cli.Install;
 
@@ -199,7 +201,14 @@ internal static class EmbeddedSkillBodyLoader {
 }
 
 internal static class ClaudeCodeMcpInstaller {
+    internal static IClaudeCodeCliRunner CliRunner { get; set; } = new ClaudeCodeCliRunner();
+
     public static InstallResult Install(InstallRequest request) {
+        var officialInstallResult = TryInstallWithClaudeCli(request);
+        if (officialInstallResult is not null) {
+            return officialInstallResult;
+        }
+
         var configPath = System.IO.Path.Combine(HomeDirectory.Path, ".claude.json");
         var root = LoadJsonObject(configPath);
         var servers = root["mcpServers"] as JsonObject ?? new JsonObject();
@@ -215,6 +224,29 @@ internal static class ClaudeCodeMcpInstaller {
         SaveJsonObject(configPath, root);
 
         return new InstallResult(true, $"已为 Claude Code 安装 MCP Server: {request.McpServerName}", configPath);
+    }
+
+    private static InstallResult? TryInstallWithClaudeCli(InstallRequest request) {
+        var addResult = CliRunner.RunBuildAdd(request);
+        if (addResult.Success) {
+            return new InstallResult(true, $"已为 Claude Code 安装 MCP Server: {request.McpServerName}", Path.Combine(HomeDirectory.Path, ".claude.json"));
+        }
+
+        if (addResult.CommandNotFound) {
+            return null;
+        }
+
+        if (addResult.Output.Contains("already exists", StringComparison.OrdinalIgnoreCase)) {
+            var removeResult = CliRunner.RunRemove(request.McpServerName);
+            if (removeResult.Success) {
+                var retryAddResult = CliRunner.RunBuildAdd(request);
+                if (retryAddResult.Success) {
+                    return new InstallResult(true, $"已为 Claude Code 安装 MCP Server: {request.McpServerName}", Path.Combine(HomeDirectory.Path, ".claude.json"));
+                }
+            }
+        }
+
+        return null;
     }
 
     private static JsonObject LoadJsonObject(string path) {
@@ -250,6 +282,75 @@ internal static class ClaudeCodeMcpInstaller {
         return array;
     }
 }
+
+internal interface IClaudeCodeCliRunner {
+    ClaudeCliCommandResult RunBuildAdd(InstallRequest request);
+    ClaudeCliCommandResult RunRemove(string serverName);
+}
+
+internal sealed class ClaudeCodeCliRunner : IClaudeCodeCliRunner {
+    public ClaudeCliCommandResult RunBuildAdd(InstallRequest request) {
+        var arguments = new List<string> {
+            "mcp",
+            "add",
+            "--scope",
+            "user",
+            "--transport",
+            "stdio",
+            request.McpServerName,
+            "--",
+            request.ExecutableCommand,
+        };
+        arguments.AddRange(request.ExecutableArgs);
+
+        return Run(arguments);
+    }
+
+    public ClaudeCliCommandResult RunRemove(string serverName) {
+        return Run([
+            "mcp",
+            "remove",
+            "--scope",
+            "user",
+            serverName,
+        ]);
+    }
+
+    private static ClaudeCliCommandResult Run(IEnumerable<string> arguments) {
+        try {
+            var startInfo = new ProcessStartInfo {
+                FileName = "claude",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+            };
+
+            foreach (var argument in arguments) {
+                startInfo.ArgumentList.Add(argument);
+            }
+
+            using var process = Process.Start(startInfo);
+            if (process is null) {
+                return new ClaudeCliCommandResult(false, false, "无法启动 claude 命令");
+            }
+
+            var standardOutput = process.StandardOutput.ReadToEnd();
+            var standardError = process.StandardError.ReadToEnd();
+            process.WaitForExit();
+
+            var output = string.Join(Environment.NewLine, new[] { standardOutput, standardError }
+                .Where(text => !string.IsNullOrWhiteSpace(text)))
+                .Trim();
+
+            return new ClaudeCliCommandResult(process.ExitCode == 0, false, output);
+        }
+        catch (Exception ex) when (ex is Win32Exception or FileNotFoundException) {
+            return new ClaudeCliCommandResult(false, true, ex.Message);
+        }
+    }
+}
+
+internal readonly record struct ClaudeCliCommandResult(bool Success, bool CommandNotFound, string Output);
 
 internal static class CodexMcpInstaller {
     public static InstallResult Install(InstallRequest request) {
