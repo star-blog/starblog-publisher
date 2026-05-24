@@ -25,12 +25,27 @@
 3. 设置 Glob pattern 为 `*`（或限制为 `StarBlogPublisher.Cli`）
 4. 复制生成的 Key
 
-**配置位置：**
+**配置方式：**
+
+方式一：GitHub 页面配置
 
 `Settings → Secrets and variables → Actions → New repository secret`
 
 - Name: `NUGET_GALLERY_TOKEN`
 - Value: 上面复制的 Key
+
+方式二：使用 `gh` CLI
+
+```bash
+# 交互式输入（推荐，不会在 shell 历史中留下痕迹）
+gh secret set NUGET_GALLERY_TOKEN
+
+# 或通过环境变量传入
+gh secret set NUGET_GALLERY_TOKEN --body "$NUGET_API_KEY"
+
+# 或从文件读取
+gh secret set NUGET_GALLERY_TOKEN --body "$(cat nuget-key.txt)"
+```
 
 ### 2. GH_PAT
 
@@ -48,12 +63,24 @@
    - Contents: Read and write
 6. 点击 Generate token，复制生成的 token
 
-**配置位置：**
+**配置方式：**
+
+方式一：GitHub 页面配置
 
 `Settings → Secrets and variables → Actions → New repository secret`
 
 - Name: `GH_PAT`
 - Value: 上面复制的 token
+
+方式二：使用 `gh` CLI
+
+```bash
+# 交互式输入
+gh secret set GH_PAT
+
+# 或通过环境变量传入
+gh secret set GH_PAT --body "$MY_PAT_TOKEN"
+```
 
 ### 3. GITHUB_TOKEN（自动）
 
