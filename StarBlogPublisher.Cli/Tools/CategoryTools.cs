@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Text.Json;
 using ModelContextProtocol.Server;
+using StarBlogPublisher.Cli.Models;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
 
@@ -18,8 +19,11 @@ public static class CategoryTools {
         if (!result.Success) return $"错误: {result.ErrorMessage}";
         if (result.Categories == null || result.Categories.Count == 0) return "暂无分类";
 
-        var items = result.Categories.Select(c => new { c.Id, c.Text, ChildCount = c.Nodes?.Count ?? 0 });
-        return JsonSerializer.Serialize(items, new JsonSerializerOptions { WriteIndented = true });
+        var items = result.Categories
+            .Select(c => new CategorySummaryDto(c.Id.ToString(), c.Text, c.Nodes?.Count ?? 0))
+            .ToList();
+
+        return JsonSerializer.Serialize(items, CliJsonContext.Default.ListCategorySummaryDto);
     }
 
     [McpServerTool, Description("创建新分类")]

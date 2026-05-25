@@ -1,12 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Collections.Generic;
-using Newtonsoft.Json;
 using StarBlogPublisher.Services.Security;
 using StarBlogPublisher.Models;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace StarBlogPublisher.Services;
 
@@ -48,7 +46,6 @@ public class AppSettings {
         set => _encryptedAIKey = EncryptionService.Encrypt(value);
     }
 
-    [JsonPropertyName("AIKey")]
     public string EncryptedAIKey {
         get => _encryptedAIKey;
         set => _encryptedAIKey = value;
@@ -74,7 +71,6 @@ public class AppSettings {
     }
 
     // 用于JSON序列化的属性
-    [JsonPropertyName("Password")]
     public string EncryptedPassword {
         get => _encryptedPassword;
         set => _encryptedPassword = value;
@@ -101,15 +97,16 @@ public class AppSettings {
         try {
             if (File.Exists(ConfigPath)) {
                 var json = File.ReadAllText(ConfigPath);
-                // var settings = JsonSerializer.Deserialize<AppSettings>(json);
-                var settings = JsonConvert.DeserializeObject<AppSettings>(json);
+                var snapshot = JsonSerializer.Deserialize(json, AppSettingsJsonContext.Default.AppSettingsSnapshot);
 
-                if (settings != null) {
+                if (snapshot != null) {
+                    var settings = FromSnapshot(snapshot);
+
                     // 确保至少有一个默认配置文件
                     if (settings.AIProfiles == null || settings.AIProfiles.Count == 0) {
                         settings.MigrateToProfiles();
                     }
-                    
+
                     return settings;
                 }
             }
@@ -122,6 +119,54 @@ public class AppSettings {
         var defaultSettings = new AppSettings();
         defaultSettings.MigrateToProfiles();
         return defaultSettings;
+    }
+
+    private static AppSettings FromSnapshot(AppSettingsSnapshot snapshot) {
+        return new AppSettings {
+            UseProxy = snapshot.UseProxy,
+            ProxyType = snapshot.ProxyType ?? "http",
+            ProxyHost = snapshot.ProxyHost ?? string.Empty,
+            ProxyPort = snapshot.ProxyPort,
+            ProxyTimeout = snapshot.ProxyTimeout,
+            UseCustomBackend = snapshot.UseCustomBackend,
+            BackendUrl = snapshot.BackendUrl ?? string.Empty,
+            EnableAI = snapshot.EnableAI,
+            AIProvider = snapshot.AIProvider ?? "openai",
+            _encryptedAIKey = snapshot.EncryptedAIKey ?? string.Empty,
+            AIModel = snapshot.AIModel ?? string.Empty,
+            AIApiBase = snapshot.AIApiBase ?? string.Empty,
+            AIProfiles = snapshot.AIProfiles ?? new List<AIProfile>(),
+            CurrentAIProfile = snapshot.CurrentAIProfile ?? "默认",
+            Username = snapshot.Username ?? string.Empty,
+            _encryptedPassword = snapshot.EncryptedPassword ?? string.Empty,
+            BackendTimeout = snapshot.BackendTimeout,
+            IsDarkTheme = snapshot.IsDarkTheme,
+            EnableRegexImageParsing = snapshot.EnableRegexImageParsing
+        };
+    }
+
+    private AppSettingsSnapshot ToSnapshot() {
+        return new AppSettingsSnapshot {
+            UseProxy = UseProxy,
+            ProxyType = ProxyType,
+            ProxyHost = ProxyHost,
+            ProxyPort = ProxyPort,
+            ProxyTimeout = ProxyTimeout,
+            UseCustomBackend = UseCustomBackend,
+            BackendUrl = BackendUrl,
+            EnableAI = EnableAI,
+            AIProvider = AIProvider,
+            EncryptedAIKey = _encryptedAIKey,
+            AIModel = AIModel,
+            AIApiBase = AIApiBase,
+            AIProfiles = AIProfiles,
+            CurrentAIProfile = CurrentAIProfile,
+            Username = Username,
+            EncryptedPassword = _encryptedPassword,
+            BackendTimeout = BackendTimeout,
+            IsDarkTheme = IsDarkTheme,
+            EnableRegexImageParsing = EnableRegexImageParsing
+        };
     }
 
     // 将旧的AI设置迁移到配置文件
@@ -147,12 +192,8 @@ public class AppSettings {
             if (!string.IsNullOrEmpty(directory)) {
                 Directory.CreateDirectory(directory);
             }
-            
-            // var json = JsonSerializer.Serialize(this, new JsonSerializerOptions {
-            //     WriteIndented = true
-            // });
-            
-            var json = JsonConvert.SerializeObject(this, Formatting.Indented);
+
+            var json = JsonSerializer.Serialize(ToSnapshot(), AppSettingsJsonContext.Default.AppSettingsSnapshot);
             File.WriteAllText(ConfigPath, json);
 
             // 触发配置变更事件
@@ -162,4 +203,26 @@ public class AppSettings {
             // todo 处理保存失败的情况
         }
     }
+}
+
+internal sealed class AppSettingsSnapshot {
+    public bool UseProxy { get; set; }
+    public string ProxyType { get; set; } = "http";
+    public string ProxyHost { get; set; } = string.Empty;
+    public int ProxyPort { get; set; }
+    public int ProxyTimeout { get; set; } = 30;
+    public bool UseCustomBackend { get; set; }
+    public string BackendUrl { get; set; } = string.Empty;
+    public bool EnableAI { get; set; }
+    public string AIProvider { get; set; } = "openai";
+    public string EncryptedAIKey { get; set; } = string.Empty;
+    public string AIModel { get; set; } = string.Empty;
+    public string AIApiBase { get; set; } = string.Empty;
+    public List<AIProfile> AIProfiles { get; set; } = new();
+    public string CurrentAIProfile { get; set; } = "默认";
+    public string Username { get; set; } = string.Empty;
+    public string EncryptedPassword { get; set; } = string.Empty;
+    public int BackendTimeout { get; set; } = 30;
+    public bool IsDarkTheme { get; set; }
+    public bool EnableRegexImageParsing { get; set; }
 }

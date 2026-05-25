@@ -40,6 +40,14 @@
     </ItemGroup>
 
     <ItemGroup>
+        <RdXmlFile Include="rd.xml" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <TrimmerRootDescriptor Include="linker.xml" />
+    </ItemGroup>
+
+    <ItemGroup>
         <InternalsVisibleTo Include="StarBlogPublisher.Tests" />
     </ItemGroup>
 

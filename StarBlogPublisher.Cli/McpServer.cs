@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using StarBlogPublisher.Cli.Tools;
 
 namespace StarBlogPublisher.Cli;
 
@@ -20,7 +21,12 @@ public static class McpServer {
         builder.Services
             .AddMcpServer()
             .WithStdioServerTransport()
-            .WithToolsFromAssembly();
+            .WithTools(new[] {
+                typeof(AuthTools),
+                typeof(CategoryTools),
+                typeof(PostTools),
+                typeof(AiTools)
+            }, serializerOptions: null);
 
         await builder.Build().RunAsync();
         return 0;

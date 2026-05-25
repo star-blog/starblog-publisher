@@ -1,0 +1,26 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Application>
+    <Assembly Name="StarBlogPublisher.Cli" Dynamic="Required All" />
+    <Assembly Name="Refit" Dynamic="Required All" />
+    <Assembly Name="Newtonsoft.Json" Dynamic="Required All" />
+
+    <Assembly Name="StarBlogPublisher.Core">
+      <Type Name="StarBlogPublisher.Services.StarBlogApi.IAuth" Dynamic="Required All" />
+      <Type Name="StarBlogPublisher.Services.StarBlogApi.ICategory" Dynamic="Required All" />
+      <Type Name="StarBlogPublisher.Services.StarBlogApi.IBlogPost" Dynamic="Required All" />
+      <Type Name="StarBlogPublisher.Models.Dtos.LoginUser" Dynamic="Required All" />
+      <Type Name="StarBlogPublisher.Models.Dtos.CategoryCreationDto" Dynamic="Required All" />
+      <Type Name="StarBlogPublisher.Models.Dtos.PostCreationDto" Dynamic="Required All" />
+      <Type Name="StarBlogPublisher.Models.Dtos.PostUpdateDto" Dynamic="Required All" />
+      <Type Name="StarBlogPublisher.Models.LoginToken" Dynamic="Required All" />
+      <Type Name="StarBlogPublisher.Models.Category" Dynamic="Required All" />
+      <Type Name="StarBlogPublisher.Models.BlogPost" Dynamic="Required All" />
+      <Type Name="StarBlogPublisher.Models.UploadImageResult" Dynamic="Required All" />
+      <Type Name="StarBlogPublisher.Models.WordCloud" Dynamic="Required All" />
+    </Assembly>
+
+    <Assembly Name="CodeLab.Share">
+      <Type Name="CodeLab.Share.ViewModels.Response.ApiResponse`1" Dynamic="Required All" />
+    </Assembly>
+  </Application>
+</Directives>

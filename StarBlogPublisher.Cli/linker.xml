@@ -1,0 +1,19 @@
+<linker>
+  <assembly fullname="StarBlogPublisher.Core">
+    <type fullname="StarBlogPublisher.Services.StarBlogApi.IAuth" preserve="all" />
+    <type fullname="StarBlogPublisher.Services.StarBlogApi.ICategory" preserve="all" />
+    <type fullname="StarBlogPublisher.Services.StarBlogApi.IBlogPost" preserve="all" />
+    <type fullname="StarBlogPublisher.Models.Dtos.LoginUser" preserve="all" />
+    <type fullname="StarBlogPublisher.Models.Dtos.CategoryCreationDto" preserve="all" />
+    <type fullname="StarBlogPublisher.Models.Dtos.PostCreationDto" preserve="all" />
+    <type fullname="StarBlogPublisher.Models.Dtos.PostUpdateDto" preserve="all" />
+    <type fullname="StarBlogPublisher.Models.LoginToken" preserve="all" />
+    <type fullname="StarBlogPublisher.Models.Category" preserve="all" />
+    <type fullname="StarBlogPublisher.Models.BlogPost" preserve="all" />
+    <type fullname="StarBlogPublisher.Models.UploadImageResult" preserve="all" />
+    <type fullname="StarBlogPublisher.Models.WordCloud" preserve="all" />
+  </assembly>
+  <assembly fullname="CodeLab.Share">
+    <type fullname="CodeLab.Share.ViewModels.Response.ApiResponse`1" preserve="all" />
+  </assembly>
+</linker>

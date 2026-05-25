@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Refit;
 using StarBlogPublisher.Models.Dtos;
 
 namespace StarBlogPublisher.Services.Application;
@@ -97,9 +98,39 @@ public class AuthApplicationService {
             _userExplicitlyLoggedOut = false;
             return AuthResult.Ok(resp.Data.Token);
         }
+        catch (ApiException ex) {
+            return AuthResult.Fail(BuildApiErrorMessage(ex));
+        }
         catch (Exception ex) {
             return AuthResult.Fail($"登录失败: {ex.Message}");
         }
+    }
+
+    private string BuildApiErrorMessage(ApiException ex) {
+        var targetUri = ex.Uri?.ToString() ?? $"{BackendUrl.TrimEnd('/')}/Api/Auth/Login";
+        var statusCode = (int)ex.StatusCode;
+        var reasonPhrase = string.IsNullOrWhiteSpace(ex.ReasonPhrase)
+            ? ex.StatusCode.ToString()
+            : ex.ReasonPhrase;
+
+        var message = $"登录失败: 请求 {targetUri} 返回 {statusCode} ({reasonPhrase})";
+
+        if (!string.IsNullOrWhiteSpace(ex.Content)) {
+            message += $"，响应内容: {SanitizeErrorContent(ex.Content)}";
+        }
+
+        return message;
+    }
+
+    private static string SanitizeErrorContent(string content) {
+        var flattened = content
+            .Replace("\r", " ")
+            .Replace("\n", " ")
+            .Trim();
+
+        return flattened.Length <= 300
+            ? flattened
+            : $"{flattened[..300]}...";
     }
 
     /// <summary>

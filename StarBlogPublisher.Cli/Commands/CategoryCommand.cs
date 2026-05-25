@@ -1,4 +1,5 @@
 using System.CommandLine;
+using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
 
@@ -66,7 +67,7 @@ public static class CategoryCommand {
         return command;
     }
 
-    private static void PrintCategory(Models.Category cat, int indent) {
+    private static void PrintCategory(Category cat, int indent) {
         var prefix = new string(' ', indent * 2);
         Console.WriteLine($"{prefix}- [{cat.Id}] {cat.Text}");
         if (cat.Nodes != null) {

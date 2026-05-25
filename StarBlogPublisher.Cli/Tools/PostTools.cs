@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Text.Json;
 using ModelContextProtocol.Server;
+using StarBlogPublisher.Cli.Models;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
 
@@ -31,12 +32,13 @@ public static class PostTools {
             filePath, postTitle, content, summary ?? "", categoryId, slug, publish);
 
         if (result.Success && result.Post != null) {
-            return JsonSerializer.Serialize(new {
+            var dto = new PublishedPostDto(
                 result.Post.Id,
                 result.Post.Title,
                 result.Post.Slug,
-                Status = result.Post.IsPublish ? "已发布" : "草稿"
-            }, new JsonSerializerOptions { WriteIndented = true });
+                result.Post.IsPublish ? "已发布" : "草稿");
+
+            return JsonSerializer.Serialize(dto, CliJsonContext.Default.PublishedPostDto);
         }
 
         return $"错误: {result.ErrorMessage}";
@@ -54,16 +56,17 @@ public static class PostTools {
 
         if (result.Success && result.Post != null) {
             var post = result.Post;
-            return JsonSerializer.Serialize(new {
+            var dto = new PostDetailsDto(
                 post.Id,
                 post.Title,
                 post.Slug,
-                Category = post.Category?.Text,
-                Status = post.IsPublish ? "已发布" : "草稿",
+                post.Category?.Text,
+                post.IsPublish ? "已发布" : "草稿",
                 post.Summary,
                 post.CreationTime,
-                post.LastUpdateTime
-            }, new JsonSerializerOptions { WriteIndented = true });
+                post.LastUpdateTime);
+
+            return JsonSerializer.Serialize(dto, CliJsonContext.Default.PostDetailsDto);
         }
 
         return $"错误: {result.ErrorMessage}";
