@@ -111,6 +111,23 @@ dotnet tool install --global StarBlogPublisher.Cli
 
 从 [Releases](https://github.com/star-blog/starblog-publisher/releases) 页面下载对应平台的 CLI 二进制文件（`StarBlogCli-*.zip` / `StarBlogCli-*.tar.gz`），解压后将可执行文件加入 PATH。
 
+### 发布与打包
+
+本项目的正式发布版本会采用自包含打包，CLI 还会使用 AOT 发布来提升启动速度和运行时稳定性。
+
+- **GUI**：AOT + 自包含发布，适合直接下载安装到本地使用。
+- **CLI**：AOT + 自包含单文件发布，适合命令行工具分发和自动化场景。
+
+如果你需要从源码自行打包，可以参考下面的命令：
+
+```bash
+# GUI AOT 发布
+dotnet publish ./StarBlogPublisher/StarBlogPublisher.csproj -c Release -r osx-arm64 --self-contained true /p:PublishAot=true /p:TrimMode=full
+
+# CLI AOT 发布
+dotnet publish ./StarBlogPublisher.Cli/StarBlogPublisher.Cli.csproj -c Release -r osx-arm64 --self-contained true /p:PublishAot=true /p:TrimMode=full
+```
+
 ### CLI 使用
 
 ```bash
