@@ -15,7 +15,7 @@ namespace StarBlogPublisher.Services;
 /// </summary>
 public class AiService {
     private static AiService? _instance;
-    private IChatClient _chatClient;
+    private IChatClient? _chatClient;
     private readonly ILogger _logger;
 
     public static AiService Instance {
@@ -27,11 +27,11 @@ public class AiService {
 
     private AiService(ILogger? logger = null) {
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
-        InitializeClient();
+        TryInitializeClient();
 
         // 订阅设置变更事件
         AppSettings.Instance.SettingsChanged += (_, _) => {
-            InitializeClient();
+            TryInitializeClient();
         };
     }
 
@@ -40,20 +40,40 @@ public class AiService {
         _chatClient = chatClient;
     }
 
-    private void InitializeClient() {
+    private bool TryInitializeClient() {
         var settings = AppSettings.Instance;
 
-        var provider = AIProviderInfo.GetProvider(settings.AIProvider);
-        var key = settings.AIKey;
-        var model = settings.AIModel;
-
-        if (provider == null) {
-            throw new ApplicationException("AI provider not found");
+        if (!settings.EnableAI) {
+            _chatClient = null;
+            _logger.LogInformation("AI is disabled; skipping chat client initialization");
+            return false;
         }
 
-        var endpoint = settings.AIProvider.ToLower() == "custom"
-            ? new Uri(settings.AIApiBase)
-            : new Uri(provider.DefaultApiBase);
+        var provider = AIProviderInfo.GetProvider(settings.AIProvider);
+        var key = settings.AIKey?.Trim();
+        var model = settings.AIModel?.Trim();
+
+        if (provider == null) {
+            _chatClient = null;
+            _logger.LogWarning("AI provider not found: {Provider}", settings.AIProvider);
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(model)) {
+            _chatClient = null;
+            _logger.LogInformation("AI settings incomplete; skipping chat client initialization");
+            return false;
+        }
+
+        var endpointValue = settings.AIProvider.Equals("custom", StringComparison.OrdinalIgnoreCase)
+            ? settings.AIApiBase?.Trim()
+            : provider.DefaultApiBase;
+
+        if (string.IsNullOrWhiteSpace(endpointValue) || !Uri.TryCreate(endpointValue, UriKind.Absolute, out var endpoint)) {
+            _chatClient = null;
+            _logger.LogInformation("AI endpoint is missing or invalid; skipping chat client initialization");
+            return false;
+        }
 
         _logger.LogInformation("InitializeChatClient, endpoint: {Endpoint}", endpoint);
 
@@ -63,9 +83,25 @@ public class AiService {
                 Endpoint = endpoint
             }
         ).GetChatClient(model).AsIChatClient();
+
+        return true;
     }
 
-    public IChatClient ChatClient => _chatClient;
+    public IChatClient ChatClient => EnsureChatClient();
+
+    public bool IsConfigured => _chatClient != null || TryInitializeClient();
+
+    private IChatClient EnsureChatClient() {
+        if (_chatClient != null) {
+            return _chatClient;
+        }
+
+        if (TryInitializeClient() && _chatClient != null) {
+            return _chatClient;
+        }
+
+        throw new InvalidOperationException("AI 功能未正确配置，请先在设置中启用 AI 并填写可用的 API Key、模型和接口地址。");
+    }
 
     /// <summary>
     /// 生成文本
