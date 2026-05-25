@@ -4,6 +4,8 @@ using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
 using System.Linq;
 using Avalonia.Markup.Xaml;
+using MsBox.Avalonia;
+using MsBox.Avalonia.Enums;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.ViewModels;
 using StarBlogPublisher.Views;
@@ -21,6 +23,7 @@ public partial class App : Application {
     public override void OnFrameworkInitializationCompleted() {
         // 确保Refit类型被注册
         RefitTypeRegistration.RegisterTypes();
+        _ = AppSettings.Instance;
         
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
             // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
@@ -32,6 +35,10 @@ public partial class App : Application {
                 DataContext = new MainWindowViewModel(),
             };
             desktop.MainWindow = MainWindow;
+
+            if (AppSettings.HasLoadError) {
+                _ = ShowSettingsLoadErrorAsync();
+            }
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -45,5 +52,20 @@ public partial class App : Application {
             .FirstOrDefault();
         if (dataAnnotationsPlugin != null)
             dataValidationPlugins.Remove(dataAnnotationsPlugin);
+    }
+
+    private static async Task ShowSettingsLoadErrorAsync() {
+        var message = AppSettings.LoadErrorMessage;
+        if (string.IsNullOrWhiteSpace(message)) {
+            return;
+        }
+
+        var msgBox = MessageBoxManager.GetMessageBoxStandard(
+            "配置加载失败",
+            message,
+            ButtonEnum.Ok,
+            Icon.Error);
+
+        await msgBox.ShowWindowDialogAsync(MainWindow);
     }
 }

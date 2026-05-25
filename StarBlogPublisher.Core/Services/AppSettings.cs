@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -9,13 +10,15 @@ using StarBlogPublisher.Models;
 namespace StarBlogPublisher.Services;
 
 public class AppSettings {
-    private static readonly string ConfigPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "StarBlogPublisher",
-        "settings.json"
-    );
+    private const string ConfigPathOverrideEnvironmentVariable = "STARBLOGPUBLISHER_SETTINGS_PATH";
+    private static string ConfigPath => ResolveConfigPath();
 
     private static AppSettings? _instance;
+    private static string? _loadErrorMessage;
+
+    public static string SettingsFilePath => ResolveConfigPath();
+    public static string? LoadErrorMessage => _loadErrorMessage;
+    public static bool HasLoadError => !string.IsNullOrWhiteSpace(_loadErrorMessage);
 
     public static AppSettings Instance {
         get {
@@ -94,10 +97,12 @@ public class AppSettings {
     internal AppSettings() { }
 
     private static AppSettings Load() {
+        _loadErrorMessage = null;
+
         try {
             if (File.Exists(ConfigPath)) {
                 var json = File.ReadAllText(ConfigPath);
-                var snapshot = JsonSerializer.Deserialize(json, AppSettingsJsonContext.Default.AppSettingsSnapshot);
+                var snapshot = DeserializeSnapshot(json);
 
                 if (snapshot != null) {
                     var settings = FromSnapshot(snapshot);
@@ -112,13 +117,22 @@ public class AppSettings {
             }
         }
         catch (Exception ex) {
-            // 如果加载失败，返回默认设置
-            System.Diagnostics.Trace.TraceWarning($"Failed to load app settings. {ex}");
+            _loadErrorMessage = BuildLoadErrorMessage(ex);
+            Trace.TraceWarning(_loadErrorMessage);
         }
 
         var defaultSettings = new AppSettings();
         defaultSettings.MigrateToProfiles();
         return defaultSettings;
+    }
+
+    internal static AppSettingsSnapshot DeserializeSnapshot(string json) {
+        var legacySnapshot = JsonSerializer.Deserialize(json, AppSettingsJsonContext.Default.LegacyAppSettingsSnapshot);
+        if (legacySnapshot == null) {
+            throw new JsonException("配置文件为空，或无法解析为已知格式。");
+        }
+
+        return ((LegacyAppSettingsSnapshot)legacySnapshot).ToAppSettingsSnapshot();
     }
 
     private static AppSettings FromSnapshot(AppSettingsSnapshot snapshot) {
@@ -187,6 +201,12 @@ public class AppSettings {
     }
 
     public void Save() {
+        if (HasLoadError) {
+            Trace.TraceWarning(
+                $"Skip saving app settings because the last load failed. File: {ConfigPath}");
+            return;
+        }
+
         try {
             var directory = Path.GetDirectoryName(ConfigPath);
             if (!string.IsNullOrEmpty(directory)) {
@@ -202,6 +222,23 @@ public class AppSettings {
         catch (Exception) {
             // todo 处理保存失败的情况
         }
+    }
+
+    private static string BuildLoadErrorMessage(Exception ex) {
+        return $"加载配置失败，已回退到内存默认配置，并停止写回以避免覆盖原文件。配置文件: {ConfigPath}. 错误: {ex.Message}";
+    }
+
+    private static string ResolveConfigPath() {
+        var overridePath = Environment.GetEnvironmentVariable(ConfigPathOverrideEnvironmentVariable);
+        if (!string.IsNullOrWhiteSpace(overridePath)) {
+            return overridePath;
+        }
+
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "StarBlogPublisher",
+            "settings.json"
+        );
     }
 }
 
@@ -225,4 +262,56 @@ internal sealed class AppSettingsSnapshot {
     public int BackendTimeout { get; set; } = 30;
     public bool IsDarkTheme { get; set; }
     public bool EnableRegexImageParsing { get; set; }
+}
+
+internal sealed class LegacyAppSettingsSnapshot {
+    public bool UseProxy { get; set; }
+    public string ProxyType { get; set; } = "http";
+    public string ProxyHost { get; set; } = string.Empty;
+    public int ProxyPort { get; set; }
+    public int ProxyTimeout { get; set; } = 30;
+    public bool UseCustomBackend { get; set; }
+    public string BackendUrl { get; set; } = string.Empty;
+    public bool EnableAI { get; set; }
+    public string AIProvider { get; set; } = "openai";
+    public string AIKey { get; set; } = string.Empty;
+    public string EncryptedAIKey { get; set; } = string.Empty;
+    public string AIModel { get; set; } = string.Empty;
+    public string AIApiBase { get; set; } = string.Empty;
+    public List<AIProfile> AIProfiles { get; set; } = new();
+    public string CurrentAIProfile { get; set; } = "默认";
+    public string Username { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string EncryptedPassword { get; set; } = string.Empty;
+    public int BackendTimeout { get; set; } = 30;
+    public bool IsDarkTheme { get; set; }
+    public bool EnableRegexImageParsing { get; set; }
+
+    public AppSettingsSnapshot ToAppSettingsSnapshot() {
+        return new AppSettingsSnapshot {
+            UseProxy = UseProxy,
+            ProxyType = ProxyType,
+            ProxyHost = ProxyHost,
+            ProxyPort = ProxyPort,
+            ProxyTimeout = ProxyTimeout,
+            UseCustomBackend = UseCustomBackend,
+            BackendUrl = BackendUrl,
+            EnableAI = EnableAI,
+            AIProvider = AIProvider,
+            EncryptedAIKey = !string.IsNullOrWhiteSpace(EncryptedAIKey)
+                ? EncryptedAIKey
+                : EncryptionService.Encrypt(AIKey),
+            AIModel = AIModel,
+            AIApiBase = AIApiBase,
+            AIProfiles = AIProfiles,
+            CurrentAIProfile = CurrentAIProfile,
+            Username = Username,
+            EncryptedPassword = !string.IsNullOrWhiteSpace(EncryptedPassword)
+                ? EncryptedPassword
+                : EncryptionService.Encrypt(Password),
+            BackendTimeout = BackendTimeout,
+            IsDarkTheme = IsDarkTheme,
+            EnableRegexImageParsing = EnableRegexImageParsing
+        };
+    }
 }

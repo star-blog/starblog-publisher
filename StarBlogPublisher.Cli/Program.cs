@@ -1,5 +1,6 @@
 using System.CommandLine;
 using StarBlogPublisher.Cli.Commands;
+using StarBlogPublisher.Services;
 
 namespace StarBlogPublisher.Cli;
 
@@ -17,6 +18,12 @@ class Program {
         rootCommand.Subcommands.Add(PostCommand.Build());
         rootCommand.Subcommands.Add(AiCommand.Build());
         rootCommand.Subcommands.Add(InstallCommand.Build());
+
+        _ = AppSettings.Instance;
+
+        if (AppSettings.HasLoadError) {
+            Console.Error.WriteLine(AppSettings.LoadErrorMessage);
+        }
 
         return rootCommand.Parse(args).Invoke();
     }
