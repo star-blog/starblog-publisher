@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import subprocess
 import zipfile
@@ -74,6 +75,24 @@ if "GITHUB_PLATFORM" in os.environ:
     BUILD_CONFIGS["self-contained"]["platforms"] = [os.environ["GITHUB_PLATFORM"]]
 
 
+def get_target_framework(project_dir):
+    """从 csproj 读取 TargetFramework，避免硬编码 net8.0 / net10.0。"""
+    csproj_path = os.path.join(project_dir, "StarBlogPublisher.csproj")
+    if not os.path.isfile(csproj_path):
+        raise FileNotFoundError(f"未找到项目文件: {csproj_path}")
+
+    with open(csproj_path, encoding="utf-8") as f:
+        content = f.read()
+
+    match = re.search(r"<TargetFramework>([^<]+)</TargetFramework>", content)
+    if not match:
+        raise RuntimeError(f"无法从 {csproj_path} 读取 TargetFramework")
+
+    tfm = match.group(1).strip()
+    print(f"目标框架: {tfm}")
+    return tfm
+
+
 def get_build_command(profile, target_system):
     """根据配置和目标系统生成构建命令"""
     if profile not in BUILD_CONFIGS:
@@ -106,14 +125,29 @@ def clean_publish_dir(publish_dir):
                 os.remove(file_path)
 
 
+def collect_publish_files(source_dir):
+    """收集发布目录中的全部文件路径，目录不存在或为空时抛出异常。"""
+    if not os.path.isdir(source_dir):
+        raise FileNotFoundError(f"发布目录不存在: {source_dir}")
+
+    files = []
+    for root, _, filenames in os.walk(source_dir):
+        for filename in filenames:
+            files.append(os.path.join(root, filename))
+
+    if not files:
+        raise RuntimeError(f"发布目录为空，拒绝打包: {source_dir}")
+
+    return files
+
+
 def create_zip(source_dir, output_file):
     """创建最大压缩率的zip文件"""
+    files = collect_publish_files(source_dir)
     with zipfile.ZipFile(output_file, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
-        for root, _, files in os.walk(source_dir):
-            for file in files:
-                file_path = os.path.join(root, file)
-                arcname = os.path.relpath(file_path, source_dir)
-                zf.write(file_path, arcname)
+        for file_path in files:
+            arcname = os.path.relpath(file_path, source_dir)
+            zf.write(file_path, arcname)
 
 
 def build_and_package(profile, system):
@@ -124,7 +158,9 @@ def build_and_package(profile, system):
         # 创建发布命令
         build_cmd = get_build_command(profile, system)
         project_dir = os.path.join(os.path.dirname(__file__), "StarBlogPublisher")
-        publish_dir = os.path.join(project_dir, "bin", "Release", "net8.0", system, "publish")
+        target_framework = get_target_framework(project_dir)
+        publish_dir = os.path.join(project_dir, "bin", "Release", target_framework, system, "publish")
+        print(f"发布目录: {publish_dir}")
 
         # 执行构建
         subprocess.run(build_cmd.split(), cwd=project_dir, check=True)
