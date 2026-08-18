@@ -5,8 +5,39 @@ import zipfile
 from datetime import datetime
 import platform
 
-# 配置信息
-VERSION = "1.10.7"
+def get_latest_version():
+    """从 git tag 读取最新版本号。
+
+    按语义化版本降序取第一个 tag，并去掉常见的 v 前缀（如 v2.2.0 -> 2.2.0）。
+    仓库没有 tag 或 git 不可用时抛出异常，避免用错误版本号打包。
+    """
+    repo_dir = os.path.dirname(os.path.abspath(__file__))
+    try:
+        result = subprocess.run(
+            ["git", "tag", "--sort=-v:refname"],
+            cwd=repo_dir,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except FileNotFoundError as e:
+        raise RuntimeError("未找到 git 命令，无法读取版本号") from e
+    except subprocess.CalledProcessError as e:
+        stderr = (e.stderr or "").strip()
+        raise RuntimeError(f"读取 git tag 失败: {stderr or e}") from e
+
+    tags = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    if not tags:
+        raise RuntimeError("仓库中没有任何 git tag，无法确定版本号")
+
+    latest_tag = tags[0]
+    version = latest_tag[1:] if latest_tag.lower().startswith("v") else latest_tag
+    print(f"从 git tag 读取版本号: {latest_tag} -> {version}")
+    return version
+
+
+# 从最新 git tag 读取版本号，不再硬编码
+VERSION = get_latest_version()
 
 def get_aot_platforms():
     """获取支持AOT的平台列表"""
