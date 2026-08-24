@@ -1,4 +1,5 @@
 ﻿using Avalonia;
+using Avalonia.Media;
 using System;
 using Projektanker.Icons.Avalonia;
 using Projektanker.Icons.Avalonia.FontAwesome;
@@ -21,6 +22,11 @@ sealed class Program {
         return AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
+            // Some Linux font backends can return an empty system default font.
+            // Use the Inter collection shipped with the app instead of $Default.
+            .With(new FontManagerOptions {
+                DefaultFamilyName = "fonts:Inter#Inter"
+            })
             .LogToTrace();
     }
 }
