@@ -118,7 +118,19 @@ dotnet tool install --global StarBlogPublisher.Cli
 - **GUI**：AOT + 自包含发布，适合直接下载安装到本地使用。
 - **CLI**：AOT + 自包含单文件发布，适合命令行工具分发和自动化场景。
 
-如果你需要从源码自行打包，可以参考下面的命令：
+如需构建 GUI 发布包，请在仓库根目录运行内置的 .NET 10 单文件构建脚本：
+
+```bash
+# 发布当前操作系统支持的 GUI AOT 包，并输出到 dist/
+dotnet build.cs
+
+# 仅显示将执行的发布命令，不清空 dist/，也不构建
+dotnet build.cs --dry-run
+```
+
+脚本会从最新 Git tag 读取版本号、清理发布目录中的符号文件，并重新创建 `dist/`。它使用 .NET 10 原生的单文件应用功能，不需要安装 Python 或第三方 `dotnet-script` 工具。Windows 上构建 Native AOT 还需要安装 Visual Studio 的“使用 C++ 的桌面开发”工作负载。
+
+如需分别为 GUI 或 CLI 执行自定义发布，可参考下面的命令：
 
 ```bash
 # GUI AOT 发布
@@ -286,6 +298,9 @@ dotnet run --project StarBlogPublisher.Cli -- --help
 
 # 运行 MCP Server
 dotnet run --project StarBlogPublisher.Cli -- mcp
+
+# 构建 GUI 发布包（在仓库根目录运行）
+dotnet build.cs
 ```
 
 ## 贡献指南
