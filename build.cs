@@ -106,6 +106,7 @@ static BuildOptions ParseArguments(string[] arguments)
         {
             case "--help" or "-h": options.ShowHelp = true; break;
             case "--dry-run": options.DryRun = true; break;
+            case "--compress": options.Compress = true; break;
             case "--list": options.ListProfiles = true; break;
             case "--profile" or "-p": AddValues(profiles, ReadOptionValue(arguments, ref index, argument)); break;
             case "--rid" or "-r": AddValues(rids, ReadOptionValue(arguments, ref index, argument)); break;
@@ -154,7 +155,13 @@ static List<BuildTarget> ResolveBuilds(BuildOptions options, IReadOnlyDictionary
         if (rids.Count == 0)
             throw new ArgumentException($"The {profile} profile requires at least one RID.");
 
-        builds.AddRange(rids.Distinct(StringComparer.OrdinalIgnoreCase).Select(rid => new BuildTarget(profile, configuration, rid)));
+        // The .NET SDK only supports EnableCompressionInSingleFile for self-contained
+        // apps. AOT is native code; framework-dependent single-file apps are bundled
+        // but cannot use this SDK compression option (NETSDK1176).
+        var compress = options.Compress && profile.Equals("self-contained", StringComparison.OrdinalIgnoreCase);
+        if (options.Compress && !compress)
+            Console.WriteLine($"Note: --compress is only supported by self-contained; skipping {profile}.");
+        builds.AddRange(rids.Distinct(StringComparer.OrdinalIgnoreCase).Select(rid => new BuildTarget(profile, configuration, rid, compress)));
     }
 
     return builds;
@@ -188,7 +195,9 @@ static bool BuildAndPackage(BuildTarget build, string targetFramework, string pr
 static string FormatPublishCommand(BuildTarget build) => $"dotnet {string.Join(' ', CreatePublishArguments(build))}";
 
 static string[] CreatePublishArguments(BuildTarget build) =>
-    ["publish", "-c", "Release", "-r", build.Rid, .. build.Configuration.Arguments];
+    build.Compress
+        ? ["publish", "-c", "Release", "-r", build.Rid, .. build.Configuration.Arguments, "-p:EnableCompressionInSingleFile=true"]
+        : ["publish", "-c", "Release", "-r", build.Rid, .. build.Configuration.Arguments];
 
 static string GetPackageFileName(BuildTarget build, string version)
 {
@@ -297,6 +306,7 @@ Options:
   -p, --profile <name> Select a profile. Repeat or separate names with commas.
   -r, --rid <rid>      Target RID(s); overrides the profile default RID(s).
       --dry-run        Print publish commands without deleting or creating files.
+      --compress       Compress embedded managed assemblies in self-contained packages.
       --list           List profiles and their default target RIDs.
   -h, --help           Show this help.
 
@@ -304,7 +314,7 @@ Examples:
   dotnet run --file .\build.cs --
   dotnet run --file .\build.cs -- --profile framework-dependent
   dotnet run --file .\build.cs -- -p self-contained -r win-x64,linux-x64
-  dotnet run --file .\build.cs -- -p framework-dependent,self-contained --dry-run
+  dotnet run --file .\build.cs -- -p framework-dependent,self-contained --compress
   dotnet run --file .\build.cs -- --profile all
 """);
 
@@ -313,10 +323,11 @@ sealed class BuildOptions(List<string> profiles, List<string> rids)
     public List<string> Profiles { get; } = profiles;
     public List<string> Rids { get; } = rids;
     public bool DryRun { get; set; }
+    public bool Compress { get; set; }
     public bool ListProfiles { get; set; }
     public bool ShowHelp { get; set; }
 }
 
 sealed record BuildConfiguration(string DisplayName, string[] Arguments, IReadOnlyList<string> DefaultRids, IReadOnlyList<string>? AotSupportedRids);
-sealed record BuildTarget(string Profile, BuildConfiguration Configuration, string Rid);
+sealed record BuildTarget(string Profile, BuildConfiguration Configuration, string Rid, bool Compress);
 sealed record ProcessResult(string StandardOutput, string StandardError);
