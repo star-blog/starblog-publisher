@@ -150,6 +150,7 @@ public partial class MainWindowViewModel : ViewModelBase {
 
     // 文章内容
     [ObservableProperty] private string _articleContent = "";
+    [ObservableProperty] private bool _hasLoadedArticle;
 
     // 当前打开的文件路径
     private string? _currentFilePath;
@@ -213,6 +214,9 @@ public partial class MainWindowViewModel : ViewModelBase {
 
                 // 保存当前文件路径
                 _currentFilePath = file.Path.LocalPath;
+
+                // 公众号排版只依赖标题和 Markdown 正文，不应等待 AI 的简介、Slug 生成完成。
+                HasLoadedArticle = true;
 
                 // 如果AI功能已开启，使用AI生成相关信息
                 if (AppSettings.Instance.EnableAI) {

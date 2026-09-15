@@ -353,7 +353,7 @@
             <!-- 公众号排版与草稿箱 -->
             <Button Grid.Column="5"
                     Command="{Binding ShowWeChatPublisherCommand}"
-                    IsEnabled="{Binding CanPublish}"
+                    IsEnabled="{Binding HasLoadedArticle}"
                     Classes="IconButton"
                     Padding="15,10"
                     Margin="0,0,10,0">
