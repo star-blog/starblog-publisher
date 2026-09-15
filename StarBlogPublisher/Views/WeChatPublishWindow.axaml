@@ -63,7 +63,7 @@
                 <Button Grid.Column="2" Command="{Binding CopyHtmlCommand}" Classes="IconButton">
                     <StackPanel Orientation="Horizontal" Spacing="5">
                         <i:Icon Value="fa-solid fa-copy" Foreground="#FF9800" />
-                        <TextBlock>复制排版产物</TextBlock>
+                        <TextBlock>复制到公众号</TextBlock>
                     </StackPanel>
                 </Button>
             </Grid>

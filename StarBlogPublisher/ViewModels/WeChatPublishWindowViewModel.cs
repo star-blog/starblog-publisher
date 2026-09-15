@@ -3,10 +3,13 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -93,7 +96,29 @@ public partial class WeChatPublishWindowViewModel : ViewModelBase {
     }
 
     [RelayCommand]
-    private async Task CopyHtml() => await CopyToClipboardAsync(FormattedHtml, "排版 HTML 已复制到剪贴板");
+    private async Task CopyHtml() {
+        if (string.IsNullOrWhiteSpace(FormattedHtml)) {
+            StatusMessage = "没有可复制的排版内容";
+            return;
+        }
+
+        var clipboard = TopLevel.GetTopLevel(App.MainWindow)?.Clipboard;
+        if (clipboard == null) {
+            StatusMessage = "无法访问系统剪贴板";
+            return;
+        }
+
+        // 微信编辑器不会把 text/plain 中的 HTML 标签解析成富文本。Windows 下它会读取
+        // 名为 "HTML Format" 的 CF_HTML 剪贴板格式，因此要同时提供该格式和纯文本回退。
+        var item = new DataTransferItem();
+        item.SetText(ToPlainText(FormattedHtml));
+        item.Set(DataFormat.CreateBytesPlatformFormat("HTML Format"), Encoding.UTF8.GetBytes(CreateCfHtml(FormattedHtml)));
+
+        var dataTransfer = new DataTransfer();
+        dataTransfer.Add(item);
+        await clipboard.SetDataAsync(dataTransfer);
+        StatusMessage = "排版已作为富文本复制，可直接粘贴到公众号正文";
+    }
 
     [RelayCommand]
     private async Task CopyDraftMediaId() => await CopyToClipboardAsync(DraftMediaId, "草稿 MediaId 已复制到剪贴板");
@@ -170,5 +195,34 @@ public partial class WeChatPublishWindowViewModel : ViewModelBase {
 
         await clipboard.SetTextAsync(content);
         StatusMessage = successMessage;
+    }
+
+    private static string CreateCfHtml(string htmlFragment) {
+        const string startFragmentMarker = "<!--StartFragment-->";
+        const string endFragmentMarker = "<!--EndFragment-->";
+        const string headerTemplate = "Version:0.9\r\nStartHTML:{0:D10}\r\nEndHTML:{1:D10}\r\nStartFragment:{2:D10}\r\nEndFragment:{3:D10}\r\n";
+
+        var htmlDocument = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head><body>"
+            + startFragmentMarker + htmlFragment + endFragmentMarker + "</body></html>";
+        // All fields occupy ten ASCII digits, so calculating with placeholder values gives the final header length.
+        var provisionalHeader = string.Format(headerTemplate, 0, 0, 0, 0);
+        var startHtml = Encoding.UTF8.GetByteCount(provisionalHeader);
+        var endHtml = startHtml + Encoding.UTF8.GetByteCount(htmlDocument);
+        var startFragment = startHtml + Encoding.UTF8.GetByteCount(
+            htmlDocument[..(htmlDocument.IndexOf(startFragmentMarker, StringComparison.Ordinal) + startFragmentMarker.Length)]);
+        var endFragment = startHtml + Encoding.UTF8.GetByteCount(
+            htmlDocument[..htmlDocument.IndexOf(endFragmentMarker, StringComparison.Ordinal)]);
+
+        return string.Format(headerTemplate, startHtml, endHtml, startFragment, endFragment) + htmlDocument;
+    }
+
+    private static string ToPlainText(string html) {
+        var withLineBreaks = Regex.Replace(
+            html,
+            @"<(?:br\s*/?|/p|/h[1-6]|/li|/blockquote|/section)>|</(?:div|tr|table)>",
+            "\n",
+            RegexOptions.IgnoreCase);
+        var withoutTags = Regex.Replace(withLineBreaks, @"<[^>]+>", string.Empty);
+        return WebUtility.HtmlDecode(withoutTags).Trim();
     }
 }
