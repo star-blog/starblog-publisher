@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Markdig;
+using Markdown.ColorCode;
 using StarBlogPublisher.Models;
 
 namespace StarBlogPublisher.Services.Application;
@@ -13,6 +14,7 @@ namespace StarBlogPublisher.Services.Application;
 public sealed class WeChatFormattingService {
     private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
+        .UseColorCode(HtmlFormatterType.Style)
         .Build();
 
     public static IReadOnlyList<WeChatTheme> Themes { get; } = new[] {
@@ -30,7 +32,7 @@ public sealed class WeChatFormattingService {
         var theme = Themes.FirstOrDefault(item => item.Id == themeId) ?? Themes[0];
         var title = ExtractTitle(markdown, fallbackTitle);
         var source = PrepareMarkdown(markdown);
-        var html = Markdown.ToHtml(source, Pipeline);
+        var html = Markdig.Markdown.ToHtml(source, Pipeline);
 
         return new WeChatFormatResult {
             Html = ApplyWeChatStyles(html, theme),
@@ -66,7 +68,9 @@ public sealed class WeChatFormattingService {
             return $"\u0000P{protectedValues.Count - 1}\u0000";
         }
 
-        var result = Regex.Replace(markdown, @"`[^`]+`|https?://\S+|!?\[[^\]]*\]\([^)]*\)", Protect);
+        // Fenced blocks are source code, not prose. Protect them before applying CJK spacing
+        // so that string literals, comments, and identifiers remain byte-for-byte unchanged.
+        var result = Regex.Replace(markdown, @"(?ms)^(?<fence>`{3,}|~{3,})[^\r\n]*\r?\n.*?^\k<fence>[ \t]*\r?$|`[^`\r\n]+`|https?://\S+|!?\[[^\]]*\]\([^)]*\)", Protect);
         result = Regex.Replace(result, "([一-鿿])([A-Za-z0-9])", "$1 $2");
         result = Regex.Replace(result, "([A-Za-z0-9])([一-鿿])", "$1 $2");
         for (var index = 0; index < protectedValues.Count; index++) {
@@ -92,11 +96,42 @@ public sealed class WeChatFormattingService {
         html = StyleTag(html, "td", "padding:9px;border:1px solid #E5E7EB;color:#374151");
         html = StyleTag(html, "img", "display:block;max-width:100%;height:auto;margin:18px auto;border-radius:4px");
         html = StyleTag(html, "hr", $"border:0;border-top:1px solid {theme.AccentColor};margin:28px 0");
-        html = Regex.Replace(html, @"<pre(?<attributes>[^>]*)>(?<content>.*?)</pre>", match =>
-            $"<section style=\"margin:20px 0;border-radius:6px;overflow:hidden;background:#1E293B\"><pre{MergeStyle(match.Groups["attributes"].Value, "margin:0;padding:16px;overflow:auto;line-height:1.65;background:#1E293B;color:#E2E8F0;font-size:13px")}>{match.Groups["content"].Value}</pre></section>", RegexOptions.Singleline);
-        html = StyleTag(html, "code", "font-family:Consolas,Menlo,monospace;font-size:0.9em;background:#F1F5F9;padding:2px 4px;border-radius:3px;color:#C2410C");
+        html = StyleCodeBlocks(html);
+        html = StyleInlineCode(html);
 
         return $"<section style=\"max-width:677px;margin:0 auto;padding:8px 16px;background:#FFFFFF;box-sizing:border-box\">{html}</section>";
+    }
+
+    private static string StyleCodeBlocks(string html) {
+        const string containerStyle = "margin:20px 0;border-radius:6px;overflow:hidden;background:#1E293B";
+        const string preStyle = "margin:0;padding:16px;overflow:auto;line-height:1.65;background:#1E293B;color:#E2E8F0;font-size:13px;font-family:Consolas,Menlo,monospace";
+
+        // Markdown.ColorCode emits a div around its pre element. Collapse that wrapper into
+        // our existing WeChat container so the formatter's default background and padding
+        // do not create a second card around the code sample.
+        // The alternative matches ordinary Markdig output as the fallback, including
+        // languages that ColorCode does not recognize. Keeping both alternatives in a
+        // single replacement prevents the generated pre element from being wrapped twice.
+        return Regex.Replace(html, @"<div(?<divAttributes>[^>]*)>\s*<pre(?<attributes>[^>]*)>(?<content>.*?)</pre>\s*</div>|<pre(?<fallbackAttributes>[^>]*)>(?<fallbackContent>.*?)</pre>", match => {
+            var attributes = match.Groups["attributes"].Success
+                ? match.Groups["attributes"].Value
+                : match.Groups["fallbackAttributes"].Value;
+            var content = match.Groups["content"].Success
+                ? match.Groups["content"].Value
+                : match.Groups["fallbackContent"].Value;
+            return $"<section style=\"{containerStyle}\"><pre{MergeStyle(attributes, preStyle)}>{content}</pre></section>";
+        }, RegexOptions.Singleline | RegexOptions.IgnoreCase);
+    }
+
+    private static string StyleInlineCode(string html) {
+        const string inlineCodeStyle = "font-family:Consolas,Menlo,monospace;font-size:0.9em;background:#F1F5F9;padding:2px 4px;border-radius:3px;color:#C2410C";
+
+        // Match complete pre regions first so only inline code receives the light code-chip
+        // style; ColorCode's block-level <code> and colour spans are left intact.
+        return Regex.Replace(html, @"<pre\b[^>]*>.*?</pre>|<code(?<attributes>\s[^>]*)?>", match => {
+            if (match.Value.StartsWith("<pre", StringComparison.OrdinalIgnoreCase)) return match.Value;
+            return $"<code{MergeStyle(match.Groups["attributes"].Value, inlineCodeStyle)}>";
+        }, RegexOptions.Singleline | RegexOptions.IgnoreCase);
     }
 
     private static string StyleTag(string html, string tagName, string style) {
