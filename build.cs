@@ -37,7 +37,7 @@ try
     {
         Console.WriteLine("Dry run; no files will be published or deleted.");
         foreach (var build in builds)
-            Console.WriteLine(FormatPublishCommand(build));
+            Console.WriteLine(FormatPublishCommand(build, version));
         return;
     }
 
@@ -177,7 +177,7 @@ static bool BuildAndPackage(BuildTarget build, string targetFramework, string pr
         var publishDirectory = Path.Combine(projectDirectory, "bin", "Release", targetFramework, build.Rid!, "publish");
         Console.WriteLine($"Publish directory: {publishDirectory}");
 
-        RunProcess("dotnet", CreatePublishArguments(build), projectDirectory);
+        RunProcess("dotnet", CreatePublishArguments(build, version), projectDirectory);
         DeleteSymbolFiles(publishDirectory);
 
         var zipFileName = GetPackageFileName(build, version);
@@ -192,12 +192,12 @@ static bool BuildAndPackage(BuildTarget build, string targetFramework, string pr
     }
 }
 
-static string FormatPublishCommand(BuildTarget build) => $"dotnet {string.Join(' ', CreatePublishArguments(build))}";
+static string FormatPublishCommand(BuildTarget build, string version) => $"dotnet {string.Join(' ', CreatePublishArguments(build, version))}";
 
-static string[] CreatePublishArguments(BuildTarget build) =>
+static string[] CreatePublishArguments(BuildTarget build, string version) =>
     build.Compress
-        ? ["publish", "-c", "Release", "-r", build.Rid, .. build.Configuration.Arguments, "-p:EnableCompressionInSingleFile=true"]
-        : ["publish", "-c", "Release", "-r", build.Rid, .. build.Configuration.Arguments];
+        ? ["publish", "-c", "Release", "-r", build.Rid, .. build.Configuration.Arguments, "-p:Version=" + version, "-p:EnableCompressionInSingleFile=true"]
+        : ["publish", "-c", "Release", "-r", build.Rid, .. build.Configuration.Arguments, "-p:Version=" + version];
 
 static string GetPackageFileName(BuildTarget build, string version)
 {

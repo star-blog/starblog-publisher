@@ -2,13 +2,14 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Diagnostics;
+using StarBlogPublisher.Utils;
 
 namespace StarBlogPublisher.ViewModels;
 
 public partial class AboutWindowViewModel : ViewModelBase {
     // 软件基本信息
     [ObservableProperty] private string _appName = "StarBlog Publisher";
-    [ObservableProperty] private string _appVersion = "版本 1.10.7";
+    [ObservableProperty] private string _appVersion = $"版本 {ApplicationVersion.Value}";
     [ObservableProperty] private string _copyright = "© 2025 DealiAxy. All rights reserved.";
     [ObservableProperty] private string _description = "StarBlog Publisher 是一款专业的博客文章发布工具，支持Markdown格式文章的预览和发布。";
 

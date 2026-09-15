@@ -127,7 +127,7 @@ public partial class MainWindowViewModel : ViewModelBase {
     }
 
     // 软件版本信息
-    [ObservableProperty] private string _softwareVersion = "版本: 1.0.0";
+    [ObservableProperty] private string _softwareVersion = $"版本: {ApplicationVersion.Value}";
 
     // 主题设置
     [ObservableProperty] private bool _isDarkTheme = false;
