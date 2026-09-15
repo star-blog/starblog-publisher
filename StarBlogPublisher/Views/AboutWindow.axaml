@@ -50,6 +50,32 @@
                     </StackPanel>
                 </Border>
 
+                <!-- 更新检查卡片 -->
+                <Border Classes="Card">
+                    <StackPanel Spacing="10" Margin="15">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <i:Icon Value="fa-solid fa-arrows-rotate" Foreground="#9C27B0" />
+                            <TextBlock Text="软件更新"
+                                   FontWeight="Bold"
+                                   FontSize="16" />
+                        </StackPanel>
+                        <TextBlock Text="检查 GitHub Releases 中是否有新版。"
+                                   TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                            <Button Command="{Binding CheckForUpdateCommand}"
+                                    HorizontalAlignment="Left">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <i:Icon Value="fa-solid fa-rotate" />
+                                    <TextBlock Text="检查更新" />
+                                </StackPanel>
+                            </Button>
+                            <TextBlock Text="{Binding UpdateStatus}"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource SystemBaseMediumColor}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
                 <!-- 技术栈卡片 -->
                 <Border Classes="Card">
                     <StackPanel Spacing="10" Margin="15">
