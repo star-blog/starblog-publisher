@@ -13,7 +13,7 @@
         MinWidth="680" MinHeight="520"
         WindowStartupLocation="CenterOwner">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="20">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="20">
         <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,0,16">
             <i:Icon Value="fa-brands fa-weixin" FontSize="25" Foreground="#07C160" />
             <StackPanel>
@@ -23,7 +23,15 @@
             </StackPanel>
         </StackPanel>
 
-        <Grid Grid.Row="1" ColumnDefinitions="Auto,220,Auto,*,Auto" ColumnSpacing="10" Margin="0,0,0,12">
+        <Border Grid.Row="1" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                BorderBrush="#07C160" BorderThickness="3,0,0,0" CornerRadius="4" Padding="10" Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <i:Icon Value="fa-solid fa-circle-info" Foreground="#07C160" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding MarkdownSourceMessage}" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,220,Auto,*,Auto" ColumnSpacing="10" Margin="0,0,0,12">
             <TextBlock Grid.Column="0" Text="排版主题" VerticalAlignment="Center" FontWeight="SemiBold" />
             <ComboBox Grid.Column="1" ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}"
                       DisplayMemberBinding="{Binding Name}" />
@@ -43,7 +51,7 @@
             </Button>
         </Grid>
 
-        <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10" Margin="0,0,0,10">
+        <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10" Margin="0,0,0,10">
             <TextBlock Grid.Column="0" Text="封面图" VerticalAlignment="Center" FontWeight="SemiBold" />
             <TextBox Grid.Column="1" Text="{Binding CoverPath}" IsReadOnly="True" Watermark="请选择 JPG 或 PNG 封面图" />
             <Button Grid.Column="2" Command="{Binding SelectCoverCommand}" Classes="IconButton">
@@ -57,7 +65,7 @@
             </Button>
         </Grid>
 
-        <Grid Grid.Row="3" RowDefinitions="Auto,*">
+        <Grid Grid.Row="4" RowDefinitions="Auto,*">
             <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,6">
                 <TextBlock Grid.Column="0" Text="微信排版 HTML" FontWeight="SemiBold" VerticalAlignment="Center" />
                 <Button Grid.Column="2" Command="{Binding CopyHtmlCommand}" Classes="IconButton">
@@ -71,7 +79,7 @@
                      TextWrapping="Wrap" FontFamily="Consolas, Menlo, Monospace" />
         </Grid>
 
-        <Grid Grid.Row="4" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" Margin="0,14,0,0">
+        <Grid Grid.Row="5" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" Margin="0,14,0,0">
             <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" VerticalAlignment="Center" TextWrapping="Wrap" />
             <TextBox Grid.Column="1" Text="{Binding DraftMediaId}" IsReadOnly="True" IsVisible="{Binding HasDraftMediaId}" Width="180" />
             <Button Grid.Column="2" Command="{Binding CopyDraftMediaIdCommand}" IsVisible="{Binding HasDraftMediaId}" Classes="IconButton">

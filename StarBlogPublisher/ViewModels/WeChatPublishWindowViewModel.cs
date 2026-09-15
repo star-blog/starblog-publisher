@@ -29,11 +29,14 @@ public partial class WeChatPublishWindowViewModel : ViewModelBase {
     private readonly string _sourceFilePath;
     private readonly string _summary;
 
-    public WeChatPublishWindowViewModel(string markdown, string sourceFilePath, string title, string summary) {
+    public WeChatPublishWindowViewModel(string markdown, string sourceFilePath, string title, string summary, bool usesPublishedMarkdown) {
         _markdown = markdown;
         _sourceFilePath = sourceFilePath;
         _summary = summary;
         ArticleTitle = title;
+        MarkdownSourceMessage = usesPublishedMarkdown
+            ? "当前使用 StarBlog 发布后返回的 Markdown；其中的图片链接已替换为博客 URL，上传草稿时会再转存到微信 CDN。"
+            : "当前使用本地 Markdown；文章尚未在 StarBlog 发布，正文图片会在上传草稿时直接转存到微信 CDN。";
         Themes = new ObservableCollection<WeChatTheme>(WeChatFormattingService.Themes);
         SelectedTheme = Themes.FirstOrDefault(theme => theme.Id == AppSettings.Instance.WeChatDefaultTheme) ?? Themes[0];
         GenerateFormat();
@@ -47,6 +50,7 @@ public partial class WeChatPublishWindowViewModel : ViewModelBase {
     [ObservableProperty] private string _coverPath = string.Empty;
     [ObservableProperty] private string _draftMediaId = string.Empty;
     [ObservableProperty] private string _statusMessage = "请选择主题后即可预览或复制";
+    [ObservableProperty] private string _markdownSourceMessage = string.Empty;
     [ObservableProperty] private bool _isPublishing;
     [ObservableProperty] private int _wordCount;
 

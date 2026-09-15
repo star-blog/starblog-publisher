@@ -9,8 +9,8 @@ public partial class WeChatPublishWindow : Window {
         InitializeComponent();
     }
 
-    public WeChatPublishWindow(string markdown, string sourceFilePath, string title, string summary) : this() {
-        DataContext = new WeChatPublishWindowViewModel(markdown, sourceFilePath, title, summary);
+    public WeChatPublishWindow(string markdown, string sourceFilePath, string title, string summary, bool usesPublishedMarkdown) : this() {
+        DataContext = new WeChatPublishWindowViewModel(markdown, sourceFilePath, title, summary, usesPublishedMarkdown);
     }
 
     private void InitializeComponent() => AvaloniaXamlLoader.Load(this);

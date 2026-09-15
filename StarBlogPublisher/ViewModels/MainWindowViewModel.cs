@@ -211,6 +211,7 @@ public partial class MainWindowViewModel : ViewModelBase {
                 using var reader = new StreamReader(stream, Encoding.UTF8);
                 ArticleContent = await reader.ReadToEndAsync();
                 ArticleTitle = Path.GetFileNameWithoutExtension(file.Name);
+                LastPublishResult = null;
 
                 // 保存当前文件路径
                 _currentFilePath = file.Path.LocalPath;
@@ -392,7 +393,18 @@ public partial class MainWindowViewModel : ViewModelBase {
             return;
         }
 
-        var window = new WeChatPublishWindow(ArticleContent, _currentFilePath, ArticleTitle, ArticleDescription);
+        var publishedMarkdown = LastPublishResult?.Success == true
+            ? LastPublishResult.MarkdownContent
+            : null;
+        var usesPublishedMarkdown = !string.IsNullOrWhiteSpace(publishedMarkdown);
+        var markdown = usesPublishedMarkdown ? publishedMarkdown! : ArticleContent;
+
+        var window = new WeChatPublishWindow(
+            markdown,
+            _currentFilePath,
+            ArticleTitle,
+            ArticleDescription,
+            usesPublishedMarkdown);
         await window.ShowDialog(App.MainWindow);
     }
 
