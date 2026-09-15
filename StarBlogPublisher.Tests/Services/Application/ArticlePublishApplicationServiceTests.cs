@@ -42,6 +42,17 @@ public class ArticlePublishApplicationServiceTests {
         _authService.LoginAsync("user", "pass").Wait();
     }
 
+    [Fact]
+    public void PublishResult_Ok_PreservesArticleUrlAndMarkdownContent() {
+        var post = new BlogPost { Id = "post-1", Title = "Title" };
+
+        var result = PublishResult.Ok(post, "https://example.com/p/article", "# Published article");
+
+        result.Success.Should().BeTrue();
+        result.PostUrl.Should().Be("https://example.com/p/article");
+        result.MarkdownContent.Should().Be("# Published article");
+    }
+
     // === PublishAsync validation ===
 
     [Fact]
