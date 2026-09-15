@@ -381,6 +381,17 @@ public partial class MainWindowViewModel : ViewModelBase {
         StatusMessage = "预览已关闭";
     }
 
+    [RelayCommand]
+    private async Task ShowWeChatPublisher() {
+        if (string.IsNullOrWhiteSpace(_currentFilePath) || string.IsNullOrWhiteSpace(ArticleContent)) {
+            StatusMessage = "请先选择并加载 Markdown 文件";
+            return;
+        }
+
+        var window = new WeChatPublishWindow(ArticleContent, _currentFilePath, ArticleTitle, ArticleDescription);
+        await window.ShowDialog(App.MainWindow);
+    }
+
     // 全局状态变更事件处理
     private void OnGlobalStateChanged(object? sender, EventArgs e) {
         // 在UI线程上更新状态

@@ -21,6 +21,11 @@ public partial class SettingsWindowViewModel : ViewModelBase {
     private int _backendTimeout;
     private bool _showPassword;
     private bool _enableRegexImageParsing;
+    private string _weChatAppId = string.Empty;
+    private string _weChatAppSecret = string.Empty;
+    private string _weChatAuthor = string.Empty;
+    private string _weChatDefaultTheme = "newspaper";
+    private bool _showWeChatAppSecret;
 
     public bool UseProxy {
         get => _useProxy;
@@ -85,9 +90,39 @@ public partial class SettingsWindowViewModel : ViewModelBase {
         set => SetProperty(ref _enableRegexImageParsing, value);
     }
 
+    public string WeChatAppId {
+        get => _weChatAppId;
+        set => SetProperty(ref _weChatAppId, value);
+    }
+
+    public string WeChatAppSecret {
+        get => _weChatAppSecret;
+        set => SetProperty(ref _weChatAppSecret, value);
+    }
+
+    public string WeChatAuthor {
+        get => _weChatAuthor;
+        set => SetProperty(ref _weChatAuthor, value);
+    }
+
+    public string WeChatDefaultTheme {
+        get => _weChatDefaultTheme;
+        set => SetProperty(ref _weChatDefaultTheme, value);
+    }
+
+    public bool ShowWeChatAppSecret {
+        get => _showWeChatAppSecret;
+        set => SetProperty(ref _showWeChatAppSecret, value);
+    }
+
     [RelayCommand]
     private void TogglePassword() {
         ShowPassword = !ShowPassword;
+    }
+
+    [RelayCommand]
+    private void ToggleWeChatAppSecret() {
+        ShowWeChatAppSecret = !ShowWeChatAppSecret;
     }
 
     public SettingsWindowViewModel() {
@@ -108,6 +143,10 @@ public partial class SettingsWindowViewModel : ViewModelBase {
         Password = settings.Password;
         BackendTimeout = settings.BackendTimeout;
         EnableRegexImageParsing = settings.EnableRegexImageParsing;
+        WeChatAppId = settings.WeChatAppId;
+        WeChatAppSecret = settings.WeChatAppSecret;
+        WeChatAuthor = settings.WeChatAuthor;
+        WeChatDefaultTheme = settings.WeChatDefaultTheme;
     }
 
     [RelayCommand]
@@ -125,6 +164,10 @@ public partial class SettingsWindowViewModel : ViewModelBase {
         settings.Password = Password;
         settings.BackendTimeout = BackendTimeout;
         settings.EnableRegexImageParsing = EnableRegexImageParsing;
+        settings.WeChatAppId = WeChatAppId;
+        settings.WeChatAppSecret = WeChatAppSecret;
+        settings.WeChatAuthor = WeChatAuthor;
+        settings.WeChatDefaultTheme = WeChatDefaultTheme;
 
         settings.Save();
         CloseWindow();
