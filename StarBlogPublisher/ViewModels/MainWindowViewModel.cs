@@ -19,12 +19,10 @@ using MsBox.Avalonia.Enums;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
-using System.Diagnostics;
 using System.Text;
 using CodeLab.Share.Extensions;
 using StarBlogPublisher.Models.Dtos;
 using StarBlogPublisher.Utils;
-using StarBlogPublisher.Views;
 
 namespace StarBlogPublisher.ViewModels;
 
@@ -129,7 +127,7 @@ public partial class MainWindowViewModel : ViewModelBase {
     }
 
     // 软件版本信息
-    [ObservableProperty] private string _softwareVersion = "版本: 1.0.0";
+    [ObservableProperty] private string _softwareVersion = $"版本: {ApplicationVersion.Value}";
 
     // 主题设置
     [ObservableProperty] private bool _isDarkTheme = false;
@@ -152,6 +150,7 @@ public partial class MainWindowViewModel : ViewModelBase {
 
     // 文章内容
     [ObservableProperty] private string _articleContent = "";
+    [ObservableProperty] private bool _hasLoadedArticle;
 
     // 当前打开的文件路径
     private string? _currentFilePath;
@@ -166,6 +165,13 @@ public partial class MainWindowViewModel : ViewModelBase {
     [ObservableProperty] private double _publishProgress = 0;
     [ObservableProperty] private string _statusMessage = "准备就绪";
     [ObservableProperty] private bool _canPublish = false;
+    [ObservableProperty] private PublishResult? _lastPublishResult;
+
+    public bool HasPublishResult => LastPublishResult?.Success == true;
+
+    partial void OnLastPublishResultChanged(PublishResult? value) {
+        OnPropertyChanged(nameof(HasPublishResult));
+    }
 
     // 登录状态
     [ObservableProperty] private bool _isLoggedIn = false;
@@ -205,9 +211,13 @@ public partial class MainWindowViewModel : ViewModelBase {
                 using var reader = new StreamReader(stream, Encoding.UTF8);
                 ArticleContent = await reader.ReadToEndAsync();
                 ArticleTitle = Path.GetFileNameWithoutExtension(file.Name);
+                LastPublishResult = null;
 
                 // 保存当前文件路径
                 _currentFilePath = file.Path.LocalPath;
+
+                // 公众号排版只依赖标题和 Markdown 正文，不应等待 AI 的简介、Slug 生成完成。
+                HasLoadedArticle = true;
 
                 // 如果AI功能已开启，使用AI生成相关信息
                 if (AppSettings.Instance.EnableAI) {
@@ -301,21 +311,25 @@ public partial class MainWindowViewModel : ViewModelBase {
                 StatusMessage = "发布完成";
             }
 
-            var publishedMsgBox = MessageBoxManager.GetMessageBoxStandard(
-                "发布完成", "文章已经成功发布到博客，点击确定跳转查看",
-                ButtonEnum.OkCancel, Icon.Success);
-            if (await publishedMsgBox.ShowWindowDialogAsync(App.MainWindow) == ButtonResult.Ok) {
-                var url = result.Post.Slug != null
-                    ? $"{ApiService.Instance.BaseUrl}/p/{result.Post.Slug}"
-                    : $"{ApiService.Instance.BaseUrl}/Blog/Post/{result.Post.Id}";
-                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-            }
+            LastPublishResult = result;
+            await ShowPublishResult();
         }
         else {
             StatusMessage = result.ErrorMessage ?? "发布失败";
         }
 
         IsPublishing = false;
+    }
+
+    [RelayCommand]
+    private async Task ShowPublishResult() {
+        if (!HasPublishResult || LastPublishResult == null) {
+            StatusMessage = "暂无可查看的发布结果";
+            return;
+        }
+
+        var resultWindow = new PublishResultWindow(LastPublishResult);
+        await resultWindow.ShowDialog(App.MainWindow);
     }
 
     [RelayCommand]
@@ -377,6 +391,28 @@ public partial class MainWindowViewModel : ViewModelBase {
         var previewWindow = new PreviewWindow(ArticleContent);
         await previewWindow.ShowDialog(App.MainWindow);
         StatusMessage = "预览已关闭";
+    }
+
+    [RelayCommand]
+    private async Task ShowWeChatPublisher() {
+        if (string.IsNullOrWhiteSpace(_currentFilePath) || string.IsNullOrWhiteSpace(ArticleContent)) {
+            StatusMessage = "请先选择并加载 Markdown 文件";
+            return;
+        }
+
+        var publishedMarkdown = LastPublishResult?.Success == true
+            ? LastPublishResult.MarkdownContent
+            : null;
+        var usesPublishedMarkdown = !string.IsNullOrWhiteSpace(publishedMarkdown);
+        var markdown = usesPublishedMarkdown ? publishedMarkdown! : ArticleContent;
+
+        var window = new WeChatPublishWindow(
+            markdown,
+            _currentFilePath,
+            ArticleTitle,
+            ArticleDescription,
+            usesPublishedMarkdown);
+        await window.ShowDialog(App.MainWindow);
     }
 
     // 全局状态变更事件处理

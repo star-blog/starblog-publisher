@@ -14,7 +14,9 @@ StarBlog Publisher 是一款专为 [StarBlog博客系统](https://github.com/Dea
 * **Markdown 文章即写即发**：编辑、预览和发布一气呵成
 * **CLI 命令行工具**：支持脚本化、自动化的博客发布流程
 * **MCP Server**：让 Claude、Cursor、Copilot 等 AI Agent 直接操作你的博客
-* **AI 智能创作助手**：内置 OpenAI、Claude、Gemini、DeepSeek 等主流大模型
+* **AI 智能创作助手**：内置 16 个 AI 服务商，并支持自定义 OpenAI 兼容接口
+* **微信公众号排版与草稿箱**：一键生成微信兼容 HTML、预览和复制富文本，并上传到公众号草稿箱
+* **发布结果中心**：发布后可立即获取文章 URL 和处理后的 Markdown，方便分享与二次分发
 * **全平台兼容**：基于 .NET 10.0，支持 Windows、macOS 和 Linux
 
 
@@ -81,7 +83,27 @@ scoop install starblog-publisher/starblog-publisher
 dotnet run --project StarBlogPublisher
 ```
 
-首次运行点击设置按钮配置博客后端 API 地址，如需 AI 功能请配置 AI 提供商和 API 密钥。
+首次运行点击设置按钮配置博客后端 API 地址；如需 AI 功能，请配置 AI 提供商和 API 密钥。
+
+### 微信公众号排版与草稿箱
+
+GUI 支持把当前 Markdown 转换为适合微信公众号的**内联样式 HTML**。加载文章后，点击底部工具栏的“公众号排版与草稿箱”即可使用。
+
+1. 在“设置 → 微信公众号配置”中填写公众号 `AppId`、`AppSecret`，并可选填默认作者和排版主题。`AppSecret` 会加密保存在本机。
+2. 在排版窗口选择主题，查看生成的 HTML，或在浏览器中预览；可直接复制富文本并粘贴到公众号编辑器。
+3. 如需上传草稿箱，选择有效的 JPG/PNG 封面图后点击“上传草稿箱”。正文图片会自动转存到微信 CDN，完成后可复制草稿 ID。
+
+内置四套排版主题：**报刊**、**暖色卡片**、**海洋卡片**和**科技简报**；代码块会保留语法高亮。
+
+> 上传操作只会创建公众号草稿，**不会直接群发**。内容图片最大 1 MB，封面图最大 2 MB。
+
+### 发布后的分享与复用
+
+文章成功发布后会自动显示发布结果窗口，提供文章标题、URL 和发布后处理的 Markdown。你可以复制标题、URL 或 Markdown，也可以一键在浏览器中打开文章。后续打开公众号排版窗口时，应用会优先使用这份已发布的 Markdown，确保图片链接可被正确转存。
+
+### 检查更新
+
+在 GUI 的“关于”窗口中可点击“检查更新”。应用会查询 GitHub Releases；发现新版本时，可直接跳转到发布页面下载。该功能仅检查和引导下载，不会自动下载或安装更新。
 
 ### CLI 安装
 
@@ -129,6 +151,8 @@ dotnet build.cs --dry-run
 ```
 
 脚本会从最新 Git tag 读取版本号、清理发布目录中的符号文件，并重新创建 `dist/`。它使用 .NET 10 原生的单文件应用功能，不需要安装 Python 或第三方 `dotnet-script` 工具。Windows 上构建 Native AOT 还需要安装 Visual Studio 的“使用 C++ 的桌面开发”工作负载。
+
+构建脚本支持多种发布档案：`aot`（默认，仅当前主机 RID）、`framework-dependent`（单文件，需目标计算机安装 .NET）和 `self-contained`（Windows、Linux、macOS 的单文件包）。使用 `dotnet run --file .\build.cs -- --help` 查看全部选项；可通过 `--profile`、`--rid` 选择档案与目标平台，`--compress` 可压缩自包含单文件包。
 
 如需分别为 GUI 或 CLI 执行自定义发布，可参考下面的命令：
 
@@ -252,8 +276,12 @@ starblog mcp
 - **文章预览**：实时预览 Markdown 渲染效果
 - **文章管理**：支持文章的创建、编辑、发布和删除
 - **分类管理**：支持按树状图显示文章分类，并支持添加分类
-- **AI 辅助**：集成多种 AI 模型，提供标题润色、内容总结、关键词提取、Slug 自动生成
+- **AI 辅助**：预置 OpenAI、Claude、Grok、Gemini、DeepSeek、通义千问、豆包、Kimi、智谱、MiniMax、混元、千帆、硅基流动、Mistral、GroqCloud、OpenRouter 等服务商，并支持自定义 OpenAI 兼容接口；提供标题润色、内容总结、关键词提取、Slug 自动生成
 - **AI 自动挡发布**：`--auto` 模式一键生成标题/摘要/Slug，交互确认后发布，支持 `-y` 跳过确认
+- **微信公众号排版**：将 Markdown 转为微信兼容的内联样式 HTML，提供四套主题、浏览器预览、富文本复制和代码块语法高亮
+- **公众号草稿箱**：自动转存正文图片并创建草稿，可配置默认作者、封面和排版主题；不会直接群发
+- **发布结果**：成功发布后显示文章 URL 与处理后的 Markdown，支持复制和在浏览器中打开
+- **更新检查**：关于窗口可检查 GitHub Releases 并跳转下载最新版本
 - **词云生成**：可视化展示博客内容关键词
 - **主题切换**：支持亮色/暗色主题切换
 - **代理设置**：支持配置 HTTP 代理
@@ -263,12 +291,12 @@ starblog mcp
 ## 技术栈
 
 - **框架**：.NET 10.0
-- **GUI**：Avalonia 11.3.10 + CommunityToolkit.Mvvm 8.4.0
-- **CLI**：System.CommandLine 2.0.8
-- **MCP**：ModelContextProtocol 1.3.0
-- **HTTP**：Refit 9.0.2
-- **AI**：Microsoft.Extensions.AI.OpenAI
-- **Markdown**：Markdig 0.44.0
+- **GUI**：Avalonia 11.3.20 + CommunityToolkit.Mvvm 8.4.2
+- **CLI**：System.CommandLine 2.0.11
+- **MCP**：ModelContextProtocol 2.2.0
+- **HTTP**：Refit 15.2.0
+- **AI**：Microsoft.Extensions.AI.OpenAI 10.9.0
+- **Markdown**：Markdig 1.3.2 + Markdown.ColorCode 3.0.1
 - **图片处理**：SixLabors.ImageSharp 3.1.12
 - **JSON**：Newtonsoft.Json 13.0.4
 - **加密**：System.Security.Cryptography.ProtectedData 10.0.1
@@ -325,6 +353,19 @@ dotnet build.cs
 - 配套博客系统：[StarBlog](https://github.com/Deali-Axy/StarBlog)
 
 ## 更新记录
+
+### Unreleased
+
+* **检查更新**：关于窗口可查询 GitHub Releases，显示检查状态，并在发现新版本后跳转至下载页面
+
+### 2.3.0
+
+* **微信公众号排版与草稿箱**：支持将 Markdown 转为微信兼容的内联样式 HTML，提供四套主题、浏览器预览和富文本复制；可自动转存图片并创建公众号草稿
+* **代码块高亮**：微信公众号排版中的 fenced code block 支持内联样式语法高亮
+* **发布结果窗口**：文章发布后展示可分享 URL 和处理后的 Markdown，支持复制及在浏览器中打开
+* **AI 服务商扩展**：新增通义千问、豆包、Kimi、MiniMax、混元、千帆、硅基流动、Mistral、GroqCloud、OpenRouter 等预置服务商，并刷新默认模型目录
+* **构建打包增强**：构建脚本迁移到 .NET 10，支持可选发布档案、按 RID 构建和自包含单文件压缩
+* **版本信息**：应用各处统一显示由构建版本生成的版本号
 
 ### 2.0
 

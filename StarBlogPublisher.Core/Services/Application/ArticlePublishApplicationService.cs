@@ -113,7 +113,7 @@ public class ArticlePublishApplicationService {
             blogPost = await ResolvePublishedContentAsync(blogPost, processedContent, onProgress);
 
             onProgress?.Invoke(100, "发布完成");
-            return PublishResult.Ok(blogPost);
+            return PublishResult.Ok(blogPost, BuildPostUrl(blogPost), processedContent);
         }
         catch (Exception ex) {
             return PublishResult.Fail($"发布失败: {ex.Message}");
@@ -168,20 +168,38 @@ public class ArticlePublishApplicationService {
         try {
             var resp = await _api.BlogPost.Get(id);
             if (resp.Data == null) return PublishResult.Fail(resp.Message ?? "文章不存在");
-            return PublishResult.Ok(resp.Data);
+            return PublishResult.Ok(resp.Data, BuildPostUrl(resp.Data), resp.Data.Content);
         }
         catch (Exception ex) {
             return PublishResult.Fail($"获取文章失败: {ex.Message}");
         }
     }
+
+    private string BuildPostUrl(BlogPost post) {
+        var baseUrl = _api.BaseUrl.TrimEnd('/');
+        return !string.IsNullOrWhiteSpace(post.Slug)
+            ? $"{baseUrl}/p/{post.Slug}"
+            : $"{baseUrl}/Blog/Post/{post.Id}";
+    }
 }
 
+/// <summary>
+/// 文章发布后的完整结果，可供 GUI、CLI 等调用方展示或复制。
+/// </summary>
 public class PublishResult {
     public bool Success { get; init; }
     public BlogPost? Post { get; init; }
     public string? ErrorMessage { get; init; }
+    /// <summary>文章的可访问 URL。</summary>
     public string? PostUrl { get; init; }
+    /// <summary>发布后实际保存的 Markdown 内容（包含已替换的图片 URL）。</summary>
+    public string? MarkdownContent { get; init; }
 
-    public static PublishResult Ok(BlogPost post) => new() { Success = true, Post = post };
+    public static PublishResult Ok(BlogPost post, string? postUrl = null, string? markdownContent = null) => new() {
+        Success = true,
+        Post = post,
+        PostUrl = postUrl,
+        MarkdownContent = markdownContent ?? post.Content
+    };
     public static PublishResult Fail(string message) => new() { Success = false, ErrorMessage = message };
 }

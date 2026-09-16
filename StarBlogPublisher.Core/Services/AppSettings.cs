@@ -81,6 +81,24 @@ public class AppSettings {
 
     public int BackendTimeout { get; set; } = 30;
 
+    // 微信公众号设置
+    public string WeChatAppId { get; set; } = string.Empty;
+    private string _encryptedWeChatAppSecret = string.Empty;
+
+    [JsonIgnore]
+    public string WeChatAppSecret {
+        get => EncryptionService.Decrypt(_encryptedWeChatAppSecret);
+        set => _encryptedWeChatAppSecret = EncryptionService.Encrypt(value);
+    }
+
+    public string EncryptedWeChatAppSecret {
+        get => _encryptedWeChatAppSecret;
+        set => _encryptedWeChatAppSecret = value;
+    }
+
+    public string WeChatAuthor { get; set; } = string.Empty;
+    public string WeChatDefaultTheme { get; set; } = "newspaper";
+
     // 主题设置
     public bool IsDarkTheme { get; set; } = false;
 
@@ -154,6 +172,10 @@ public class AppSettings {
             Username = snapshot.Username ?? string.Empty,
             _encryptedPassword = snapshot.EncryptedPassword ?? string.Empty,
             BackendTimeout = snapshot.BackendTimeout,
+            WeChatAppId = snapshot.WeChatAppId ?? string.Empty,
+            _encryptedWeChatAppSecret = snapshot.EncryptedWeChatAppSecret ?? string.Empty,
+            WeChatAuthor = snapshot.WeChatAuthor ?? string.Empty,
+            WeChatDefaultTheme = snapshot.WeChatDefaultTheme ?? "newspaper",
             IsDarkTheme = snapshot.IsDarkTheme,
             EnableRegexImageParsing = snapshot.EnableRegexImageParsing
         };
@@ -178,6 +200,10 @@ public class AppSettings {
             Username = Username,
             EncryptedPassword = _encryptedPassword,
             BackendTimeout = BackendTimeout,
+            WeChatAppId = WeChatAppId,
+            EncryptedWeChatAppSecret = _encryptedWeChatAppSecret,
+            WeChatAuthor = WeChatAuthor,
+            WeChatDefaultTheme = WeChatDefaultTheme,
             IsDarkTheme = IsDarkTheme,
             EnableRegexImageParsing = EnableRegexImageParsing
         };
@@ -260,6 +286,10 @@ internal sealed class AppSettingsSnapshot {
     public string Username { get; set; } = string.Empty;
     public string EncryptedPassword { get; set; } = string.Empty;
     public int BackendTimeout { get; set; } = 30;
+    public string WeChatAppId { get; set; } = string.Empty;
+    public string EncryptedWeChatAppSecret { get; set; } = string.Empty;
+    public string WeChatAuthor { get; set; } = string.Empty;
+    public string WeChatDefaultTheme { get; set; } = "newspaper";
     public bool IsDarkTheme { get; set; }
     public bool EnableRegexImageParsing { get; set; }
 }
@@ -284,6 +314,11 @@ internal sealed class LegacyAppSettingsSnapshot {
     public string Password { get; set; } = string.Empty;
     public string EncryptedPassword { get; set; } = string.Empty;
     public int BackendTimeout { get; set; } = 30;
+    public string WeChatAppId { get; set; } = string.Empty;
+    public string WeChatAppSecret { get; set; } = string.Empty;
+    public string EncryptedWeChatAppSecret { get; set; } = string.Empty;
+    public string WeChatAuthor { get; set; } = string.Empty;
+    public string WeChatDefaultTheme { get; set; } = "newspaper";
     public bool IsDarkTheme { get; set; }
     public bool EnableRegexImageParsing { get; set; }
 
@@ -310,6 +345,12 @@ internal sealed class LegacyAppSettingsSnapshot {
                 ? EncryptedPassword
                 : EncryptionService.Encrypt(Password),
             BackendTimeout = BackendTimeout,
+            WeChatAppId = WeChatAppId,
+            EncryptedWeChatAppSecret = !string.IsNullOrWhiteSpace(EncryptedWeChatAppSecret)
+                ? EncryptedWeChatAppSecret
+                : EncryptionService.Encrypt(WeChatAppSecret),
+            WeChatAuthor = WeChatAuthor,
+            WeChatDefaultTheme = WeChatDefaultTheme,
             IsDarkTheme = IsDarkTheme,
             EnableRegexImageParsing = EnableRegexImageParsing
         };

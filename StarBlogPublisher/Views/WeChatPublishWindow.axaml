@@ -1,0 +1,90 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:StarBlogPublisher.ViewModels"
+        xmlns:i="https://github.com/projektanker/icons.avalonia"
+        mc:Ignorable="d"
+        x:Class="StarBlogPublisher.Views.WeChatPublishWindow"
+        x:DataType="vm:WeChatPublishWindowViewModel"
+        Icon="/Assets/logo.png"
+        Title="公众号排版与草稿箱"
+        Width="900" Height="700"
+        MinWidth="680" MinHeight="520"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="20">
+        <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,0,16">
+            <i:Icon Value="fa-brands fa-weixin" FontSize="25" Foreground="#07C160" />
+            <StackPanel>
+                <TextBlock Text="公众号排版与草稿箱" FontSize="24" FontWeight="Bold" />
+                <TextBlock Text="生成微信兼容的内联样式 HTML；上传仅创建草稿，不会直接群发。"
+                           FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+            </StackPanel>
+        </StackPanel>
+
+        <Border Grid.Row="1" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                BorderBrush="#07C160" BorderThickness="3,0,0,0" CornerRadius="4" Padding="10" Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <i:Icon Value="fa-solid fa-circle-info" Foreground="#07C160" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding MarkdownSourceMessage}" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,220,Auto,*,Auto" ColumnSpacing="10" Margin="0,0,0,12">
+            <TextBlock Grid.Column="0" Text="排版主题" VerticalAlignment="Center" FontWeight="SemiBold" />
+            <ComboBox Grid.Column="1" ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}"
+                      DisplayMemberBinding="{Binding Name}" />
+            <Button Grid.Column="2" Command="{Binding GenerateFormatCommand}" Classes="IconButton">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <i:Icon Value="fa-solid fa-wand-magic-sparkles" Foreground="#7C3AED" />
+                    <TextBlock>重新排版</TextBlock>
+                </StackPanel>
+            </Button>
+            <TextBlock Grid.Column="3" Text="{Binding WordCount, StringFormat=约 {0} 字}" VerticalAlignment="Center"
+                       Foreground="{DynamicResource SystemBaseMediumColor}" />
+            <Button Grid.Column="4" Command="{Binding OpenPreviewCommand}" Classes="IconButton">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <i:Icon Value="fa-solid fa-eye" Foreground="#2196F3" />
+                    <TextBlock>浏览器预览</TextBlock>
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10" Margin="0,0,0,10">
+            <TextBlock Grid.Column="0" Text="封面图" VerticalAlignment="Center" FontWeight="SemiBold" />
+            <TextBox Grid.Column="1" Text="{Binding CoverPath}" IsReadOnly="True" Watermark="请选择 JPG 或 PNG 封面图" />
+            <Button Grid.Column="2" Command="{Binding SelectCoverCommand}" Classes="IconButton">
+                <TextBlock>选择封面</TextBlock>
+            </Button>
+            <Button Grid.Column="3" Command="{Binding UploadDraftCommand}" IsEnabled="{Binding !IsPublishing}" Classes="IconButton Primary">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <i:Icon Value="fa-solid fa-cloud-arrow-up" Foreground="#FFFFFF" />
+                    <TextBlock>上传草稿箱</TextBlock>
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <Grid Grid.Row="4" RowDefinitions="Auto,*">
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,6">
+                <TextBlock Grid.Column="0" Text="微信排版 HTML" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <Button Grid.Column="2" Command="{Binding CopyHtmlCommand}" Classes="IconButton">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <i:Icon Value="fa-solid fa-copy" Foreground="#FF9800" />
+                        <TextBlock>复制到公众号</TextBlock>
+                    </StackPanel>
+                </Button>
+            </Grid>
+            <TextBox Grid.Row="1" Text="{Binding FormattedHtml}" IsReadOnly="True" AcceptsReturn="True"
+                     TextWrapping="Wrap" FontFamily="Consolas, Menlo, Monospace" />
+        </Grid>
+
+        <Grid Grid.Row="5" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" Margin="0,14,0,0">
+            <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" VerticalAlignment="Center" TextWrapping="Wrap" />
+            <TextBox Grid.Column="1" Text="{Binding DraftMediaId}" IsReadOnly="True" IsVisible="{Binding HasDraftMediaId}" Width="180" />
+            <Button Grid.Column="2" Command="{Binding CopyDraftMediaIdCommand}" IsVisible="{Binding HasDraftMediaId}" Classes="IconButton">
+                <TextBlock>复制草稿 ID</TextBlock>
+            </Button>
+        </Grid>
+    </Grid>
+</Window>

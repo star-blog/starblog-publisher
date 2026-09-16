@@ -130,7 +130,49 @@
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
-                </Border>                
+                </Border>
+
+                <!-- 微信公众号配置卡片 -->
+                <Border Classes="Card">
+                    <StackPanel Spacing="15" Margin="15">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <i:Icon Value="fa-brands fa-weixin" Foreground="#07C160" />
+                            <TextBlock Text="微信公众号配置" FontWeight="Bold" FontSize="16" />
+                        </StackPanel>
+                        <TextBlock Text="用于将排版后的文章上传到公众号草稿箱。AppSecret 会加密保存在本机。"
+                                   TextWrapping="Wrap" FontSize="12"
+                                   Foreground="{DynamicResource SystemBaseMediumColor}" />
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="AppId" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                            <TextBox Watermark="微信公众号 AppId" Text="{Binding WeChatAppId}" />
+                        </StackPanel>
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="AppSecret" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBox Grid.Column="0" Watermark="微信公众号 AppSecret"
+                                         PasswordChar="{Binding ShowWeChatAppSecret, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
+                                         Text="{Binding WeChatAppSecret}" />
+                                <Button Grid.Column="1" Margin="5,0,0,0"
+                                        Command="{Binding ToggleWeChatAppSecretCommand}" Classes="Primary">
+                                    <i:Icon Value="fa-solid fa-eye" Foreground="#FFFFFF" />
+                                </Button>
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="默认作者" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                            <TextBox Watermark="可留空" Text="{Binding WeChatAuthor}" />
+                        </StackPanel>
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="默认排版主题" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                            <ComboBox SelectedItem="{Binding WeChatDefaultTheme}">
+                                <x:String>newspaper</x:String>
+                                <x:String>warm-card</x:String>
+                                <x:String>ocean-card</x:String>
+                                <x:String>tech</x:String>
+                            </ComboBox>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
 
                 <!-- 图片解析设置卡片 -->
                 <Border Classes="Card">
