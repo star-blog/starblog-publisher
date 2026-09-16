@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Moq;
-using CodeLab.Share.ViewModels.Response;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Models.Dtos;
 using StarBlogPublisher.Services;
