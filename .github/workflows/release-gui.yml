@@ -26,11 +26,11 @@ jobs:
             target: linux-x64
             extension: '.tar.gz'
           - kind: macOS
-            os: macos-13
+            os: macos-26-intel
             target: osx-x64
             extension: '.tar.gz'
           - kind: macOS-arm64
-            os: macos-14
+            os: macos-26
             target: osx-arm64
             extension: '.tar.gz'
 
