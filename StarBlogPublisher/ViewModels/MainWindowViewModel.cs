@@ -293,7 +293,13 @@ public partial class MainWindowViewModel : ViewModelBase {
 
         if (result.Success && result.Post != null) {
             PublishProgress = 100;
-            StatusMessage = "发布完成";
+            if (!string.IsNullOrWhiteSpace(result.Post.Content)) {
+                ArticleContent = result.Post.Content;
+                StatusMessage = "发布完成，已用服务器内容更新编辑器";
+            }
+            else {
+                StatusMessage = "发布完成";
+            }
 
             var publishedMsgBox = MessageBoxManager.GetMessageBoxStandard(
                 "发布完成", "文章已经成功发布到博客，点击确定跳转查看",

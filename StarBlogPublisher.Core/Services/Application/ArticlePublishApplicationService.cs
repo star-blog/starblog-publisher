@@ -106,12 +106,11 @@ public class ArticlePublishApplicationService {
                     return PublishResult.Fail($"更新文章失败: {updateResp?.Message ?? "未知错误"}");
                 }
 
-                // 重新获取文章详情
-                var detailResp = await _api.BlogPost.Get(blogPost.Id);
-                if (!string.IsNullOrWhiteSpace(detailResp.Data?.Content)) {
-                    blogPost = detailResp.Data;
-                }
+                blogPost = updateResp.Data;
             }
+
+            // 以服务端正文为准（图片链接等可能被改写）；GET 失败则回退到本地处理后的内容
+            blogPost = await ResolvePublishedContentAsync(blogPost, processedContent, onProgress);
 
             onProgress?.Invoke(100, "发布完成");
             return PublishResult.Ok(blogPost);
@@ -119,6 +118,28 @@ public class ArticlePublishApplicationService {
         catch (Exception ex) {
             return PublishResult.Fail($"发布失败: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// 发布成功后拉取服务端正文。GET 失败或正文为空时，用本地处理后的 Markdown 回填。
+    /// </summary>
+    private async Task<BlogPost> ResolvePublishedContentAsync(
+        BlogPost blogPost,
+        string processedContent,
+        Action<int, string>? onProgress) {
+        onProgress?.Invoke(90, "正在获取文章详情...");
+        try {
+            var detailResp = await _api.BlogPost.Get(blogPost.Id);
+            if (!string.IsNullOrWhiteSpace(detailResp?.Data?.Content)) {
+                return detailResp.Data;
+            }
+        }
+        catch {
+            // GET 失败不影响发布成功
+        }
+
+        blogPost.Content = processedContent;
+        return blogPost;
     }
 
     /// <summary>
