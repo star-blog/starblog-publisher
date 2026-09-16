@@ -70,13 +70,25 @@ StarBlogPublisher.Tests/      # 单元测试（xunit + Moq）
 **Scoop（Windows）：**
 
 ```powershell
-scoop bucket add starblog-publisher https://github.com/star-blog/starblog-publisher.git
-scoop install starblog-publisher/starblog-publisher
+scoop bucket add iugamlabs https://github.com/iugamlabs/scoop
+scoop install iugamlabs/starblog-publisher
 ```
+
+**Homebrew（macOS / Linux）：**
+
+```bash
+brew tap iugamlabs/tap
+brew install starblog-publisher
+```
+
+默认包为 Native AOT 版本。若需要其他运行时模式，请把包名替换为
+`starblog-publisher-framework-dependent` 或
+`starblog-publisher-self-contained`。framework-dependent 版本需要 .NET 10
+Runtime；Homebrew 会自动安装 `dotnet@10` 依赖。
 
 **手动安装：**
 
-从 [Releases](https://github.com/star-blog/starblog-publisher/releases) 页面下载最新版本（`StarBlogPublisher-*.zip` / `StarBlogPublisher-*.tar.gz`），解压后运行。
+从 [Releases](https://github.com/star-blog/starblog-publisher/releases) 页面下载所需平台和运行时模式的最新包（`StarBlogPublisher-<platform>-<mode>-<version>`），解压后运行。
 
 ```bash
 # 或从源码运行
