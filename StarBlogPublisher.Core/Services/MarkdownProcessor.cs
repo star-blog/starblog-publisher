@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using CodeLab.Share.Extensions;
 using Markdig;
 using Markdig.Renderers.Normalize;
 using Markdig.Syntax;
@@ -12,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Refit;
 using StarBlogPublisher.Models;
+using StarBlogPublisher.Utils;
 
 namespace StarBlogPublisher.Services;
 

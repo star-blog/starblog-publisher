@@ -8,11 +8,11 @@ namespace StarBlogPublisher.Services.StarBlogApi;
 
 public interface ICategory {
     [Get("/Api/Category/Nodes")]
-    Task<CodeLab.Share.ViewModels.Response.ApiResponse<List<Category>>> GetNodes();
+    Task<StarBlogPublisher.Models.ApiResponse<List<Category>>> GetNodes();
     
     [Get("/Api/Category/WordCloud")]
-    Task<CodeLab.Share.ViewModels.Response.ApiResponse<List<WordCloud>>> GetWordCloud();
+    Task<StarBlogPublisher.Models.ApiResponse<List<WordCloud>>> GetWordCloud();
 
     [Post("/Api/Category")]
-    Task<CodeLab.Share.ViewModels.Response.ApiResponse<Category>> Add(CategoryCreationDto dto);
+    Task<StarBlogPublisher.Models.ApiResponse<Category>> Add(CategoryCreationDto dto);
 }

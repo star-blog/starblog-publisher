@@ -2,7 +2,7 @@
 using StarBlogPublisher.Models;
 using Refit;
 using StarBlogPublisher.Models.Dtos;
-using LoginResp = CodeLab.Share.ViewModels.Response.ApiResponse<StarBlogPublisher.Models.LoginToken>;
+using LoginResp = StarBlogPublisher.Models.ApiResponse<StarBlogPublisher.Models.LoginToken>;
 
 namespace StarBlogPublisher.Services.StarBlogApi;
 
