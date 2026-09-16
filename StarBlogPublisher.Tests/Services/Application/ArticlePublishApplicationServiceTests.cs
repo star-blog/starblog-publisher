@@ -42,6 +42,56 @@ public class ArticlePublishApplicationServiceTests {
         _authService.LoginAsync("user", "pass").Wait();
     }
 
+    private const string OriginalMarkdown = "# Test\nNo images here.";
+    private const string ServerRewrittenContent = "# Test\n![cover](https://blog.example.com/media/cover.png)";
+
+    private async Task<PublishResult> PublishMarkdownAsync(string markdown, bool publish = true) {
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllText(tempFile, markdown);
+        try {
+            return await _publishService.PublishAsync(
+                tempFile, "Title", markdown, "summary", 1, publish: publish);
+        }
+        finally {
+            File.Delete(tempFile);
+        }
+    }
+
+    private void SetupCreatedPost(string content, bool isPublish = true, string id = "post-1") {
+        _mockBlogPost.Setup(x => x.Add(It.IsAny<PostCreationDto>()))
+            .ReturnsAsync(new ApiResponse<BlogPost> {
+                Data = new BlogPost {
+                    Id = id,
+                    Title = "Title",
+                    Content = content,
+                    IsPublish = isPublish,
+                    CategoryId = 1
+                }
+            });
+    }
+
+    private sealed class CapturedContent {
+        public string? Value { get; set; }
+    }
+
+    private CapturedContent SetupUpdateAndCapture(string id = "post-1") {
+        var captured = new CapturedContent();
+        _mockBlogPost.Setup(x => x.Update(It.IsAny<string>(), It.IsAny<PostUpdateDto>()))
+            .Callback<string, PostUpdateDto>((_, dto) => captured.Value = dto.Content)
+            .ReturnsAsync((string _, PostUpdateDto dto) => new ApiResponse<BlogPost> {
+                Data = new BlogPost {
+                    Id = id,
+                    Title = dto.Title,
+                    Content = "from-update-response",
+                    IsPublish = dto.IsPublish,
+                    CategoryId = dto.CategoryId,
+                    Slug = dto.Slug,
+                    Status = dto.Status
+                }
+            });
+        return captured;
+    }
+
     // === PublishAsync validation ===
 
     [Fact]
@@ -151,10 +201,99 @@ public class ArticlePublishApplicationServiceTests {
             _mockBlogPost.Verify(
                 x => x.Update("post-1", It.Is<PostUpdateDto>(d => d.IsPublish == false)),
                 Times.Once);
+            _mockBlogPost.Verify(x => x.Get("post-1"), Times.Once);
         }
         finally {
             File.Delete(tempFile);
         }
+    }
+
+    [Fact]
+    public async Task PublishAsync_GetReturnsServerContent_UsesServerContent() {
+        SetupLoggedIn();
+        SetupCreatedPost(OriginalMarkdown);
+        SetupUpdateAndCapture();
+        _mockBlogPost.Setup(x => x.Get("post-1"))
+            .ReturnsAsync(new ApiResponse<BlogPost> {
+                Data = new BlogPost {
+                    Id = "post-1",
+                    Title = "Title",
+                    Content = ServerRewrittenContent,
+                    IsPublish = true
+                }
+            });
+
+        var result = await PublishMarkdownAsync(OriginalMarkdown);
+
+        result.Success.Should().BeTrue();
+        result.Post!.Content.Should().Be(ServerRewrittenContent);
+        _mockBlogPost.Verify(x => x.Get("post-1"), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishAsync_GetThrows_FallsBackToProcessedContent() {
+        SetupLoggedIn();
+        SetupCreatedPost(OriginalMarkdown, isPublish: true);
+        var captured = SetupUpdateAndCapture();
+        _mockBlogPost.Setup(x => x.Get("post-1"))
+            .ThrowsAsync(new Exception("Connection timeout"));
+
+        var result = await PublishMarkdownAsync(OriginalMarkdown, publish: false);
+
+        result.Success.Should().BeTrue();
+        result.Post.Should().NotBeNull();
+        result.Post!.Content.Should().Be(captured.Value);
+        result.Post.Content.Should().NotBe("from-update-response");
+        result.Post.IsPublish.Should().BeFalse();
+        _mockBlogPost.Verify(x => x.Get("post-1"), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishAsync_GetReturnsEmptyContent_FallsBackToProcessedContent() {
+        SetupLoggedIn();
+        SetupCreatedPost(OriginalMarkdown, isPublish: true);
+        var captured = SetupUpdateAndCapture();
+        _mockBlogPost.Setup(x => x.Get("post-1"))
+            .ReturnsAsync(new ApiResponse<BlogPost> {
+                Data = new BlogPost { Id = "post-1", Content = "   ", IsPublish = false }
+            });
+
+        var result = await PublishMarkdownAsync(OriginalMarkdown, publish: false);
+
+        result.Success.Should().BeTrue();
+        result.Post!.Content.Should().Be(captured.Value);
+        _mockBlogPost.Verify(x => x.Get("post-1"), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishAsync_GetReturnsNullData_FallsBackToProcessedContent() {
+        SetupLoggedIn();
+        SetupCreatedPost(OriginalMarkdown, isPublish: true);
+        var captured = SetupUpdateAndCapture();
+        _mockBlogPost.Setup(x => x.Get("post-1"))
+            .ReturnsAsync(new ApiResponse<BlogPost> { Data = null, Message = "unavailable" });
+
+        var result = await PublishMarkdownAsync(OriginalMarkdown, publish: false);
+
+        result.Success.Should().BeTrue();
+        result.Post!.Content.Should().Be(captured.Value);
+        _mockBlogPost.Verify(x => x.Get("post-1"), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishAsync_Success_AlwaysFetchesPostDetails() {
+        SetupLoggedIn();
+        SetupCreatedPost(OriginalMarkdown, isPublish: true);
+        SetupUpdateAndCapture();
+        _mockBlogPost.Setup(x => x.Get("post-1"))
+            .ReturnsAsync(new ApiResponse<BlogPost> {
+                Data = new BlogPost { Id = "post-1", Content = ServerRewrittenContent, IsPublish = true }
+            });
+
+        var result = await PublishMarkdownAsync(OriginalMarkdown, publish: true);
+
+        result.Success.Should().BeTrue();
+        _mockBlogPost.Verify(x => x.Get("post-1"), Times.Once);
     }
 
     // === GetPostAsync ===
