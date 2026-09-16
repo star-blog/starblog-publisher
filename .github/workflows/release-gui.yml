@@ -73,13 +73,13 @@ jobs:
         run: |
           case "${{ matrix.publish_mode }}" in
             aot)
-              dotnet publish ./StarBlogPublisher/StarBlogPublisher.csproj -c Release -r ${{ matrix.target }} --self-contained true /p:PublishAot=true /p:TrimMode=full /p:InvariantGlobalization=true /p:IlcGenerateStackTraceData=false /p:IlcOptimizationPreference=Size /p:IlcFoldIdenticalMethodBodies=true /p:JsonSerializerIsReflectionEnabledByDefault=true /p:Version=${{ steps.get_version.outputs.VERSION }} -o ./publish/${{ matrix.kind }}/${{ matrix.publish_mode }}
+              dotnet publish ./StarBlogPublisher/StarBlogPublisher.csproj -c Release -r ${{ matrix.target }} --self-contained true -p:PublishAot=true -p:TrimMode=full -p:InvariantGlobalization=true -p:IlcGenerateStackTraceData=false -p:IlcOptimizationPreference=Size -p:IlcFoldIdenticalMethodBodies=true -p:JsonSerializerIsReflectionEnabledByDefault=true -p:Version=${{ steps.get_version.outputs.VERSION }} -o ./publish/${{ matrix.kind }}/${{ matrix.publish_mode }}
               ;;
             framework-dependent)
-              dotnet publish ./StarBlogPublisher/StarBlogPublisher.csproj -c Release -r ${{ matrix.target }} --self-contained false /p:Version=${{ steps.get_version.outputs.VERSION }} -o ./publish/${{ matrix.kind }}/${{ matrix.publish_mode }}
+              dotnet publish ./StarBlogPublisher/StarBlogPublisher.csproj -c Release -r ${{ matrix.target }} --self-contained false -p:Version=${{ steps.get_version.outputs.VERSION }} -o ./publish/${{ matrix.kind }}/${{ matrix.publish_mode }}
               ;;
             self-contained)
-              dotnet publish ./StarBlogPublisher/StarBlogPublisher.csproj -c Release -r ${{ matrix.target }} --self-contained true /p:Version=${{ steps.get_version.outputs.VERSION }} -o ./publish/${{ matrix.kind }}/${{ matrix.publish_mode }}
+              dotnet publish ./StarBlogPublisher/StarBlogPublisher.csproj -c Release -r ${{ matrix.target }} --self-contained true -p:Version=${{ steps.get_version.outputs.VERSION }} -o ./publish/${{ matrix.kind }}/${{ matrix.publish_mode }}
               ;;
           esac
 
