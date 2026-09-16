@@ -17,10 +17,7 @@
       <Type Name="StarBlogPublisher.Models.BlogPost" Dynamic="Required All" />
       <Type Name="StarBlogPublisher.Models.UploadImageResult" Dynamic="Required All" />
       <Type Name="StarBlogPublisher.Models.WordCloud" Dynamic="Required All" />
-    </Assembly>
-
-    <Assembly Name="CodeLab.Share">
-      <Type Name="CodeLab.Share.ViewModels.Response.ApiResponse`1" Dynamic="Required All" />
+      <Type Name="StarBlogPublisher.Models.ApiResponse`1" Dynamic="Required All" />
     </Assembly>
   </Application>
 </Directives>

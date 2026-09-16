@@ -12,8 +12,6 @@
     <type fullname="StarBlogPublisher.Models.BlogPost" preserve="all" />
     <type fullname="StarBlogPublisher.Models.UploadImageResult" preserve="all" />
     <type fullname="StarBlogPublisher.Models.WordCloud" preserve="all" />
-  </assembly>
-  <assembly fullname="CodeLab.Share">
-    <type fullname="CodeLab.Share.ViewModels.Response.ApiResponse`1" preserve="all" />
+    <type fullname="StarBlogPublisher.Models.ApiResponse`1" preserve="all" />
   </assembly>
 </linker>
