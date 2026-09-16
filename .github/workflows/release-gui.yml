@@ -144,25 +144,3 @@ jobs:
             ./artifacts/**/*
             ./SHA256SUMS
           fail_on_unmatched_files: true
-
-  notify-package-repositories:
-    needs: upload-gui-assets
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: 通知集中式包仓库同步
-        if: ${{ secrets.IUGAMLABS_PACKAGING_TOKEN != '' }}
-        env:
-          GH_TOKEN: ${{ secrets.IUGAMLABS_PACKAGING_TOKEN }}
-        shell: bash
-        run: |
-          for repository in iugamlabs/scoop iugamlabs/homebrew-tap; do
-            gh api --method POST "repos/$repository/dispatches" \
-              -f event_type=app-release \
-              -f "client_payload[source_repository]=${GITHUB_REPOSITORY}" \
-              -f "client_payload[tag]=${GITHUB_REF_NAME}"
-
-      - name: 提示配置集中式包仓库令牌
-        if: ${{ secrets.IUGAMLABS_PACKAGING_TOKEN == '' }}
-        run: echo "IUGAMLABS_PACKAGING_TOKEN is not configured; scheduled sync remains available."
-          done
