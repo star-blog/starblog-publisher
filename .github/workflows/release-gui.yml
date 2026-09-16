@@ -15,6 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         kind: ['windows', 'linux', 'macOS']
+        publish_mode: ['aot', 'framework-dependent', 'self-contained']
         include:
           - kind: windows
             os: windows-latest
@@ -63,34 +64,45 @@ jobs:
       - name: 恢复依赖
         run: dotnet restore ./StarBlogPublisher/StarBlogPublisher.csproj
 
-      - name: AOT编译
+      - name: 发布 ${{ matrix.publish_mode }} 版本
+        shell: bash
         run: |
-          dotnet publish ./StarBlogPublisher/StarBlogPublisher.csproj -c Release -r ${{ matrix.target }} --self-contained true /p:PublishAot=true /p:TrimMode=full /p:InvariantGlobalization=true /p:IlcGenerateStackTraceData=false /p:IlcOptimizationPreference=Size /p:IlcFoldIdenticalMethodBodies=true /p:JsonSerializerIsReflectionEnabledByDefault=true /p:Version=${{ steps.get_version.outputs.VERSION }} -o ./publish/${{ matrix.kind }}
+          case "${{ matrix.publish_mode }}" in
+            aot)
+              dotnet publish ./StarBlogPublisher/StarBlogPublisher.csproj -c Release -r ${{ matrix.target }} --self-contained true /p:PublishAot=true /p:TrimMode=full /p:InvariantGlobalization=true /p:IlcGenerateStackTraceData=false /p:IlcOptimizationPreference=Size /p:IlcFoldIdenticalMethodBodies=true /p:JsonSerializerIsReflectionEnabledByDefault=true /p:Version=${{ steps.get_version.outputs.VERSION }} -o ./publish/${{ matrix.kind }}/${{ matrix.publish_mode }}
+              ;;
+            framework-dependent)
+              dotnet publish ./StarBlogPublisher/StarBlogPublisher.csproj -c Release -r ${{ matrix.target }} --self-contained false /p:Version=${{ steps.get_version.outputs.VERSION }} -o ./publish/${{ matrix.kind }}/${{ matrix.publish_mode }}
+              ;;
+            self-contained)
+              dotnet publish ./StarBlogPublisher/StarBlogPublisher.csproj -c Release -r ${{ matrix.target }} --self-contained true /p:Version=${{ steps.get_version.outputs.VERSION }} -o ./publish/${{ matrix.kind }}/${{ matrix.publish_mode }}
+              ;;
+          esac
 
       - name: 清理调试文件
         shell: bash
         run: |
-          cd ./publish/${{ matrix.kind }}
+          cd ./publish/${{ matrix.kind }}/${{ matrix.publish_mode }}
           rm -f *.pdb *.dbg
           rm -rf *.dsym
 
       - name: 打包Windows可执行文件
         if: matrix.kind == 'windows'
         run: |
-          cd ./publish/${{ matrix.kind }}
-          7z a -tzip ../../StarBlogPublisher-${{ matrix.kind }}-${{ steps.get_version.outputs.VERSION }}${{ matrix.extension }} *
+          cd ./publish/${{ matrix.kind }}/${{ matrix.publish_mode }}
+          7z a -tzip ../../../StarBlogPublisher-${{ matrix.kind }}-${{ matrix.publish_mode }}-${{ steps.get_version.outputs.VERSION }}${{ matrix.extension }} *
 
       - name: 打包Linux/macOS可执行文件
         if: matrix.kind != 'windows'
         run: |
-          cd ./publish/${{ matrix.kind }}
-          tar -czvf ../../StarBlogPublisher-${{ matrix.kind }}-${{ steps.get_version.outputs.VERSION }}${{ matrix.extension }} *
+          cd ./publish/${{ matrix.kind }}/${{ matrix.publish_mode }}
+          tar -czvf ../../../StarBlogPublisher-${{ matrix.kind }}-${{ matrix.publish_mode }}-${{ steps.get_version.outputs.VERSION }}${{ matrix.extension }} *
 
       - name: 上传构建产物
         uses: actions/upload-artifact@v4
         with:
-          name: StarBlogPublisher-${{ matrix.kind }}-${{ steps.get_version.outputs.VERSION }}
-          path: ./StarBlogPublisher-${{ matrix.kind }}-${{ steps.get_version.outputs.VERSION }}${{ matrix.extension }}
+          name: StarBlogPublisher-${{ matrix.kind }}-${{ matrix.publish_mode }}-${{ steps.get_version.outputs.VERSION }}
+          path: ./StarBlogPublisher-${{ matrix.kind }}-${{ matrix.publish_mode }}-${{ steps.get_version.outputs.VERSION }}${{ matrix.extension }}
           retention-days: 1
 
   upload-gui-assets:
