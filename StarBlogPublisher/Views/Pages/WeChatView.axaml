@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:i="https://github.com/projektanker/icons.avalonia"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
              mc:Ignorable="d"
              x:Class="StarBlogPublisher.Views.WeChatView"
              x:DataType="vm:WeChatViewModel">
@@ -26,7 +27,7 @@
 
             <Border Classes="Card" Grid.Row="1" Margin="0,0,0,12" Padding="10">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <i:Icon Value="fa-solid fa-circle-info" Foreground="#07C160" VerticalAlignment="Center" />
+                    <ui:SymbolIcon Symbol="Help" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding MarkdownSourceMessage}" TextWrapping="Wrap" VerticalAlignment="Center" />
                 </StackPanel>
             </Border>
@@ -37,7 +38,7 @@
                           DisplayMemberBinding="{Binding Name}" />
                 <Button Grid.Column="2" Command="{Binding GenerateFormatCommand}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
-                        <i:Icon Value="fa-solid fa-wand-magic-sparkles" Foreground="#7C3AED" />
+                        <ui:SymbolIcon Symbol="Edit" />
                         <TextBlock Text="重新排版" />
                     </StackPanel>
                 </Button>
@@ -45,7 +46,7 @@
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                 <Button Grid.Column="4" Command="{Binding OpenPreviewCommand}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
-                        <i:Icon Value="fa-solid fa-eye" Foreground="#2196F3" />
+                        <ui:SymbolIcon Symbol="View" />
                         <TextBlock Text="浏览器预览" />
                     </StackPanel>
                 </Button>
@@ -59,7 +60,7 @@
                 </Button>
                 <Button Grid.Column="3" Command="{Binding UploadDraftCommand}" IsEnabled="{Binding !IsPublishing}" Classes="Accent">
                     <StackPanel Orientation="Horizontal" Spacing="5">
-                        <i:Icon Value="fa-solid fa-cloud-arrow-up" />
+                        <ui:SymbolIcon Symbol="Upload" />
                         <TextBlock Text="上传草稿箱" />
                     </StackPanel>
                 </Button>
@@ -70,7 +71,7 @@
                     <TextBlock Grid.Column="0" Text="微信排版 HTML" FontWeight="SemiBold" VerticalAlignment="Center" />
                     <Button Grid.Column="2" Command="{Binding CopyHtmlCommand}">
                         <StackPanel Orientation="Horizontal" Spacing="5">
-                            <i:Icon Value="fa-solid fa-copy" Foreground="#FF9800" />
+                            <ui:SymbolIcon Symbol="Copy" />
                             <TextBlock Text="复制到公众号" />
                         </StackPanel>
                     </Button>

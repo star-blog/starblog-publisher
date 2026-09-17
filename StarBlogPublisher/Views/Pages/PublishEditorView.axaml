@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:md="clr-namespace:Markdown.Avalonia;assembly=Markdown.Avalonia"
              xmlns:i="https://github.com/projektanker/icons.avalonia"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="650"
              x:Class="StarBlogPublisher.Views.PublishEditorView"
              x:DataType="vm:PublishViewModel">
@@ -15,32 +16,32 @@
                 <Button Grid.Column="0" Command="{Binding PreviewCommand}" IsEnabled="{Binding CanPublish}"
                         Padding="12,8" Margin="0,0,8,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <i:Icon Value="fa-solid fa-eye" Foreground="#2196F3" />
+                        <ui:SymbolIcon Symbol="View" />
                         <TextBlock Text="预览" />
                     </StackPanel>
                 </Button>
                 <Button Grid.Column="1" Command="{Binding PublishCommand}" IsEnabled="{Binding CanPublish}"
                         Classes="Accent" Padding="12,8" Margin="0,0,8,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <i:Icon Value="fa-solid fa-upload" />
+                        <ui:SymbolIcon Symbol="Upload" />
                         <TextBlock Text="发布文章" />
                     </StackPanel>
                 </Button>
                 <Button Grid.Column="2" Command="{Binding CopyContentCommand}" Padding="12,8" Margin="0,0,8,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <i:Icon Value="fa-solid fa-clipboard" Foreground="#FF9800" />
+                        <ui:SymbolIcon Symbol="Clipboard" />
                         <TextBlock Text="复制内容" />
                     </StackPanel>
                 </Button>
                 <Button Grid.Column="3" Command="{Binding ShowCoverPromptCommand}" Padding="12,8" Margin="0,0,8,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <i:Icon Value="fa-solid fa-image" Foreground="#FF9800" />
+                        <ui:SymbolIcon Symbol="Image" />
                         <TextBlock Text="生成封面" />
                     </StackPanel>
                 </Button>
                 <Button Grid.Column="4" Command="{Binding AnalyzeImagesCommand}" Padding="12,8" Margin="0,0,8,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <i:Icon Value="fa-solid fa-images" Foreground="#9C27B0" />
+                        <ui:SymbolIcon Symbol="Image" />
                         <TextBlock Text="分析图片" />
                     </StackPanel>
                 </Button>
@@ -92,7 +93,7 @@
                                     <Button Grid.Column="2" ToolTip.Tip="重置为文件名" Command="{Binding ResetTitleCommand}"
                                             Padding="6,2">
                                         <StackPanel Orientation="Horizontal" Spacing="5">
-                                            <i:Icon Value="fa-solid fa-rotate-left" Foreground="#757575" />
+                                            <ui:SymbolIcon Symbol="Undo" />
                                             <TextBlock Text="重置" />
                                         </StackPanel>
                                     </Button>
@@ -102,7 +103,7 @@
                                             IsEnabled="{Binding !IsRefiningTitle}"
                                             Padding="6,2" Margin="0,0,5,0">
                                         <StackPanel Orientation="Horizontal" Spacing="5">
-                                            <i:Icon Value="fa-solid fa-wand-magic-sparkles" Foreground="#9C27B0" />
+                                            <ui:SymbolIcon Symbol="Edit" />
                                             <TextBlock Text="AI润色" />
                                         </StackPanel>
                                     </Button>
@@ -126,7 +127,7 @@
                                                     Command="{Binding RegenerateDescriptionCommand}"
                                                     IsVisible="{Binding IsAIEnabled}" Padding="6,2">
                                                 <StackPanel Orientation="Horizontal" Spacing="5">
-                                                    <i:Icon Value="fa-solid fa-rotate" Foreground="#4CAF50" />
+                                                    <ui:SymbolIcon Symbol="Refresh" />
                                                     <TextBlock Text="重新生成" />
                                                 </StackPanel>
                                             </Button>
@@ -141,7 +142,7 @@
                                                     Command="{Binding GenerateKeywordsCommand}"
                                                     IsVisible="{Binding IsAIEnabled}" Padding="6,2">
                                                 <StackPanel Orientation="Horizontal" Spacing="5">
-                                                    <i:Icon Value="fa-solid fa-tags" Foreground="#FF9800" />
+                                                    <ui:SymbolIcon Symbol="Document" />
                                                     <TextBlock Text="生成" />
                                                 </StackPanel>
                                             </Button>
@@ -156,7 +157,7 @@
                                                     Command="{Binding GenerateSlugCommand}"
                                                     IsVisible="{Binding IsAIEnabled}" Padding="6,2">
                                                 <StackPanel Orientation="Horizontal" Spacing="5">
-                                                    <i:Icon Value="fa-solid fa-magic" Foreground="#9C27B0" />
+                                                    <ui:SymbolIcon Symbol="Edit" />
                                                     <TextBlock Text="生成" />
                                                 </StackPanel>
                                             </Button>
@@ -170,15 +171,15 @@
                                         <TextBlock Grid.Column="0" Text="分类" FontWeight="SemiBold" VerticalAlignment="Center" />
                                         <Button Grid.Column="2" ToolTip.Tip="添加分类" Command="{Binding ShowAddCategoryCommand}"
                                                 Padding="6,2" Margin="0,0,4,0">
-                                            <i:Icon Value="fa-solid fa-plus" Foreground="#4CAF50" />
+                                            <ui:SymbolIcon Symbol="Add" />
                                         </Button>
                                         <Button Grid.Column="3" ToolTip.Tip="查看词云" Command="{Binding ShowWordCloudCommand}"
                                                 Padding="6,2" Margin="0,0,4,0">
-                                            <i:Icon Value="fa-solid fa-cloud" Foreground="#42A5F5" />
+                                            <ui:SymbolIcon Symbol="Cloud" />
                                         </Button>
                                         <Button Grid.Column="4" ToolTip.Tip="刷新分类" Command="{Binding RefreshCategoriesCommand}"
                                                 Padding="6,2">
-                                            <i:Icon Value="fa-solid fa-arrows-rotate" Foreground="#4CAF50" />
+                                            <ui:SymbolIcon Symbol="Refresh" />
                                         </Button>
                                     </Grid>
                                     <TreeView Grid.Row="1" MinHeight="100"

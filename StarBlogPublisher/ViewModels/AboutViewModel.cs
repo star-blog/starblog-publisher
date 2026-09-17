@@ -17,7 +17,7 @@ public partial class AboutViewModel : PageViewModelBase {
     private const string LatestReleaseApiUrl = "https://api.github.com/repos/star-blog/starblog-publisher/releases/latest";
     private static readonly HttpClient HttpClient = CreateHttpClient();
 
-    public AboutViewModel() : base("关于", "fa-solid fa-circle-info", FluentAvalonia.UI.Controls.Symbol.Help) {
+    public AboutViewModel() : base("关于", FluentAvalonia.UI.Controls.Symbol.Help) {
     }
 
     [ObservableProperty] private string _appName = "StarBlog Publisher";
@@ -37,10 +37,10 @@ public partial class AboutViewModel : PageViewModelBase {
     ];
 
     [ObservableProperty] private ObservableCollection<LinkItem> _links = [
-        new() { IconClass = "fa-solid fa-globe", IconColor = "#2196F3", Text = "访问项目主页", Url = "https://github.com/star-blog/starblog-publisher" },
-        new() { IconClass = "fa-solid fa-book", IconColor = "#4CAF50", Text = "查看使用文档", Url = "https://github.com/star-blog/starblog-publisher#readme" },
-        new() { IconClass = "fa-solid fa-download", IconColor = "#9C27B0", Text = "下载发布版本", Url = ReleasesPageUrl },
-        new() { IconClass = "fa-solid fa-bug", IconColor = "#F44336", Text = "报告问题", Url = "https://github.com/star-blog/starblog-publisher/issues" }
+        new() { Text = "访问项目主页", Url = "https://github.com/star-blog/starblog-publisher" },
+        new() { Text = "查看使用文档", Url = "https://github.com/star-blog/starblog-publisher#readme" },
+        new() { Text = "下载发布版本", Url = ReleasesPageUrl },
+        new() { Text = "报告问题", Url = "https://github.com/star-blog/starblog-publisher/issues" }
     ];
 
     private bool CanCheckForUpdate() => !IsCheckingForUpdate;
@@ -129,8 +129,6 @@ public class TechStackItem {
 }
 
 public partial class LinkItem : ObservableObject {
-    public string IconClass { get; set; } = string.Empty;
-    public string IconColor { get; set; } = string.Empty;
     public string Text { get; set; } = string.Empty;
     public string Url { get; set; } = string.Empty;
 

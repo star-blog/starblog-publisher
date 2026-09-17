@@ -16,7 +16,7 @@ namespace StarBlogPublisher.ViewModels;
 public partial class SettingsViewModel : PageViewModelBase {
     private readonly MainWindowViewModel _shell;
 
-    public SettingsViewModel(MainWindowViewModel shell) : base("设置", "fa-solid fa-gear", Symbol.Setting) {
+    public SettingsViewModel(MainWindowViewModel shell) : base("设置", Symbol.Setting) {
         _shell = shell;
         Reload();
     }

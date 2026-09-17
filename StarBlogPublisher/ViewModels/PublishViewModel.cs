@@ -23,7 +23,7 @@ public partial class PublishViewModel : PageViewModelBase {
     private readonly AiApplicationService _aiService;
     private string? _currentFilePath;
 
-    public PublishViewModel(MainWindowViewModel shell) : base("发布", "fa-solid fa-pen-to-square", Symbol.Edit) {
+    public PublishViewModel(MainWindowViewModel shell) : base("发布", Symbol.Edit) {
         _shell = shell;
         _categoryService = new CategoryApplicationService(ApiService.Instance, shell.AuthService);
         _publishService = new ArticlePublishApplicationService(ApiService.Instance, shell.AuthService, AppSettings.Instance);
