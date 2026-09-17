@@ -23,42 +23,12 @@
                 Height="40"
                 Padding="12,0"
                 wnd:AppWindow.AllowInteractionInTitleBar="True">
-            <Grid ColumnDefinitions="Auto,*,Auto">
-                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <Image Width="18" Height="18" Source="/Assets/logo.png" />
-                    <TextBlock Text="StarBlog Publisher"
-                               VerticalAlignment="Center"
-                               FontSize="13" />
-                </StackPanel>
-
-                <StackPanel Grid.Column="2"
-                            Orientation="Horizontal"
-                            Spacing="4"
-                            VerticalAlignment="Center">
-                    <Button Classes="Transparent"
-                            Command="{Binding ToggleThemeCommand}"
-                            ToolTip.Tip="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}">
-                        <Panel>
-                            <i:Icon Value="fa-solid fa-moon" FontSize="16"
-                                    IsVisible="{Binding !IsDarkTheme}" />
-                            <i:Icon Value="fa-solid fa-sun" FontSize="16"
-                                    IsVisible="{Binding IsDarkTheme}" />
-                        </Panel>
-                    </Button>
-                    <Button Classes="Transparent"
-                            Command="{Binding LoginCommand}"
-                            IsVisible="{Binding !IsLoggedIn}"
-                            ToolTip.Tip="登录">
-                        <i:Icon Value="fa-solid fa-right-to-bracket" FontSize="16" />
-                    </Button>
-                    <Button Classes="Transparent"
-                            Command="{Binding LogoutCommand}"
-                            IsVisible="{Binding IsLoggedIn}"
-                            ToolTip.Tip="登出">
-                        <i:Icon Value="fa-solid fa-right-from-bracket" FontSize="16" />
-                    </Button>
-                </StackPanel>
-            </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Image Width="18" Height="18" Source="/Assets/logo.png" />
+                <TextBlock Text="StarBlog Publisher"
+                           VerticalAlignment="Center"
+                           FontSize="13" />
+            </StackPanel>
         </Border>
 
         <ui:NavigationView PaneDisplayMode="Left"
@@ -80,7 +50,31 @@
             </ui:NavigationView.MenuItemTemplate>
 
             <ui:NavigationView.PaneFooter>
-                <StackPanel Margin="12,8" Spacing="4">
+                <StackPanel Margin="12,8" Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <Button Classes="Transparent"
+                                Command="{Binding ToggleThemeCommand}"
+                                ToolTip.Tip="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}">
+                            <Panel>
+                                <i:Icon Value="fa-solid fa-moon" FontSize="16"
+                                        IsVisible="{Binding !IsDarkTheme}" />
+                                <i:Icon Value="fa-solid fa-sun" FontSize="16"
+                                        IsVisible="{Binding IsDarkTheme}" />
+                            </Panel>
+                        </Button>
+                        <Button Classes="Transparent"
+                                Command="{Binding LoginCommand}"
+                                IsVisible="{Binding !IsLoggedIn}"
+                                ToolTip.Tip="登录">
+                            <i:Icon Value="fa-solid fa-right-to-bracket" FontSize="16" />
+                        </Button>
+                        <Button Classes="Transparent"
+                                Command="{Binding LogoutCommand}"
+                                IsVisible="{Binding IsLoggedIn}"
+                                ToolTip.Tip="登出">
+                            <i:Icon Value="fa-solid fa-right-from-bracket" FontSize="16" />
+                        </Button>
+                    </StackPanel>
                     <TextBlock Text="{Binding LoginStatusMessage}"
                                FontSize="12"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"

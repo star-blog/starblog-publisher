@@ -25,7 +25,7 @@ public static class GuiHost {
 
     public static void EnsureNotifications(Visual visual) {
         _notifications ??= new WindowNotificationManager(TopLevel.GetTopLevel(visual)) {
-            Position = NotificationPosition.TopRight,
+            Position = NotificationPosition.BottomRight,
             MaxItems = 5
         };
     }
@@ -36,7 +36,7 @@ public static class GuiHost {
             var top = GetTopLevel();
             if (top == null) return null;
             _notifications = new WindowNotificationManager(top) {
-                Position = NotificationPosition.TopRight,
+                Position = NotificationPosition.BottomRight,
                 MaxItems = 5
             };
             return _notifications;
