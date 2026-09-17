@@ -8,7 +8,7 @@
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="650"
              x:Class="StarBlogPublisher.Views.PublishView"
              x:DataType="vm:PublishViewModel">
-    <suki:SukiStackPage x:Name="PublishStack" Limit="3" AlwaysGoBackToFirstPage="True">
+    <suki:SukiStackPage x:Name="PublishStack" AlwaysGoBackToFirstPage="True">
         <suki:SukiStackPage.Content>
             <views:PublishEditorView x:Name="EditorRoot" />
         </suki:SukiStackPage.Content>
