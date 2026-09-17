@@ -17,7 +17,7 @@ public static class GuiHost {
     public static ISukiDialogManager Dialogs { get; } = new SukiDialogManager();
 
     public static TopLevel? GetTopLevel() {
-        return Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime { MainWindow: { } window }
+        return Avalonia.Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime { MainWindow: { } window }
             ? window
             : null;
     }

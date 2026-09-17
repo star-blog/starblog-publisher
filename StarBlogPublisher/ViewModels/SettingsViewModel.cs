@@ -40,10 +40,10 @@ public partial class SettingsViewModel : PageViewModelBase {
     [ObservableProperty] private bool _isDarkTheme;
 
     [ObservableProperty] private bool _enableAI;
-    [ObservableProperty] private string _aiProvider = "openai";
-    [ObservableProperty] private string _aiKey = string.Empty;
-    [ObservableProperty] private string _aiModel = string.Empty;
-    [ObservableProperty] private string _aiApiBase = string.Empty;
+    [ObservableProperty] private string _AIProvider = "openai";
+    [ObservableProperty] private string _AIKey = string.Empty;
+    [ObservableProperty] private string _AIModel = string.Empty;
+    [ObservableProperty] private string _AIApiBase = string.Empty;
     [ObservableProperty] private bool _showAIKey;
     [ObservableProperty] private bool _isLoadingModels;
     [ObservableProperty] private ObservableCollection<string> _availableModels = new();

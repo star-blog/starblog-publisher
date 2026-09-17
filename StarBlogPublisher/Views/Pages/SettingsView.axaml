@@ -11,6 +11,7 @@
              x:DataType="vm:SettingsViewModel">
     <Grid RowDefinitions="*,Auto">
         <suki:SettingsLayout Grid.Row="0">
+            <suki:SettingsLayout.Items>
             <suki:SettingsLayoutItem Header="后端">
                 <suki:SettingsLayoutItem.Content>
                     <StackPanel Spacing="12">
@@ -184,6 +185,7 @@
                     </StackPanel>
                 </suki:SettingsLayoutItem.Content>
             </suki:SettingsLayoutItem>
+            </suki:SettingsLayout.Items>
         </suki:SettingsLayout>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="16">
