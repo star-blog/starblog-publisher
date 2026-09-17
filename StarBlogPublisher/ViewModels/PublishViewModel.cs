@@ -32,9 +32,12 @@ public partial class PublishViewModel : PageViewModelBase {
         InitializeTitleOptimizationTemplates();
     }
 
-    public event Action<object?>? StackPageRequested;
+    public ObservableCollection<PublishBreadcrumb> Breadcrumbs { get; } = new();
 
     public string? CurrentFilePath => _currentFilePath;
+
+    [ObservableProperty] private object? _activeStackPage;
+    [ObservableProperty] private bool _isStackNavigating;
 
     [ObservableProperty] private string _articleTitle = string.Empty;
     [ObservableProperty] private string _articleDescription = string.Empty;
@@ -71,6 +74,38 @@ public partial class PublishViewModel : PageViewModelBase {
     }
 
     public void NotifyAiEnabled() => IsAIEnabled = AppSettings.Instance.EnableAI;
+
+    public void OpenStackPage(object page, string title) {
+        ActiveStackPage = page;
+        IsStackNavigating = true;
+        Breadcrumbs.Clear();
+        Breadcrumbs.Add(new PublishBreadcrumb { Title = Title, Target = null });
+        Breadcrumbs.Add(new PublishBreadcrumb { Title = title, Target = page });
+    }
+
+    public void NavigateBreadcrumbAt(int index) {
+        if (index < 0 || Breadcrumbs.Count == 0) {
+            return;
+        }
+
+        if (index == 0) {
+            ActiveStackPage = null;
+            IsStackNavigating = false;
+            Breadcrumbs.Clear();
+            return;
+        }
+
+        if (index >= Breadcrumbs.Count) {
+            return;
+        }
+
+        while (Breadcrumbs.Count > index + 1) {
+            Breadcrumbs.RemoveAt(Breadcrumbs.Count - 1);
+        }
+
+        ActiveStackPage = Breadcrumbs[index].Target;
+        IsStackNavigating = ActiveStackPage != null;
+    }
 
     private void InitializeTitleOptimizationTemplates() {
         TitleOptimizationTemplates.Clear();
@@ -241,7 +276,7 @@ public partial class PublishViewModel : PageViewModelBase {
             ArticleContent = ArticleContent,
             ArticleDescription = ArticleDescription
         };
-        StackPageRequested?.Invoke(page);
+        OpenStackPage(page, page.Title);
     }
 
     [RelayCommand]
@@ -264,7 +299,7 @@ public partial class PublishViewModel : PageViewModelBase {
 
             var gallery = new ImageGalleryViewModel();
             gallery.LoadImages(imagePaths);
-            StackPageRequested?.Invoke(gallery);
+            OpenStackPage(gallery, gallery.Title);
             StatusMessage = $"图片分析完成，共找到 {imagePaths.Length} 张图片";
         }
         catch (Exception ex) {
