@@ -7,11 +7,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
-using SukiUI.Controls;
 
 namespace StarBlogPublisher.ViewModels;
 
-public partial class ImageGalleryViewModel : ViewModelBase, ISukiStackPageTitleProvider {
+public partial class ImageGalleryViewModel : ViewModelBase {
     public string Title => "图片分析";
 
     [ObservableProperty] private ObservableCollection<AvaloniaImageInfo> _images = new();

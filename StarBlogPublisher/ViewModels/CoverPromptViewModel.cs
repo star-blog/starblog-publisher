@@ -8,11 +8,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Utils;
-using SukiUI.Controls;
 
 namespace StarBlogPublisher.ViewModels;
 
-public partial class CoverPromptViewModel : ViewModelBase, ISukiStackPageTitleProvider {
+public partial class CoverPromptViewModel : ViewModelBase {
     public string Title => "封面提示词";
 
     [ObservableProperty] private bool _isAIEnabled;

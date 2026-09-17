@@ -7,20 +7,19 @@ using CommunityToolkit.Mvvm.Input;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Models.Dtos;
 using StarBlogPublisher.Services;
-using SukiUI.Dialogs;
 
 namespace StarBlogPublisher.ViewModels;
 
-public partial class AddCategoryViewModel : ViewModelBase {
-    private readonly ISukiDialog _dialog;
+public partial class AddCategoryViewModel : ViewModelBase, IDialogHostAware {
     private readonly Action _onAdded;
+
+    public event Action? CloseRequested;
 
     [ObservableProperty] private string _categoryName = string.Empty;
     [ObservableProperty] private ObservableCollection<Category> _categories = new();
     [ObservableProperty] private Category? _selectedParentCategory;
 
-    public AddCategoryViewModel(ISukiDialog dialog, Action onAdded) {
-        _dialog = dialog;
+    public AddCategoryViewModel(Action onAdded) {
         _onAdded = onAdded;
         Categories.Add(new Category { Text = "[顶级分类]", Id = 0 });
         SelectedParentCategory = Categories[0];
@@ -42,7 +41,7 @@ public partial class AddCategoryViewModel : ViewModelBase {
     }
 
     [RelayCommand]
-    private void Cancel() => _dialog.Dismiss();
+    private void Cancel() => CloseRequested?.Invoke();
 
     [RelayCommand]
     private async Task Confirm() {
@@ -63,7 +62,7 @@ public partial class AddCategoryViewModel : ViewModelBase {
 
             _onAdded();
             GuiHost.ToastSuccess("添加分类", $"已添加「{CategoryName}」");
-            _dialog.Dismiss();
+            CloseRequested?.Invoke();
         }
         catch (Exception ex) {
             await GuiHost.AlertAsync("错误", $"添加分类失败: {ex.Message}", NotificationType.Error);
