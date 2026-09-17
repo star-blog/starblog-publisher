@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Avalonia;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -8,22 +9,16 @@ using CommunityToolkit.Mvvm.Input;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
 using StarBlogPublisher.Utils;
-using SukiUI;
-using SukiUI.Dialogs;
-using SukiUI.Toasts;
 
 namespace StarBlogPublisher.ViewModels;
 
 /// <summary>
-/// 应用壳：导航、主题、登录态、全局 Toast/Dialog。
+/// 应用壳：导航、主题、登录态、全局反馈。
 /// </summary>
 public partial class MainWindowViewModel : ViewModelBase {
     internal readonly AuthApplicationService AuthService = new(
         AppSettings.Instance, GlobalState.Instance, ApiService.Instance
     );
-
-    public ISukiToastManager ToastManager { get; } = GuiHost.Toasts;
-    public ISukiDialogManager DialogManager { get; } = GuiHost.Dialogs;
 
     public PublishViewModel PublishPage { get; }
     public WeChatViewModel WeChatPage { get; }
@@ -55,8 +50,6 @@ public partial class MainWindowViewModel : ViewModelBase {
         }
 
         IsDarkTheme = AppSettings.Instance.IsDarkTheme;
-        var theme = SukiTheme.GetInstance();
-        theme.OnBaseThemeChanged += variant => IsDarkTheme = variant == ThemeVariant.Dark;
     }
 
     partial void OnActivePageChanged(PageViewModelBase? value) {
@@ -82,7 +75,9 @@ public partial class MainWindowViewModel : ViewModelBase {
     [RelayCommand]
     private void ToggleTheme() {
         IsDarkTheme = !IsDarkTheme;
-        SukiTheme.GetInstance().ChangeBaseTheme(IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light);
+        if (Avalonia.Application.Current != null) {
+            Avalonia.Application.Current.RequestedThemeVariant = IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
+        }
         AppSettings.Instance.IsDarkTheme = IsDarkTheme;
         AppSettings.Instance.Save();
     }

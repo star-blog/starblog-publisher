@@ -1,93 +1,97 @@
-<suki:SukiWindow xmlns="https://github.com/avaloniaui"
-                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                 xmlns:vm="using:StarBlogPublisher.ViewModels"
-                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-                 xmlns:suki="https://github.com/kikipoulet/SukiUI"
-                 xmlns:i="https://github.com/projektanker/icons.avalonia"
-                 mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="720"
-                 x:Class="StarBlogPublisher.Views.MainWindow"
-                 x:DataType="vm:MainWindowViewModel"
-                 Icon="/Assets/logo.ico"
-                 Title="StarBlog Publisher"
-                 BackgroundStyle="Flat"
-                 WindowStartupLocation="CenterScreen"
-                 MinWidth="900" MinHeight="640">
+<wnd:AppWindow xmlns="https://github.com/avaloniaui"
+               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+               xmlns:vm="using:StarBlogPublisher.ViewModels"
+               xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+               xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+               xmlns:ui="using:FluentAvalonia.UI.Controls"
+               xmlns:wnd="using:FluentAvalonia.UI.Windowing"
+               xmlns:i="https://github.com/projektanker/icons.avalonia"
+               mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="720"
+               x:Class="StarBlogPublisher.Views.MainWindow"
+               x:DataType="vm:MainWindowViewModel"
+               Title="StarBlog Publisher"
+               WindowStartupLocation="CenterScreen"
+               MinWidth="900" MinHeight="640">
 
     <Design.DataContext>
         <vm:MainWindowViewModel />
     </Design.DataContext>
 
-    <suki:SukiWindow.Hosts>
-        <suki:SukiToastHost Manager="{Binding ToastManager}" />
-        <suki:SukiDialogHost Manager="{Binding DialogManager}" />
-    </suki:SukiWindow.Hosts>
+    <DockPanel>
+        <Border DockPanel.Dock="Top"
+                Background="Transparent"
+                Height="40"
+                Padding="12,0"
+                wnd:AppWindow.AllowInteractionInTitleBar="True">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Image Width="18" Height="18" Source="/Assets/logo.png" />
+                    <TextBlock Text="StarBlog Publisher"
+                               VerticalAlignment="Center"
+                               FontSize="13" />
+                </StackPanel>
 
-    <suki:SukiWindow.LogoContent>
-        <Image Width="18" Height="18" Source="/Assets/logo.png" />
-    </suki:SukiWindow.LogoContent>
+                <StackPanel Grid.Column="2"
+                            Orientation="Horizontal"
+                            Spacing="4"
+                            VerticalAlignment="Center">
+                    <Button Classes="Transparent"
+                            Command="{Binding ToggleThemeCommand}"
+                            ToolTip.Tip="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}">
+                        <Panel>
+                            <i:Icon Value="fa-solid fa-moon" FontSize="16"
+                                    IsVisible="{Binding !IsDarkTheme}" />
+                            <i:Icon Value="fa-solid fa-sun" FontSize="16"
+                                    IsVisible="{Binding IsDarkTheme}" />
+                        </Panel>
+                    </Button>
+                    <Button Classes="Transparent"
+                            Command="{Binding LoginCommand}"
+                            IsVisible="{Binding !IsLoggedIn}"
+                            ToolTip.Tip="登录">
+                        <i:Icon Value="fa-solid fa-right-to-bracket" FontSize="16" />
+                    </Button>
+                    <Button Classes="Transparent"
+                            Command="{Binding LogoutCommand}"
+                            IsVisible="{Binding IsLoggedIn}"
+                            ToolTip.Tip="登出">
+                        <i:Icon Value="fa-solid fa-right-from-bracket" FontSize="16" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
 
-    <suki:SukiWindow.RightWindowTitleBarControls>
-        <Button Classes="Basic WindowControlsButton"
-                Command="{Binding ToggleThemeCommand}"
-                ToolTip.Tip="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}">
-            <Panel>
-                <i:Icon Value="fa-solid fa-moon" FontSize="16" Foreground="{DynamicResource SukiText}"
-                        IsVisible="{Binding !IsDarkTheme}" />
-                <i:Icon Value="fa-solid fa-sun" FontSize="16" Foreground="{DynamicResource SukiText}"
-                        IsVisible="{Binding IsDarkTheme}" />
-            </Panel>
-        </Button>
-        <Button Classes="Basic WindowControlsButton"
-                Command="{Binding LoginCommand}"
-                IsVisible="{Binding !IsLoggedIn}"
-                ToolTip.Tip="登录">
-            <i:Icon Value="fa-solid fa-right-to-bracket" FontSize="16" Foreground="{DynamicResource SukiText}" />
-        </Button>
-        <Button Classes="Basic WindowControlsButton"
-                Command="{Binding LogoutCommand}"
-                IsVisible="{Binding IsLoggedIn}"
-                ToolTip.Tip="登出">
-            <i:Icon Value="fa-solid fa-right-from-bracket" FontSize="16" Foreground="{DynamicResource SukiText}" />
-        </Button>
-    </suki:SukiWindow.RightWindowTitleBarControls>
+        <ui:NavigationView PaneDisplayMode="Left"
+                           IsSettingsVisible="False"
+                           IsBackButtonVisible="False"
+                           OpenPaneLength="220"
+                           CompactPaneLength="48"
+                           IsPaneOpen="True"
+                           MenuItemsSource="{Binding Pages}"
+                           SelectedItem="{Binding ActivePage, Mode=TwoWay}">
+            <ui:NavigationView.MenuItemTemplate>
+                <DataTemplate x:DataType="vm:PageViewModelBase">
+                    <ui:NavigationViewItem Content="{Binding Title}">
+                        <ui:NavigationViewItem.IconSource>
+                            <ui:SymbolIconSource Symbol="{Binding NavSymbol}" />
+                        </ui:NavigationViewItem.IconSource>
+                    </ui:NavigationViewItem>
+                </DataTemplate>
+            </ui:NavigationView.MenuItemTemplate>
 
-    <suki:SukiSideMenu IsSearchEnabled="False"
-                       IsMenuExpanded="True"
-                       ItemsSource="{Binding Pages}"
-                       SelectedItem="{Binding ActivePage}">
-        <suki:SukiSideMenu.ItemTemplate>
-            <DataTemplate x:DataType="vm:PageViewModelBase">
-                <suki:SukiSideMenuItem Classes="Compact" Header="{Binding Title}">
-                    <suki:SukiSideMenuItem.Icon>
-                        <i:Icon Value="{Binding Icon}" FontSize="16" />
-                    </suki:SukiSideMenuItem.Icon>
-                </suki:SukiSideMenuItem>
-            </DataTemplate>
-        </suki:SukiSideMenu.ItemTemplate>
+            <ui:NavigationView.PaneFooter>
+                <StackPanel Margin="12,8" Spacing="4">
+                    <TextBlock Text="{Binding LoginStatusMessage}"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding SoftwareVersion, StringFormat=版本 {0}}"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+            </ui:NavigationView.PaneFooter>
 
-        <suki:SukiSideMenu.HeaderContent>
-            <StackPanel Margin="12,8" Spacing="4" HorizontalAlignment="Center">
-                <Image Width="56" Height="56" Source="/Assets/logo.png" />
-                <TextBlock Text="StarBlog Publisher"
-                           FontWeight="SemiBold"
-                           FontSize="13"
-                           HorizontalAlignment="Center"
-                           TextWrapping="Wrap"
-                           TextAlignment="Center" />
-            </StackPanel>
-        </suki:SukiSideMenu.HeaderContent>
-
-        <suki:SukiSideMenu.FooterContent>
-            <StackPanel Margin="12,8" Spacing="4">
-                <TextBlock Text="{Binding LoginStatusMessage}"
-                           FontSize="12"
-                           Foreground="{DynamicResource SukiLowText}"
-                           TextWrapping="Wrap" />
-                <TextBlock Text="{Binding SoftwareVersion, StringFormat=版本 {0}}"
-                           FontSize="11"
-                           Foreground="{DynamicResource SukiLowText}" />
-            </StackPanel>
-        </suki:SukiSideMenu.FooterContent>
-    </suki:SukiSideMenu>
-</suki:SukiWindow>
+            <ContentControl Content="{Binding ActivePage}" Margin="8" />
+        </ui:NavigationView>
+    </DockPanel>
+</wnd:AppWindow>

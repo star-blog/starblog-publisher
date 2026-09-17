@@ -12,8 +12,7 @@ using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
 using StarBlogPublisher.Utils;
-using SukiUI.Dialogs;
-
+using FluentAvalonia.UI.Controls;
 
 namespace StarBlogPublisher.ViewModels;
 
@@ -24,7 +23,7 @@ public partial class PublishViewModel : PageViewModelBase {
     private readonly AiApplicationService _aiService;
     private string? _currentFilePath;
 
-    public PublishViewModel(MainWindowViewModel shell) : base("发布", "fa-solid fa-pen-to-square") {
+    public PublishViewModel(MainWindowViewModel shell) : base("发布", "fa-solid fa-pen-to-square", Symbol.Edit) {
         _shell = shell;
         _categoryService = new CategoryApplicationService(ApiService.Instance, shell.AuthService);
         _publishService = new ArticlePublishApplicationService(ApiService.Instance, shell.AuthService, AppSettings.Instance);
@@ -286,20 +285,17 @@ public partial class PublishViewModel : PageViewModelBase {
     }
 
     [RelayCommand]
-    private void ShowWordCloud() {
+    private async Task ShowWordCloud() {
         if (!IsLoggedIn) return;
-        GuiHost.Dialogs.CreateDialog()
-            .WithViewModel(_ => new WordCloudViewModel())
-            .Dismiss().ByClickingBackground()
-            .TryShow();
+        await GuiHost.ShowContentAsync(new WordCloudViewModel(), "词云");
     }
 
     [RelayCommand]
-    private void ShowAddCategory() {
+    private async Task ShowAddCategory() {
         if (!IsLoggedIn) return;
-        GuiHost.Dialogs.CreateDialog()
-            .WithViewModel(dialog => new AddCategoryViewModel(dialog, () => RefreshCategoriesCommand.Execute(null)))
-            .TryShow();
+        await GuiHost.ShowContentAsync(
+            new AddCategoryViewModel(() => RefreshCategoriesCommand.Execute(null)),
+            "添加分类");
     }
 
     [RelayCommand]

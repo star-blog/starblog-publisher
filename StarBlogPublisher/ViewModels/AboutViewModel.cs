@@ -17,7 +17,7 @@ public partial class AboutViewModel : PageViewModelBase {
     private const string LatestReleaseApiUrl = "https://api.github.com/repos/star-blog/starblog-publisher/releases/latest";
     private static readonly HttpClient HttpClient = CreateHttpClient();
 
-    public AboutViewModel() : base("关于", "fa-solid fa-circle-info") {
+    public AboutViewModel() : base("关于", "fa-solid fa-circle-info", FluentAvalonia.UI.Controls.Symbol.Help) {
     }
 
     [ObservableProperty] private string _appName = "StarBlog Publisher";
@@ -30,7 +30,7 @@ public partial class AboutViewModel : PageViewModelBase {
     [ObservableProperty] private ObservableCollection<TechStackItem> _techStack = [
         new() { Name = ".NET 10", Description = "提供跨平台应用运行时" },
         new() { Name = "Avalonia UI 11.3", Description = "构建跨平台桌面界面" },
-        new() { Name = "SukiUI 6.1", Description = "提供现代化应用壳、侧栏与主题" },
+        new() { Name = "FluentAvalonia 2.5", Description = "提供 Fluent 应用壳、侧栏与主题" },
         new() { Name = "CommunityToolkit.Mvvm", Description = "提供 MVVM 模式与命令绑定" },
         new() { Name = "Markdig + Markdown.Avalonia", Description = "提供 Markdown 编辑与预览" },
         new() { Name = "Microsoft.Extensions.AI", Description = "集成多种 AI 服务" }

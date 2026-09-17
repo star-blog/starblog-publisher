@@ -24,7 +24,7 @@ public partial class WeChatViewModel : PageViewModelBase {
     private string _sourceFilePath = string.Empty;
     private string _summary = string.Empty;
 
-    public WeChatViewModel() : base("公众号排版", "fa-brands fa-weixin") {
+    public WeChatViewModel() : base("公众号排版", "fa-brands fa-weixin", FluentAvalonia.UI.Controls.Symbol.Mail) {
         Themes = new ObservableCollection<WeChatTheme>(WeChatFormattingService.Themes);
         SelectedTheme = Themes.FirstOrDefault(theme => theme.Id == AppSettings.Instance.WeChatDefaultTheme) ?? Themes[0];
     }

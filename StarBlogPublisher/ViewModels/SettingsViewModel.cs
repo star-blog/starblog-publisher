@@ -8,14 +8,15 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
-using SukiUI;
+using Avalonia;
+using FluentAvalonia.UI.Controls;
 
 namespace StarBlogPublisher.ViewModels;
 
 public partial class SettingsViewModel : PageViewModelBase {
     private readonly MainWindowViewModel _shell;
 
-    public SettingsViewModel(MainWindowViewModel shell) : base("设置", "fa-solid fa-gear") {
+    public SettingsViewModel(MainWindowViewModel shell) : base("设置", "fa-solid fa-gear", Symbol.Setting) {
         _shell = shell;
         Reload();
     }
@@ -165,7 +166,9 @@ public partial class SettingsViewModel : PageViewModelBase {
     private void ToggleAIKey() => ShowAIKey = !ShowAIKey;
 
     partial void OnIsDarkThemeChanged(bool value) {
-        SukiTheme.GetInstance().ChangeBaseTheme(value ? ThemeVariant.Dark : ThemeVariant.Light);
+        if (Avalonia.Application.Current != null) {
+            Avalonia.Application.Current.RequestedThemeVariant = value ? ThemeVariant.Dark : ThemeVariant.Light;
+        }
     }
 
     [RelayCommand]
@@ -300,7 +303,9 @@ public partial class SettingsViewModel : PageViewModelBase {
         }
 
         settings.Save();
-        SukiTheme.GetInstance().ChangeBaseTheme(IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light);
+        if (Avalonia.Application.Current != null) {
+            Avalonia.Application.Current.RequestedThemeVariant = IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
+        }
         _shell.PublishPage.NotifyAiEnabled();
         GuiHost.ToastSuccess("设置", "已保存");
     }
