@@ -229,15 +229,5 @@ Avalonia 12 + SukiUI 7 作为独立升级：
 - 剪贴板、Diagnostics、数据校验插件按 Avalonia 12 breaking changes 改
 - 核 `MessageBox` 替代品（届时应已换成 Suki Dialog）和 FontAwesome 兼容性
 
-## Verification
-
-每期至少：
-
-1. `dotnet build StarBlogPublisher.sln`
-2. `dotnet run --project StarBlogPublisher`
-3. 走通：登录 → 打开 Markdown → 填分类 → 预览 → 发布（或确认发布按钮可用）
-4. 切换亮/暗主题
-5. 折叠/展开侧栏
-6. Phase 2 起：设置保存后回到发布页，登录态和 AI 开关仍然正确
 
 CLI / MCP 行为不应变化。若 GUI 改动碰到 Core，立刻停下来，那不属于本计划。
