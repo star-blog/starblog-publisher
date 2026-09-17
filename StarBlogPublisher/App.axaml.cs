@@ -9,7 +9,6 @@ using Avalonia.Styling;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.ViewModels;
 using StarBlogPublisher.Views;
-using SukiUI;
 
 namespace StarBlogPublisher;
 
@@ -25,8 +24,9 @@ public partial class App : Application {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
             DisableAvaloniaDataAnnotationValidation();
 
-            var theme = SukiTheme.GetInstance();
-            theme.ChangeBaseTheme(AppSettings.Instance.IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light);
+            RequestedThemeVariant = AppSettings.Instance.IsDarkTheme
+                ? ThemeVariant.Dark
+                : ThemeVariant.Light;
 
             desktop.MainWindow = new MainWindow {
                 DataContext = new MainWindowViewModel(),

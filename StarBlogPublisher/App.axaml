@@ -3,7 +3,7 @@
              x:Class="StarBlogPublisher.App"
              xmlns:local="using:StarBlogPublisher"
              xmlns:converters="using:StarBlogPublisher.Converters"
-             xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             xmlns:sty="using:FluentAvalonia.Styling"
              RequestedThemeVariant="Light">
 
     <Application.DataTemplates>
@@ -17,6 +17,13 @@
     </Application.Resources>
 
     <Application.Styles>
-        <suki:SukiTheme Locale="zh-CN" ThemeColor="Blue" />
+        <sty:FluentAvaloniaTheme PreferSystemTheme="False" PreferUserAccentColor="True" />
+        <Style Selector="Border.Card">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="16" />
+        </Style>
     </Application.Styles>
 </Application>
