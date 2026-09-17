@@ -65,6 +65,8 @@
 1. **侧栏图标不统一**  
    侧栏用 Fluent `Symbol`；内容区仍大量 FontAwesome。`PageViewModelBase.Icon` 的 FA 字符串基本闲置。
 
+   修改建议：“统一通用图标为 Fluent Symbol；保留 FontAwesome Brands 用于品牌标识；删除闲置的 FA 字段。” FontAwesome 依赖不必移除，因为微信图标确实仍在使用
+
 2. **对话框偏简陋**  
    词云 / 添加分类是通用 `ContentDialog` 包 View；尺寸、滚动、按钮语义、嵌套 Alert 未按 Fluent 习惯打磨；未使用 `TaskDialog`。
 
