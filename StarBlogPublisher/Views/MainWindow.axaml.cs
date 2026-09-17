@@ -8,6 +8,6 @@ public partial class MainWindow : AppWindow {
         InitializeComponent();
         TitleBar.ExtendsContentIntoTitleBar = true;
         TitleBar.TitleBarHitTestType = TitleBarHitTestType.Complex;
-        Opened += (_, _) => GuiHost.EnsureNotifications(this);
+        Opened += (_, _) => GuiHost.SetFeedbackBar(FeedbackBar);
     }
 }

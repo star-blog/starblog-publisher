@@ -5,7 +5,6 @@
                xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                xmlns:ui="using:FluentAvalonia.UI.Controls"
                xmlns:wnd="using:FluentAvalonia.UI.Windowing"
-               xmlns:i="https://github.com/projektanker/icons.avalonia"
                mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="720"
                x:Class="StarBlogPublisher.Views.MainWindow"
                x:DataType="vm:MainWindowViewModel"
@@ -20,14 +19,14 @@
     <DockPanel>
         <Border DockPanel.Dock="Top"
                 Background="Transparent"
-                Height="40"
+                Height="48"
                 Padding="12,0"
                 wnd:AppWindow.AllowInteractionInTitleBar="True">
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <Image Width="18" Height="18" Source="/Assets/logo.png" />
                 <TextBlock Text="StarBlog Publisher"
                            VerticalAlignment="Center"
-                           FontSize="13" />
+                           FontSize="13"
+                           FontWeight="SemiBold" />
             </StackPanel>
         </Border>
 
@@ -39,6 +38,16 @@
                            IsPaneOpen="True"
                            MenuItemsSource="{Binding Pages}"
                            SelectedItem="{Binding ActivePage, Mode=TwoWay}">
+            <ui:NavigationView.PaneHeader>
+                <StackPanel Orientation="Horizontal" Spacing="10" Margin="12,12,12,8">
+                    <Image Width="28" Height="28" Source="/Assets/logo.png" />
+                    <StackPanel Spacing="1" VerticalAlignment="Center">
+                        <TextBlock Text="StarBlog Publisher" FontWeight="SemiBold" />
+                        <TextBlock Text="内容发布工具" FontSize="11"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </ui:NavigationView.PaneHeader>
             <ui:NavigationView.MenuItemTemplate>
                 <DataTemplate x:DataType="vm:PageViewModelBase">
                     <ui:NavigationViewItem Content="{Binding Title}">
@@ -56,23 +65,23 @@
                                 Command="{Binding ToggleThemeCommand}"
                                 ToolTip.Tip="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}">
                             <Panel>
-                                <i:Icon Value="fa-solid fa-moon" FontSize="16"
-                                        IsVisible="{Binding !IsDarkTheme}" />
-                                <i:Icon Value="fa-solid fa-sun" FontSize="16"
-                                        IsVisible="{Binding IsDarkTheme}" />
+                                <ui:SymbolIcon Symbol="Help" FontSize="16"
+                                               IsVisible="{Binding !IsDarkTheme}" />
+                                <ui:SymbolIcon Symbol="Setting" FontSize="16"
+                                               IsVisible="{Binding IsDarkTheme}" />
                             </Panel>
                         </Button>
                         <Button Classes="Transparent"
                                 Command="{Binding LoginCommand}"
                                 IsVisible="{Binding !IsLoggedIn}"
                                 ToolTip.Tip="登录">
-                            <i:Icon Value="fa-solid fa-right-to-bracket" FontSize="16" />
+                            <ui:SymbolIcon Symbol="Mail" FontSize="16" />
                         </Button>
                         <Button Classes="Transparent"
                                 Command="{Binding LogoutCommand}"
                                 IsVisible="{Binding IsLoggedIn}"
                                 ToolTip.Tip="登出">
-                            <i:Icon Value="fa-solid fa-right-from-bracket" FontSize="16" />
+                            <ui:SymbolIcon Symbol="Edit" FontSize="16" />
                         </Button>
                     </StackPanel>
                     <TextBlock Text="{Binding LoginStatusMessage}"
@@ -85,7 +94,14 @@
                 </StackPanel>
             </ui:NavigationView.PaneFooter>
 
-            <ContentControl Content="{Binding ActivePage}" Margin="8" />
+            <Grid RowDefinitions="Auto,*">
+                <ui:InfoBar x:Name="FeedbackBar"
+                            Grid.Row="0"
+                            Margin="12,8,12,0"
+                            IsClosable="True"
+                            IsOpen="False" />
+                <ContentControl Grid.Row="1" Content="{Binding ActivePage}" Margin="8" />
+            </Grid>
         </ui:NavigationView>
     </DockPanel>
 </wnd:AppWindow>
