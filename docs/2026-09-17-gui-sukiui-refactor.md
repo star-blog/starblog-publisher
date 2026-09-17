@@ -1,5 +1,7 @@
 # Plan: GUI 重构为 SukiUI 壳 + 四级侧栏导航
 
+> **历史文档。** GUI 已改用 FluentAvalonia（不再使用 SukiUI）。完成度与剩余工作见 [`2026-09-18-gui-fluentavalonia-status.md`](./2026-09-18-gui-fluentavalonia-status.md)。下文保留作信息架构与阶段划分参考。
+
 ## Goal
 
 把桌面 GUI 从「FluentTheme + 单页主窗口 + 一堆独立弹窗」改成 Windows 现代化的单壳应用：
