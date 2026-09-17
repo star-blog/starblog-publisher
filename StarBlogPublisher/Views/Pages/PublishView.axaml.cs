@@ -16,6 +16,14 @@ public partial class PublishView : UserControl {
     }
 
     private void OnStackPageRequested(object? page) {
-        PublishStack.Content = page ?? EditorRoot;
+        if (page is null) {
+            PublishStack.Content = EditorRoot;
+            return;
+        }
+
+        var locator = new ViewLocator();
+        PublishStack.Content = locator.Build(page) ?? page;
+        if (PublishStack.Content is Control c)
+            c.DataContext = page;
     }
 }

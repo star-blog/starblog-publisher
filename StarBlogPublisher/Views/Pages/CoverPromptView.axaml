@@ -16,7 +16,7 @@
 
         <ScrollViewer Grid.Row="1">
             <StackPanel Spacing="10">
-                <TextBlock Text="封面风格选择" FontSize="12" Foreground="{DynamicResource SukiLowText}" />
+                <TextBlock Text="封面风格选择" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                     <ComboBox ItemsSource="{Binding CoverStyleOptions}"
                               SelectedItem="{Binding SelectedTemplate}"

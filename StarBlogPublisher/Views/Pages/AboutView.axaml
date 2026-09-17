@@ -3,7 +3,6 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:StarBlogPublisher.ViewModels"
-             xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:i="https://github.com/projektanker/icons.avalonia"
              mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="700"
              x:Class="StarBlogPublisher.Views.AboutView"
@@ -14,21 +13,21 @@
                 <Image Source="/Assets/logo.png" Width="160" Height="160" />
                 <TextBlock Text="{Binding AppName}" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" />
                 <TextBlock Text="{Binding AppVersion}" HorizontalAlignment="Center"
-                           Foreground="{DynamicResource SukiLowText}" />
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
             </StackPanel>
 
-            <suki:GlassCard>
+            <Border Classes="Card">
                 <StackPanel Spacing="10" Margin="8">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <i:Icon Value="fa-solid fa-circle-info" Foreground="#2196F3" />
                         <TextBlock Text="基本信息" FontWeight="Bold" FontSize="16" />
                     </StackPanel>
                     <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
-                    <TextBlock Text="{Binding Copyright}" Foreground="{DynamicResource SukiLowText}" />
+                    <TextBlock Text="{Binding Copyright}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
-            </suki:GlassCard>
+            </Border>
 
-            <suki:GlassCard>
+            <Border Classes="Card">
                 <StackPanel Spacing="10" Margin="8">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <i:Icon Value="fa-solid fa-arrows-rotate" Foreground="#9C27B0" />
@@ -43,12 +42,12 @@
                             </StackPanel>
                         </Button>
                         <TextBlock Text="{Binding UpdateStatus}" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource SukiLowText}" />
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                     </StackPanel>
                 </StackPanel>
-            </suki:GlassCard>
+            </Border>
 
-            <suki:GlassCard>
+            <Border Classes="Card">
                 <StackPanel Spacing="10" Margin="8">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <i:Icon Value="fa-solid fa-layer-group" Foreground="#4CAF50" />
@@ -70,9 +69,9 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
-            </suki:GlassCard>
+            </Border>
 
-            <suki:GlassCard>
+            <Border Classes="Card">
                 <StackPanel Spacing="10" Margin="8">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <i:Icon Value="fa-solid fa-link" Foreground="#FF9800" />
@@ -82,7 +81,7 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:LinkItem">
                                 <Button Command="{Binding OpenLinkCommand}" CommandParameter="{Binding Url}"
-                                        Classes="Basic" HorizontalAlignment="Left" Padding="8" Margin="0,4,0,0">
+                                        HorizontalAlignment="Left" Padding="8" Margin="0,4,0,0">
                                     <StackPanel Orientation="Horizontal">
                                         <i:Icon Value="{Binding IconClass}" Foreground="{Binding IconColor}" Margin="0,0,5,0" />
                                         <TextBlock Text="{Binding Text}" />
@@ -92,7 +91,7 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
-            </suki:GlassCard>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

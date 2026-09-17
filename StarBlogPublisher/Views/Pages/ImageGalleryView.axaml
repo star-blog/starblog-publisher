@@ -3,7 +3,6 @@
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:i="https://github.com/projektanker/icons.avalonia"
              xmlns:converters="using:StarBlogPublisher.Converters"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
@@ -15,7 +14,7 @@
             <i:Icon Value="fa-solid fa-images" Foreground="#4CAF50" />
             <TextBlock Text="文章图片画廊" FontSize="18" FontWeight="Bold" />
             <TextBlock Text="{Binding ImageCount, StringFormat='共 {0} 张图片'}"
-                       VerticalAlignment="Center" Foreground="{DynamicResource SukiLowText}" />
+                       VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
         </StackPanel>
 
         <ScrollViewer Grid.Row="1">
@@ -27,9 +26,9 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <suki:GlassCard Margin="6" Padding="10" MaxWidth="250"
-                                        BorderBrush="{Binding Exists, Converter={x:Static converters:BooleanToValueConverter.Instance}, ConverterParameter='Transparent|#F44336'}"
-                                        BorderThickness="{Binding Exists, Converter={x:Static converters:BooleanToValueConverter.Instance}, ConverterParameter='0|2'}">
+                        <Border Classes="Card" Margin="6" Padding="10" MaxWidth="250"
+                                BorderBrush="{Binding Exists, Converter={x:Static converters:BooleanToValueConverter.Instance}, ConverterParameter='Transparent|#F44336'}"
+                                BorderThickness="{Binding Exists, Converter={x:Static converters:BooleanToValueConverter.Instance}, ConverterParameter='0|2'}">
                             <StackPanel Spacing="8">
                                 <Border CornerRadius="4" ClipToBounds="True" MaxHeight="200">
                                     <Grid>
@@ -44,11 +43,11 @@
                                     </Grid>
                                 </Border>
                                 <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" />
-                                <TextBlock Text="{Binding FilePath}" FontSize="11" Foreground="{DynamicResource SukiLowText}"
+                                <TextBlock Text="{Binding FilePath}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            TextWrapping="Wrap" MaxLines="2" />
-                                <TextBlock Text="{Binding FileSize}" FontSize="10" Foreground="{DynamicResource SukiLowText}" />
+                                <TextBlock Text="{Binding FileSize}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                 <StackPanel Orientation="Horizontal" Spacing="5">
-                                    <Button Classes="Basic" FontSize="10" Padding="8,4"
+                                    <Button FontSize="10" Padding="8,4"
                                             Command="{Binding #GalleryRoot.((vm:ImageGalleryViewModel)DataContext).OpenFolderCommand}"
                                             CommandParameter="{Binding FilePath}">
                                         <StackPanel Orientation="Horizontal" Spacing="3">
@@ -56,7 +55,7 @@
                                             <TextBlock Text="打开" FontSize="10" />
                                         </StackPanel>
                                     </Button>
-                                    <Button Classes="Basic" FontSize="10" Padding="8,4"
+                                    <Button FontSize="10" Padding="8,4"
                                             Command="{Binding #GalleryRoot.((vm:ImageGalleryViewModel)DataContext).CopyPathCommand}"
                                             CommandParameter="{Binding FilePath}">
                                         <StackPanel Orientation="Horizontal" Spacing="3">
@@ -66,7 +65,7 @@
                                     </Button>
                                 </StackPanel>
                             </StackPanel>
-                        </suki:GlassCard>
+                        </Border>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -74,7 +73,7 @@
 
         <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,10,0,0">
             <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" FontSize="12" />
-            <Button Grid.Column="1" Command="{Binding RefreshCommand}" Classes="Basic" Padding="10,5">
+            <Button Grid.Column="1" Command="{Binding RefreshCommand}" Padding="10,5">
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <i:Icon Value="fa-solid fa-rotate-right" />
                     <TextBlock Text="刷新" />

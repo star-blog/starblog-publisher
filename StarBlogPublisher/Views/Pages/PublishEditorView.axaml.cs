@@ -1,12 +1,11 @@
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Input;
-using SukiUI.Controls;
 using StarBlogPublisher.ViewModels;
 
 namespace StarBlogPublisher.Views;
 
-public partial class PublishEditorView : UserControl, ISukiStackPageTitleProvider {
+public partial class PublishEditorView : UserControl {
     public string Title => "编辑";
 
     public PublishEditorView() {

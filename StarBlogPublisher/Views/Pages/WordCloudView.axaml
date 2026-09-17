@@ -3,7 +3,6 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:StarBlogPublisher.ViewModels"
-             xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:i="https://github.com/projektanker/icons.avalonia"
              mc:Ignorable="d" d:DesignWidth="520" d:DesignHeight="520"
              Width="520" Height="520"
@@ -15,7 +14,7 @@
             <TextBlock Text="分类词云" FontSize="20" FontWeight="Bold" />
         </StackPanel>
 
-        <suki:BusyArea Grid.Row="1" IsBusy="{Binding IsLoading}" BusyText="正在生成词云...">
+        <Panel Grid.Row="1">
             <Panel>
                 <Image Source="{Binding WordCloudImage}"
                        IsVisible="{Binding !HasError}"
@@ -30,6 +29,12 @@
                     <TextBlock Text="{Binding ErrorMessage}" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="400" />
                 </StackPanel>
             </Panel>
-        </suki:BusyArea>
+            <Border IsVisible="{Binding IsLoading}" Background="#80000000" ZIndex="10">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+                    <ProgressBar IsIndeterminate="True" Width="160" />
+                    <TextBlock Text="正在生成词云..." HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+        </Panel>
     </Grid>
 </UserControl>
