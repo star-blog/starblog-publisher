@@ -41,9 +41,6 @@ public partial class AddCategoryViewModel : ViewModelBase, IDialogHostAware {
     }
 
     [RelayCommand]
-    private void Cancel() => CloseRequested?.Invoke();
-
-    [RelayCommand]
     private async Task Confirm() {
         if (string.IsNullOrWhiteSpace(CategoryName)) {
             await GuiHost.AlertAsync("提示", "请输入分类名称", NotificationType.Warning);

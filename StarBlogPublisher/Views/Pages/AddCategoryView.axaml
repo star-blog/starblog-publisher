@@ -3,25 +3,23 @@
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:i="https://github.com/projektanker/icons.avalonia"
-             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="420"
-             Width="400" Height="420"
+             mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="420"
+             MinWidth="360" MaxWidth="560"
              x:Class="StarBlogPublisher.Views.AddCategoryView"
              x:DataType="vm:AddCategoryViewModel">
-    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="8">
-        <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,0,16">
-            <i:Icon Value="fa-solid fa-folder-plus" FontSize="20" Foreground="#4CAF50" />
-            <TextBlock Text="添加分类" FontSize="20" FontWeight="Bold" />
-        </StackPanel>
-
-        <StackPanel Grid.Row="1" Spacing="8">
+    <Grid RowDefinitions="Auto,*,Auto" Margin="4" RowSpacing="16">
+        <StackPanel Spacing="8">
             <TextBlock Text="分类名称" FontWeight="SemiBold" />
-            <TextBox Text="{Binding CategoryName}" Watermark="请输入分类名称" MaxLength="50" />
+            <TextBox Text="{Binding CategoryName}"
+                     Watermark="请输入分类名称"
+                     MaxLength="50" />
         </StackPanel>
 
-        <Grid Grid.Row="2" RowDefinitions="Auto,*" Margin="0,16,0,0">
+        <Grid Grid.Row="1" RowDefinitions="Auto,*" MinHeight="220" MaxHeight="420">
             <TextBlock Text="选择父级分类" FontWeight="SemiBold" Margin="0,0,0,8" />
-            <TreeView Grid.Row="1" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedParentCategory}">
+            <TreeView Grid.Row="1"
+                      ItemsSource="{Binding Categories}"
+                      SelectedItem="{Binding SelectedParentCategory}">
                 <TreeView.ItemTemplate>
                     <TreeDataTemplate ItemsSource="{Binding Nodes}">
                         <TextBlock Text="{Binding Text}" />
@@ -30,13 +28,8 @@
             </TreeView>
         </Grid>
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,16,0,0">
-            <Button Command="{Binding CancelCommand}">
-                <TextBlock Text="取消" />
-            </Button>
-            <Button Command="{Binding ConfirmCommand}" Classes="Accent">
-                <TextBlock Text="确定" />
-            </Button>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Command="{Binding ConfirmCommand}" Classes="Accent">添加分类</Button>
         </StackPanel>
     </Grid>
 </UserControl>

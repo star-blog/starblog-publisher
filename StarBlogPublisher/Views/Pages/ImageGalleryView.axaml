@@ -3,26 +3,20 @@
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:i="https://github.com/projektanker/icons.avalonia"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:converters="using:StarBlogPublisher.Converters"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="StarBlogPublisher.Views.ImageGalleryView"
              x:DataType="vm:ImageGalleryViewModel"
              x:Name="GalleryRoot">
     <Grid RowDefinitions="Auto,*,Auto" Margin="8">
-        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,12">
-            <i:Icon Value="fa-solid fa-images" Foreground="#4CAF50" />
-            <TextBlock Text="文章图片画廊" FontSize="18" FontWeight="Bold" />
-            <TextBlock Text="{Binding ImageCount, StringFormat='共 {0} 张图片'}"
-                       VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-        </StackPanel>
+        <TextBlock Text="{Binding ImageCount, StringFormat='共 {0} 张图片'}"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
 
-        <ScrollViewer Grid.Row="1">
+        <ScrollViewer Grid.Row="1" Margin="0,8">
             <ItemsControl ItemsSource="{Binding Images}">
                 <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel Orientation="Horizontal" />
-                    </ItemsPanelTemplate>
+                    <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
@@ -36,8 +30,8 @@
                                                HorizontalAlignment="Center" VerticalAlignment="Center" />
                                         <Border Background="#80000000" CornerRadius="4" IsVisible="{Binding !Exists}">
                                             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
-                                                <i:Icon Value="fa-solid fa-exclamation-triangle" Foreground="#F44336" FontSize="32" />
-                                                <TextBlock Text="文件不存在" Foreground="#F44336" FontWeight="Bold" HorizontalAlignment="Center" />
+                                                <ui:SymbolIcon Symbol="Help" FontSize="32" />
+                                                <TextBlock Text="文件不存在" FontWeight="Bold" HorizontalAlignment="Center" />
                                             </StackPanel>
                                         </Border>
                                     </Grid>
@@ -51,7 +45,7 @@
                                             Command="{Binding #GalleryRoot.((vm:ImageGalleryViewModel)DataContext).OpenFolderCommand}"
                                             CommandParameter="{Binding FilePath}">
                                         <StackPanel Orientation="Horizontal" Spacing="3">
-                                            <i:Icon Value="fa-solid fa-folder-open" FontSize="10" />
+                                            <ui:SymbolIcon Symbol="Folder" FontSize="10" />
                                             <TextBlock Text="打开" FontSize="10" />
                                         </StackPanel>
                                     </Button>
@@ -59,7 +53,7 @@
                                             Command="{Binding #GalleryRoot.((vm:ImageGalleryViewModel)DataContext).CopyPathCommand}"
                                             CommandParameter="{Binding FilePath}">
                                         <StackPanel Orientation="Horizontal" Spacing="3">
-                                            <i:Icon Value="fa-solid fa-copy" FontSize="10" />
+                                            <ui:SymbolIcon Symbol="Copy" FontSize="10" />
                                             <TextBlock Text="复制" FontSize="10" />
                                         </StackPanel>
                                     </Button>
@@ -75,7 +69,7 @@
             <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" FontSize="12" />
             <Button Grid.Column="1" Command="{Binding RefreshCommand}" Padding="10,5">
                 <StackPanel Orientation="Horizontal" Spacing="5">
-                    <i:Icon Value="fa-solid fa-rotate-right" />
+                    <ui:SymbolIcon Symbol="Refresh" />
                     <TextBlock Text="刷新" />
                 </StackPanel>
             </Button>
