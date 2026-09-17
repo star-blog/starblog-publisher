@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:StarBlogPublisher.ViewModels"
+             xmlns:i="https://github.com/projektanker/icons.avalonia"
+             xmlns:utils="clr-namespace:StarBlogPublisher.Utils;assembly=StarBlogPublisher.Core"
+             mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
+             x:Class="StarBlogPublisher.Views.CoverPromptView"
+             x:DataType="vm:CoverPromptViewModel">
+    <Grid RowDefinitions="Auto,*" Margin="16">
+        <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,0,16">
+            <i:Icon Value="fa-solid fa-image" FontSize="22" Foreground="#1E88E5" />
+            <TextBlock Text="文章封面提示词" FontSize="22" FontWeight="Bold" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="10">
+                <TextBlock Text="封面风格选择" FontSize="12" Foreground="{DynamicResource SukiLowText}" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                    <ComboBox ItemsSource="{Binding CoverStyleOptions}"
+                              SelectedItem="{Binding SelectedTemplate}"
+                              IsEnabled="{Binding IsAIEnabled}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="utils:PromptTemplate">
+                                <TextBlock Text="{Binding Name}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Button Grid.Column="1" ToolTip.Tip="生成AI画图提示词"
+                            Command="{Binding GeneratePromptCommand}"
+                            IsVisible="{Binding IsAIEnabled}" Classes="Accent" Padding="8,4">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <i:Icon Value="fa-solid fa-rotate" />
+                            <TextBlock Text="生成" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+                <TextBlock Text="提示词" FontWeight="SemiBold" />
+                <TextBox Text="{Binding GeneratedPrompt}" AcceptsReturn="True" TextWrapping="Wrap"
+                         MinLines="12" Watermark="提示词" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

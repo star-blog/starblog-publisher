@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:StarBlogPublisher.ViewModels"
+             xmlns:i="https://github.com/projektanker/icons.avalonia"
+             mc:Ignorable="d"
+             x:Class="StarBlogPublisher.Views.PublishResultView"
+             x:DataType="vm:PublishResultViewModel">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="8">
+        <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,0,16">
+            <i:Icon Value="fa-solid fa-circle-check" FontSize="24" Foreground="#4CAF50" />
+            <TextBlock Text="文章发布成功" FontSize="22" FontWeight="Bold" />
+        </StackPanel>
+
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*" Margin="0,0,0,10">
+            <TextBlock Grid.Column="0" Text="标题：" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{Binding ArticleTitle}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+        </Grid>
+
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,12">
+            <TextBlock Grid.Column="0" Text="URL：" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBox Grid.Column="1" Text="{Binding ArticleUrl}" IsReadOnly="True" />
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" Margin="8,0,0,0">
+                <Button Command="{Binding CopyUrlCommand}" Classes="Basic" ToolTip.Tip="复制 URL">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <i:Icon Value="fa-solid fa-copy" Foreground="#2196F3" />
+                        <TextBlock Text="复制 URL" />
+                    </StackPanel>
+                </Button>
+                <Button Command="{Binding OpenArticleCommand}" Classes="Basic" ToolTip.Tip="在浏览器中打开文章">
+                    <i:Icon Value="fa-solid fa-arrow-up-right-from-square" Foreground="#4CAF50" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="3" RowDefinitions="Auto,*">
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,6">
+                <TextBlock Grid.Column="0" Text="发布后的 Markdown" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <Button Grid.Column="2" Command="{Binding CopyMarkdownCommand}" Classes="Basic">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <i:Icon Value="fa-solid fa-copy" Foreground="#FF9800" />
+                        <TextBlock Text="复制 Markdown" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+            <TextBox Grid.Row="1" Text="{Binding MarkdownContent}" IsReadOnly="True"
+                     AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Consolas, Menlo, Monospace" />
+        </Grid>
+
+        <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="0,16,0,0">
+            <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Command="{Binding CopyTitleCommand}" Classes="Basic">
+                <TextBlock Text="复制标题" />
+            </Button>
+        </Grid>
+    </Grid>
+</UserControl>

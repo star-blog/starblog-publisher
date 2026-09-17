@@ -2,40 +2,35 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Data.Core;
+using Avalonia.Controls.Notifications;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
-using MsBox.Avalonia;
-using MsBox.Avalonia.Enums;
+using Avalonia.Styling;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.ViewModels;
 using StarBlogPublisher.Views;
+using SukiUI;
 
 namespace StarBlogPublisher;
 
 public partial class App : Application {
-    // 添加静态属性以便在ViewModel中访问MainWindow
-    public static MainWindow MainWindow { get; private set; } = null!;
-    
     public override void Initialize() {
         AvaloniaXamlLoader.Load(this);
     }
 
     public override void OnFrameworkInitializationCompleted() {
-        // 确保Refit类型被注册
         RefitTypeRegistration.RegisterTypes();
         _ = AppSettings.Instance;
-        
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
-            // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
-            // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
             DisableAvaloniaDataAnnotationValidation();
-            
-            // 创建MainWindow并保存引用
-            MainWindow = new MainWindow {
+
+            var theme = SukiTheme.GetInstance();
+            theme.ChangeBaseTheme(AppSettings.Instance.IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light);
+
+            desktop.MainWindow = new MainWindow {
                 DataContext = new MainWindowViewModel(),
             };
-            desktop.MainWindow = MainWindow;
 
             if (AppSettings.HasLoadError) {
                 _ = ShowSettingsLoadErrorAsync();
@@ -46,7 +41,6 @@ public partial class App : Application {
     }
 
     private void DisableAvaloniaDataAnnotationValidation() {
-        // 从数据验证插件中移除DataAnnotationsValidationPlugin
         var dataValidationPlugins = BindingPlugins.DataValidators;
         var dataAnnotationsPlugin = dataValidationPlugins
             .OfType<DataAnnotationsValidationPlugin>()
@@ -61,12 +55,6 @@ public partial class App : Application {
             return;
         }
 
-        var msgBox = MessageBoxManager.GetMessageBoxStandard(
-            "配置加载失败",
-            message,
-            ButtonEnum.Ok,
-            Icon.Error);
-
-        await msgBox.ShowWindowDialogAsync(MainWindow);
+        await GuiHost.AlertAsync("配置加载失败", message, NotificationType.Error);
     }
 }

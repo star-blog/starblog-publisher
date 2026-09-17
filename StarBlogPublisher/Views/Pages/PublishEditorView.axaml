@@ -1,0 +1,221 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:StarBlogPublisher.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:md="clr-namespace:Markdown.Avalonia;assembly=Markdown.Avalonia"
+             xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             xmlns:i="https://github.com/projektanker/icons.avalonia"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="650"
+             x:Class="StarBlogPublisher.Views.PublishEditorView"
+             x:DataType="vm:PublishViewModel">
+
+    <DockPanel Margin="12">
+        <suki:BusyArea DockPanel.Dock="Bottom" IsBusy="{Binding IsPublishing}" BusyText="正在发布...">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" Margin="0,10,0,0">
+                <Button Grid.Column="0" Command="{Binding PreviewCommand}" IsEnabled="{Binding CanPublish}"
+                        Classes="Basic" Padding="12,8" Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <i:Icon Value="fa-solid fa-eye" Foreground="#2196F3" />
+                        <TextBlock Text="预览" />
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="1" Command="{Binding PublishCommand}" IsEnabled="{Binding CanPublish}"
+                        Classes="Accent" Padding="12,8" Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <i:Icon Value="fa-solid fa-upload" />
+                        <TextBlock Text="发布文章" />
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="2" Command="{Binding CopyContentCommand}" Classes="Basic" Padding="12,8" Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <i:Icon Value="fa-solid fa-clipboard" Foreground="#FF9800" />
+                        <TextBlock Text="复制内容" />
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="3" Command="{Binding ShowCoverPromptCommand}" Classes="Basic" Padding="12,8" Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <i:Icon Value="fa-solid fa-image" Foreground="#FF9800" />
+                        <TextBlock Text="生成封面" />
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="4" Command="{Binding AnalyzeImagesCommand}" Classes="Basic" Padding="12,8" Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <i:Icon Value="fa-solid fa-images" Foreground="#9C27B0" />
+                        <TextBlock Text="分析图片" />
+                    </StackPanel>
+                </Button>
+                <ProgressBar Grid.Column="5" Value="{Binding PublishProgress}" IsVisible="{Binding IsPublishing}" Margin="10,0" />
+                <TextBlock Grid.Column="6" Text="{Binding StatusMessage}" VerticalAlignment="Center"
+                           Foreground="{DynamicResource SukiLowText}" />
+            </Grid>
+        </suki:BusyArea>
+
+        <TabControl SelectedIndex="{Binding SelectedTabIndex}">
+            <TabItem Header="编辑">
+                <Grid ColumnDefinitions="*,*" Margin="0,8,0,0">
+                    <Grid Grid.Column="0" RowDefinitions="Auto,*" Margin="0,0,8,0">
+                        <Border Grid.Row="0"
+                                BorderBrush="{DynamicResource SukiPrimaryColor}"
+                                BorderThickness="1.5"
+                                CornerRadius="8"
+                                Padding="12"
+                                Margin="0,0,0,10"
+                                DragDrop.AllowDrop="True">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="拖放 Markdown 文件到此处，或点击选择文件"
+                                           HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource SukiLowText}" />
+                                <Button Content="选择文件" HorizontalAlignment="Center"
+                                        Classes="Accent" Command="{Binding SelectFileCommand}" />
+                            </StackPanel>
+                        </Border>
+                        <suki:GlassCard Grid.Row="1">
+                            <TextBox Text="{Binding ArticleContent}"
+                                     AcceptsReturn="True"
+                                     TextWrapping="Wrap"
+                                     IsReadOnly="True" />
+                        </suki:GlassCard>
+                    </Grid>
+
+                    <suki:GlassCard Grid.Column="1" Margin="8,0,0,0">
+                        <Grid RowDefinitions="Auto,Auto,*" Margin="8">
+                            <TextBlock Grid.Row="0" Text="文章信息" FontWeight="Bold" FontSize="16" Margin="0,0,0,8" />
+                            <StackPanel Grid.Row="1" Spacing="6">
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                                    <TextBlock Grid.Column="0" Text="标题" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                    <Button Grid.Column="2" ToolTip.Tip="重置为文件名" Command="{Binding ResetTitleCommand}"
+                                            Classes="Basic" Padding="6,2">
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <i:Icon Value="fa-solid fa-rotate-left" Foreground="#757575" />
+                                            <TextBlock Text="重置" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Grid.Column="3" ToolTip.Tip="使用AI润色文章标题"
+                                            Command="{Binding RefineTitleWithAICommand}"
+                                            IsVisible="{Binding IsAIEnabled}"
+                                            IsEnabled="{Binding !IsRefiningTitle}"
+                                            Classes="Basic" Padding="6,2" Margin="0,0,5,0">
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <i:Icon Value="fa-solid fa-wand-magic-sparkles" Foreground="#9C27B0" />
+                                            <TextBlock Text="AI润色" />
+                                        </StackPanel>
+                                    </Button>
+                                    <ComboBox Grid.Column="4"
+                                              ItemsSource="{Binding TitleOptimizationTemplates}"
+                                              SelectedItem="{Binding SelectedTitleOptimizationTemplate}"
+                                              DisplayMemberBinding="{Binding Name}"
+                                              ToolTip.Tip="{Binding SelectedTitleOptimizationTemplate.Description}"
+                                              IsVisible="{Binding IsAIEnabled}"
+                                              Width="120" Margin="5,0,0,0" />
+                                </Grid>
+                                <TextBox Text="{Binding ArticleTitle}" Watermark="请输入文章标题" />
+                            </StackPanel>
+
+                            <Grid Grid.Row="2" ColumnDefinitions="*,*" Margin="0,8,0,0">
+                                <Grid Grid.Column="0" RowDefinitions="*,Auto,Auto" Margin="0,0,8,0">
+                                    <Grid Grid.Row="0" RowDefinitions="Auto,*">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,5">
+                                            <TextBlock Grid.Column="0" Text="说明" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                            <Button Grid.Column="2" ToolTip.Tip="使用AI重新生成文章简介"
+                                                    Command="{Binding RegenerateDescriptionCommand}"
+                                                    IsVisible="{Binding IsAIEnabled}" Classes="Basic" Padding="6,2">
+                                                <StackPanel Orientation="Horizontal" Spacing="5">
+                                                    <i:Icon Value="fa-solid fa-rotate" Foreground="#4CAF50" />
+                                                    <TextBlock Text="重新生成" />
+                                                </StackPanel>
+                                            </Button>
+                                        </Grid>
+                                        <TextBox Grid.Row="1" Text="{Binding ArticleDescription}" AcceptsReturn="True"
+                                                 TextWrapping="Wrap" Watermark="请输入文章说明" />
+                                    </Grid>
+                                    <StackPanel Grid.Row="1" Spacing="5" Margin="0,8,0,0">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <TextBlock Grid.Column="0" Text="关键词" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                            <Button Grid.Column="2" ToolTip.Tip="使用AI生成文章关键词"
+                                                    Command="{Binding GenerateKeywordsCommand}"
+                                                    IsVisible="{Binding IsAIEnabled}" Classes="Basic" Padding="6,2">
+                                                <StackPanel Orientation="Horizontal" Spacing="5">
+                                                    <i:Icon Value="fa-solid fa-tags" Foreground="#FF9800" />
+                                                    <TextBlock Text="生成" />
+                                                </StackPanel>
+                                            </Button>
+                                        </Grid>
+                                        <TextBox Text="{Binding ArticleKeywords}"
+                                                 Watermark="请输入文章关键词，用逗号分隔（如：技术,编程,教程）" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="2" Spacing="5" Margin="0,8,0,0">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <TextBlock Grid.Column="0" Text="Slug" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                            <Button Grid.Column="2" ToolTip.Tip="使用AI生成文章Slug"
+                                                    Command="{Binding GenerateSlugCommand}"
+                                                    IsVisible="{Binding IsAIEnabled}" Classes="Basic" Padding="6,2">
+                                                <StackPanel Orientation="Horizontal" Spacing="5">
+                                                    <i:Icon Value="fa-solid fa-magic" Foreground="#9C27B0" />
+                                                    <TextBlock Text="生成" />
+                                                </StackPanel>
+                                            </Button>
+                                        </Grid>
+                                        <TextBox Text="{Binding ArticleSlug}" Watermark="用于URL的文章标识（如：my-first-article）" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid Grid.Column="1" RowDefinitions="Auto,*" IsVisible="{Binding IsLoggedIn}">
+                                    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="0,0,0,5">
+                                        <TextBlock Grid.Column="0" Text="分类" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        <Button Grid.Column="2" ToolTip.Tip="添加分类" Command="{Binding ShowAddCategoryCommand}"
+                                                Classes="Basic" Padding="6,2" Margin="0,0,4,0">
+                                            <i:Icon Value="fa-solid fa-plus" Foreground="#4CAF50" />
+                                        </Button>
+                                        <Button Grid.Column="3" ToolTip.Tip="查看词云" Command="{Binding ShowWordCloudCommand}"
+                                                Classes="Basic" Padding="6,2" Margin="0,0,4,0">
+                                            <i:Icon Value="fa-solid fa-cloud" Foreground="#42A5F5" />
+                                        </Button>
+                                        <Button Grid.Column="4" ToolTip.Tip="刷新分类" Command="{Binding RefreshCategoriesCommand}"
+                                                Classes="Basic" Padding="6,2">
+                                            <i:Icon Value="fa-solid fa-arrows-rotate" Foreground="#4CAF50" />
+                                        </Button>
+                                    </Grid>
+                                    <TreeView Grid.Row="1" MinHeight="100"
+                                              ItemsSource="{Binding Categories}"
+                                              SelectedItem="{Binding SelectedCategory}">
+                                        <TreeView.ItemTemplate>
+                                            <TreeDataTemplate ItemsSource="{Binding Nodes}">
+                                                <TextBlock Text="{Binding Text}" />
+                                            </TreeDataTemplate>
+                                        </TreeView.ItemTemplate>
+                                    </TreeView>
+                                </Grid>
+                            </Grid>
+                        </Grid>
+                    </suki:GlassCard>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="预览">
+                <Grid ColumnDefinitions="*,Auto,*" Margin="0,8,0,0">
+                    <suki:GlassCard Grid.Column="0" Margin="0,0,4,0">
+                        <TextBox Text="{Binding ArticleContent}" AcceptsReturn="True" TextWrapping="Wrap"
+                                 FontFamily="Consolas, Menlo, Monospace" Padding="10" />
+                    </suki:GlassCard>
+                    <GridSplitter Grid.Column="1" Width="6" />
+                    <suki:GlassCard Grid.Column="2" Margin="4,0,0,0">
+                        <ScrollViewer>
+                            <md:MarkdownScrollViewer Markdown="{Binding ArticleContent}" />
+                        </ScrollViewer>
+                    </suki:GlassCard>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="结果">
+                <Panel Margin="0,8,0,0">
+                    <TextBlock Text="暂无发布结果。发布成功后会显示在这里。"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               IsVisible="{Binding !HasPublishResult}"
+                               Foreground="{DynamicResource SukiLowText}" />
+                    <ContentControl Content="{Binding Result}" IsVisible="{Binding HasPublishResult}" />
+                </Panel>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</UserControl>
