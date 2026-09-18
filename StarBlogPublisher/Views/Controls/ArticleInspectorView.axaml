@@ -1,0 +1,168 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:StarBlogPublisher.ViewModels"
+             xmlns:fi="using:FluentIcons.Avalonia.Fluent"
+             xmlns:controls="using:StarBlogPublisher.Views.Controls"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             x:Name="InspectorRoot"
+             x:Class="StarBlogPublisher.Views.Controls.ArticleInspectorView"
+             x:DataType="vm:PublishViewModel">
+    <ScrollViewer>
+        <StackPanel Margin="16,12" Spacing="14">
+            <TextBlock Text="文章属性"
+                       FontSize="13"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+            <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="标题" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <Button Grid.Column="1"
+                            Classes="Icon"
+                            IsVisible="{Binding IsAIEnabled}"
+                            IsEnabled="{Binding !IsRefiningTitle}"
+                            ToolTip.Tip="AI 优化标题">
+                        <fi:FluentIcon Icon="Sparkle" IconVariant="Regular" FontSize="16" />
+                        <Button.Flyout>
+                            <MenuFlyout>
+                                <MenuItem Header="基础优化"
+                                          Command="{Binding RefineTitleWithTemplateCommand}"
+                                          CommandParameter="Basic" />
+                                <MenuItem Header="多维度分析"
+                                          Command="{Binding RefineTitleWithTemplateCommand}"
+                                          CommandParameter="WithReasoning" />
+                                <MenuItem Header="场景化优化"
+                                          Command="{Binding RefineTitleWithTemplateCommand}"
+                                          CommandParameter="Scenario" />
+                                <MenuItem Header="恢复原文" Command="{Binding ResetTitleCommand}" />
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
+                </Grid>
+                <TextBox Text="{Binding ArticleTitle}" Watermark="文章标题" />
+            </StackPanel>
+
+            <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="描述" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <Button Grid.Column="1"
+                            Classes="Icon"
+                            Command="{Binding RegenerateDescriptionCommand}"
+                            IsVisible="{Binding IsAIEnabled}"
+                            ToolTip.Tip="AI 生成摘要">
+                        <fi:FluentIcon Icon="Sparkle" IconVariant="Regular" FontSize="16" />
+                    </Button>
+                </Grid>
+                <TextBox Text="{Binding ArticleDescription}"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         MinHeight="88"
+                         Watermark="文章描述" />
+            </StackPanel>
+
+            <StackPanel Spacing="6" IsVisible="{Binding IsLoggedIn}">
+                <TextBlock Text="分类" FontWeight="SemiBold" />
+                <WrapPanel>
+                    <Border Classes="Chip" IsVisible="{Binding SelectedCategory, Converter={x:Static ObjectConverters.IsNotNull}}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="{Binding SelectedCategory.Text}" VerticalAlignment="Center" />
+                            <Button Classes="Transparent"
+                                    Padding="2"
+                                    Command="{Binding ClearCategoryCommand}"
+                                    ToolTip.Tip="清除分类">
+                                <fi:FluentIcon Icon="Dismiss" IconVariant="Regular" FontSize="12" />
+                            </Button>
+                        </StackPanel>
+                    </Border>
+                </WrapPanel>
+                <Button HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <fi:FluentIcon Icon="Add" IconVariant="Regular" FontSize="14" />
+                        <TextBlock Text="添加分类" />
+                    </StackPanel>
+                    <Button.Flyout>
+                        <Flyout Placement="BottomEdgeAlignedLeft">
+                            <controls:CategoryPicker />
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
+            </StackPanel>
+
+            <TextBlock Text="请先登录后再选择分类"
+                       FontSize="12"
+                       IsVisible="{Binding !IsLoggedIn}"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+            <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="关键词" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <Button Grid.Column="1"
+                            Classes="Icon"
+                            Command="{Binding GenerateKeywordsCommand}"
+                            IsVisible="{Binding IsAIEnabled}"
+                            ToolTip.Tip="AI 生成关键词">
+                        <fi:FluentIcon Icon="Sparkle" IconVariant="Regular" FontSize="16" />
+                    </Button>
+                </Grid>
+                <ItemsControl ItemsSource="{Binding KeywordItems}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="sys:String">
+                            <Border Classes="Chip">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock Text="{Binding}" VerticalAlignment="Center" />
+                                    <Button Classes="Transparent"
+                                            Padding="2"
+                                            Command="{Binding #InspectorRoot.((vm:PublishViewModel)DataContext).RemoveKeywordCommand}"
+                                            CommandParameter="{Binding}">
+                                        <fi:FluentIcon Icon="Dismiss" IconVariant="Regular" FontSize="12" />
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBox Watermark="添加关键词"
+                             Text="{Binding NewKeywordText}" />
+                    <Button Grid.Column="1"
+                            Classes="Icon"
+                            Margin="6,0,0,0"
+                            Command="{Binding AddKeywordCommand}"
+                            ToolTip.Tip="添加关键词">
+                        <fi:FluentIcon Icon="Add" IconVariant="Regular" FontSize="14" />
+                    </Button>
+                </Grid>
+            </StackPanel>
+
+            <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="Slug" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <Button Grid.Column="1"
+                            Classes="Icon"
+                            Command="{Binding GenerateSlugCommand}"
+                            IsVisible="{Binding IsAIEnabled}"
+                            ToolTip.Tip="AI 生成 Slug">
+                        <fi:FluentIcon Icon="Sparkle" IconVariant="Regular" FontSize="16" />
+                    </Button>
+                </Grid>
+                <TextBox Text="{Binding ArticleSlug}" Watermark="url-slug" />
+            </StackPanel>
+
+            <Expander Header="高级设置" IsExpanded="False">
+                <StackPanel Spacing="8" Margin="0,8,0,0">
+                    <Button HorizontalAlignment="Stretch" Command="{Binding ShowWordCloudCommand}" IsEnabled="{Binding IsLoggedIn}">
+                        <TextBlock Text="查看词云" />
+                    </Button>
+                    <Button HorizontalAlignment="Stretch" Command="{Binding ReloadDocumentCommand}">
+                        <TextBlock Text="重新加载文件" />
+                    </Button>
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

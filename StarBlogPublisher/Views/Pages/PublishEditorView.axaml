@@ -3,226 +3,131 @@
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:md="clr-namespace:Markdown.Avalonia;assembly=Markdown.Avalonia"
-             xmlns:i="https://github.com/projektanker/icons.avalonia"
-             xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:fi="using:FluentIcons.Avalonia.Fluent"
              xmlns:controls="using:StarBlogPublisher.Views.Controls"
-             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="650"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="720"
              x:Class="StarBlogPublisher.Views.PublishEditorView"
              x:DataType="vm:PublishViewModel">
 
-    <DockPanel Margin="12">
-        <Panel DockPanel.Dock="Bottom">
-            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" Margin="0,10,0,0">
-                <Button Grid.Column="0" Command="{Binding PreviewCommand}" IsEnabled="{Binding CanPublish}"
-                        Padding="12,8" Margin="0,0,8,0">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <fi:FluentIcon Icon="Eye" IconVariant="Regular" />
-                        <TextBlock Text="预览" />
-                    </StackPanel>
-                </Button>
-                <Button Grid.Column="1" Command="{Binding PublishCommand}" IsEnabled="{Binding CanPublish}"
-                        Classes="Accent" Padding="12,8" Margin="0,0,8,0">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <fi:FluentIcon Icon="ArrowUpload" IconVariant="Regular" />
-                        <TextBlock Text="发布文章" />
-                    </StackPanel>
-                </Button>
-                <Button Grid.Column="2" Command="{Binding CopyContentCommand}" Padding="12,8" Margin="0,0,8,0">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <fi:FluentIcon Icon="Clipboard" IconVariant="Regular" />
-                        <TextBlock Text="复制内容" />
-                    </StackPanel>
-                </Button>
-                <Button Grid.Column="3" Command="{Binding ShowCoverPromptCommand}" Padding="12,8" Margin="0,0,8,0">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <fi:FluentIcon Icon="Image" IconVariant="Regular" />
-                        <TextBlock Text="生成封面" />
-                    </StackPanel>
-                </Button>
-                <Button Grid.Column="4" Command="{Binding AnalyzeImagesCommand}" Padding="12,8" Margin="0,0,8,0">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <fi:FluentIcon Icon="ImageSearch" IconVariant="Regular" />
-                        <TextBlock Text="分析图片" />
-                    </StackPanel>
-                </Button>
-                <ProgressBar Grid.Column="5" Value="{Binding PublishProgress}" IsVisible="{Binding IsPublishing}" Margin="10,0" />
-                <TextBlock Grid.Column="6" Text="{Binding StatusMessage}" VerticalAlignment="Center"
-                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+    <Panel DragDrop.AllowDrop="True">
+        <Grid IsVisible="{Binding !HasLoadedArticle}"
+              DragDrop.AllowDrop="True">
+            <Border HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Width="420"
+                    Padding="32,28"
+                    CornerRadius="8"
+                    BorderThickness="1"
+                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
+                <StackPanel Spacing="16" HorizontalAlignment="Center">
+                    <fi:FluentIcon Icon="DocumentAdd"
+                                   IconVariant="Regular"
+                                   FontSize="40"
+                                   Opacity="0.7"
+                                   HorizontalAlignment="Center" />
+                    <TextBlock Text="拖放 Markdown 文件到此处"
+                               FontSize="16"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="或"
+                               Opacity="0.55"
+                               HorizontalAlignment="Center" />
+                    <Button Content="打开文件"
+                            Classes="Accent"
+                            HorizontalAlignment="Center"
+                            Command="{Binding SelectFileCommand}" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <DockPanel IsVisible="{Binding HasLoadedArticle}">
+            <controls:WorkspaceStatusBar DockPanel.Dock="Bottom" />
+
+            <Grid DockPanel.Dock="Top"
+                  Height="40"
+                  ColumnDefinitions="*,Auto"
+                  Margin="12,4,12,0">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding DocumentDisplayName}"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding CurrentFilePath}" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Button Command="{Binding PreviewCommand}"
+                            IsEnabled="{Binding CanPublish}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <fi:FluentIcon Icon="Eye" IconVariant="Regular" FontSize="14" />
+                            <TextBlock Text="预览" />
+                        </StackPanel>
+                    </Button>
+                    <SplitButton Content="发布"
+                                 Classes="Accent"
+                                 Command="{Binding PublishCommand}"
+                                 IsEnabled="{Binding CanPublish}">
+                        <SplitButton.Flyout>
+                            <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                <MenuItem Header="发布到 StarBlog" Command="{Binding PublishCommand}" />
+                                <MenuItem Header="发布并打开网页" Command="{Binding PublishAndOpenCommand}" />
+                                <MenuItem Header="复制发布链接" Command="{Binding CopyPublishLinkCommand}" />
+                                <MenuItem Header="查看发布结果" Command="{Binding ShowPublishResultCommand}" />
+                            </MenuFlyout>
+                        </SplitButton.Flyout>
+                    </SplitButton>
+                    <Button IsVisible="{Binding IsAIEnabled}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <fi:FluentIcon Icon="Sparkle" IconVariant="Regular" FontSize="14" />
+                            <TextBlock Text="AI" />
+                        </StackPanel>
+                        <Button.Flyout>
+                            <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                <MenuItem Header="生成摘要" Command="{Binding RegenerateDescriptionCommand}" />
+                                <MenuItem Header="生成关键词" Command="{Binding GenerateKeywordsCommand}" />
+                                <MenuItem Header="生成 Slug" Command="{Binding GenerateSlugCommand}" />
+                                <MenuItem Header="生成封面" Command="{Binding ShowCoverPromptCommand}" />
+                                <MenuItem Header="分析文章图片" Command="{Binding AnalyzeImagesCommand}" />
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button ToolTip.Tip="更多">
+                        <fi:FluentIcon Icon="MoreHorizontal" IconVariant="Regular" FontSize="16" />
+                        <Button.Flyout>
+                            <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                <MenuItem Header="复制 Markdown" Command="{Binding CopyContentCommand}" />
+                                <MenuItem Header="生成封面" Command="{Binding ShowCoverPromptCommand}" />
+                                <MenuItem Header="分析图片" Command="{Binding AnalyzeImagesCommand}" />
+                                <MenuItem Header="重新加载" Command="{Binding ReloadDocumentCommand}" />
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button Command="{Binding ToggleInspectorCommand}"
+                            IsVisible="{Binding UseOverlayInspector}"
+                            ToolTip.Tip="文章属性">
+                        <fi:FluentIcon Icon="PanelRight" IconVariant="Regular" FontSize="16" />
+                    </Button>
+                </StackPanel>
             </Grid>
-            <controls:BusyOverlay IsBusy="{Binding IsPublishing}"
-                                  Message="正在发布..."
-                                  Progress="{Binding PublishProgress}"
-                                  IsIndeterminate="False"
-                                  ZIndex="10" />
-        </Panel>
 
-        <TabControl SelectedIndex="{Binding SelectedTabIndex}">
-            <TabItem Header="编辑">
-                <Grid ColumnDefinitions="*,*" Margin="0,8,0,0">
-                    <Grid Grid.Column="0" RowDefinitions="Auto,*" Margin="0,0,8,0">
-                        <Border Grid.Row="0"
-                                BorderBrush="{DynamicResource AccentFillColorDefaultBrush}"
-                                BorderThickness="1.5"
-                                CornerRadius="8"
-                                Padding="12"
-                                Margin="0,0,0,10"
-                                DragDrop.AllowDrop="True">
-                            <StackPanel Spacing="8">
-                                <TextBlock Text="拖放 Markdown 文件到此处，或点击选择文件"
-                                           HorizontalAlignment="Center"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                <Button Content="选择文件" HorizontalAlignment="Center"
-                                        Classes="Accent" Command="{Binding SelectFileCommand}" />
-                            </StackPanel>
-                        </Border>
-                        <Border Classes="Card" Grid.Row="1">
-                            <TextBox Text="{Binding ArticleContent}"
-                                     AcceptsReturn="True"
-                                     TextWrapping="Wrap"
-                                     IsReadOnly="True" />
-                        </Border>
-                    </Grid>
-
-                    <Border Classes="Card" Grid.Column="1" Margin="8,0,0,0">
-                        <Grid RowDefinitions="Auto,Auto,*" Margin="8">
-                            <TextBlock Grid.Row="0" Text="文章信息" FontWeight="Bold" FontSize="16" Margin="0,0,0,8" />
-                            <StackPanel Grid.Row="1" Spacing="6">
-                                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
-                                    <TextBlock Grid.Column="0" Text="标题" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                    <Button Grid.Column="2" ToolTip.Tip="重置为文件名" Command="{Binding ResetTitleCommand}"
-                                            Padding="6,2">
-                                        <StackPanel Orientation="Horizontal" Spacing="5">
-                                            <fi:FluentIcon Icon="ArrowUndo" IconVariant="Regular" />
-                                            <TextBlock Text="重置" />
-                                        </StackPanel>
-                                    </Button>
-                                    <Button Grid.Column="3" ToolTip.Tip="使用AI润色文章标题"
-                                            Command="{Binding RefineTitleWithAICommand}"
-                                            IsVisible="{Binding IsAIEnabled}"
-                                            IsEnabled="{Binding !IsRefiningTitle}"
-                                            Padding="6,2" Margin="0,0,5,0">
-                                        <StackPanel Orientation="Horizontal" Spacing="5">
-                                            <fi:FluentIcon Icon="PenSparkle" IconVariant="Regular" />
-                                            <TextBlock Text="AI润色" />
-                                        </StackPanel>
-                                    </Button>
-                                    <ComboBox Grid.Column="4"
-                                              ItemsSource="{Binding TitleOptimizationTemplates}"
-                                              SelectedItem="{Binding SelectedTitleOptimizationTemplate}"
-                                              DisplayMemberBinding="{Binding Name}"
-                                              ToolTip.Tip="{Binding SelectedTitleOptimizationTemplate.Description}"
-                                              IsVisible="{Binding IsAIEnabled}"
-                                              Width="120" Margin="5,0,0,0" />
-                                </Grid>
-                                <TextBox Text="{Binding ArticleTitle}" Watermark="请输入文章标题" />
-                            </StackPanel>
-
-                            <Grid Grid.Row="2" ColumnDefinitions="*,*" Margin="0,8,0,0">
-                                <Grid Grid.Column="0" RowDefinitions="*,Auto,Auto" Margin="0,0,8,0">
-                                    <Grid Grid.Row="0" RowDefinitions="Auto,*">
-                                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,5">
-                                            <TextBlock Grid.Column="0" Text="说明" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                            <Button Grid.Column="2" ToolTip.Tip="使用AI重新生成文章简介"
-                                                    Command="{Binding RegenerateDescriptionCommand}"
-                                                    IsVisible="{Binding IsAIEnabled}" Padding="6,2">
-                                                <StackPanel Orientation="Horizontal" Spacing="5">
-                                                    <fi:FluentIcon Icon="ArrowClockwise" IconVariant="Regular" />
-                                                    <TextBlock Text="重新生成" />
-                                                </StackPanel>
-                                            </Button>
-                                        </Grid>
-                                        <TextBox Grid.Row="1" Text="{Binding ArticleDescription}" AcceptsReturn="True"
-                                                 TextWrapping="Wrap" Watermark="请输入文章说明" />
-                                    </Grid>
-                                    <StackPanel Grid.Row="1" Spacing="5" Margin="0,8,0,0">
-                                        <Grid ColumnDefinitions="Auto,*,Auto">
-                                            <TextBlock Grid.Column="0" Text="关键词" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                            <Button Grid.Column="2" ToolTip.Tip="使用AI生成文章关键词"
-                                                    Command="{Binding GenerateKeywordsCommand}"
-                                                    IsVisible="{Binding IsAIEnabled}" Padding="6,2">
-                                                <StackPanel Orientation="Horizontal" Spacing="5">
-                                                    <fi:FluentIcon Icon="Document" IconVariant="Regular" />
-                                                    <TextBlock Text="生成" />
-                                                </StackPanel>
-                                            </Button>
-                                        </Grid>
-                                        <TextBox Text="{Binding ArticleKeywords}"
-                                                 Watermark="请输入文章关键词，用逗号分隔（如：技术,编程,教程）" />
-                                    </StackPanel>
-                                    <StackPanel Grid.Row="2" Spacing="5" Margin="0,8,0,0">
-                                        <Grid ColumnDefinitions="Auto,*,Auto">
-                                            <TextBlock Grid.Column="0" Text="Slug" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                            <Button Grid.Column="2" ToolTip.Tip="使用AI生成文章Slug"
-                                                    Command="{Binding GenerateSlugCommand}"
-                                                    IsVisible="{Binding IsAIEnabled}" Padding="6,2">
-                                                <StackPanel Orientation="Horizontal" Spacing="5">
-                                                    <fi:FluentIcon Icon="Pen" IconVariant="Regular" />
-                                                    <TextBlock Text="生成" />
-                                                </StackPanel>
-                                            </Button>
-                                        </Grid>
-                                        <TextBox Text="{Binding ArticleSlug}" Watermark="用于URL的文章标识（如：my-first-article）" />
-                                    </StackPanel>
-                                </Grid>
-
-                                <Grid Grid.Column="1" RowDefinitions="Auto,*" IsVisible="{Binding IsLoggedIn}">
-                                    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="0,0,0,5">
-                                        <TextBlock Grid.Column="0" Text="分类" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                    <Button Grid.Column="2" ToolTip.Tip="添加分类" Command="{Binding ShowAddCategoryCommand}"
-                                                Classes="Icon" Margin="0,0,4,0">
-                                            <fi:FluentIcon Icon="Add" IconVariant="Regular" />
-                                        </Button>
-                                    <Button Grid.Column="3" ToolTip.Tip="查看词云" Command="{Binding ShowWordCloudCommand}"
-                                                Classes="Icon" Margin="0,0,4,0">
-                                            <fi:FluentIcon Icon="Cloud" IconVariant="Regular" />
-                                        </Button>
-                                    <Button Grid.Column="4" ToolTip.Tip="刷新分类" Command="{Binding RefreshCategoriesCommand}"
-                                                Classes="Icon">
-                                            <fi:FluentIcon Icon="ArrowClockwise" IconVariant="Regular" />
-                                        </Button>
-                                    </Grid>
-                                    <TreeView Grid.Row="1" MinHeight="100"
-                                              ItemsSource="{Binding Categories}"
-                                              SelectedItem="{Binding SelectedCategory}">
-                                        <TreeView.ItemTemplate>
-                                            <TreeDataTemplate ItemsSource="{Binding Nodes}">
-                                                <TextBlock Text="{Binding Text}" />
-                                            </TreeDataTemplate>
-                                        </TreeView.ItemTemplate>
-                                    </TreeView>
-                                </Grid>
-                            </Grid>
-                        </Grid>
+            <SplitView DisplayMode="{Binding InspectorDisplayMode}"
+                       PanePlacement="Right"
+                       OpenPaneLength="336"
+                       CompactPaneLength="0"
+                       IsPaneOpen="{Binding IsInspectorOpen, Mode=TwoWay}">
+                <SplitView.Pane>
+                    <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1,0,0,0"
+                            Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}">
+                        <controls:ArticleInspectorView />
                     </Border>
-                </Grid>
-            </TabItem>
+                </SplitView.Pane>
+                <controls:MarkdownEditorView />
+            </SplitView>
+        </DockPanel>
 
-            <TabItem Header="预览">
-                <Grid ColumnDefinitions="*,Auto,*" Margin="0,8,0,0">
-                    <Border Classes="Card" Grid.Column="0" Margin="0,0,4,0">
-                        <TextBox Text="{Binding ArticleContent}" AcceptsReturn="True" TextWrapping="Wrap"
-                                 FontFamily="Consolas, Menlo, Monospace" Padding="10" />
-                    </Border>
-                    <GridSplitter Grid.Column="1" Width="6" />
-                    <Border Classes="Card" Grid.Column="2" Margin="4,0,0,0">
-                        <ScrollViewer>
-                            <md:MarkdownScrollViewer Markdown="{Binding ArticleContent}" />
-                        </ScrollViewer>
-                    </Border>
-                </Grid>
-            </TabItem>
-
-            <TabItem Header="结果">
-                <Panel Margin="0,8,0,0">
-                    <TextBlock Text="暂无发布结果。发布成功后会显示在这里。"
-                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                               IsVisible="{Binding !HasPublishResult}"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    <ContentControl Content="{Binding Result}" IsVisible="{Binding HasPublishResult}" />
-                </Panel>
-            </TabItem>
-        </TabControl>
-    </DockPanel>
+        <controls:BusyOverlay IsBusy="{Binding IsPublishing}"
+                              Message="{Binding StatusMessage}"
+                              Progress="{Binding PublishProgress}"
+                              IsIndeterminate="False"
+                              ZIndex="10" />
+    </Panel>
 </UserControl>

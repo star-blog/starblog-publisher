@@ -11,97 +11,68 @@
                x:DataType="vm:MainWindowViewModel"
                Title="StarBlog Publisher"
                WindowStartupLocation="CenterScreen"
-               MinWidth="900" MinHeight="640">
+               MinWidth="800" MinHeight="600">
 
     <Design.DataContext>
         <vm:MainWindowViewModel />
     </Design.DataContext>
 
-    <DockPanel>
-        <Border DockPanel.Dock="Top"
-                Background="Transparent"
-                Height="48"
-                Padding="12,0">
-            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <TextBlock Text="StarBlog Publisher"
-                           VerticalAlignment="Center"
-                           FontSize="13"
-                           FontWeight="SemiBold" />
+    <ui:NavigationView PaneDisplayMode="LeftCompact"
+                       IsSettingsVisible="False"
+                       IsBackButtonVisible="False"
+                       OpenPaneLength="220"
+                       CompactPaneLength="48"
+                       IsPaneOpen="False"
+                       MenuItemsSource="{Binding Pages}"
+                       SelectedItem="{Binding ActivePage, Mode=TwoWay}">
+        <ui:NavigationView.MenuItemTemplate>
+            <DataTemplate x:DataType="vm:PageViewModelBase">
+                <ui:NavigationViewItem Content="{Binding Title}"
+                                       ToolTip.Tip="{Binding Title}">
+                    <ui:NavigationViewItem.IconSource>
+                        <fi:FluentIconSource Icon="{Binding NavIcon}" IconVariant="Regular" />
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+            </DataTemplate>
+        </ui:NavigationView.MenuItemTemplate>
+
+        <ui:NavigationView.PaneFooter>
+            <StackPanel Margin="4,8" Spacing="4">
+                <Button Classes="Transparent"
+                        HorizontalAlignment="Center"
+                        Command="{Binding ToggleThemeCommand}"
+                        ToolTip.Tip="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}">
+                    <Panel>
+                        <fi:FluentIcon Icon="WeatherMoon" IconVariant="Regular" FontSize="16"
+                                       IsVisible="{Binding !IsDarkTheme}" />
+                        <fi:FluentIcon Icon="WeatherSunny" IconVariant="Regular" FontSize="16"
+                                       IsVisible="{Binding IsDarkTheme}" />
+                    </Panel>
+                </Button>
+                <Button Classes="Transparent"
+                        HorizontalAlignment="Center"
+                        Command="{Binding LoginCommand}"
+                        IsVisible="{Binding !IsLoggedIn}"
+                        ToolTip.Tip="登录">
+                    <fi:FluentIcon Icon="Person" IconVariant="Regular" FontSize="16" />
+                </Button>
+                <Button Classes="Transparent"
+                        HorizontalAlignment="Center"
+                        Command="{Binding LogoutCommand}"
+                        IsVisible="{Binding IsLoggedIn}"
+                        ToolTip.Tip="登出">
+                    <fi:FluentIcon Icon="SignOut" IconVariant="Regular" FontSize="16" />
+                </Button>
             </StackPanel>
-        </Border>
+        </ui:NavigationView.PaneFooter>
 
-        <ui:NavigationView PaneDisplayMode="Left"
-                           IsSettingsVisible="False"
-                           IsBackButtonVisible="False"
-                           OpenPaneLength="220"
-                           CompactPaneLength="48"
-                           IsPaneOpen="True"
-                           MenuItemsSource="{Binding Pages}"
-                           SelectedItem="{Binding ActivePage, Mode=TwoWay}">
-            <ui:NavigationView.PaneHeader>
-                <StackPanel Orientation="Horizontal" Spacing="10" Margin="12,12,12,8">
-                    <Image Width="28" Height="28" Source="/Assets/logo.png" />
-                    <StackPanel Spacing="1" VerticalAlignment="Center">
-                        <TextBlock Text="StarBlog Publisher" FontWeight="SemiBold" />
-                        <TextBlock Text="内容发布工具" FontSize="11"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    </StackPanel>
-                </StackPanel>
-            </ui:NavigationView.PaneHeader>
-            <ui:NavigationView.MenuItemTemplate>
-                <DataTemplate x:DataType="vm:PageViewModelBase">
-                    <ui:NavigationViewItem Content="{Binding Title}">
-                        <ui:NavigationViewItem.IconSource>
-                            <fi:FluentIconSource Icon="{Binding NavIcon}" IconVariant="Regular" />
-                        </ui:NavigationViewItem.IconSource>
-                    </ui:NavigationViewItem>
-                </DataTemplate>
-            </ui:NavigationView.MenuItemTemplate>
-
-            <ui:NavigationView.PaneFooter>
-                <StackPanel Margin="12,8" Spacing="8">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                        <Button Classes="Transparent"
-                                Command="{Binding ToggleThemeCommand}"
-                                ToolTip.Tip="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}">
-                            <Panel>
-                                <fi:FluentIcon Icon="WeatherMoon" IconVariant="Regular" FontSize="16"
-                                               IsVisible="{Binding !IsDarkTheme}" />
-                                <fi:FluentIcon Icon="WeatherSunny" IconVariant="Regular" FontSize="16"
-                                               IsVisible="{Binding IsDarkTheme}" />
-                            </Panel>
-                        </Button>
-                        <Button Classes="Transparent"
-                                Command="{Binding LoginCommand}"
-                                IsVisible="{Binding !IsLoggedIn}"
-                                ToolTip.Tip="登录">
-                            <fi:FluentIcon Icon="Person" IconVariant="Regular" FontSize="16" />
-                        </Button>
-                        <Button Classes="Transparent"
-                                Command="{Binding LogoutCommand}"
-                                IsVisible="{Binding IsLoggedIn}"
-                                ToolTip.Tip="登出">
-                            <fi:FluentIcon Icon="SignOut" IconVariant="Regular" FontSize="16" />
-                        </Button>
-                    </StackPanel>
-                    <TextBlock Text="{Binding LoginStatusMessage}"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                               TextWrapping="Wrap" />
-                    <TextBlock Text="{Binding SoftwareVersion, StringFormat=版本 {0}}"
-                               FontSize="11"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                </StackPanel>
-            </ui:NavigationView.PaneFooter>
-
-            <Grid RowDefinitions="Auto,*">
-                <ui:InfoBar x:Name="FeedbackBar"
-                            Grid.Row="0"
-                            Margin="12,8,12,0"
-                            IsClosable="True"
-                            IsOpen="False" />
-                <ContentControl Grid.Row="1" Content="{Binding ActivePage}" Margin="8" />
-            </Grid>
-        </ui:NavigationView>
-    </DockPanel>
+        <Grid RowDefinitions="Auto,*">
+            <ui:InfoBar x:Name="FeedbackBar"
+                        Grid.Row="0"
+                        Margin="8,4,8,0"
+                        IsClosable="True"
+                        IsOpen="False" />
+            <ContentControl Grid.Row="1" Content="{Binding ActivePage}" />
+        </Grid>
+    </ui:NavigationView>
 </wnd:AppWindow>

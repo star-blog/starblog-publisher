@@ -1,0 +1,16 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:StarBlogPublisher.ViewModels"
+             xmlns:md="clr-namespace:Markdown.Avalonia;assembly=Markdown.Avalonia"
+             x:Class="StarBlogPublisher.Views.Controls.MarkdownEditorView"
+             x:DataType="vm:PublishViewModel">
+    <Panel>
+        <TextBox Classes="WorkspaceEditor"
+                 Text="{Binding ArticleContent}"
+                 FontFamily="Cascadia Code, Consolas, Menlo, monospace"
+                 IsVisible="{Binding !IsPreviewVisible}" />
+        <ScrollViewer IsVisible="{Binding IsPreviewVisible}" Padding="20,12">
+            <md:MarkdownScrollViewer Markdown="{Binding ArticleContent}" />
+        </ScrollViewer>
+    </Panel>
+</UserControl>

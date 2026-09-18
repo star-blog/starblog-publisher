@@ -39,5 +39,28 @@
             <Setter Property="Margin" Value="16" />
             <Setter Property="Spacing" Value="12" />
         </Style>
+        <Style Selector="TextBox.WorkspaceEditor">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="AcceptsReturn" Value="True" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Padding" Value="20,12" />
+        </Style>
+        <Style Selector="Border.Chip">
+            <Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Margin" Value="0,0,6,6" />
+        </Style>
+        <Style Selector="Border.StatusBar">
+            <Setter Property="Background" Value="{DynamicResource SolidBackgroundFillColorTertiaryBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="0,1,0,0" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="Height" Value="28" />
+        </Style>
     </Application.Styles>
 </Application>

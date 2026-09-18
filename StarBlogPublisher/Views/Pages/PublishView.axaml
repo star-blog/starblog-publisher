@@ -11,7 +11,8 @@
     <controls:StackPageHost Breadcrumbs="{Binding Breadcrumbs}"
                             IsNavigating="{Binding IsStackNavigating}"
                             StackContent="{Binding ActiveStackPage}"
-                            BreadcrumbClicked="OnBreadcrumbClicked">
+                            BreadcrumbClicked="OnBreadcrumbClicked"
+                            Margin="0">
         <controls:StackPageHost.RootContent>
             <views:PublishEditorView />
         </controls:StackPageHost.RootContent>

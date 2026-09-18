@@ -12,6 +12,18 @@ public partial class PublishEditorView : UserControl {
         InitializeComponent();
         AddHandler(DragDrop.DropEvent, OnDrop);
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
+        SizeChanged += OnWorkspaceSizeChanged;
+        DataContextChanged += (_, _) => {
+            if (DataContext is PublishViewModel vm) {
+                vm.SetWorkspaceWidth(Bounds.Width);
+            }
+        };
+    }
+
+    private void OnWorkspaceSizeChanged(object? sender, SizeChangedEventArgs e) {
+        if (DataContext is PublishViewModel vm) {
+            vm.SetWorkspaceWidth(e.NewSize.Width);
+        }
     }
 
     private void OnDragOver(object? sender, DragEventArgs e) {

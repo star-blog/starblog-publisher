@@ -4,7 +4,9 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -22,6 +24,8 @@ public partial class PublishViewModel : PageViewModelBase {
     private readonly ArticlePublishApplicationService _publishService;
     private readonly AiApplicationService _aiService;
     private string? _currentFilePath;
+    private string _loadedContent = "";
+    private const double OverlayInspectorBreakpoint = 1080;
 
     public PublishViewModel(MainWindowViewModel shell) : base("发布", Icon.Pen) {
         _shell = shell;
@@ -29,6 +33,7 @@ public partial class PublishViewModel : PageViewModelBase {
         _publishService = new ArticlePublishApplicationService(ApiService.Instance, shell.AuthService, AppSettings.Instance);
         _aiService = new AiApplicationService(AiService.Instance, AppSettings.Instance);
         IsAIEnabled = AppSettings.Instance.EnableAI;
+        NotifyAiEnabled();
         InitializeTitleOptimizationTemplates();
     }
 
@@ -58,10 +63,29 @@ public partial class PublishViewModel : PageViewModelBase {
     [ObservableProperty] private bool _canPublish;
     [ObservableProperty] private PublishResult? _lastPublishResult;
     [ObservableProperty] private PublishResultViewModel? _result;
-    [ObservableProperty] private int _selectedTabIndex;
     [ObservableProperty] private bool _isLoggedIn;
+    [ObservableProperty] private bool _isPreviewVisible;
+    [ObservableProperty] private bool _useOverlayInspector;
+    [ObservableProperty] private bool _isInspectorOpen = true;
+    [ObservableProperty] private string _categorySearchText = "";
+    [ObservableProperty] private string _newKeywordText = "";
+    [ObservableProperty] private ObservableCollection<Category> _filteredCategories = new();
+    [ObservableProperty] private int _wordCount;
+    [ObservableProperty] private int _imageCount;
+    [ObservableProperty] private string _aiProviderLabel = "";
+
+    public ObservableCollection<string> KeywordItems { get; } = new();
 
     public bool HasPublishResult => LastPublishResult?.Success == true;
+    public bool IsDocumentDirty => !string.Equals(ArticleContent, _loadedContent, StringComparison.Ordinal);
+    public string DocumentFileName => string.IsNullOrWhiteSpace(_currentFilePath)
+        ? "未命名.md"
+        : Path.GetFileName(_currentFilePath);
+    public string DocumentDisplayName => IsDocumentDirty ? $"{DocumentFileName} •" : DocumentFileName;
+    public string SaveStatusText => !HasLoadedArticle ? "未打开" : IsDocumentDirty ? "已修改" : "已加载";
+    public string ConnectionStatusText => IsLoggedIn ? "StarBlog ● Connected" : "StarBlog ○ Offline";
+    public SplitViewDisplayMode InspectorDisplayMode =>
+        UseOverlayInspector ? SplitViewDisplayMode.Overlay : SplitViewDisplayMode.Inline;
 
     partial void OnLastPublishResultChanged(PublishResult? value) {
         OnPropertyChanged(nameof(HasPublishResult));
@@ -70,10 +94,48 @@ public partial class PublishViewModel : PageViewModelBase {
 
     public void NotifyLoginState(bool isLoggedIn) {
         IsLoggedIn = isLoggedIn;
-        IsAIEnabled = AppSettings.Instance.EnableAI;
+        NotifyAiEnabled();
     }
 
-    public void NotifyAiEnabled() => IsAIEnabled = AppSettings.Instance.EnableAI;
+    public void NotifyAiEnabled() {
+        IsAIEnabled = AppSettings.Instance.EnableAI;
+        AiProviderLabel = IsAIEnabled
+            ? (string.IsNullOrWhiteSpace(AppSettings.Instance.AIProvider) ? "AI" : AppSettings.Instance.AIProvider)
+            : "AI 关闭";
+    }
+
+    public void SetWorkspaceWidth(double width) {
+        if (width <= 0) {
+            return;
+        }
+
+        UseOverlayInspector = width < OverlayInspectorBreakpoint;
+    }
+
+    partial void OnUseOverlayInspectorChanged(bool value) {
+        OnPropertyChanged(nameof(InspectorDisplayMode));
+        IsInspectorOpen = !value;
+    }
+
+    partial void OnIsLoggedInChanged(bool value) => OnPropertyChanged(nameof(ConnectionStatusText));
+
+    partial void OnArticleContentChanged(string value) {
+        UpdateDocumentStats();
+        NotifyDocumentState();
+    }
+
+    partial void OnArticleKeywordsChanged(string value) => SyncKeywordItems();
+
+    partial void OnCategoriesChanged(ObservableCollection<Category> value) => RefreshFilteredCategories();
+
+    partial void OnCategorySearchTextChanged(string value) => RefreshFilteredCategories();
+
+    partial void OnHasLoadedArticleChanged(bool value) {
+        OnPropertyChanged(nameof(SaveStatusText));
+        if (value && !UseOverlayInspector) {
+            IsInspectorOpen = true;
+        }
+    }
 
     public void OpenStackPage(object page, string title) {
         ActiveStackPage = page;
@@ -136,11 +198,14 @@ public partial class PublishViewModel : PageViewModelBase {
     public async Task LoadFromPathAsync(string path, string? displayName = null) {
         try {
             ArticleContent = await File.ReadAllTextAsync(path, Encoding.UTF8);
+            _loadedContent = ArticleContent;
             ArticleTitle = Path.GetFileNameWithoutExtension(path);
             LastPublishResult = null;
             _currentFilePath = path;
             HasLoadedArticle = true;
-            SelectedTabIndex = 0;
+            IsPreviewVisible = false;
+            UpdateDocumentStats();
+            NotifyDocumentState();
 
             var name = displayName ?? Path.GetFileName(path);
             if (AppSettings.Instance.EnableAI) {
@@ -194,18 +259,23 @@ public partial class PublishViewModel : PageViewModelBase {
             return;
         }
 
-        SelectedTabIndex = 1;
-        StatusMessage = "正在预览文章";
+        IsPreviewVisible = !IsPreviewVisible;
+        StatusMessage = IsPreviewVisible ? "正在预览文章" : "已返回编辑";
     }
 
     [RelayCommand]
     private void ShowPublishResult() {
-        if (!HasPublishResult) {
+        if (Result == null) {
             StatusMessage = "暂无可查看的发布结果";
             return;
         }
 
-        SelectedTabIndex = 2;
+        OpenStackPage(Result, "发布结果");
+    }
+
+    [RelayCommand]
+    private void ToggleInspector() {
+        IsInspectorOpen = !IsInspectorOpen;
     }
 
     [RelayCommand]
@@ -247,10 +317,11 @@ public partial class PublishViewModel : PageViewModelBase {
                 StatusMessage = msg;
             });
 
-        if (result.Success && result.Post != null) {
+            if (result.Success && result.Post != null) {
             PublishProgress = 100;
             if (!string.IsNullOrWhiteSpace(result.Post.Content)) {
                 ArticleContent = result.Post.Content;
+                _loadedContent = ArticleContent;
                 StatusMessage = "发布完成，已用服务器内容更新编辑器";
             }
             else {
@@ -258,7 +329,9 @@ public partial class PublishViewModel : PageViewModelBase {
             }
 
             LastPublishResult = result;
-            SelectedTabIndex = 2;
+            if (Result != null) {
+                OpenStackPage(Result, "发布结果");
+            }
             GuiHost.ToastSuccess("发布完成", result.Post.Title ?? ArticleTitle);
         }
         else {
@@ -349,6 +422,94 @@ public partial class PublishViewModel : PageViewModelBase {
         }
 
         IsRefreshingCategories = false;
+    }
+
+    [RelayCommand]
+    private void SelectCategory(Category? category) {
+        SelectedCategory = category;
+    }
+
+    [RelayCommand]
+    private void ClearCategory() {
+        SelectedCategory = null;
+    }
+
+    [RelayCommand]
+    private void AddKeyword() {
+        var keyword = NewKeywordText.Trim();
+        if (string.IsNullOrWhiteSpace(keyword)) {
+            return;
+        }
+
+        var items = ParseKeywords(ArticleKeywords);
+        if (!items.Contains(keyword, StringComparer.OrdinalIgnoreCase)) {
+            items.Add(keyword);
+            ArticleKeywords = string.Join(", ", items);
+        }
+
+        NewKeywordText = string.Empty;
+    }
+
+    [RelayCommand]
+    private void RemoveKeyword(string? keyword) {
+        if (string.IsNullOrWhiteSpace(keyword)) {
+            return;
+        }
+
+        ArticleKeywords = string.Join(", ", ParseKeywords(ArticleKeywords)
+            .Where(item => !string.Equals(item, keyword, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    [RelayCommand]
+    private async Task ReloadDocument() {
+        if (string.IsNullOrWhiteSpace(_currentFilePath)) {
+            return;
+        }
+
+        await LoadFromPathAsync(_currentFilePath);
+    }
+
+    [RelayCommand]
+    private async Task PublishAndOpen() {
+        await Publish();
+        if (Result != null && !string.IsNullOrWhiteSpace(Result.ArticleUrl)) {
+            Result.OpenArticleCommand.Execute(null);
+        }
+    }
+
+    [RelayCommand]
+    private async Task CopyPublishLink() {
+        var url = LastPublishResult?.PostUrl;
+        if (string.IsNullOrWhiteSpace(url)) {
+            StatusMessage = "暂无发布链接";
+            GuiHost.ToastWarning("复制链接", "请先成功发布文章");
+            return;
+        }
+
+        try {
+            var clipboard = GuiHost.GetTopLevel()?.Clipboard;
+            if (clipboard == null) {
+                return;
+            }
+
+            await clipboard.SetTextAsync(url);
+            StatusMessage = "发布链接已复制";
+            GuiHost.ToastSuccess("复制链接", url);
+        }
+        catch (Exception ex) {
+            GuiHost.ToastError("复制失败", ex.Message);
+        }
+    }
+
+    [RelayCommand]
+    private async Task RefineTitleWithTemplate(string? templateKey) {
+        if (!string.IsNullOrWhiteSpace(templateKey)) {
+            SelectedTitleOptimizationTemplate = TitleOptimizationTemplates
+                .FirstOrDefault(item => item.Key == templateKey)
+                ?? SelectedTitleOptimizationTemplate;
+        }
+
+        await RefineTitleWithAI();
     }
 
     [RelayCommand]
@@ -490,5 +651,72 @@ public partial class PublishViewModel : PageViewModelBase {
         }
 
         return string.Empty;
+    }
+
+    private void UpdateDocumentStats() {
+        WordCount = string.IsNullOrEmpty(ArticleContent)
+            ? 0
+            : ArticleContent.Count(character => !char.IsWhiteSpace(character));
+        ImageCount = string.IsNullOrEmpty(ArticleContent)
+            ? 0
+            : Regex.Matches(ArticleContent, @"!\[[^\]]*\]\([^)]+\)").Count;
+    }
+
+    private void NotifyDocumentState() {
+        OnPropertyChanged(nameof(IsDocumentDirty));
+        OnPropertyChanged(nameof(DocumentFileName));
+        OnPropertyChanged(nameof(DocumentDisplayName));
+        OnPropertyChanged(nameof(SaveStatusText));
+    }
+
+    private void SyncKeywordItems() {
+        var parsed = ParseKeywords(ArticleKeywords);
+        if (KeywordItems.SequenceEqual(parsed, StringComparer.Ordinal)) {
+            return;
+        }
+
+        KeywordItems.Clear();
+        foreach (var item in parsed) {
+            KeywordItems.Add(item);
+        }
+    }
+
+    private void RefreshFilteredCategories() {
+        var flattened = FlattenCategories(Categories);
+        if (!string.IsNullOrWhiteSpace(CategorySearchText)) {
+            flattened = flattened
+                .Where(item => item.Text?.Contains(CategorySearchText, StringComparison.OrdinalIgnoreCase) == true)
+                .ToList();
+        }
+
+        FilteredCategories = new ObservableCollection<Category>(flattened);
+    }
+
+    private static List<Category> FlattenCategories(IEnumerable<Category>? categories) {
+        var result = new List<Category>();
+        if (categories == null) {
+            return result;
+        }
+
+        foreach (var category in categories) {
+            result.Add(category);
+            if (category.Nodes is { Count: > 0 }) {
+                result.AddRange(FlattenCategories(category.Nodes));
+            }
+        }
+
+        return result;
+    }
+
+    private static List<string> ParseKeywords(string? keywords) {
+        if (string.IsNullOrWhiteSpace(keywords)) {
+            return [];
+        }
+
+        return keywords
+            .Split([',', '，', ';', '；'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 }
