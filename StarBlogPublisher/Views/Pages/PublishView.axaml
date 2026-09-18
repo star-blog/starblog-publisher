@@ -4,27 +4,16 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:views="using:StarBlogPublisher.Views"
-             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:controls="using:StarBlogPublisher.Views.Controls"
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="650"
              x:Class="StarBlogPublisher.Views.PublishView"
              x:DataType="vm:PublishViewModel">
-    <DockPanel>
-        <ui:BreadcrumbBar DockPanel.Dock="Top"
-                          Margin="4,0,4,8"
-                          ItemsSource="{Binding Breadcrumbs}"
-                          IsVisible="{Binding IsStackNavigating}"
-                          ItemClicked="OnBreadcrumbItemClicked">
-            <ui:BreadcrumbBar.ItemTemplate>
-                <DataTemplate x:DataType="vm:PublishBreadcrumb">
-                    <TextBlock Text="{Binding Title}" />
-                </DataTemplate>
-            </ui:BreadcrumbBar.ItemTemplate>
-        </ui:BreadcrumbBar>
-
-        <Panel>
-            <views:PublishEditorView IsVisible="{Binding !IsStackNavigating}" />
-            <ContentControl Content="{Binding ActiveStackPage}"
-                            IsVisible="{Binding IsStackNavigating}" />
-        </Panel>
-    </DockPanel>
+    <controls:StackPageHost Breadcrumbs="{Binding Breadcrumbs}"
+                            IsNavigating="{Binding IsStackNavigating}"
+                            StackContent="{Binding ActiveStackPage}"
+                            BreadcrumbClicked="OnBreadcrumbClicked">
+        <controls:StackPageHost.RootContent>
+            <views:PublishEditorView />
+        </controls:StackPageHost.RootContent>
+    </controls:StackPageHost>
 </UserControl>

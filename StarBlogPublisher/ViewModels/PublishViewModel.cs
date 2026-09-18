@@ -32,7 +32,7 @@ public partial class PublishViewModel : PageViewModelBase {
         InitializeTitleOptimizationTemplates();
     }
 
-    public ObservableCollection<PublishBreadcrumb> Breadcrumbs { get; } = new();
+    public ObservableCollection<StackBreadcrumb> Breadcrumbs { get; } = new();
 
     public string? CurrentFilePath => _currentFilePath;
 
@@ -79,8 +79,8 @@ public partial class PublishViewModel : PageViewModelBase {
         ActiveStackPage = page;
         IsStackNavigating = true;
         Breadcrumbs.Clear();
-        Breadcrumbs.Add(new PublishBreadcrumb { Title = Title, Target = null });
-        Breadcrumbs.Add(new PublishBreadcrumb { Title = title, Target = page });
+        Breadcrumbs.Add(new StackBreadcrumb { Title = Title, Target = null });
+        Breadcrumbs.Add(new StackBreadcrumb { Title = title, Target = page });
     }
 
     public void NavigateBreadcrumbAt(int index) {

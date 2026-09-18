@@ -1,17 +1,16 @@
-using Avalonia.Controls;
-using FluentAvalonia.UI.Controls;
 using StarBlogPublisher.ViewModels;
+using StarBlogPublisher.Views.Controls;
 
 namespace StarBlogPublisher.Views;
 
-public partial class PublishView : UserControl {
+public partial class PublishView : Avalonia.Controls.UserControl {
     public PublishView() {
         InitializeComponent();
     }
 
-    private void OnBreadcrumbItemClicked(BreadcrumbBar sender, BreadcrumbBarItemClickedEventArgs args) {
+    private void OnBreadcrumbClicked(object? sender, int index) {
         if (DataContext is PublishViewModel vm) {
-            vm.NavigateBreadcrumbAt(args.Index);
+            vm.NavigateBreadcrumbAt(index);
         }
     }
 }

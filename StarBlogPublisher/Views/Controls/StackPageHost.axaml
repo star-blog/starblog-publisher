@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:local="using:StarBlogPublisher.Views.Controls"
+             xmlns:vm="using:StarBlogPublisher.ViewModels"
+             x:Class="StarBlogPublisher.Views.Controls.StackPageHost">
+    <DockPanel>
+        <ui:BreadcrumbBar DockPanel.Dock="Top"
+                          Margin="4,0,4,8"
+                          ItemsSource="{Binding Breadcrumbs, RelativeSource={RelativeSource AncestorType=local:StackPageHost}}"
+                          IsVisible="{Binding IsNavigating, RelativeSource={RelativeSource AncestorType=local:StackPageHost}}"
+                          ItemClicked="OnBreadcrumbItemClicked">
+            <ui:BreadcrumbBar.ItemTemplate>
+                <DataTemplate x:DataType="vm:StackBreadcrumb">
+                    <TextBlock Text="{Binding Title}" />
+                </DataTemplate>
+            </ui:BreadcrumbBar.ItemTemplate>
+        </ui:BreadcrumbBar>
+
+        <Panel>
+            <ContentControl Content="{Binding RootContent, RelativeSource={RelativeSource AncestorType=local:StackPageHost}}"
+                            IsVisible="{Binding !IsNavigating, RelativeSource={RelativeSource AncestorType=local:StackPageHost}}" />
+            <ContentControl Content="{Binding StackContent, RelativeSource={RelativeSource AncestorType=local:StackPageHost}}"
+                            IsVisible="{Binding IsNavigating, RelativeSource={RelativeSource AncestorType=local:StackPageHost}}" />
+        </Panel>
+    </DockPanel>
+</UserControl>
