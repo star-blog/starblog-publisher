@@ -32,6 +32,7 @@ public partial class SettingsViewModel : PageViewModelBase {
     [ObservableProperty] private bool _showPassword;
     [ObservableProperty] private bool _enableRegexImageParsing;
     [ObservableProperty] private string _weChatAppId = string.Empty;
+    [ObservableProperty] private string _weChatApiBaseUrl = WeChatHttpClientRegistration.OfficialApiBaseUrl;
     [ObservableProperty] private string _weChatAppSecret = string.Empty;
     [ObservableProperty] private string _weChatAuthor = string.Empty;
     [ObservableProperty] private string _weChatDefaultTheme = "newspaper";
@@ -83,6 +84,7 @@ public partial class SettingsViewModel : PageViewModelBase {
             BackendTimeout = settings.BackendTimeout;
             EnableRegexImageParsing = settings.EnableRegexImageParsing;
             WeChatAppId = settings.WeChatAppId;
+            WeChatApiBaseUrl = settings.WeChatApiBaseUrl;
             WeChatAppSecret = settings.WeChatAppSecret;
             WeChatAuthor = settings.WeChatAuthor;
             WeChatDefaultTheme = settings.WeChatDefaultTheme;
@@ -287,6 +289,11 @@ public partial class SettingsViewModel : PageViewModelBase {
     [RelayCommand]
     private void Save() {
         SaveProfileSettings();
+        if (!WeChatHttpClientRegistration.TryGetApiBaseAddress(WeChatApiBaseUrl, out var weChatApiBaseAddress)) {
+            GuiHost.ToastError("微信 API 地址无效", "请输入完整的 HTTP 或 HTTPS Base URL。");
+            return;
+        }
+
         var settings = AppSettings.Instance;
 
         settings.UseProxy = UseProxy;
@@ -301,6 +308,7 @@ public partial class SettingsViewModel : PageViewModelBase {
         settings.BackendTimeout = BackendTimeout;
         settings.EnableRegexImageParsing = EnableRegexImageParsing;
         settings.WeChatAppId = WeChatAppId;
+        settings.WeChatApiBaseUrl = weChatApiBaseAddress.AbsoluteUri;
         settings.WeChatAppSecret = WeChatAppSecret;
         settings.WeChatAuthor = WeChatAuthor;
         settings.WeChatDefaultTheme = WeChatDefaultTheme;

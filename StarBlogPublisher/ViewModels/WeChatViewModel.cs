@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -22,14 +23,16 @@ namespace StarBlogPublisher.ViewModels;
 
 public partial class WeChatViewModel : PageViewModelBase {
     private readonly WeChatFormattingService _formattingService = new();
-    private readonly WeChatDraftPublishApplicationService _publishService = new(AppSettings.Instance);
-    private readonly WeChatCoverImageService _coverImageService = new(AppSettings.Instance);
+    private readonly WeChatDraftPublishApplicationService _publishService;
+    private readonly WeChatCoverImageService _coverImageService;
     private string _markdown = string.Empty;
     private string _sourceFilePath = string.Empty;
     private string _summary = string.Empty;
     private string _previewPath = string.Empty;
 
-    public WeChatViewModel() : base("公众号排版", Icon.Mail) {
+    public WeChatViewModel(IHttpClientFactory httpClientFactory) : base("公众号排版", Icon.Mail) {
+        _publishService = new WeChatDraftPublishApplicationService(AppSettings.Instance, httpClientFactory);
+        _coverImageService = new WeChatCoverImageService(httpClientFactory);
         Themes = new ObservableCollection<WeChatTheme>(WeChatFormattingService.Themes);
         SelectedTheme = Themes.FirstOrDefault(theme => theme.Id == AppSettings.Instance.WeChatDefaultTheme) ?? Themes[0];
         SelectedCoverSource = CoverSources[0];

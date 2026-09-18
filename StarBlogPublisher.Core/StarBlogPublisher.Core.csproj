@@ -17,6 +17,7 @@
         <PackageReference Include="Markdown.ColorCode" Version="3.0.1" />
         <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
         <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.9.0" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
         <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.11" />
     </ItemGroup>
 </Project>

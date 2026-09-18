@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,10 +17,10 @@ namespace StarBlogPublisher.Services.Application;
 public sealed class WeChatCoverImageService {
     private const int MaxDownloadBytes = 10 * 1024 * 1024;
     private const int MaxCoverBytes = 2 * 1024 * 1024;
-    private readonly AppSettings _settings;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public WeChatCoverImageService(AppSettings settings) {
-        _settings = settings;
+    public WeChatCoverImageService(IHttpClientFactory httpClientFactory) {
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<string> PrepareLocalAsync(string path, int width, int height, CancellationToken cancellationToken = default) {
@@ -39,7 +38,7 @@ public sealed class WeChatCoverImageService {
             throw new InvalidOperationException("封面 URL 必须使用 HTTP 或 HTTPS");
         }
 
-        using var client = CreateHttpClient();
+        using var client = _httpClientFactory.CreateClient(WeChatHttpClientRegistration.ImageDownloadClientName);
         using var response = await client.GetAsync(source, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
         if (response.Content.Headers.ContentLength is > MaxDownloadBytes) {
@@ -87,13 +86,4 @@ public sealed class WeChatCoverImageService {
         return outputPath;
     }
 
-    private HttpClient CreateHttpClient() {
-        var handler = new HttpClientHandler();
-        if (_settings.UseProxy && !string.IsNullOrWhiteSpace(_settings.ProxyHost)) {
-            handler.Proxy = new WebProxy($"{_settings.ProxyType}://{_settings.ProxyHost}:{_settings.ProxyPort}");
-            handler.UseProxy = true;
-        }
-
-        return new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(_settings.BackendTimeout) };
-    }
 }

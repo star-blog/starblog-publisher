@@ -22,9 +22,11 @@ public sealed class WeChatDraftPublishApplicationService {
     private static readonly SemaphoreSlim TokenLock = new(1, 1);
     private static WeChatAccessToken? _tokenCache;
     private readonly AppSettings _settings;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public WeChatDraftPublishApplicationService(AppSettings settings) {
+    public WeChatDraftPublishApplicationService(AppSettings settings, IHttpClientFactory httpClientFactory) {
         _settings = settings;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<WeChatDraftPublishResult> PublishAsync(
@@ -72,7 +74,7 @@ public sealed class WeChatDraftPublishApplicationService {
     }
 
     private async Task<string> GetAccessTokenAsync() {
-        var cacheKey = $"{_settings.WeChatAppId}:{_settings.WeChatAppSecret}";
+        var cacheKey = $"{WeChatHttpClientRegistration.GetApiBaseAddress(_settings)}:{_settings.WeChatAppId}:{_settings.WeChatAppSecret}";
         if (_tokenCache is { } cached && cached.Key == cacheKey && cached.ExpiresAt > DateTimeOffset.UtcNow.AddMinutes(5)) {
             return cached.Token;
         }
@@ -83,8 +85,8 @@ public sealed class WeChatDraftPublishApplicationService {
                 return refreshedCache.Token;
             }
 
-            using var client = CreateHttpClient();
-            var url = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential"
+            using var client = _httpClientFactory.CreateClient(WeChatHttpClientRegistration.ApiClientName);
+            var url = "cgi-bin/token?grant_type=client_credential"
                 + $"&appid={Uri.EscapeDataString(_settings.WeChatAppId)}"
                 + $"&secret={Uri.EscapeDataString(_settings.WeChatAppSecret)}";
             using var response = await client.GetAsync(url);
@@ -130,7 +132,7 @@ public sealed class WeChatDraftPublishApplicationService {
                     }
 
                     ValidateImage(imagePath, MaxContentImageBytes, "正文图片");
-                    var uploadedUrl = await UploadImageAsync("https://api.weixin.qq.com/cgi-bin/media/uploadimg", token, imagePath, "url");
+                    var uploadedUrl = await UploadImageAsync("cgi-bin/media/uploadimg", token, imagePath, "url");
                     replacement = match.Value.Replace(match.Groups["src"].Value, WebUtility.HtmlEncode(uploadedUrl), StringComparison.Ordinal);
                     urls.Add(uploadedUrl);
                 }
@@ -151,11 +153,11 @@ public sealed class WeChatDraftPublishApplicationService {
 
     private async Task<string> UploadCoverAsync(string coverPath, string token) {
         ValidateImage(coverPath, MaxCoverImageBytes, "封面图");
-        return await UploadImageAsync("https://api.weixin.qq.com/cgi-bin/material/add_material?type=thumb", token, coverPath, "media_id");
+        return await UploadImageAsync("cgi-bin/material/add_material?type=thumb", token, coverPath, "media_id");
     }
 
     private async Task<string> UploadImageAsync(string endpoint, string token, string imagePath, string resultField) {
-        using var client = CreateHttpClient();
+        using var client = _httpClientFactory.CreateClient(WeChatHttpClientRegistration.ApiClientName);
         using var form = new MultipartFormDataContent();
         await using var file = File.OpenRead(imagePath);
         using var fileContent = new StreamContent(file);
@@ -176,7 +178,7 @@ public sealed class WeChatDraftPublishApplicationService {
         string thumbMediaId,
         string author,
         string summary) {
-        using var client = CreateHttpClient();
+        using var client = _httpClientFactory.CreateClient(WeChatHttpClientRegistration.ApiClientName);
         var payload = new {
             articles = new[] {
                 new {
@@ -192,16 +194,16 @@ public sealed class WeChatDraftPublishApplicationService {
             }
         };
         using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-        using var response = await client.PostAsync($"https://api.weixin.qq.com/cgi-bin/draft/add?access_token={Uri.EscapeDataString(token)}", content);
+        using var response = await client.PostAsync($"cgi-bin/draft/add?access_token={Uri.EscapeDataString(token)}", content);
         var document = await ReadResponseAsync(response);
         ThrowIfWeChatError(response, document, "创建公众号草稿");
         return GetRequiredString(document, "media_id", "创建公众号草稿");
     }
 
     private async Task VerifyDraftAsync(string token, string draftMediaId) {
-        using var client = CreateHttpClient();
+        using var client = _httpClientFactory.CreateClient(WeChatHttpClientRegistration.ApiClientName);
         using var content = new StringContent(JsonSerializer.Serialize(new { media_id = draftMediaId }), Encoding.UTF8, "application/json");
-        using var response = await client.PostAsync($"https://api.weixin.qq.com/cgi-bin/draft/get?access_token={Uri.EscapeDataString(token)}", content);
+        using var response = await client.PostAsync($"cgi-bin/draft/get?access_token={Uri.EscapeDataString(token)}", content);
         var document = await ReadResponseAsync(response);
         ThrowIfWeChatError(response, document, "校验公众号草稿");
         if (!document.RootElement.TryGetProperty("news_item", out _)) {
@@ -209,18 +211,8 @@ public sealed class WeChatDraftPublishApplicationService {
         }
     }
 
-    private HttpClient CreateHttpClient() {
-        var handler = new HttpClientHandler();
-        if (_settings.UseProxy && !string.IsNullOrWhiteSpace(_settings.ProxyHost)) {
-            handler.Proxy = new WebProxy($"{_settings.ProxyType}://{_settings.ProxyHost}:{_settings.ProxyPort}");
-            handler.UseProxy = true;
-        }
-
-        return new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(_settings.BackendTimeout) };
-    }
-
     private async Task<string?> DownloadExternalImageAsync(string url) {
-        using var client = CreateHttpClient();
+        using var client = _httpClientFactory.CreateClient(WeChatHttpClientRegistration.ImageDownloadClientName);
         using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
         response.EnsureSuccessStatusCode();
         var extension = response.Content.Headers.ContentType?.MediaType switch {

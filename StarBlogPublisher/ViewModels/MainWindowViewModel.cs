@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using Avalonia;
 using Avalonia.Styling;
 using Avalonia.Threading;
@@ -44,9 +45,11 @@ public partial class MainWindowViewModel : ViewModelBase {
     private const double CompactPaneLength = 48;
     private const double OpenPaneLength = 220;
 
-    public MainWindowViewModel() {
+    public MainWindowViewModel() : this(AppHttpClients.Factory) { }
+
+    internal MainWindowViewModel(IHttpClientFactory httpClientFactory) {
         PublishPage = new PublishViewModel(this);
-        WeChatPage = new WeChatViewModel();
+        WeChatPage = new WeChatViewModel(httpClientFactory);
         SettingsPage = new SettingsViewModel(this);
         AboutPage = new AboutViewModel();
         Pages = [PublishPage, WeChatPage, SettingsPage, AboutPage];
