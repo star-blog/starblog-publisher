@@ -1,6 +1,6 @@
 # StarBlog Publisher
 
-![FluentAvalonia](https://img.shields.io/badge/UI-FluentAvalonia%202.5-blue)
+![FluentAvalonia](https://img.shields.io/badge/UI-FluentAvalonia%203.1-blue)
 ![.NET](https://img.shields.io/badge/.NET-10.0-purple)
 ![License](https://img.shields.io/badge/License-Apache%202.0-green)
 ![CLI](https://img.shields.io/badge/CLI-Supported-brightgreen)
@@ -304,7 +304,7 @@ starblog mcp
 ## 技术栈
 
 - **框架**：.NET 10.0
-- **GUI**：Avalonia 11.3.20 + FluentAvaloniaUI 2.5.1 + CommunityToolkit.Mvvm 8.4.2
+- **GUI**：Avalonia 12.1.2 + FluentAvaloniaUI 3.1.0 + CommunityToolkit.Mvvm 8.4.2
 - **CLI**：System.CommandLine 2.0.11
 - **MCP**：ModelContextProtocol 2.2.0
 - **HTTP**：Refit 15.2.0
@@ -417,7 +417,7 @@ dotnet build.cs
 
 - 第一个发布的版本
 
-> 完整的开发日志请参阅 [Development Log](docs/development-log.md)。
+> 早期开发日志请参阅 [Development Log](docs/archived/development-log.md)。
 
 ---
 

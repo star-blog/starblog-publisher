@@ -1,5 +1,7 @@
 # GUI：FluentAvalonia 打磨基线
 
+> **版本更新。** 本文的视觉与交互准则仍适用，但其中 Avalonia 11 / FluentAvalonia 2 的版本和“后续议题”已过时。当前升级记录见 [Avalonia 12 升级记录](../2026-09-18-avalonia-12-upgrade.md)。
+
 本文件是 FluentAvalonia GUI 的当前维护基线，补充并取代 `2026-09-18-gui-fluentavalonia-status.md` 中已经完成的 P0/P1 待办。旧 SukiUI 文档仅保留信息架构参考，不再作为实现依据。
 
 ## 锁定范围

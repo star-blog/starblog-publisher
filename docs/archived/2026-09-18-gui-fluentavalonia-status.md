@@ -1,8 +1,10 @@
 # GUI：FluentAvalonia 迁移现状
 
+> **历史快照更新。** 本文记录的是 Avalonia 11 / FluentAvalonia 2 阶段的决策与待办；当前项目已升级到 Avalonia 12.1.2 和 FluentAvalonia 3.1.0。实际升级改动与后续写作参考见 [Avalonia 12 升级记录](../2026-09-18-avalonia-12-upgrade.md)。
+
 ## 背景
 
-2026-09-17 完成了以 SukiUI 为目标的 GUI 壳重构（见 `docs/2026-09-17-gui-sukiui-refactor.md`）。随后观感不理想，改为研究并落地 [FluentAvalonia](https://github.com/amwx/FluentAvalonia)（NuGet：`FluentAvaloniaUI`）。
+2026-09-17 完成了以 SukiUI 为目标的 GUI 壳重构（见 `docs/archived/2026-09-17-gui-sukiui-refactor.md`）。随后观感不理想，改为研究并落地 [FluentAvalonia](https://github.com/amwx/FluentAvalonia)（NuGet：`FluentAvaloniaUI`）。
 
 最初按「最小可运行原型」推进：先换主题与壳，验证 Windows Fluent 观感。为了去掉双主题并存、让应用真正能跑，实现上变成了**整库替换**：卸载 SukiUI，主路径改到 FluentAvalonia / Avalonia 控件。
 
@@ -109,8 +111,8 @@
 
 | 文档 | 角色 |
 |------|------|
-| `docs/2026-09-17-gui-sukiui-refactor.md` | **历史计划**：SukiUI 壳重构的目标与阶段。信息架构（单壳、四级侧栏、Dialog 不进侧栏）仍然有效；组件选型已过时。 |
-| `docs/2026-09-18-gui-fluentavalonia-status.md`（本文） | **现状结论**：FA 迁移完成度与剩余工作优先级。 |
+| `docs/archived/2026-09-17-gui-sukiui-refactor.md` | **历史计划**：SukiUI 壳重构的目标与阶段。信息架构（单壳、四级侧栏、Dialog 不进侧栏）仍然有效；组件选型已过时。 |
+| `docs/archived/2026-09-18-gui-fluentavalonia-status.md`（本文） | **历史快照**：FA 迁移完成度与当时的剩余工作优先级。 |
 
 建议后续若开打磨计划，新建 `docs/2026-….md`（Fluent 打磨 / 迁移计划），不要在 Suki 文档上继续追加「已改用 FA」的补丁叙述。
 
