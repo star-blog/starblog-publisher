@@ -165,15 +165,18 @@
                                         </Grid>
 
                                         <StackPanel IsVisible="{Binding IsRandomCoverSource}" Spacing="6">
-                                            <ComboBox ItemsSource="{Binding RandomCoverProviders}" SelectedItem="{Binding SelectedRandomCoverProvider}"
-                                                      DisplayMemberBinding="{Binding Name}" IsEnabled="{Binding !IsPreparingCover}"
-                                                      HorizontalAlignment="Stretch" />
-                                            <Button Command="{Binding PickRandomCoverCommand}" IsEnabled="{Binding !IsPreparingCover}">
-                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
-                                                    <fi:FluentIcon Icon="ArrowShuffle" IconVariant="Regular" FontSize="16" />
-                                                    <TextBlock Text="换一张封面" />
-                                                </StackPanel>
-                                            </Button>
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                                <ComboBox ItemsSource="{Binding RandomCoverProviders}" SelectedItem="{Binding SelectedRandomCoverProvider}"
+                                                          DisplayMemberBinding="{Binding Name}" IsEnabled="{Binding !IsPreparingCover}"
+                                                          HorizontalAlignment="Stretch" />
+                                                <Button Grid.Column="1" Command="{Binding PickRandomCoverCommand}"
+                                                        IsEnabled="{Binding !IsPreparingCover}" Classes="Compact">
+                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5">
+                                                        <fi:FluentIcon Icon="ArrowShuffle" IconVariant="Regular" FontSize="15" />
+                                                        <TextBlock Text="换一张" />
+                                                    </StackPanel>
+                                                </Button>
+                                            </Grid>
                                         </StackPanel>
 
                                         <TextBlock Text="获取后会按此规格居中裁切，并转换为可上传的 JPEG。" FontSize="11"
