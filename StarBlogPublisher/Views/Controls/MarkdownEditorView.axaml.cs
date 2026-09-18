@@ -132,14 +132,19 @@ public partial class MarkdownEditorView : UserControl {
             return;
         }
 
-        Editor.Foreground = BrushOrFallback("TextFillColorPrimaryBrush", Brushes.Black);
-        Editor.LineNumbersForeground = BrushOrFallback("TextFillColorSecondaryBrush", Brushes.Gray);
+        var isDark = IsDarkTheme();
+        Editor.Foreground = BrushOrFallback(
+            "TextFillColorPrimaryBrush", isDark ? Brushes.White : Brushes.Black);
+        Editor.LineNumbersForeground = BrushOrFallback(
+            "TextFillColorSecondaryBrush", isDark ? Brushes.LightGray : Brushes.Gray);
         Editor.TextArea.TextView.CurrentLineBackground =
-            new SolidColorBrush(IsDarkTheme() ? Color.FromArgb(36, 255, 255, 255) : Color.FromArgb(28, 0, 0, 0));
+            new SolidColorBrush(isDark ? Color.FromArgb(36, 255, 255, 255) : Color.FromArgb(28, 0, 0, 0));
     }
 
     private IBrush BrushOrFallback(string key, IBrush fallback) {
-        return this.FindResource(key) as IBrush ?? fallback;
+        return this.TryFindResource(key, ActualThemeVariant, out var resource) && resource is IBrush brush
+            ? brush
+            : fallback;
     }
 
     private bool IsDarkTheme() {
