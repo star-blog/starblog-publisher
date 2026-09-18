@@ -63,18 +63,31 @@
                                 </Grid>
                             </Border>
 
+                            <Border DockPanel.Dock="Bottom" Classes="InspectorActions">
+                                <Button Command="{Binding UploadDraftCommand}" IsEnabled="{Binding !IsPublishing}" Classes="Accent"
+                                        HorizontalAlignment="Stretch">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
+                                        <fi:FluentIcon Icon="ArrowUpload" IconVariant="Regular" FontSize="16" />
+                                        <TextBlock Text="上传至草稿箱" />
+                                    </StackPanel>
+                                </Button>
+                            </Border>
+
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled">
                                 <StackPanel Margin="16,12" Spacing="14">
                                     <StackPanel Spacing="6">
-                                        <TextBlock Text="主题" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="排版" FontSize="12" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="主题" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                         <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}"
-                                                  DisplayMemberBinding="{Binding Name}" />
+                                                  DisplayMemberBinding="{Binding Name}" HorizontalAlignment="Stretch" />
                                         <TextBlock Text="切换后会自动刷新预览。" FontSize="11"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
 
                                     <StackPanel Spacing="6">
-                                        <TextBlock Text="草稿箱封面" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="封面" FontSize="12" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                         <Border Height="{Binding CoverPreviewHeight}" CornerRadius="6" ClipToBounds="True"
                                                 Background="{DynamicResource ControlFillColorDefaultBrush}">
                                             <Grid>
@@ -95,8 +108,44 @@
                                                 </Border>
                                             </Grid>
                                         </Border>
-                                        <ComboBox ItemsSource="{Binding CoverSources}" SelectedItem="{Binding SelectedCoverSource}"
-                                                  DisplayMemberBinding="{Binding Name}" IsEnabled="{Binding !IsPreparingCover}" />
+
+                                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4" IsEnabled="{Binding !IsPreparingCover}">
+                                            <ToggleButton Classes="EditorMode" HorizontalAlignment="Stretch"
+                                                          IsChecked="{Binding IsLocalCoverSource, Mode=OneWay}"
+                                                          Command="{Binding SetCoverSourceCommand}" CommandParameter="local">
+                                                <TextBlock Text="本地" />
+                                            </ToggleButton>
+                                            <ToggleButton Grid.Column="1" Classes="EditorMode" HorizontalAlignment="Stretch"
+                                                          IsChecked="{Binding IsUrlCoverSource, Mode=OneWay}"
+                                                          Command="{Binding SetCoverSourceCommand}" CommandParameter="url">
+                                                <TextBlock Text="链接" />
+                                            </ToggleButton>
+                                            <ToggleButton Grid.Column="2" Classes="EditorMode" HorizontalAlignment="Stretch"
+                                                          IsChecked="{Binding IsRandomCoverSource, Mode=OneWay}"
+                                                          Command="{Binding SetCoverSourceCommand}" CommandParameter="random">
+                                                <TextBlock Text="随机" />
+                                            </ToggleButton>
+                                        </Grid>
+
+                                        <TextBlock Text="封面规格" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="4" IsEnabled="{Binding !IsPreparingCover}">
+                                            <ToggleButton Classes="EditorMode" HorizontalAlignment="Stretch"
+                                                          IsChecked="{Binding IsHeadlineCoverSize, Mode=OneWay}"
+                                                          Command="{Binding SetCoverSizeCommand}" CommandParameter="headline">
+                                                <StackPanel Spacing="1">
+                                                    <TextBlock Text="头条" FontSize="11" HorizontalAlignment="Center" />
+                                                    <TextBlock Text="900 × 383" FontSize="10" Opacity="0.7" HorizontalAlignment="Center" />
+                                                </StackPanel>
+                                            </ToggleButton>
+                                            <ToggleButton Grid.Column="1" Classes="EditorMode" HorizontalAlignment="Stretch"
+                                                          IsChecked="{Binding IsSecondaryCoverSize, Mode=OneWay}"
+                                                          Command="{Binding SetCoverSizeCommand}" CommandParameter="secondary">
+                                                <StackPanel Spacing="1">
+                                                    <TextBlock Text="次条" FontSize="11" HorizontalAlignment="Center" />
+                                                    <TextBlock Text="500 × 500" FontSize="10" Opacity="0.7" HorizontalAlignment="Center" />
+                                                </StackPanel>
+                                            </ToggleButton>
+                                        </Grid>
 
                                         <Button IsVisible="{Binding IsLocalCoverSource}" Command="{Binding SelectCoverCommand}"
                                                 IsEnabled="{Binding !IsPreparingCover}" HorizontalAlignment="Stretch">
@@ -117,38 +166,24 @@
 
                                         <StackPanel IsVisible="{Binding IsRandomCoverSource}" Spacing="6">
                                             <ComboBox ItemsSource="{Binding RandomCoverProviders}" SelectedItem="{Binding SelectedRandomCoverProvider}"
-                                                      DisplayMemberBinding="{Binding Name}" IsEnabled="{Binding !IsPreparingCover}" />
+                                                      DisplayMemberBinding="{Binding Name}" IsEnabled="{Binding !IsPreparingCover}"
+                                                      HorizontalAlignment="Stretch" />
                                             <Button Command="{Binding PickRandomCoverCommand}" IsEnabled="{Binding !IsPreparingCover}">
                                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
                                                     <fi:FluentIcon Icon="ArrowShuffle" IconVariant="Regular" FontSize="16" />
-                                                    <TextBlock Text="获取随机封面" />
+                                                    <TextBlock Text="换一张封面" />
                                                 </StackPanel>
                                             </Button>
                                         </StackPanel>
 
-                                        <TextBlock Text="封面规格" FontSize="11"
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                        <ComboBox ItemsSource="{Binding CoverSizes}" SelectedItem="{Binding SelectedCoverSize}"
-                                                  DisplayMemberBinding="{Binding Name}" IsEnabled="{Binding !IsPreparingCover}" />
-                                        <TextBlock Text="{Binding CoverSizeHint}" FontSize="11"
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                         <TextBlock Text="获取后会按此规格居中裁切，并转换为可上传的 JPEG。" FontSize="11"
                                                    TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
 
-                                    <Button Command="{Binding UploadDraftCommand}" IsEnabled="{Binding !IsPublishing}" Classes="Accent"
-                                            HorizontalAlignment="Stretch">
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
-                                            <fi:FluentIcon Icon="ArrowUpload" IconVariant="Regular" FontSize="16" />
-                                            <TextBlock Text="上传至草稿箱" />
-                                        </StackPanel>
-                                    </Button>
-
-                                    <StackPanel Spacing="5">
-                                        <TextBlock Text="来源" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    <Expander Header="来源信息">
                                         <TextBlock Text="{Binding MarkdownSourceMessage}" TextWrapping="Wrap" FontSize="11"
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                    </StackPanel>
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,8,0,0" />
+                                    </Expander>
 
                                     <Expander Header="HTML 源码">
                                         <TextBox Margin="0,8,0,0" Text="{Binding FormattedHtml}" IsReadOnly="True" AcceptsReturn="True"

@@ -44,8 +44,8 @@ public partial class WeChatViewModel : PageViewModelBase {
         new("random", "随机图片")
     ];
     public ObservableCollection<CoverSizePreset> CoverSizes { get; } = [
-        new("头条封面", 900, 383, "900 × 383 · 2.35:1"),
-        new("次条封面", 500, 500, "500 × 500 · 1:1")
+        new("headline", "头条封面", 900, 383, "900 × 383 · 2.35:1"),
+        new("secondary", "次条封面", 500, 500, "500 × 500 · 1:1")
     ];
     public ObservableCollection<RandomCoverProvider> RandomCoverProviders { get; } = [
         new("StarBlog PicLib", "https://blog.sblt.deali.cn:9000/Api/PicLib/Random/{0}/{1}?random={2}"),
@@ -79,6 +79,8 @@ public partial class WeChatViewModel : PageViewModelBase {
     public bool IsLocalCoverSource => SelectedCoverSource?.Id == "local";
     public bool IsUrlCoverSource => SelectedCoverSource?.Id == "url";
     public bool IsRandomCoverSource => SelectedCoverSource?.Id == "random";
+    public bool IsHeadlineCoverSize => SelectedCoverSize?.Id == "headline";
+    public bool IsSecondaryCoverSize => SelectedCoverSize?.Id == "secondary";
     public string CoverSizeHint => SelectedCoverSize?.Hint ?? string.Empty;
     public double CoverPreviewHeight => SelectedCoverSize == null
         ? 122
@@ -145,6 +147,8 @@ public partial class WeChatViewModel : PageViewModelBase {
     partial void OnSelectedCoverSizeChanged(CoverSizePreset? value) {
         OnPropertyChanged(nameof(CoverSizeHint));
         OnPropertyChanged(nameof(CoverPreviewHeight));
+        OnPropertyChanged(nameof(IsHeadlineCoverSize));
+        OnPropertyChanged(nameof(IsSecondaryCoverSize));
         if (!HasCover) return;
 
         CoverPath = string.Empty;
@@ -158,6 +162,16 @@ public partial class WeChatViewModel : PageViewModelBase {
 
     [RelayCommand]
     private void ToggleInspector() => IsInspectorOpen = !IsInspectorOpen;
+
+    [RelayCommand]
+    private void SetCoverSource(string sourceId) {
+        SelectedCoverSource = CoverSources.FirstOrDefault(source => source.Id == sourceId) ?? SelectedCoverSource;
+    }
+
+    [RelayCommand]
+    private void SetCoverSize(string sizeId) {
+        SelectedCoverSize = CoverSizes.FirstOrDefault(size => size.Id == sizeId) ?? SelectedCoverSize;
+    }
 
     [RelayCommand]
     private void GenerateFormat() {
@@ -440,7 +454,7 @@ public partial class WeChatViewModel : PageViewModelBase {
 
 public sealed record CoverSourceOption(string Id, string Name);
 
-public sealed record CoverSizePreset(string Name, int Width, int Height, string Hint);
+public sealed record CoverSizePreset(string Id, string Name, int Width, int Height, string Hint);
 
 public sealed record RandomCoverProvider(string Name, string UrlTemplate) {
     public Uri CreateUri(int width, int height, long nonce) =>
