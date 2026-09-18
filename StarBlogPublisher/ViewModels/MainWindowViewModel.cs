@@ -34,6 +34,7 @@ public partial class MainWindowViewModel : ViewModelBase {
     [ObservableProperty] private string _loginStatusMessage = "未登录";
     [ObservableProperty] private string _softwareVersion = ApplicationVersion.Value;
     [ObservableProperty] private string _chromeTitle = "StarBlog Publisher";
+    [ObservableProperty] private string _windowTitle = "StarBlog Publisher";
     [ObservableProperty] private bool _isPaneOpen;
     [ObservableProperty] private double _titleBarHeight = 32;
     [ObservableProperty] private Thickness _titleBarContentMargin = new(0, 32, 0, 0);
@@ -94,14 +95,23 @@ public partial class MainWindowViewModel : ViewModelBase {
     }
 
     public void RefreshChromeTitle() {
-        var title = ActivePage is PublishViewModel publish && publish.HasLoadedArticle
-            ? publish.DocumentDisplayName
-            : ActivePage is PublishViewModel
-                ? "StarBlog Publisher"
-                : ActivePage?.Title ?? "StarBlog Publisher";
+        string title;
+        if (ActivePage is PublishViewModel publish && publish.HasLoadedArticle) {
+            title = publish.DocumentDisplayName;
+        }
+        else if (ActivePage is PublishViewModel) {
+            title = "StarBlog Publisher";
+        }
+        else {
+            title = ActivePage?.Title ?? "StarBlog Publisher";
+        }
 
         if (ChromeTitle != title) {
             ChromeTitle = title;
+        }
+
+        if (WindowTitle != title) {
+            WindowTitle = title;
         }
     }
 
