@@ -80,7 +80,8 @@
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                         <TextBlock Text="主题" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                         <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}"
-                                                  DisplayMemberBinding="{Binding Name}" HorizontalAlignment="Stretch" />
+                                                  DisplayMemberBinding="{Binding Name}" HorizontalAlignment="Stretch"
+                                                  VerticalContentAlignment="Center" />
                                         <TextBlock Text="切换后会自动刷新预览。" FontSize="11"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
@@ -168,7 +169,7 @@
                                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
                                                 <ComboBox ItemsSource="{Binding RandomCoverProviders}" SelectedItem="{Binding SelectedRandomCoverProvider}"
                                                           DisplayMemberBinding="{Binding Name}" IsEnabled="{Binding !IsPreparingCover}"
-                                                          HorizontalAlignment="Stretch" />
+                                                          HorizontalAlignment="Stretch" VerticalContentAlignment="Center" />
                                                 <Button Grid.Column="1" Command="{Binding PickRandomCoverCommand}"
                                                         IsEnabled="{Binding !IsPreparingCover}" Classes="Compact" MinHeight="32">
                                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5">
