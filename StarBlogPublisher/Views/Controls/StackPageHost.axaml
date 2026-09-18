@@ -5,17 +5,17 @@
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              x:Class="StarBlogPublisher.Views.Controls.StackPageHost">
     <DockPanel>
-        <ui:BreadcrumbBar DockPanel.Dock="Top"
+        <ui:FABreadcrumbBar DockPanel.Dock="Top"
                           Margin="4,0,4,8"
                           ItemsSource="{Binding Breadcrumbs, RelativeSource={RelativeSource AncestorType=local:StackPageHost}}"
                           IsVisible="{Binding IsNavigating, RelativeSource={RelativeSource AncestorType=local:StackPageHost}}"
                           ItemClicked="OnBreadcrumbItemClicked">
-            <ui:BreadcrumbBar.ItemTemplate>
+            <ui:FABreadcrumbBar.ItemTemplate>
                 <DataTemplate x:DataType="vm:StackBreadcrumb">
                     <TextBlock Text="{Binding Title}" />
                 </DataTemplate>
-            </ui:BreadcrumbBar.ItemTemplate>
-        </ui:BreadcrumbBar>
+            </ui:FABreadcrumbBar.ItemTemplate>
+        </ui:FABreadcrumbBar>
 
         <Panel>
             <ContentControl Content="{Binding RootContent, RelativeSource={RelativeSource AncestorType=local:StackPageHost}}"

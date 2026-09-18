@@ -5,11 +5,10 @@ using StarBlogPublisher.ViewModels;
 
 namespace StarBlogPublisher.Views;
 
-public partial class MainWindow : AppWindow {
+public partial class MainWindow : FAAppWindow {
     public MainWindow() {
         InitializeComponent();
         TitleBar.ExtendsContentIntoTitleBar = true;
-        TitleBar.TitleBarHitTestType = TitleBarHitTestType.Complex;
         Opened += (_, _) => {
             GuiHost.SetFeedbackBar(FeedbackBar);
             SyncTitleBarMetrics();
@@ -19,7 +18,7 @@ public partial class MainWindow : AppWindow {
 
     private void SyncTitleBarMetrics() {
         if (DataContext is MainWindowViewModel vm) {
-            vm.UpdateTitleBarMetrics(TitleBar.Height, TitleBar.RightInset);
+            vm.UpdateTitleBarMetrics(TitleBar.Height, 0);
         }
     }
 }

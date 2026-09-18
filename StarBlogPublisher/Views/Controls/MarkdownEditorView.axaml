@@ -1,7 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:StarBlogPublisher.ViewModels"
-             xmlns:md="clr-namespace:Markdown.Avalonia;assembly=Markdown.Avalonia"
              xmlns:ae="https://github.com/avaloniaui/avaloniaedit"
              x:Class="StarBlogPublisher.Views.Controls.MarkdownEditorView"
              x:DataType="vm:PublishViewModel"
@@ -27,10 +26,8 @@
                       ResizeDirection="Columns"
                       IsVisible="{Binding IsSplitMode}" />
 
-        <ScrollViewer Grid.Column="2"
-                      Padding="28,16"
-                      IsVisible="{Binding IsPreviewPaneVisible}">
-            <md:MarkdownScrollViewer Markdown="{Binding ArticleContent}" />
-        </ScrollViewer>
+        <NativeWebView Grid.Column="2"
+                       Source="{Binding PreviewUri}"
+                       IsVisible="{Binding IsPreviewPaneVisible}" />
     </Grid>
 </UserControl>

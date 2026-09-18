@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Notifications;
-using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using Avalonia.Styling;
 using StarBlogPublisher.Services;
@@ -22,8 +21,6 @@ public partial class App : Application {
         _ = AppSettings.Instance;
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
-            DisableAvaloniaDataAnnotationValidation();
-
             RequestedThemeVariant = AppSettings.Instance.IsDarkTheme
                 ? ThemeVariant.Dark
                 : ThemeVariant.Light;
@@ -38,15 +35,6 @@ public partial class App : Application {
         }
 
         base.OnFrameworkInitializationCompleted();
-    }
-
-    private void DisableAvaloniaDataAnnotationValidation() {
-        var dataValidationPlugins = BindingPlugins.DataValidators;
-        var dataAnnotationsPlugin = dataValidationPlugins
-            .OfType<DataAnnotationsValidationPlugin>()
-            .FirstOrDefault();
-        if (dataAnnotationsPlugin != null)
-            dataValidationPlugins.Remove(dataAnnotationsPlugin);
     }
 
     private static async Task ShowSettingsLoadErrorAsync() {

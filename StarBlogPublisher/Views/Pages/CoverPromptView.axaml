@@ -33,7 +33,7 @@
             </Grid>
             <TextBlock Text="提示词" FontWeight="SemiBold" />
             <TextBox Text="{Binding GeneratedPrompt}" AcceptsReturn="True" TextWrapping="Wrap"
-                     MinLines="12" Watermark="生成的封面提示词会显示在这里" />
+                     MinLines="12" PlaceholderText="生成的封面提示词会显示在这里" />
         </StackPanel>
     </ScrollViewer>
 </UserControl>

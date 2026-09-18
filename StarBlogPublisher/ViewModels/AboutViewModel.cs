@@ -30,10 +30,10 @@ public partial class AboutViewModel : PageViewModelBase {
 
     [ObservableProperty] private ObservableCollection<TechStackItem> _techStack = [
         new() { Name = ".NET 10", Description = "提供跨平台应用运行时" },
-        new() { Name = "Avalonia UI 11.3", Description = "构建跨平台桌面界面" },
-        new() { Name = "FluentAvalonia 2.5", Description = "提供 Fluent 应用壳、侧栏与主题" },
+        new() { Name = "Avalonia UI 12.1", Description = "构建跨平台桌面界面" },
+        new() { Name = "FluentAvalonia 3.1", Description = "提供 Fluent 应用壳、侧栏与主题" },
         new() { Name = "CommunityToolkit.Mvvm", Description = "提供 MVVM 模式与命令绑定" },
-        new() { Name = "Markdig + Markdown.Avalonia", Description = "提供 Markdown 编辑与预览" },
+        new() { Name = "Markdig + Native WebView", Description = "提供 Markdown 编辑与高保真预览" },
         new() { Name = "Microsoft.Extensions.AI", Description = "集成多种 AI 服务" }
     ];
 

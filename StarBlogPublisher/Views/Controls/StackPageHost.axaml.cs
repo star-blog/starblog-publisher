@@ -44,6 +44,6 @@ public partial class StackPageHost : UserControl {
         set => SetValue(StackContentProperty, value);
     }
 
-    private void OnBreadcrumbItemClicked(BreadcrumbBar sender, BreadcrumbBarItemClickedEventArgs args) =>
+    private void OnBreadcrumbItemClicked(FABreadcrumbBar sender, FABreadcrumbBarItemClickedEventArgs args) =>
         BreadcrumbClicked?.Invoke(this, args.Index);
 }

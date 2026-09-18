@@ -160,7 +160,7 @@
                             </Button.Flyout>
                         </Button>
                     </Grid>
-                    <TextBox Text="{Binding ArticleTitle}" Watermark="文章标题" />
+                    <TextBox Text="{Binding ArticleTitle}" PlaceholderText="文章标题" />
                 </StackPanel>
 
                 <StackPanel Spacing="6">
@@ -211,7 +211,7 @@
                              TextWrapping="Wrap"
                              MinHeight="52"
                              MaxHeight="88"
-                             Watermark="文章摘要" />
+                             PlaceholderText="文章摘要" />
                 </StackPanel>
 
                 <StackPanel Spacing="6">
@@ -248,7 +248,7 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <TextBox Watermark="添加关键词，按 Enter"
+                    <TextBox PlaceholderText="添加关键词，按 Enter"
                              Text="{Binding NewKeywordText}">
                         <TextBox.KeyBindings>
                             <KeyBinding Gesture="Enter" Command="{Binding AddKeywordCommand}" />
@@ -268,7 +268,7 @@
                             <fi:FluentIcon Icon="Sparkle" IconVariant="Regular" FontSize="16" />
                         </Button>
                     </Grid>
-                    <TextBox Text="{Binding ArticleSlug}" Watermark="url-slug" />
+                    <TextBox Text="{Binding ArticleSlug}" PlaceholderText="url-slug" />
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>

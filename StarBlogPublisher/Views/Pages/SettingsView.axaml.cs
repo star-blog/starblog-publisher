@@ -8,7 +8,7 @@ public partial class SettingsView : UserControl {
         InitializeComponent();
     }
 
-    private void AutoCompleteBox_GotFocus(object? sender, GotFocusEventArgs e) {
+    private void AutoCompleteBox_GotFocus(object? sender, FocusChangedEventArgs e) {
         if (sender is AutoCompleteBox autoCompleteBox) {
             autoCompleteBox.IsDropDownOpen = true;
         }

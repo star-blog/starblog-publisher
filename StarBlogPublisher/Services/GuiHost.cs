@@ -11,10 +11,10 @@ using FluentAvalonia.UI.Controls;
 namespace StarBlogPublisher.Services;
 
 /// <summary>
-/// GUI feedback host: shell-level Fluent InfoBar plus Fluent dialogs owned by the main window.
+/// GUI feedback host: shell-level Fluent FAInfoBar plus Fluent dialogs owned by the main window.
 /// </summary>
 public static class GuiHost {
-    private static InfoBar? _feedbackBar;
+    private static FAInfoBar? _feedbackBar;
     private static DispatcherTimer? _feedbackTimer;
 
     public static TopLevel? GetTopLevel() {
@@ -26,21 +26,21 @@ public static class GuiHost {
     public static Window? GetMainWindow() => GetTopLevel() as Window;
 
     /// <summary>Registers the Fluent feedback surface after the main window has opened.</summary>
-    public static void SetFeedbackBar(InfoBar feedbackBar) => _feedbackBar = feedbackBar;
+    public static void SetFeedbackBar(FAInfoBar feedbackBar) => _feedbackBar = feedbackBar;
 
     public static void ToastInfo(string title, string content) =>
-        ShowFeedback(title, content, InfoBarSeverity.Informational, TimeSpan.FromSeconds(4));
+        ShowFeedback(title, content, FAInfoBarSeverity.Informational, TimeSpan.FromSeconds(4));
 
     public static void ToastSuccess(string title, string content) =>
-        ShowFeedback(title, content, InfoBarSeverity.Success, TimeSpan.FromSeconds(4));
+        ShowFeedback(title, content, FAInfoBarSeverity.Success, TimeSpan.FromSeconds(4));
 
     public static void ToastWarning(string title, string content) =>
-        ShowFeedback(title, content, InfoBarSeverity.Warning, TimeSpan.FromSeconds(5));
+        ShowFeedback(title, content, FAInfoBarSeverity.Warning, TimeSpan.FromSeconds(5));
 
     public static void ToastError(string title, string content) =>
-        ShowFeedback(title, content, InfoBarSeverity.Error, TimeSpan.FromSeconds(7));
+        ShowFeedback(title, content, FAInfoBarSeverity.Error, TimeSpan.FromSeconds(7));
 
-    private static void ShowFeedback(string title, string content, InfoBarSeverity severity, TimeSpan duration) {
+    private static void ShowFeedback(string title, string content, FAInfoBarSeverity severity, TimeSpan duration) {
         Dispatcher.UIThread.Post(() => {
             if (_feedbackBar == null) return;
 
@@ -65,36 +65,36 @@ public static class GuiHost {
 
     public static async Task AlertAsync(string title, string message, NotificationType type = NotificationType.Information) {
         var dialog = CreateTaskDialog(title, message);
-        dialog.Buttons.Add(new TaskDialogButton("确定", TaskDialogStandardResult.OK) { IsDefault = true });
+        dialog.Buttons.Add(new FATaskDialogButton("确定", FATaskDialogStandardResult.OK) { IsDefault = true });
         await dialog.ShowAsync();
     }
 
     public static async Task<bool> ConfirmAsync(string title, string message) {
         var dialog = CreateTaskDialog(title, message);
-        dialog.Buttons.Add(new TaskDialogButton("确定", TaskDialogStandardResult.OK) { IsDefault = true });
-        dialog.Buttons.Add(new TaskDialogButton("取消", TaskDialogStandardResult.Cancel));
+        dialog.Buttons.Add(new FATaskDialogButton("确定", FATaskDialogStandardResult.OK) { IsDefault = true });
+        dialog.Buttons.Add(new FATaskDialogButton("取消", FATaskDialogStandardResult.Cancel));
         var result = await dialog.ShowAsync();
-        return result is TaskDialogStandardResult.OK;
+        return result is FATaskDialogStandardResult.OK;
     }
 
     public static async Task<string?> PromptAsync(string title, string defaultText = "", string watermark = "") {
         var textBox = new TextBox {
             Text = defaultText,
-            Watermark = watermark,
+            PlaceholderText = watermark,
             MinWidth = 320
         };
-        var dialog = new ContentDialog {
+        var dialog = new FAContentDialog {
             Title = title,
             Content = textBox,
             PrimaryButtonText = "确定",
             CloseButtonText = "取消",
-            DefaultButton = ContentDialogButton.Primary
+            DefaultButton = FAContentDialogButton.Primary
         };
         var result = await dialog.ShowAsync(GetMainWindow());
-        return result == ContentDialogResult.Primary ? textBox.Text : null;
+        return result == FAContentDialogResult.Primary ? textBox.Text : null;
     }
 
-    private static TaskDialog CreateTaskDialog(string title, string message) => new() {
+    private static FATaskDialog CreateTaskDialog(string title, string message) => new() {
         Title = title,
         Header = title,
         SubHeader = message,
@@ -108,7 +108,7 @@ public static class GuiHost {
             control.DataContext = viewModel;
         }
 
-        var dialog = new ContentDialog {
+        var dialog = new FAContentDialog {
             Title = title,
             Content = new ScrollViewer {
                 Content = content,
@@ -120,7 +120,7 @@ public static class GuiHost {
             MaxHeight = 760,
             PrimaryButtonText = viewModel is IDialogHostAware ? null : closeText,
             CloseButtonText = viewModel is IDialogHostAware ? "取消" : null,
-            DefaultButton = ContentDialogButton.Primary
+            DefaultButton = FAContentDialogButton.Primary
         };
 
         if (viewModel is IDialogHostAware aware) {
