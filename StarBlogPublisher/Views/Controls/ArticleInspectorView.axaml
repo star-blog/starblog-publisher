@@ -164,34 +164,48 @@
                 </StackPanel>
 
                 <StackPanel Spacing="6">
-                    <TextBlock Text="分类" FontSize="12"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    <WrapPanel>
-                        <Border Classes="Chip" IsVisible="{Binding SelectedCategory, Converter={x:Static ObjectConverters.IsNotNull}}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <TextBlock Text="{Binding SelectedCategory.Text}" VerticalAlignment="Center" />
-                                <Button Classes="Transparent"
-                                        Padding="2"
-                                        Command="{Binding ClearCategoryCommand}"
-                                        ToolTip.Tip="清除分类">
-                                    <fi:FluentIcon Icon="Dismiss" IconVariant="Regular" FontSize="12" />
-                                </Button>
-                            </StackPanel>
-                        </Border>
-                        <Button Classes="Compact"
-                                IsVisible="{Binding IsLoggedIn}"
-                                HorizontalAlignment="Left">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <fi:FluentIcon Icon="Add" IconVariant="Regular" FontSize="14" />
-                                <TextBlock Text="选择分类" />
-                            </StackPanel>
-                            <Button.Flyout>
-                                <Flyout Placement="BottomEdgeAlignedLeft">
-                                    <controls:CategoryPicker />
-                                </Flyout>
-                            </Button.Flyout>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="分类" FontSize="12" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <Button Grid.Column="1"
+                                Classes="Icon"
+                                IsVisible="{Binding HasSelectedCategory}"
+                                Command="{Binding ClearCategoryCommand}"
+                                ToolTip.Tip="清除已选分类">
+                            <fi:FluentIcon Icon="Dismiss" IconVariant="Regular" FontSize="14" />
                         </Button>
-                    </WrapPanel>
+                    </Grid>
+                    <Button Classes="CategorySelector"
+                            IsVisible="{Binding IsLoggedIn}"
+                            HorizontalAlignment="Stretch"
+                            ToolTip.Tip="{Binding CategorySelectionHint}">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                            <Border Classes="CategorySelectorIcon">
+                                <fi:FluentIcon Icon="Tag" IconVariant="Regular" FontSize="16"
+                                               Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding CategorySelectionText}"
+                                           FontWeight="SemiBold"
+                                           TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding CategorySelectionHint}"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                            <fi:FluentIcon Grid.Column="2" Icon="ChevronDown" IconVariant="Regular"
+                                           FontSize="16" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </Grid>
+                        <Button.Flyout>
+                            <Flyout Placement="BottomEdgeAlignedLeft">
+                                <controls:CategoryPicker />
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                    <TextBlock Text="登录后可选择文章分类"
+                               IsVisible="{Binding !IsLoggedIn}"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
 
                 <StackPanel Spacing="6">

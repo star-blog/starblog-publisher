@@ -3,52 +3,76 @@
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:models="using:StarBlogPublisher.Models"
              xmlns:fi="using:FluentIcons.Avalonia.Fluent"
-             Width="300"
+             x:Name="PickerRoot"
+             Width="320"
              x:Class="StarBlogPublisher.Views.Controls.CategoryPicker"
              x:DataType="vm:PublishViewModel">
-    <DockPanel>
-        <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,8,0,0">
-            <Button HorizontalAlignment="Stretch"
-                    Command="{Binding ShowAddCategoryCommand}"
-                    IsEnabled="{Binding IsLoggedIn}">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <fi:FluentIcon Icon="Add" IconVariant="Regular" FontSize="14" />
-                    <TextBlock Text="新建分类" />
+    <UserControl.Styles>
+        <Style Selector="Button.CategoryPickerItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="6,5" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+    </UserControl.Styles>
+    <Border Classes="Card" Padding="12" CornerRadius="8">
+        <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="选择分类" FontWeight="SemiBold" />
+                    <TextBlock Text="选择后会保留在当前文章中"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
-            </Button>
-            <Button HorizontalAlignment="Stretch"
-                    Command="{Binding RefreshCategoriesCommand}"
-                    IsEnabled="{Binding IsLoggedIn}">
-                <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Grid.Column="1"
+                        Classes="Icon"
+                        Command="{Binding RefreshCategoriesCommand}"
+                        IsEnabled="{Binding !IsRefreshingCategories}"
+                        ToolTip.Tip="刷新分类">
                     <fi:FluentIcon Icon="ArrowClockwise" IconVariant="Regular" FontSize="14" />
-                    <TextBlock Text="刷新分类" />
-                </StackPanel>
-            </Button>
-            <Button HorizontalAlignment="Stretch"
-                    Command="{Binding ShowWordCloudCommand}"
-                    IsEnabled="{Binding IsLoggedIn}">
-                <StackPanel Orientation="Horizontal" Spacing="6">
+                </Button>
+            </Grid>
+
+            <TextBox Grid.Row="1"
+                     PlaceholderText="搜索分类"
+                     Text="{Binding CategorySearchText, Mode=TwoWay}" />
+
+            <TreeView x:Name="CategoryTree"
+                      Grid.Row="2"
+                      ItemsSource="{Binding FilteredCategories}"
+                      SelectedItem="{Binding SelectedCategory, Mode=OneWay}"
+                      MinHeight="180"
+                      MaxHeight="280">
+                <TreeView.ItemTemplate>
+                    <TreeDataTemplate DataType="models:Category" ItemsSource="{Binding Nodes}">
+                        <Button Classes="CategoryPickerItem"
+                                Command="{Binding #PickerRoot.((vm:PublishViewModel)DataContext).SelectCategoryCommand}"
+                                CommandParameter="{Binding}">
+                            <TextBlock Text="{Binding Text}" TextTrimming="CharacterEllipsis" />
+                        </Button>
+                    </TreeDataTemplate>
+                </TreeView.ItemTemplate>
+            </TreeView>
+
+            <Grid Grid.Row="3" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Button HorizontalAlignment="Stretch"
+                        Command="{Binding ShowAddCategoryCommand}"
+                        IsEnabled="{Binding IsLoggedIn}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <fi:FluentIcon Icon="Add" IconVariant="Regular" FontSize="14" />
+                        <TextBlock Text="新建分类" />
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="1"
+                        Classes="Icon"
+                        Command="{Binding ShowWordCloudCommand}"
+                        IsEnabled="{Binding IsLoggedIn}"
+                        ToolTip.Tip="查看词云">
                     <fi:FluentIcon Icon="Cloud" IconVariant="Regular" FontSize="14" />
-                    <TextBlock Text="查看词云" />
-                </StackPanel>
-            </Button>
-        </StackPanel>
-
-        <TextBox DockPanel.Dock="Top"
-                 PlaceholderText="搜索分类..."
-                 Text="{Binding CategorySearchText}"
-                 Margin="0,0,0,8" />
-
-        <TreeView x:Name="CategoryTree"
-                  ItemsSource="{Binding FilteredCategories}"
-                  SelectedItem="{Binding SelectedCategory}"
-                  MinHeight="180"
-                  MaxHeight="280">
-            <TreeView.ItemTemplate>
-                <TreeDataTemplate DataType="models:Category" ItemsSource="{Binding Nodes}">
-                    <TextBlock Text="{Binding Text}" TextTrimming="CharacterEllipsis" />
-                </TreeDataTemplate>
-            </TreeView.ItemTemplate>
-        </TreeView>
-    </DockPanel>
+                </Button>
+            </Grid>
+        </Grid>
+    </Border>
 </UserControl>

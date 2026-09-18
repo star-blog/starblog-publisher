@@ -132,6 +132,11 @@ public partial class PublishViewModel : PageViewModelBase {
         ? new GridLength(4)
         : new GridLength(0);
     public bool IsPublishReady => CanPublish;
+    public bool HasSelectedCategory => SelectedCategory != null;
+    public string CategorySelectionText => SelectedCategory?.Text ?? "选择文章分类";
+    public string CategorySelectionHint => SelectedCategory == null
+        ? "发布前请选择一个分类"
+        : "已选择，点击可更改分类";
     public bool ShowPublishBlockers => HasLoadedArticle && !IsPublishReady;
     public bool ShowReadyToPublish => IsPublishReady && !HasPublishResult;
     public bool NeedsLoginToPublish => HasLoadedArticle && !IsLoggedIn;
@@ -637,7 +642,12 @@ public partial class PublishViewModel : PageViewModelBase {
 
         var result = await _categoryService.GetCategoriesAsync();
         if (result.Success && result.Categories != null) {
+            var selectedCategoryId = SelectedCategory?.Id;
             Categories = new ObservableCollection<Category>(result.Categories);
+            // 分类树刷新会创建新的模型实例；按 ID 重新关联，避免当前选择变成过期引用。
+            SelectedCategory = selectedCategoryId is int id
+                ? FindCategoryById(Categories, id)
+                : null;
             StatusMessage = "分类刷新成功";
         }
         else {
@@ -1022,6 +1032,9 @@ public partial class PublishViewModel : PageViewModelBase {
             }
         }
 
+        OnPropertyChanged(nameof(HasSelectedCategory));
+        OnPropertyChanged(nameof(CategorySelectionText));
+        OnPropertyChanged(nameof(CategorySelectionHint));
         NotifyPublishReadiness();
     }
 
