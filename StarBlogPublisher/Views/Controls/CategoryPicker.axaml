@@ -24,6 +24,14 @@
                     <TextBlock Text="刷新分类" />
                 </StackPanel>
             </Button>
+            <Button HorizontalAlignment="Stretch"
+                    Command="{Binding ShowWordCloudCommand}"
+                    IsEnabled="{Binding IsLoggedIn}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <fi:FluentIcon Icon="Cloud" IconVariant="Regular" FontSize="14" />
+                    <TextBlock Text="查看词云" />
+                </StackPanel>
+            </Button>
         </StackPanel>
 
         <TextBox DockPanel.Dock="Top"
