@@ -21,7 +21,7 @@
                 Command="{Binding PublishCommand}"
                 IsEnabled="{Binding CanPublish}"
                 ToolTip.Tip="{Binding PublishReadinessText}">
-            <fi:FluentIcon Icon="ArrowUpload" IconVariant="Regular" FontSize="16" />
+            <fi:FluentIcon Icon="Send" IconVariant="Regular" FontSize="16" />
         </Button>
 
         <StackPanel Spacing="4" Margin="0,8,0,0">
