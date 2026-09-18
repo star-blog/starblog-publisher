@@ -16,6 +16,7 @@
 | FluentAvaloniaUI | 3.1.0 | Fluent 应用壳与控件 |
 | Avalonia.Controls.WebView | 12.1.0 | 跨平台原生 WebView 包 |
 | Avalonia.AvaloniaEdit | 12.0.0 | Markdown 源码编辑器 |
+| Optris.Icons.Avalonia.FontAwesome | 12.0.7 | Avalonia 12 兼容的 Font Awesome 品牌图标 |
 | .NET | 10.0 | 项目目标框架 |
 
 ## 本项目的迁移清单
@@ -92,3 +93,19 @@ dotnet test StarBlogPublisher.sln --no-build --no-restore -v:minimal
 
 - `aac9996 feat(gui): upgrade Avalonia 12 and native Markdown preview`
 - `9fa1ede fix(gui): restore title bar dragging`
+
+## 升级后的兼容性修复
+
+### Font Awesome 品牌图标
+
+原 `Projektanker.Icons.Avalonia.FontAwesome` 已停止维护，依赖 Avalonia 11，不能作为 Avalonia 12 的兼容依赖继续使用。项目改用 Optris 维护的 `Optris.Icons.Avalonia.FontAwesome` 12.0.7：其 C# 命名空间改为 `Optris.Icons.Avalonia`，但保留原 XAML XML 命名空间和 Font Awesome 图标标识。因此既有的微信品牌图标可以继续写为 `fa-brands fa-weixin`。
+
+### 标题栏与侧边栏命中测试
+
+`MainWindow` 的拖拽层仅覆盖标题栏中部，明确避开左侧 48px 导航面板切换按钮及右侧 140px 系统窗口按钮。这样既能拖动窗口，也不会再截获汉堡按钮中心的指针事件。
+
+手动验收时应确认：
+
+1. 左侧导航面板切换按钮的完整区域可点击。
+2. “公众号排版”能打开，且微信品牌图标正常显示。
+3. 标题文字和顶部空白区域仍可拖动窗口，系统窗口按钮仍可用。
