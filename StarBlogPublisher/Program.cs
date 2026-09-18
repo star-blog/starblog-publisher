@@ -18,14 +18,20 @@ sealed class Program {
     public static AppBuilder BuildAvaloniaApp() {
         IconProvider.Current.Register<FontAwesomeIconProvider>();
 
-        return AppBuilder.Configure<App>()
+        var appBuilder = AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
-            // Some Linux font backends can return an empty system default font.
-            // Use the Inter collection shipped with the app instead of $Default.
-            .With(new FontManagerOptions {
-                DefaultFamilyName = "fonts:Inter#Inter"
-            })
             .LogToTrace();
+
+        // FluentAvalonia's Windows controls are calibrated for Segoe UI / Segoe UI
+        // Variable Text. Keep that native typography on Windows; only use the bundled
+        // Inter font as a safe fallback for platforms whose system font lookup is unreliable.
+        if (!OperatingSystem.IsWindows()) {
+            appBuilder = appBuilder.With(new FontManagerOptions {
+                DefaultFamilyName = "fonts:Inter#Inter"
+            });
+        }
+
+        return appBuilder;
     }
 }
