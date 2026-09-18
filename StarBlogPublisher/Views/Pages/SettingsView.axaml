@@ -4,213 +4,186 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:converters="clr-namespace:StarBlogPublisher.Converters"
-             xmlns:i="https://github.com/projektanker/icons.avalonia"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
-             mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="800"
+             mc:Ignorable="d" d:DesignWidth="760" d:DesignHeight="800"
              x:Class="StarBlogPublisher.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
     <Grid RowDefinitions="*,Auto">
-        <TabControl Grid.Row="0" Margin="8,8,8,0">
-            <TabItem Header="后端">
-                <ScrollViewer>
-                    <Border Classes="Card" Margin="0,8,0,8">
-                        <StackPanel Spacing="12">
-                            <ToggleSwitch OnContent="使用自定义后端" OffContent="使用默认后端"
-                                          IsChecked="{Binding UseCustomBackend}" />
-                            <TextBlock Text="StarBlog后端URL" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            <TextBox Watermark="StarBlog后端URL" Text="{Binding BackendUrl}"
-                                     IsEnabled="{Binding UseCustomBackend}" />
-                            <TextBlock Text="用户名" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+        <ScrollViewer Grid.Row="0">
+            <StackPanel Classes="PageContent" MaxWidth="880" HorizontalAlignment="Center">
+                <StackPanel Spacing="4" Margin="0,0,0,8">
+                    <TextBlock Text="设置" FontSize="24" FontWeight="SemiBold" />
+                    <TextBlock Text="更改发布服务、公众号、外观与 AI 的本地配置。"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+
+                <ui:SettingsExpander Header="博客与登录"
+                                     Description="StarBlog 服务地址和登录凭据"
+                                     IsExpanded="True">
+                    <StackPanel Margin="0,12,0,0" Spacing="12">
+                        <ToggleSwitch OnContent="使用自定义后端" OffContent="使用默认后端"
+                                      IsChecked="{Binding UseCustomBackend}" />
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="StarBlog 后端 URL" />
+                            <TextBox Watermark="https://example.com"
+                                 Text="{Binding BackendUrl}"
+                                 IsEnabled="{Binding UseCustomBackend}" />
+                        </StackPanel>
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="用户名" />
                             <TextBox Watermark="用户名" Text="{Binding Username}" />
-                            <TextBlock Text="密码" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            <Grid ColumnDefinitions="*,Auto">
-                                <TextBox Grid.Column="0" Watermark="密码"
-                                         PasswordChar="{Binding ShowPassword, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
-                                         Text="{Binding Password}" />
-                                <Button Grid.Column="1" Margin="8,0,0,0" Command="{Binding TogglePasswordCommand}">
-                                    <ui:SymbolIcon Symbol="View" />
-                                </Button>
-                            </Grid>
-                            <TextBlock Text="超时时间（秒）" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            <NumericUpDown Watermark="超时时间（秒）" Value="{Binding BackendTimeout}" Minimum="1" Maximum="600" />
                         </StackPanel>
-                    </Border>
-                </ScrollViewer>
-            </TabItem>
+                        <TextBlock Text="密码" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <TextBox Grid.Column="0" Watermark="密码"
+                                     PasswordChar="{Binding ShowPassword, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
+                                     Text="{Binding Password}" />
+                            <Button Grid.Column="1" Classes="Icon" VerticalAlignment="Bottom"
+                                    ToolTip.Tip="显示或隐藏密码" Command="{Binding TogglePasswordCommand}">
+                                <ui:SymbolIcon Symbol="View" />
+                            </Button>
+                        </Grid>
+                        <ui:NumberBox Header="超时时间（秒）" Description="范围为 1 至 600 秒。"
+                                      Value="{Binding BackendTimeout}" Minimum="1" Maximum="600"
+                                      SmallChange="1" SpinButtonPlacementMode="Compact" />
+                    </StackPanel>
+                </ui:SettingsExpander>
 
-            <TabItem Header="代理">
-                <ScrollViewer>
-                    <Border Classes="Card" Margin="0,8,0,8">
-                        <StackPanel Spacing="12">
-                            <ToggleSwitch OnContent="启用代理" OffContent="禁用代理" IsChecked="{Binding UseProxy}" />
-                            <TextBlock Text="代理类型" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            <ComboBox SelectedItem="{Binding ProxyType}" IsEnabled="{Binding UseProxy}" Width="200"
-                                      HorizontalAlignment="Left">
-                                <x:String>http</x:String>
-                                <x:String>https</x:String>
-                                <x:String>socks5</x:String>
+                <ui:SettingsExpander Header="网络代理" Description="用于连接 StarBlog 与 AI 服务的代理设置">
+                    <StackPanel Margin="0,12,0,0" Spacing="12">
+                        <ToggleSwitch OnContent="启用代理" OffContent="禁用代理" IsChecked="{Binding UseProxy}" />
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="代理类型" />
+                            <ComboBox SelectedItem="{Binding ProxyType}"
+                                  IsEnabled="{Binding UseProxy}" Width="200" HorizontalAlignment="Left">
+                            <x:String>http</x:String>
+                            <x:String>https</x:String>
+                            <x:String>socks5</x:String>
                             </ComboBox>
-                            <TextBlock Text="代理主机名" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            <TextBox Watermark="代理主机名" Text="{Binding ProxyHost}" IsEnabled="{Binding UseProxy}" />
-                            <TextBlock Text="代理端口" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            <NumericUpDown Watermark="代理端口" Value="{Binding ProxyPort}" Minimum="1" Maximum="65535"
-                                           IsEnabled="{Binding UseProxy}" />
-                            <TextBlock Text="代理超时时间（秒）" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            <NumericUpDown Watermark="代理超时时间（秒）" Value="{Binding ProxyTimeout}" Minimum="1" Maximum="600"
-                                           IsEnabled="{Binding UseProxy}" />
                         </StackPanel>
-                    </Border>
-                </ScrollViewer>
-            </TabItem>
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="代理主机名" />
+                            <TextBox Watermark="代理主机名"
+                                 Text="{Binding ProxyHost}" IsEnabled="{Binding UseProxy}" />
+                        </StackPanel>
+                        <ui:NumberBox Header="代理端口" Value="{Binding ProxyPort}" Minimum="1" Maximum="65535"
+                                      SmallChange="1" SpinButtonPlacementMode="Compact" IsEnabled="{Binding UseProxy}" />
+                        <ui:NumberBox Header="代理超时时间（秒）" Value="{Binding ProxyTimeout}" Minimum="1" Maximum="600"
+                                      SmallChange="1" SpinButtonPlacementMode="Compact" IsEnabled="{Binding UseProxy}" />
+                    </StackPanel>
+                </ui:SettingsExpander>
 
-            <TabItem Header="微信">
-                <ScrollViewer>
-                    <Border Classes="Card" Margin="0,8,0,8">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="用于将排版后的文章上传到公众号草稿箱。AppSecret 会加密保存在本机。"
-                                       TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            <TextBlock Text="AppId" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <ui:SettingsExpander Header="微信公众号" Description="创建草稿箱所需的公众号凭据与默认值">
+                    <StackPanel Margin="0,12,0,0" Spacing="12">
+                        <TextBlock Text="AppSecret 会加密保存在本机；上传操作只会创建草稿，不会直接群发。"
+                                   TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="AppId" />
                             <TextBox Watermark="微信公众号 AppId" Text="{Binding WeChatAppId}" />
-                            <TextBlock Text="AppSecret" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            <Grid ColumnDefinitions="*,Auto">
-                                <TextBox Grid.Column="0" Watermark="微信公众号 AppSecret"
-                                         PasswordChar="{Binding ShowWeChatAppSecret, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
-                                         Text="{Binding WeChatAppSecret}" />
-                                <Button Grid.Column="1" Margin="8,0,0,0" Command="{Binding ToggleWeChatAppSecretCommand}">
-                                    <ui:SymbolIcon Symbol="View" />
-                                </Button>
-                            </Grid>
-                            <TextBlock Text="默认作者" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                        <TextBlock Text="AppSecret" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <TextBox Grid.Column="0" Watermark="微信公众号 AppSecret"
+                                     PasswordChar="{Binding ShowWeChatAppSecret, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
+                                     Text="{Binding WeChatAppSecret}" />
+                            <Button Grid.Column="1" Classes="Icon" VerticalAlignment="Bottom"
+                                    ToolTip.Tip="显示或隐藏 AppSecret" Command="{Binding ToggleWeChatAppSecretCommand}">
+                                <ui:SymbolIcon Symbol="View" />
+                            </Button>
+                        </Grid>
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="默认作者" />
                             <TextBox Watermark="可留空" Text="{Binding WeChatAuthor}" />
-                            <TextBlock Text="默认排版主题" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="默认排版主题" />
                             <ComboBox SelectedItem="{Binding WeChatDefaultTheme}">
-                                <x:String>newspaper</x:String>
-                                <x:String>warm-card</x:String>
-                                <x:String>ocean-card</x:String>
-                                <x:String>tech</x:String>
+                            <x:String>newspaper</x:String>
+                            <x:String>warm-card</x:String>
+                            <x:String>ocean-card</x:String>
+                            <x:String>tech</x:String>
                             </ComboBox>
                         </StackPanel>
-                    </Border>
-                </ScrollViewer>
-            </TabItem>
+                    </StackPanel>
+                </ui:SettingsExpander>
 
-            <TabItem Header="图片">
-                <ScrollViewer>
-                    <Border Classes="Card" Margin="0,8,0,8">
-                        <StackPanel Spacing="12">
-                            <ToggleSwitch OnContent="启用正则识别" OffContent="仅使用标准识别"
-                                          IsChecked="{Binding EnableRegexImageParsing}" />
-                            <TextBlock Text="启用后将使用正则表达式额外识别带空格的图片路径，但可能会过度识别。建议仅在需要处理特殊路径时开启。"
-                                       TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        </StackPanel>
-                    </Border>
-                </ScrollViewer>
-            </TabItem>
+                <ui:SettingsExpander Header="图片识别" Description="控制 Markdown 中本地图片路径的解析方式">
+                    <StackPanel Margin="0,12,0,0" Spacing="8">
+                        <ToggleSwitch OnContent="启用正则识别" OffContent="仅使用标准识别"
+                                      IsChecked="{Binding EnableRegexImageParsing}" />
+                        <TextBlock Text="启用后会额外识别带空格的路径，但可能产生误判；仅在处理特殊路径时开启。"
+                                   TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </ui:SettingsExpander>
 
-            <TabItem Header="外观">
-                <ScrollViewer>
-                    <Border Classes="Card" Margin="0,8,0,8">
-                        <StackPanel Spacing="12">
-                            <ToggleSwitch OnContent="深色模式" OffContent="浅色模式"
-                                          IsChecked="{Binding IsDarkTheme}" />
-                            <TextBlock Text="也可使用标题栏右侧的主题按钮切换。"
-                                       FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        </StackPanel>
-                    </Border>
-                </ScrollViewer>
-            </TabItem>
+                <ui:SettingsExpander Header="外观" Description="应用主题与显示偏好">
+                    <StackPanel Margin="0,12,0,0" Spacing="8">
+                        <ToggleSwitch OnContent="深色模式" OffContent="浅色模式" IsChecked="{Binding IsDarkTheme}" />
+                        <TextBlock Text="也可从左侧栏底部的主题按钮快速切换。"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </ui:SettingsExpander>
 
-            <TabItem Header="AI">
-                <ScrollViewer>
-                    <Border Classes="Card" Margin="0,8,0,8">
-                        <StackPanel Spacing="16">
-                            <ToggleSwitch OnContent="启用AI" OffContent="禁用AI" IsChecked="{Binding EnableAI}" />
-
-                            <TextBlock Text="配置文件" FontWeight="SemiBold" />
-                            <Grid ColumnDefinitions="*,Auto">
-                                <ComboBox Grid.Column="0" ItemsSource="{Binding Profiles}" SelectedItem="{Binding CurrentProfile}"
-                                          DisplayMemberBinding="{Binding Name}" />
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="8,0,0,0">
-                                    <Button ToolTip.Tip="添加新配置" Command="{Binding AddProfileCommand}" Classes="Icon">
-                                        <ui:SymbolIcon Symbol="Add" />
-                                    </Button>
-                                    <Button ToolTip.Tip="删除当前配置" Command="{Binding DeleteProfileCommand}" Classes="Icon">
-                                        <ui:SymbolIcon Symbol="Delete" />
-                                    </Button>
-                                    <Button ToolTip.Tip="重命名当前配置" Command="{Binding RenameProfileCommand}" Classes="Icon">
-                                        <ui:SymbolIcon Symbol="Edit" />
-                                    </Button>
-                                </StackPanel>
-                            </Grid>
-
-                            <TextBlock Text="选择AI提供商" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            <ComboBox SelectedValue="{Binding AIProvider}"
-                                      SelectedValueBinding="{Binding Name}"
-                                      ItemsSource="{Binding AIProviders}"
-                                      IsEnabled="{Binding EnableAI}"
-                                      Width="220" HorizontalAlignment="Left">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding DisplayName}" ToolTip.Tip="{Binding Description}" />
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-
-                            <TextBlock Text="API Key" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            <Grid ColumnDefinitions="*,Auto,Auto">
-                                <TextBox Grid.Column="0" Watermark="输入对应提供商的API密钥"
-                                         PasswordChar="{Binding ShowAIKey, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
-                                         Text="{Binding AIKey}" IsEnabled="{Binding EnableAI}" />
-                                <Button Grid.Column="1" Margin="8,0,0,0" Command="{Binding ToggleAIKeyCommand}"
-                                        IsEnabled="{Binding EnableAI}">
-                                    <ui:SymbolIcon Symbol="View" />
-                                </Button>
-                                <Button Grid.Column="2" Margin="8,0,0,0" Command="{Binding TestConnectionCommand}"
-                                        ToolTip.Tip="测试API连接并加载模型列表" IsEnabled="{Binding EnableAI}">
-                                    <StackPanel Orientation="Horizontal" Spacing="5">
-                                        <ui:SymbolIcon Symbol="Help" />
-                                        <TextBlock Text="测试" />
-                                    </StackPanel>
-                                </Button>
-                            </Grid>
-
-                            <TextBlock Text="模型名称" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            <Grid ColumnDefinitions="*,Auto">
-                                <AutoCompleteBox Grid.Column="0" Text="{Binding AIModel}"
-                                                 ItemsSource="{Binding AvailableModels}"
-                                                 IsEnabled="{Binding EnableAI}"
-                                                 MinimumPopulateDelay="0" MinimumPrefixLength="0"
-                                                 IsTextCompletionEnabled="True" FilterMode="ContainsOrdinal"
-                                                 GotFocus="AutoCompleteBox_GotFocus" />
-                                <ProgressBar Grid.Column="1" Margin="8,0,0,0" IsIndeterminate="True"
-                                             IsVisible="{Binding IsLoadingModels}" Width="20" Height="20" />
-                            </Grid>
-
-                            <StackPanel Spacing="5" IsVisible="{Binding IsCustomProvider}">
-                                <TextBlock Text="API Base URL" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                <TextBox Watermark="API Base URL (仅自定义提供商需要)" Text="{Binding AIApiBase}" />
+                <ui:SettingsExpander Header="AI 创作" Description="AI 提供商、模型与配置文件">
+                    <StackPanel Margin="0,12,0,0" Spacing="12">
+                        <ToggleSwitch OnContent="启用 AI" OffContent="禁用 AI" IsChecked="{Binding EnableAI}" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <TextBlock Text="配置文件" />
+                                <ComboBox ItemsSource="{Binding Profiles}"
+                                      SelectedItem="{Binding CurrentProfile}" DisplayMemberBinding="{Binding Name}" />
                             </StackPanel>
-
-                            <TextBlock Text="{Binding AiStatusMessage}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
+                                <Button Classes="Icon" ToolTip.Tip="添加新配置" Command="{Binding AddProfileCommand}"><ui:SymbolIcon Symbol="Add" /></Button>
+                                <Button Classes="Icon" ToolTip.Tip="删除当前配置" Command="{Binding DeleteProfileCommand}"><ui:SymbolIcon Symbol="Delete" /></Button>
+                                <Button Classes="Icon" ToolTip.Tip="重命名当前配置" Command="{Binding RenameProfileCommand}"><ui:SymbolIcon Symbol="Edit" /></Button>
+                            </StackPanel>
+                        </Grid>
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="AI 提供商" />
+                            <ComboBox SelectedValue="{Binding AIProvider}" SelectedValueBinding="{Binding Name}"
+                                  ItemsSource="{Binding AIProviders}" IsEnabled="{Binding EnableAI}" Width="260" HorizontalAlignment="Left">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate><TextBlock Text="{Binding DisplayName}" ToolTip.Tip="{Binding Description}" /></DataTemplate>
+                            </ComboBox.ItemTemplate>
+                            </ComboBox>
                         </StackPanel>
-                    </Border>
-                </ScrollViewer>
-            </TabItem>
-        </TabControl>
+                        <TextBlock Text="API Key" />
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                            <TextBox Grid.Column="0" Watermark="输入对应提供商的 API 密钥"
+                                     PasswordChar="{Binding ShowAIKey, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
+                                     Text="{Binding AIKey}" IsEnabled="{Binding EnableAI}" />
+                            <Button Grid.Column="1" Classes="Icon" VerticalAlignment="Bottom" Command="{Binding ToggleAIKeyCommand}"
+                                    ToolTip.Tip="显示或隐藏 API Key" IsEnabled="{Binding EnableAI}"><ui:SymbolIcon Symbol="View" /></Button>
+                            <Button Grid.Column="2" Classes="Compact" VerticalAlignment="Bottom" Command="{Binding TestConnectionCommand}"
+                                    ToolTip.Tip="测试 API 连接并加载模型列表" IsEnabled="{Binding EnableAI}">
+                                <StackPanel Orientation="Horizontal" Spacing="5"><ui:SymbolIcon Symbol="Help" /><TextBlock Text="测试" /></StackPanel>
+                            </Button>
+                        </Grid>
+                        <TextBlock Text="模型名称" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <AutoCompleteBox Grid.Column="0" Text="{Binding AIModel}" ItemsSource="{Binding AvailableModels}"
+                                             IsEnabled="{Binding EnableAI}" MinimumPopulateDelay="0" MinimumPrefixLength="0"
+                                             IsTextCompletionEnabled="True" FilterMode="ContainsOrdinal" GotFocus="AutoCompleteBox_GotFocus" />
+                            <ProgressBar Grid.Column="1" IsIndeterminate="True" IsVisible="{Binding IsLoadingModels}"
+                                         Width="24" Height="24" VerticalAlignment="Bottom" />
+                        </Grid>
+                        <StackPanel Spacing="4" IsVisible="{Binding IsCustomProvider}">
+                            <TextBlock Text="API Base URL" />
+                            <TextBox Watermark="仅自定义提供商需要" Text="{Binding AIApiBase}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding AiStatusMessage}" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </ui:SettingsExpander>
+            </StackPanel>
+        </ScrollViewer>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="16">
-            <Button Command="{Binding CancelCommand}">
-                <StackPanel Orientation="Horizontal" Spacing="5">
-                    <ui:SymbolIcon Symbol="Cancel" />
-                    <TextBlock Text="还原" />
-                </StackPanel>
-            </Button>
-            <Button Command="{Binding SaveCommand}" Classes="Accent">
-                <StackPanel Orientation="Horizontal" Spacing="5">
-                    <ui:SymbolIcon Symbol="Save" />
-                    <TextBlock Text="保存" />
-                </StackPanel>
-            </Button>
-        </StackPanel>
+        <Border Grid.Row="1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Padding="16,12">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                <Button Command="{Binding CancelCommand}"><StackPanel Orientation="Horizontal" Spacing="5"><ui:SymbolIcon Symbol="Cancel" /><TextBlock Text="还原" /></StackPanel></Button>
+                <Button Command="{Binding SaveCommand}" Classes="Accent"><StackPanel Orientation="Horizontal" Spacing="5"><ui:SymbolIcon Symbol="Save" /><TextBlock Text="保存更改" /></StackPanel></Button>
+            </StackPanel>
+        </Border>
     </Grid>
 </UserControl>
