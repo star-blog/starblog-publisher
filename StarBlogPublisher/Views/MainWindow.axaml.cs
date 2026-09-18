@@ -19,7 +19,7 @@ public partial class MainWindow : AppWindow {
 
     private void SyncTitleBarMetrics() {
         if (DataContext is MainWindowViewModel vm) {
-            vm.UpdateTitleBarMetrics(TitleBar.Height);
+            vm.UpdateTitleBarMetrics(TitleBar.Height, TitleBar.RightInset);
         }
     }
 }

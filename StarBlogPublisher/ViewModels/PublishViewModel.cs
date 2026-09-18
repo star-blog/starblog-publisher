@@ -157,6 +157,8 @@ public partial class PublishViewModel : PageViewModelBase {
         if (value && !UseOverlayInspector) {
             IsInspectorOpen = true;
         }
+
+        _shell.RefreshChromeTitle();
     }
 
     public void OpenStackPage(object page, string title) {
@@ -703,6 +705,7 @@ public partial class PublishViewModel : PageViewModelBase {
         OnPropertyChanged(nameof(DocumentFileName));
         OnPropertyChanged(nameof(DocumentDisplayName));
         OnPropertyChanged(nameof(SaveStatusText));
+        _shell.RefreshChromeTitle();
     }
 
     private void SyncKeywordItems() {

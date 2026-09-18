@@ -33,7 +33,15 @@ public partial class MainWindowViewModel : ViewModelBase {
     [ObservableProperty] private bool _hasCredentials;
     [ObservableProperty] private string _loginStatusMessage = "未登录";
     [ObservableProperty] private string _softwareVersion = ApplicationVersion.Value;
+    [ObservableProperty] private string _chromeTitle = "StarBlog Publisher";
+    [ObservableProperty] private bool _isPaneOpen;
+    [ObservableProperty] private double _titleBarHeight = 32;
     [ObservableProperty] private Thickness _titleBarContentMargin = new(0, 32, 0, 0);
+    [ObservableProperty] private Thickness _titleBarTitleMargin = new(60, 0, 140, 0);
+
+    private double _titleBarRightInset = 140;
+    private const double CompactPaneLength = 48;
+    private const double OpenPaneLength = 220;
 
     public MainWindowViewModel() {
         PublishPage = new PublishViewModel(this);
@@ -73,15 +81,35 @@ public partial class MainWindowViewModel : ViewModelBase {
         SettingsPage.SyncDarkTheme(isDark);
     }
 
-    public void UpdateTitleBarMetrics(double height) {
-        if (height <= 0) {
-            return;
+    public void UpdateTitleBarMetrics(double height, double rightInset) {
+        if (height > 0 && Math.Abs(TitleBarHeight - height) > 0.5) {
+            TitleBarHeight = height;
+            TitleBarContentMargin = new Thickness(0, height, 0, 0);
         }
 
-        var margin = new Thickness(0, height, 0, 0);
-        if (TitleBarContentMargin != margin) {
-            TitleBarContentMargin = margin;
+        if (rightInset > 0 && Math.Abs(_titleBarRightInset - rightInset) > 0.5) {
+            _titleBarRightInset = rightInset;
+            RefreshTitleBarTitleMargin();
         }
+    }
+
+    public void RefreshChromeTitle() {
+        var title = ActivePage is PublishViewModel publish && publish.HasLoadedArticle
+            ? publish.DocumentDisplayName
+            : ActivePage is PublishViewModel
+                ? "StarBlog Publisher"
+                : ActivePage?.Title ?? "StarBlog Publisher";
+
+        if (ChromeTitle != title) {
+            ChromeTitle = title;
+        }
+    }
+
+    partial void OnIsPaneOpenChanged(bool value) => RefreshTitleBarTitleMargin();
+
+    private void RefreshTitleBarTitleMargin() {
+        var left = (IsPaneOpen ? OpenPaneLength : CompactPaneLength) + 12;
+        TitleBarTitleMargin = new Thickness(left, 0, _titleBarRightInset, 0);
     }
 
     partial void OnActivePageChanged(PageViewModelBase? value) {
@@ -91,6 +119,8 @@ public partial class MainWindowViewModel : ViewModelBase {
         else if (value is SettingsViewModel settings) {
             settings.Reload();
         }
+
+        RefreshChromeTitle();
     }
 
     public void NavigateTo(PageViewModelBase page) {
