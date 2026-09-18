@@ -76,17 +76,23 @@
             </Grid>
         </ui:FANavigationView>
 
+        <!-- Keep the drag surface clear of the NavigationView pane toggle (48px) and
+             the system caption buttons (140px).  Otherwise it intercepts the centre
+             of the hamburger button when content is extended into the title bar. -->
         <Border Height="{Binding TitleBarHeight}"
+                Margin="48,0,140,0"
                 VerticalAlignment="Top"
                 Background="Transparent"
-                PointerPressed="OnTitleBarPointerPressed">
+                PointerPressed="OnTitleBarPointerPressed" />
+        <Border Height="{Binding TitleBarHeight}"
+                VerticalAlignment="Top"
+                IsHitTestVisible="False">
             <TextBlock Text="{Binding ChromeTitle}"
                        Margin="{Binding TitleBarTitleMargin}"
                        VerticalAlignment="Center"
                        FontSize="13"
                        FontWeight="SemiBold"
-                       TextTrimming="CharacterEllipsis"
-                       IsHitTestVisible="False" />
+                       TextTrimming="CharacterEllipsis" />
         </Border>
     </Panel>
 </wnd:FAAppWindow>
