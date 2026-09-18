@@ -52,6 +52,26 @@ public partial class MainWindowViewModel : ViewModelBase {
         IsDarkTheme = AppSettings.Instance.IsDarkTheme;
     }
 
+    /// <summary>
+    /// 应用并持久化全局主题，同时同步侧栏与设置页开关。
+    /// </summary>
+    public void ApplyTheme(bool isDark) {
+        if (Avalonia.Application.Current != null) {
+            Avalonia.Application.Current.RequestedThemeVariant = isDark ? ThemeVariant.Dark : ThemeVariant.Light;
+        }
+
+        if (IsDarkTheme != isDark) {
+            IsDarkTheme = isDark;
+        }
+
+        if (AppSettings.Instance.IsDarkTheme != isDark) {
+            AppSettings.Instance.IsDarkTheme = isDark;
+            AppSettings.Instance.Save();
+        }
+
+        SettingsPage.SyncDarkTheme(isDark);
+    }
+
     partial void OnActivePageChanged(PageViewModelBase? value) {
         if (value is WeChatViewModel weChat) {
             weChat.SyncFrom(PublishPage);
@@ -73,14 +93,7 @@ public partial class MainWindowViewModel : ViewModelBase {
     }
 
     [RelayCommand]
-    private void ToggleTheme() {
-        IsDarkTheme = !IsDarkTheme;
-        if (Avalonia.Application.Current != null) {
-            Avalonia.Application.Current.RequestedThemeVariant = IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
-        }
-        AppSettings.Instance.IsDarkTheme = IsDarkTheme;
-        AppSettings.Instance.Save();
-    }
+    private void ToggleTheme() => ApplyTheme(!IsDarkTheme);
 
     [RelayCommand]
     private async System.Threading.Tasks.Task Login() {

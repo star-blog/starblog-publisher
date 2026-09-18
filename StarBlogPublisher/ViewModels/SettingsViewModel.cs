@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using Avalonia.Styling;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
-using Avalonia;
 using FluentIcons.Common;
 
 namespace StarBlogPublisher.ViewModels;
@@ -39,6 +37,7 @@ public partial class SettingsViewModel : PageViewModelBase {
     [ObservableProperty] private string _weChatDefaultTheme = "newspaper";
     [ObservableProperty] private bool _showWeChatAppSecret;
     [ObservableProperty] private bool _isDarkTheme;
+    private bool _syncingTheme;
 
     [ObservableProperty] private bool _enableAI;
     [ObservableProperty] private string _AIProvider = "openai";
@@ -70,23 +69,43 @@ public partial class SettingsViewModel : PageViewModelBase {
 
     public void Reload() {
         var settings = AppSettings.Instance;
-        UseProxy = settings.UseProxy;
-        ProxyType = settings.ProxyType;
-        ProxyHost = settings.ProxyHost;
-        ProxyPort = settings.ProxyPort;
-        ProxyTimeout = settings.ProxyTimeout;
-        UseCustomBackend = settings.UseCustomBackend;
-        BackendUrl = settings.BackendUrl;
-        Username = settings.Username;
-        Password = settings.Password;
-        BackendTimeout = settings.BackendTimeout;
-        EnableRegexImageParsing = settings.EnableRegexImageParsing;
-        WeChatAppId = settings.WeChatAppId;
-        WeChatAppSecret = settings.WeChatAppSecret;
-        WeChatAuthor = settings.WeChatAuthor;
-        WeChatDefaultTheme = settings.WeChatDefaultTheme;
-        IsDarkTheme = settings.IsDarkTheme;
-        LoadProfiles();
+        _syncingTheme = true;
+        try {
+            UseProxy = settings.UseProxy;
+            ProxyType = settings.ProxyType;
+            ProxyHost = settings.ProxyHost;
+            ProxyPort = settings.ProxyPort;
+            ProxyTimeout = settings.ProxyTimeout;
+            UseCustomBackend = settings.UseCustomBackend;
+            BackendUrl = settings.BackendUrl;
+            Username = settings.Username;
+            Password = settings.Password;
+            BackendTimeout = settings.BackendTimeout;
+            EnableRegexImageParsing = settings.EnableRegexImageParsing;
+            WeChatAppId = settings.WeChatAppId;
+            WeChatAppSecret = settings.WeChatAppSecret;
+            WeChatAuthor = settings.WeChatAuthor;
+            WeChatDefaultTheme = settings.WeChatDefaultTheme;
+            IsDarkTheme = settings.IsDarkTheme;
+            LoadProfiles();
+        }
+        finally {
+            _syncingTheme = false;
+        }
+    }
+
+    /// <summary>
+    /// 从壳层同步主题开关，避免再次走持久化。
+    /// </summary>
+    public void SyncDarkTheme(bool isDark) {
+        if (IsDarkTheme == isDark) return;
+        _syncingTheme = true;
+        try {
+            IsDarkTheme = isDark;
+        }
+        finally {
+            _syncingTheme = false;
+        }
     }
 
     private void LoadProfiles() {
@@ -166,9 +185,8 @@ public partial class SettingsViewModel : PageViewModelBase {
     private void ToggleAIKey() => ShowAIKey = !ShowAIKey;
 
     partial void OnIsDarkThemeChanged(bool value) {
-        if (Avalonia.Application.Current != null) {
-            Avalonia.Application.Current.RequestedThemeVariant = value ? ThemeVariant.Dark : ThemeVariant.Light;
-        }
+        if (_syncingTheme) return;
+        _shell.ApplyTheme(value);
     }
 
     [RelayCommand]
@@ -303,9 +321,7 @@ public partial class SettingsViewModel : PageViewModelBase {
         }
 
         settings.Save();
-        if (Avalonia.Application.Current != null) {
-            Avalonia.Application.Current.RequestedThemeVariant = IsDarkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
-        }
+        _shell.ApplyTheme(IsDarkTheme);
         _shell.PublishPage.NotifyAiEnabled();
         GuiHost.ToastSuccess("设置", "已保存");
     }
