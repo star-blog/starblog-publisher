@@ -7,13 +7,77 @@
              x:Name="InspectorRoot"
              x:Class="StarBlogPublisher.Views.Controls.ArticleInspectorView"
              x:DataType="vm:PublishViewModel">
-    <ScrollViewer>
-        <StackPanel Margin="16,12" Spacing="14">
-            <TextBlock Text="文章属性"
-                       FontSize="13"
-                       FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom"
+                Padding="16,12"
+                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                BorderThickness="0,1,0,0">
+            <StackPanel Spacing="8">
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                    <Button Command="{Binding PreviewCommand}"
+                            IsEnabled="{Binding CanPublish}"
+                            HorizontalAlignment="Stretch">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <fi:FluentIcon Icon="Eye" IconVariant="Regular" FontSize="14" />
+                            <TextBlock Text="预览" />
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Column="1"
+                            Classes="Icon"
+                            IsVisible="{Binding IsAIEnabled}"
+                            ToolTip.Tip="AI">
+                        <fi:FluentIcon Icon="Sparkle" IconVariant="Regular" FontSize="16" />
+                        <Button.Flyout>
+                            <MenuFlyout Placement="TopEdgeAlignedRight">
+                                <MenuItem Header="生成摘要" Command="{Binding RegenerateDescriptionCommand}" />
+                                <MenuItem Header="生成关键词" Command="{Binding GenerateKeywordsCommand}" />
+                                <MenuItem Header="生成 Slug" Command="{Binding GenerateSlugCommand}" />
+                                <MenuItem Header="生成封面" Command="{Binding ShowCoverPromptCommand}" />
+                                <MenuItem Header="分析文章图片" Command="{Binding AnalyzeImagesCommand}" />
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button Grid.Column="2"
+                            Classes="Icon"
+                            ToolTip.Tip="更多">
+                        <fi:FluentIcon Icon="MoreHorizontal" IconVariant="Regular" FontSize="16" />
+                        <Button.Flyout>
+                            <MenuFlyout Placement="TopEdgeAlignedRight">
+                                <MenuItem Header="复制 Markdown" Command="{Binding CopyContentCommand}" />
+                                <MenuItem Header="生成封面" Command="{Binding ShowCoverPromptCommand}" />
+                                <MenuItem Header="分析图片" Command="{Binding AnalyzeImagesCommand}" />
+                                <MenuItem Header="重新加载" Command="{Binding ReloadDocumentCommand}" />
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
+                </Grid>
+                <SplitButton HorizontalAlignment="Stretch"
+                             HorizontalContentAlignment="Center"
+                             Content="发布"
+                             Classes="Accent"
+                             Command="{Binding PublishCommand}"
+                             IsEnabled="{Binding CanPublish}">
+                    <SplitButton.Flyout>
+                        <MenuFlyout Placement="Top">
+                            <MenuItem Header="发布到 StarBlog" Command="{Binding PublishCommand}" />
+                            <MenuItem Header="发布并打开网页" Command="{Binding PublishAndOpenCommand}" />
+                            <MenuItem Header="复制发布链接" Command="{Binding CopyPublishLinkCommand}" />
+                            <MenuItem Header="查看发布结果" Command="{Binding ShowPublishResultCommand}" />
+                        </MenuFlyout>
+                    </SplitButton.Flyout>
+                </SplitButton>
+            </StackPanel>
+        </Border>
 
+        <TextBlock DockPanel.Dock="Top"
+                   Text="文章属性"
+                   Margin="16,12,16,0"
+                   FontSize="13"
+                   FontWeight="SemiBold"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+        <ScrollViewer>
+            <StackPanel Margin="16,12" Spacing="14">
             <StackPanel Spacing="6">
                 <Grid ColumnDefinitions="*,Auto">
                     <TextBlock Text="标题" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -163,6 +227,7 @@
                     </Button>
                 </StackPanel>
             </Expander>
-        </StackPanel>
-    </ScrollViewer>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
 </UserControl>
