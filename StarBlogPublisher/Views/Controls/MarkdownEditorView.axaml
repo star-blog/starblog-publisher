@@ -2,15 +2,35 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:md="clr-namespace:Markdown.Avalonia;assembly=Markdown.Avalonia"
+             xmlns:ae="https://github.com/avaloniaui/avaloniaedit"
              x:Class="StarBlogPublisher.Views.Controls.MarkdownEditorView"
-             x:DataType="vm:PublishViewModel">
-    <Panel>
-        <TextBox Classes="WorkspaceEditor"
-                 Text="{Binding ArticleContent}"
-                 FontFamily="Cascadia Code, Consolas, Menlo, monospace"
-                 IsVisible="{Binding !IsPreviewVisible}" />
-        <ScrollViewer IsVisible="{Binding IsPreviewVisible}" Padding="20,12">
+             x:DataType="vm:PublishViewModel"
+             Focusable="True">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="{Binding SourceColumnWidth}" />
+            <ColumnDefinition Width="{Binding SplitterColumnWidth}" />
+            <ColumnDefinition Width="{Binding PreviewColumnWidth}" />
+        </Grid.ColumnDefinitions>
+        <ae:TextEditor x:Name="Editor"
+                       ShowLineNumbers="{Binding EditorShowLineNumbers}"
+                       WordWrap="{Binding EditorWordWrap}"
+                       FontFamily="Cascadia Code, Consolas, Menlo, monospace"
+                       FontSize="{Binding EditorFontSize}"
+                       HorizontalScrollBarVisibility="Auto"
+                       VerticalScrollBarVisibility="Auto"
+                       Padding="20,12"
+                       IsVisible="{Binding IsSourcePaneVisible}" />
+
+        <GridSplitter Grid.Column="1"
+                      Width="4"
+                      ResizeDirection="Columns"
+                      IsVisible="{Binding IsSplitMode}" />
+
+        <ScrollViewer Grid.Column="2"
+                      Padding="28,16"
+                      IsVisible="{Binding IsPreviewPaneVisible}">
             <md:MarkdownScrollViewer Markdown="{Binding ArticleContent}" />
         </ScrollViewer>
-    </Panel>
+    </Grid>
 </UserControl>

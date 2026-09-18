@@ -34,6 +34,7 @@
 
     <ItemGroup>
         <PackageReference Include="Avalonia" Version="11.3.20" />
+        <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.3.0" />
         <PackageReference Include="Avalonia.Browser" Version="11.3.20" />
         <PackageReference Include="Avalonia.Controls.ColorPicker" Version="11.3.20" />
         <PackageReference Include="Avalonia.Desktop" Version="11.3.20" />

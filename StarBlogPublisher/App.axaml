@@ -20,6 +20,7 @@
 
     <Application.Styles>
         <sty:FluentAvaloniaTheme PreferSystemTheme="False" PreferUserAccentColor="True" />
+        <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
         <Style Selector="Border.Card">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
@@ -46,6 +47,11 @@
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="Padding" Value="20,12" />
+        </Style>
+        <Style Selector="ToggleButton.EditorMode">
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="FontSize" Value="12" />
         </Style>
         <Style Selector="Border.Chip">
             <Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}" />

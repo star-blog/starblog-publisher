@@ -102,6 +102,11 @@ public class AppSettings {
     // 主题设置
     public bool IsDarkTheme { get; set; } = false;
 
+    // 编辑器
+    public double EditorFontSize { get; set; } = 14;
+    public bool EditorWordWrap { get; set; } = true;
+    public bool EditorShowLineNumbers { get; set; }
+
     // 图片解析设置
     /// <summary>
     /// 是否启用正则表达式方式识别图片路径（用于处理带空格的图片路径）
@@ -177,7 +182,10 @@ public class AppSettings {
             WeChatAuthor = snapshot.WeChatAuthor ?? string.Empty,
             WeChatDefaultTheme = snapshot.WeChatDefaultTheme ?? "newspaper",
             IsDarkTheme = snapshot.IsDarkTheme,
-            EnableRegexImageParsing = snapshot.EnableRegexImageParsing
+            EnableRegexImageParsing = snapshot.EnableRegexImageParsing,
+            EditorFontSize = snapshot.EditorFontSize is >= 11 and <= 22 ? snapshot.EditorFontSize : 14,
+            EditorWordWrap = snapshot.EditorWordWrap,
+            EditorShowLineNumbers = snapshot.EditorShowLineNumbers
         };
     }
 
@@ -205,7 +213,10 @@ public class AppSettings {
             WeChatAuthor = WeChatAuthor,
             WeChatDefaultTheme = WeChatDefaultTheme,
             IsDarkTheme = IsDarkTheme,
-            EnableRegexImageParsing = EnableRegexImageParsing
+            EnableRegexImageParsing = EnableRegexImageParsing,
+            EditorFontSize = EditorFontSize,
+            EditorWordWrap = EditorWordWrap,
+            EditorShowLineNumbers = EditorShowLineNumbers
         };
     }
 
@@ -292,6 +303,9 @@ internal sealed class AppSettingsSnapshot {
     public string WeChatDefaultTheme { get; set; } = "newspaper";
     public bool IsDarkTheme { get; set; }
     public bool EnableRegexImageParsing { get; set; }
+    public double EditorFontSize { get; set; } = 14;
+    public bool EditorWordWrap { get; set; } = true;
+    public bool EditorShowLineNumbers { get; set; }
 }
 
 internal sealed class LegacyAppSettingsSnapshot {
@@ -321,6 +335,9 @@ internal sealed class LegacyAppSettingsSnapshot {
     public string WeChatDefaultTheme { get; set; } = "newspaper";
     public bool IsDarkTheme { get; set; }
     public bool EnableRegexImageParsing { get; set; }
+    public double EditorFontSize { get; set; } = 14;
+    public bool EditorWordWrap { get; set; } = true;
+    public bool EditorShowLineNumbers { get; set; }
 
     public AppSettingsSnapshot ToAppSettingsSnapshot() {
         return new AppSettingsSnapshot {
@@ -352,7 +369,10 @@ internal sealed class LegacyAppSettingsSnapshot {
             WeChatAuthor = WeChatAuthor,
             WeChatDefaultTheme = WeChatDefaultTheme,
             IsDarkTheme = IsDarkTheme,
-            EnableRegexImageParsing = EnableRegexImageParsing
+            EnableRegexImageParsing = EnableRegexImageParsing,
+            EditorFontSize = EditorFontSize is >= 11 and <= 22 ? EditorFontSize : 14,
+            EditorWordWrap = EditorWordWrap,
+            EditorShowLineNumbers = EditorShowLineNumbers
         };
     }
 }

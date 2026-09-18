@@ -35,6 +35,7 @@ public partial class PublishViewModel : PageViewModelBase {
         IsAIEnabled = AppSettings.Instance.EnableAI;
         NotifyAiEnabled();
         InitializeTitleOptimizationTemplates();
+        LoadEditorPreferences();
     }
 
     public ObservableCollection<StackBreadcrumb> Breadcrumbs { get; } = new();
@@ -64,8 +65,11 @@ public partial class PublishViewModel : PageViewModelBase {
     [ObservableProperty] private PublishResult? _lastPublishResult;
     [ObservableProperty] private PublishResultViewModel? _result;
     [ObservableProperty] private bool _isLoggedIn;
-    [ObservableProperty] private bool _isPreviewVisible;
+    [ObservableProperty] private MarkdownEditorMode _editorMode = MarkdownEditorMode.Source;
     [ObservableProperty] private bool _isInspectorOpen = true;
+    [ObservableProperty] private double _editorFontSize = 14;
+    [ObservableProperty] private bool _editorWordWrap = true;
+    [ObservableProperty] private bool _editorShowLineNumbers;
     [ObservableProperty] private string _categorySearchText = "";
     [ObservableProperty] private string _newKeywordText = "";
     [ObservableProperty] private ObservableCollection<Category> _filteredCategories = new();
@@ -94,6 +98,35 @@ public partial class PublishViewModel : PageViewModelBase {
     public string ConnectionStatusText => IsLoggedIn ? "StarBlog ● Connected" : "StarBlog ○ Offline";
     public double InspectorPaneWidth => IsInspectorOpen ? 320 : 48;
     public bool CanPreview => HasLoadedArticle && !string.IsNullOrWhiteSpace(ArticleContent);
+    public bool IsSourcePaneVisible => EditorMode != MarkdownEditorMode.Preview;
+    public bool IsPreviewPaneVisible => EditorMode != MarkdownEditorMode.Source;
+    public bool IsSourceMode {
+        get => EditorMode == MarkdownEditorMode.Source;
+        set { if (value) EditorMode = MarkdownEditorMode.Source; }
+    }
+    public bool IsSplitMode {
+        get => EditorMode == MarkdownEditorMode.Split;
+        set { if (value) EditorMode = MarkdownEditorMode.Split; }
+    }
+    public bool IsPreviewMode {
+        get => EditorMode == MarkdownEditorMode.Preview;
+        set { if (value) EditorMode = MarkdownEditorMode.Preview; }
+    }
+    public bool IsPreviewVisible => EditorMode != MarkdownEditorMode.Source;
+    public string EditorModeLabel => EditorMode switch {
+        MarkdownEditorMode.Split => "分栏",
+        MarkdownEditorMode.Preview => "预览",
+        _ => "源码"
+    };
+    public GridLength SourceColumnWidth => EditorMode == MarkdownEditorMode.Preview
+        ? new GridLength(0)
+        : new GridLength(1, GridUnitType.Star);
+    public GridLength PreviewColumnWidth => EditorMode == MarkdownEditorMode.Source
+        ? new GridLength(0)
+        : new GridLength(1, GridUnitType.Star);
+    public GridLength SplitterColumnWidth => EditorMode == MarkdownEditorMode.Split
+        ? new GridLength(4)
+        : new GridLength(0);
     public bool IsPublishReady => CanPublish;
     public bool ShowPublishBlockers => HasLoadedArticle && !IsPublishReady;
     public bool ShowReadyToPublish => IsPublishReady && !HasPublishResult;
@@ -151,9 +184,40 @@ public partial class PublishViewModel : PageViewModelBase {
         NotifyPublishReadiness();
     }
 
-    partial void OnIsPreviewVisibleChanged(bool value) {
-        StatusMessage = value ? "正在预览文章" : "已返回编辑";
+    private bool _restoreInspectorAfterSplit;
+
+    partial void OnEditorModeChanged(MarkdownEditorMode oldValue, MarkdownEditorMode newValue) {
+        if (newValue == MarkdownEditorMode.Split && oldValue != MarkdownEditorMode.Split && IsInspectorOpen) {
+            _restoreInspectorAfterSplit = true;
+            IsInspectorOpen = false;
+        }
+        else if (oldValue == MarkdownEditorMode.Split && newValue != MarkdownEditorMode.Split && _restoreInspectorAfterSplit) {
+            IsInspectorOpen = true;
+            _restoreInspectorAfterSplit = false;
+        }
+
+        OnPropertyChanged(nameof(IsSourcePaneVisible));
+        OnPropertyChanged(nameof(IsPreviewPaneVisible));
+        OnPropertyChanged(nameof(IsSourceMode));
+        OnPropertyChanged(nameof(IsSplitMode));
+        OnPropertyChanged(nameof(IsPreviewMode));
+        OnPropertyChanged(nameof(IsPreviewVisible));
+        OnPropertyChanged(nameof(EditorModeLabel));
+        OnPropertyChanged(nameof(SourceColumnWidth));
+        OnPropertyChanged(nameof(PreviewColumnWidth));
+        OnPropertyChanged(nameof(SplitterColumnWidth));
+        StatusMessage = newValue switch {
+            MarkdownEditorMode.Split => "分栏预览",
+            MarkdownEditorMode.Preview => "正在预览文章",
+            _ => "已返回编辑"
+        };
     }
+
+    partial void OnEditorFontSizeChanged(double value) => PersistEditorPreferences();
+
+    partial void OnEditorWordWrapChanged(bool value) => PersistEditorPreferences();
+
+    partial void OnEditorShowLineNumbersChanged(bool value) => PersistEditorPreferences();
 
     partial void OnArticleTitleChanged(string value) => NotifyPublishReadiness();
 
@@ -252,7 +316,7 @@ public partial class PublishViewModel : PageViewModelBase {
             ArticleTitle = Path.GetFileNameWithoutExtension(path);
             LastPublishResult = null;
             _currentFilePath = path;
-            IsPreviewVisible = false;
+            EditorMode = MarkdownEditorMode.Source;
             UpdateDocumentStats();
             NotifyDocumentState();
             HasLoadedArticle = true;
@@ -308,7 +372,9 @@ public partial class PublishViewModel : PageViewModelBase {
             return;
         }
 
-        IsPreviewVisible = !IsPreviewVisible;
+        EditorMode = EditorMode == MarkdownEditorMode.Preview
+            ? MarkdownEditorMode.Source
+            : MarkdownEditorMode.Preview;
     }
 
     [RelayCommand]
@@ -348,6 +414,26 @@ public partial class PublishViewModel : PageViewModelBase {
     [RelayCommand]
     private void ToggleInspector() {
         IsInspectorOpen = !IsInspectorOpen;
+        if (EditorMode == MarkdownEditorMode.Split) {
+            _restoreInspectorAfterSplit = false;
+        }
+    }
+
+    [RelayCommand]
+    private void SetEditorMode(string? mode) {
+        if (Enum.TryParse<MarkdownEditorMode>(mode, out var parsed)) {
+            EditorMode = parsed;
+        }
+    }
+
+    [RelayCommand]
+    private void IncreaseEditorFontSize() {
+        EditorFontSize = Math.Min(22, EditorFontSize + 1);
+    }
+
+    [RelayCommand]
+    private void DecreaseEditorFontSize() {
+        EditorFontSize = Math.Max(11, EditorFontSize - 1);
     }
 
     [RelayCommand]
@@ -732,6 +818,29 @@ public partial class PublishViewModel : PageViewModelBase {
         ImageCount = string.IsNullOrEmpty(ArticleContent)
             ? 0
             : Regex.Matches(ArticleContent, @"!\[[^\]]*\]\([^)]+\)").Count;
+    }
+
+    private bool _loadingEditorPreferences;
+
+    private void LoadEditorPreferences() {
+        _loadingEditorPreferences = true;
+        var settings = AppSettings.Instance;
+        EditorFontSize = settings.EditorFontSize is >= 11 and <= 22 ? settings.EditorFontSize : 14;
+        EditorWordWrap = settings.EditorWordWrap;
+        EditorShowLineNumbers = settings.EditorShowLineNumbers;
+        _loadingEditorPreferences = false;
+    }
+
+    private void PersistEditorPreferences() {
+        if (_loadingEditorPreferences) {
+            return;
+        }
+
+        var settings = AppSettings.Instance;
+        settings.EditorFontSize = EditorFontSize;
+        settings.EditorWordWrap = EditorWordWrap;
+        settings.EditorShowLineNumbers = EditorShowLineNumbers;
+        settings.Save();
     }
 
     private void NotifyDocumentState() {
