@@ -30,7 +30,7 @@
         <Style Selector="Button.Compact">
             <Setter Property="Padding" Value="8,4" />
         </Style>
-        <Style Selector="Button.Icon">
+        <Style Selector="Button.Icon, ToggleButton.Icon">
             <Setter Property="MinWidth" Value="32" />
             <Setter Property="MinHeight" Value="32" />
             <Setter Property="Padding" Value="8" />
@@ -54,6 +54,11 @@
             <Setter Property="CornerRadius" Value="4" />
             <Setter Property="Padding" Value="8,4" />
             <Setter Property="Margin" Value="0,0,6,6" />
+        </Style>
+        <Style Selector="Border.InspectorActions">
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+            <Setter Property="Padding" Value="12,8" />
         </Style>
         <Style Selector="Border.StatusBar">
             <Setter Property="Background" Value="{DynamicResource SolidBackgroundFillColorTertiaryBrush}" />

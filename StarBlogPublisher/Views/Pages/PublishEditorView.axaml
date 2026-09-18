@@ -43,20 +43,19 @@
                    IsVisible="{Binding HasLoadedArticle}">
             <controls:WorkspaceStatusBar DockPanel.Dock="Bottom" />
 
-            <SplitView DisplayMode="{Binding InspectorDisplayMode}"
-                       PanePlacement="Right"
-                       OpenPaneLength="336"
-                       CompactPaneLength="0"
-                       IsPaneOpen="{Binding IsInspectorOpen, Mode=TwoWay}">
-                <SplitView.Pane>
-                    <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                            BorderThickness="1,0,0,0"
-                            Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}">
-                        <controls:ArticleInspectorView />
-                    </Border>
-                </SplitView.Pane>
+            <Grid ColumnDefinitions="*,Auto">
                 <controls:MarkdownEditorView />
-            </SplitView>
+                <Border Grid.Column="1"
+                        Width="{Binding InspectorPaneWidth}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1,0,0,0"
+                        Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}">
+                    <Panel>
+                        <controls:ArticleInspectorView IsVisible="{Binding IsInspectorOpen}" />
+                        <controls:InspectorRail IsVisible="{Binding !IsInspectorOpen}" />
+                    </Panel>
+                </Border>
+            </Grid>
         </DockPanel>
 
         <controls:BusyOverlay IsBusy="{Binding IsWorkspaceBusy}"

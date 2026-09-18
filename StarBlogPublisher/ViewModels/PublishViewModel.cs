@@ -26,7 +26,6 @@ public partial class PublishViewModel : PageViewModelBase {
     private readonly AiApplicationService _aiService;
     private string? _currentFilePath;
     private string _loadedContent = "";
-    private const double OverlayInspectorBreakpoint = 1080;
 
     public PublishViewModel(MainWindowViewModel shell) : base("发布", Icon.Pen) {
         _shell = shell;
@@ -66,7 +65,6 @@ public partial class PublishViewModel : PageViewModelBase {
     [ObservableProperty] private PublishResultViewModel? _result;
     [ObservableProperty] private bool _isLoggedIn;
     [ObservableProperty] private bool _isPreviewVisible;
-    [ObservableProperty] private bool _useOverlayInspector;
     [ObservableProperty] private bool _isInspectorOpen = true;
     [ObservableProperty] private string _categorySearchText = "";
     [ObservableProperty] private string _newKeywordText = "";
@@ -90,21 +88,53 @@ public partial class PublishViewModel : PageViewModelBase {
     public string DocumentDisplayName => IsDocumentDirty ? $"{DocumentFileName} •" : DocumentFileName;
     public string SaveStatusText =>
         !HasLoadedArticle ? "未打开"
-        : IsPreparingAi ? "正在生成摘要"
+        : IsPreparingAi ? "正在生成元数据"
         : IsDocumentDirty ? "已修改"
         : "已加载";
     public string ConnectionStatusText => IsLoggedIn ? "StarBlog ● Connected" : "StarBlog ○ Offline";
-    public SplitViewDisplayMode InspectorDisplayMode =>
-        UseOverlayInspector ? SplitViewDisplayMode.Overlay : SplitViewDisplayMode.Inline;
+    public double InspectorPaneWidth => IsInspectorOpen ? 320 : 48;
+    public bool CanPreview => HasLoadedArticle && !string.IsNullOrWhiteSpace(ArticleContent);
+    public bool IsPublishReady => CanPublish;
+    public bool ShowPublishBlockers => HasLoadedArticle && !IsPublishReady;
+    public bool ShowReadyToPublish => IsPublishReady && !HasPublishResult;
+    public bool NeedsLoginToPublish => HasLoadedArticle && !IsLoggedIn;
+    public string PublishReadinessText {
+        get {
+            if (!HasLoadedArticle) {
+                return "未打开文件";
+            }
+
+            var missing = new List<string>();
+            if (!IsLoggedIn) {
+                missing.Add("登录");
+            }
+
+            if (SelectedCategory == null) {
+                missing.Add("分类");
+            }
+
+            if (string.IsNullOrWhiteSpace(ArticleTitle)) {
+                missing.Add("标题");
+            }
+
+            if (string.IsNullOrWhiteSpace(ArticleContent) || string.IsNullOrWhiteSpace(_currentFilePath)) {
+                missing.Add("正文");
+            }
+
+            return missing.Count == 0 ? "可发布" : $"还差：{string.Join(" · ", missing)}";
+        }
+    }
 
     partial void OnLastPublishResultChanged(PublishResult? value) {
         OnPropertyChanged(nameof(HasPublishResult));
+        OnPropertyChanged(nameof(ShowReadyToPublish));
         Result = value is { Success: true } ? new PublishResultViewModel(value) : null;
     }
 
     public void NotifyLoginState(bool isLoggedIn) {
         IsLoggedIn = isLoggedIn;
         NotifyAiEnabled();
+        NotifyPublishReadiness();
     }
 
     public void NotifyAiEnabled() {
@@ -114,22 +144,18 @@ public partial class PublishViewModel : PageViewModelBase {
             : "AI 关闭";
     }
 
-    public void SetWorkspaceWidth(double width) {
-        if (width <= 0) {
-            return;
-        }
+    partial void OnIsInspectorOpenChanged(bool value) => OnPropertyChanged(nameof(InspectorPaneWidth));
 
-        UseOverlayInspector = width < OverlayInspectorBreakpoint;
+    partial void OnIsLoggedInChanged(bool value) {
+        OnPropertyChanged(nameof(ConnectionStatusText));
+        NotifyPublishReadiness();
     }
 
-    partial void OnUseOverlayInspectorChanged(bool value) {
-        OnPropertyChanged(nameof(InspectorDisplayMode));
-        IsInspectorOpen = !value;
+    partial void OnIsPreviewVisibleChanged(bool value) {
+        StatusMessage = value ? "正在预览文章" : "已返回编辑";
     }
 
-    partial void OnIsLoggedInChanged(bool value) => OnPropertyChanged(nameof(ConnectionStatusText));
-
-    partial void OnIsPublishingChanged(bool value) => NotifyWorkspaceBusy();
+    partial void OnArticleTitleChanged(string value) => NotifyPublishReadiness();
 
     partial void OnIsLoadingDocumentChanged(bool value) => NotifyWorkspaceBusy();
 
@@ -154,10 +180,8 @@ public partial class PublishViewModel : PageViewModelBase {
 
     partial void OnHasLoadedArticleChanged(bool value) {
         OnPropertyChanged(nameof(SaveStatusText));
-        if (value && !UseOverlayInspector) {
-            IsInspectorOpen = true;
-        }
-
+        OnPropertyChanged(nameof(CanPreview));
+        NotifyPublishReadiness();
         _shell.RefreshChromeTitle();
     }
 
@@ -232,29 +256,16 @@ public partial class PublishViewModel : PageViewModelBase {
             UpdateDocumentStats();
             NotifyDocumentState();
             HasLoadedArticle = true;
-            CanPublish = true;
+            ArticleDescription = ArticleContent.Limit(100);
+            ArticleSlug = string.Empty;
+            ArticleKeywords = string.Empty;
+            NotifyPublishReadiness();
 
             var name = displayName ?? Path.GetFileName(path);
-            if (!AppSettings.Instance.EnableAI) {
-                ArticleDescription = ArticleContent.Limit(100);
-            }
-
             StatusMessage = $"已加载文件: {name}";
             GuiHost.ToastSuccess("已加载", name);
             IsLoadingDocument = false;
             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Loaded);
-
-            if (AppSettings.Instance.EnableAI) {
-                IsPreparingAi = true;
-                try {
-                    await RegenerateDescription();
-                    await GenerateSlug();
-                    StatusMessage = $"已加载文件: {name}（AI已生成简介和Slug）";
-                }
-                finally {
-                    IsPreparingAi = false;
-                }
-            }
         }
         catch (Exception ex) {
             StatusMessage = "文件加载失败";
@@ -291,14 +302,37 @@ public partial class PublishViewModel : PageViewModelBase {
 
     [RelayCommand]
     private void Preview() {
-        if (string.IsNullOrEmpty(ArticleContent)) {
+        if (!CanPreview) {
             StatusMessage = "没有内容可预览";
             GuiHost.ToastWarning("预览", "没有内容可预览");
             return;
         }
 
         IsPreviewVisible = !IsPreviewVisible;
-        StatusMessage = IsPreviewVisible ? "正在预览文章" : "已返回编辑";
+    }
+
+    [RelayCommand]
+    private async Task RequestLogin() {
+        await _shell.EnsureLoggedInAsync();
+    }
+
+    [RelayCommand]
+    private async Task FillMetadata() {
+        if (!_aiService.IsEnabled || string.IsNullOrEmpty(ArticleContent)) {
+            StatusMessage = "无法补全元数据：AI功能未启用或文章内容为空";
+            return;
+        }
+
+        IsPreparingAi = true;
+        try {
+            await RegenerateDescription();
+            await GenerateKeywords();
+            await GenerateSlug();
+            StatusMessage = "AI已补全摘要、关键词和 Slug";
+        }
+        finally {
+            IsPreparingAi = false;
+        }
     }
 
     [RelayCommand]
@@ -705,7 +739,24 @@ public partial class PublishViewModel : PageViewModelBase {
         OnPropertyChanged(nameof(DocumentFileName));
         OnPropertyChanged(nameof(DocumentDisplayName));
         OnPropertyChanged(nameof(SaveStatusText));
+        OnPropertyChanged(nameof(CanPreview));
+        NotifyPublishReadiness();
         _shell.RefreshChromeTitle();
+    }
+
+    private void NotifyPublishReadiness() {
+        CanPublish = HasLoadedArticle
+                     && IsLoggedIn
+                     && SelectedCategory != null
+                     && !string.IsNullOrWhiteSpace(ArticleTitle)
+                     && !string.IsNullOrWhiteSpace(ArticleContent)
+                     && !string.IsNullOrWhiteSpace(_currentFilePath)
+                     && !IsPublishing;
+        OnPropertyChanged(nameof(IsPublishReady));
+        OnPropertyChanged(nameof(NeedsLoginToPublish));
+        OnPropertyChanged(nameof(ShowPublishBlockers));
+        OnPropertyChanged(nameof(ShowReadyToPublish));
+        OnPropertyChanged(nameof(PublishReadinessText));
     }
 
     private void SyncKeywordItems() {
@@ -787,16 +838,21 @@ public partial class PublishViewModel : PageViewModelBase {
     private bool _syncingCategory;
 
     partial void OnSelectedCategoryChanged(Category? value) {
-        if (_syncingCategory || value == null) {
-            return;
+        if (!_syncingCategory && value != null) {
+            var original = FindCategoryById(Categories, value.Id);
+            if (original != null && !ReferenceEquals(original, value)) {
+                _syncingCategory = true;
+                SelectedCategory = original;
+                _syncingCategory = false;
+            }
         }
 
-        var original = FindCategoryById(Categories, value.Id);
-        if (original != null && !ReferenceEquals(original, value)) {
-            _syncingCategory = true;
-            SelectedCategory = original;
-            _syncingCategory = false;
-        }
+        NotifyPublishReadiness();
+    }
+
+    partial void OnIsPublishingChanged(bool value) {
+        NotifyWorkspaceBusy();
+        NotifyPublishReadiness();
     }
 
     private static List<string> ParseKeywords(string? keywords) {

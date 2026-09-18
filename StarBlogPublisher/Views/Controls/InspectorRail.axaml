@@ -1,0 +1,65 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:StarBlogPublisher.ViewModels"
+             xmlns:fi="using:FluentIcons.Avalonia.Fluent"
+             x:Class="StarBlogPublisher.Views.Controls.InspectorRail"
+             x:DataType="vm:PublishViewModel"
+             Padding="4">
+    <DockPanel>
+        <Button DockPanel.Dock="Top"
+                Classes="Icon"
+                HorizontalAlignment="Stretch"
+                Command="{Binding ToggleInspectorCommand}"
+                ToolTip.Tip="展开文章属性">
+            <fi:FluentIcon Icon="ChevronLeft" IconVariant="Regular" FontSize="16" />
+        </Button>
+
+        <Button DockPanel.Dock="Bottom"
+                Classes="Icon"
+                HorizontalAlignment="Stretch"
+                Command="{Binding PublishCommand}"
+                IsEnabled="{Binding CanPublish}"
+                ToolTip.Tip="{Binding PublishReadinessText}">
+            <fi:FluentIcon Icon="ArrowUpload" IconVariant="Regular" FontSize="16" />
+        </Button>
+
+        <StackPanel Spacing="4" Margin="0,8,0,0">
+            <ToggleButton Classes="Icon"
+                          HorizontalAlignment="Stretch"
+                          IsChecked="{Binding IsPreviewVisible}"
+                          IsEnabled="{Binding CanPreview}"
+                          ToolTip.Tip="预览 Markdown">
+                <fi:FluentIcon Icon="Eye" IconVariant="Regular" FontSize="16" />
+            </ToggleButton>
+
+            <Button Classes="Icon"
+                    HorizontalAlignment="Stretch"
+                    IsVisible="{Binding IsAIEnabled}"
+                    IsEnabled="{Binding !IsPreparingAi}"
+                    ToolTip.Tip="AI">
+                <fi:FluentIcon Icon="Sparkle" IconVariant="Regular" FontSize="16" />
+                <Button.Flyout>
+                    <MenuFlyout Placement="LeftEdgeAlignedTop">
+                        <MenuItem Header="补全元数据" Command="{Binding FillMetadataCommand}" />
+                        <MenuItem Header="生成封面" Command="{Binding ShowCoverPromptCommand}" />
+                        <MenuItem Header="分析文章图片" Command="{Binding AnalyzeImagesCommand}" />
+                    </MenuFlyout>
+                </Button.Flyout>
+            </Button>
+
+            <Button Classes="Icon"
+                    HorizontalAlignment="Stretch"
+                    ToolTip.Tip="更多">
+                <fi:FluentIcon Icon="MoreHorizontal" IconVariant="Regular" FontSize="16" />
+                <Button.Flyout>
+                    <MenuFlyout Placement="LeftEdgeAlignedTop">
+                        <MenuItem Header="复制 Markdown" Command="{Binding CopyContentCommand}" />
+                        <MenuItem Header="重新加载" Command="{Binding ReloadDocumentCommand}" />
+                        <MenuItem Header="发布并打开网页" Command="{Binding PublishAndOpenCommand}" />
+                        <MenuItem Header="复制发布链接" Command="{Binding CopyPublishLinkCommand}" />
+                    </MenuFlyout>
+                </Button.Flyout>
+            </Button>
+        </StackPanel>
+    </DockPanel>
+</UserControl>
