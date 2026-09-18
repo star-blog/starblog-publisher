@@ -79,7 +79,7 @@
         <Border Height="{Binding TitleBarHeight}"
                 VerticalAlignment="Top"
                 Background="Transparent"
-                IsHitTestVisible="False">
+                PointerPressed="OnTitleBarPointerPressed">
             <TextBlock Text="{Binding ChromeTitle}"
                        Margin="{Binding TitleBarTitleMargin}"
                        VerticalAlignment="Center"
