@@ -44,16 +44,16 @@
                         <DockPanel IsVisible="{Binding IsInspectorOpen}">
                             <Border DockPanel.Dock="Top" Classes="InspectorActions">
                                 <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="4">
-                                    <Button Classes="Icon" Command="{Binding ToggleInspectorCommand}" ToolTip.Tip="收起排版设置">
+                                    <Button Classes="Icon" Height="32" Command="{Binding ToggleInspectorCommand}" ToolTip.Tip="收起排版设置">
                                         <fi:FluentIcon Icon="ChevronRight" IconVariant="Regular" FontSize="16" />
                                     </Button>
-                                    <Button Grid.Column="1" Classes="Icon" Command="{Binding OpenPreviewCommand}" ToolTip.Tip="在浏览器中打开">
+                                    <Button Grid.Column="1" Classes="Icon" Height="32" Command="{Binding OpenPreviewCommand}" ToolTip.Tip="在浏览器中打开">
                                         <fi:FluentIcon Icon="Open" IconVariant="Regular" FontSize="16" />
                                     </Button>
-                                    <Button Grid.Column="2" Classes="Icon" Command="{Binding GenerateFormatCommand}" ToolTip.Tip="重新排版">
+                                    <Button Grid.Column="2" Classes="Icon" Height="32" Command="{Binding GenerateFormatCommand}" ToolTip.Tip="重新排版">
                                         <fi:FluentIcon Icon="ArrowSync" IconVariant="Regular" FontSize="16" />
                                     </Button>
-                                    <Button Grid.Column="3" Classes="Accent Compact" HorizontalAlignment="Stretch"
+                                    <Button Grid.Column="3" Classes="Accent" HorizontalAlignment="Stretch" Height="32" Padding="8,0"
                                             Command="{Binding CopyHtmlCommand}" IsEnabled="{Binding HasFormattedHtml}">
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5">
                                             <fi:FluentIcon Icon="Copy" IconVariant="Regular" FontSize="16" />
@@ -170,7 +170,7 @@
                                                           DisplayMemberBinding="{Binding Name}" IsEnabled="{Binding !IsPreparingCover}"
                                                           HorizontalAlignment="Stretch" />
                                                 <Button Grid.Column="1" Command="{Binding PickRandomCoverCommand}"
-                                                        IsEnabled="{Binding !IsPreparingCover}" Classes="Compact">
+                                                        IsEnabled="{Binding !IsPreparingCover}" Classes="Compact" MinHeight="32">
                                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5">
                                                         <fi:FluentIcon Icon="ArrowShuffle" IconVariant="Regular" FontSize="15" />
                                                         <TextBlock Text="换一张" />
