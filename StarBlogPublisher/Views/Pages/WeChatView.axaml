@@ -75,15 +75,65 @@
 
                                     <StackPanel Spacing="6">
                                         <TextBlock Text="草稿箱封面" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                                            <TextBlock Text="{Binding CoverFileName}" TextTrimming="CharacterEllipsis"
-                                                       VerticalAlignment="Center" />
-                                            <Button Grid.Column="1" Command="{Binding SelectCoverCommand}" Classes="Compact">
-                                                <TextBlock Text="选择" />
+                                        <Border Height="{Binding CoverPreviewHeight}" CornerRadius="6" ClipToBounds="True"
+                                                Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                            <Grid>
+                                                <Image Source="{Binding CoverPreview}" Stretch="UniformToFill"
+                                                       IsVisible="{Binding HasCover}" />
+                                                <StackPanel IsVisible="{Binding !HasCover}" HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center" Spacing="4" Opacity="0.7">
+                                                    <fi:FluentIcon Icon="Image" IconVariant="Regular" FontSize="24" HorizontalAlignment="Center" />
+                                                    <TextBlock Text="尚未选择封面图" FontSize="11" HorizontalAlignment="Center" />
+                                                </StackPanel>
+                                                <Border IsVisible="{Binding HasCover}" VerticalAlignment="Bottom" Padding="8,5"
+                                                        Background="#99000000">
+                                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                                        <TextBlock Text="{Binding CoverSourceDescription}" FontSize="10" MaxLines="1"
+                                                                   TextTrimming="CharacterEllipsis" Foreground="White" />
+                                                        <TextBlock Grid.Column="1" Text="已就绪" FontSize="10" Foreground="White" />
+                                                    </Grid>
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                        <ComboBox ItemsSource="{Binding CoverSources}" SelectedItem="{Binding SelectedCoverSource}"
+                                                  DisplayMemberBinding="{Binding Name}" IsEnabled="{Binding !IsPreparingCover}" />
+
+                                        <Button IsVisible="{Binding IsLocalCoverSource}" Command="{Binding SelectCoverCommand}"
+                                                IsEnabled="{Binding !IsPreparingCover}" HorizontalAlignment="Stretch">
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
+                                                <fi:FluentIcon Icon="FolderOpen" IconVariant="Regular" FontSize="16" />
+                                                <TextBlock Text="选择本地图片" />
+                                            </StackPanel>
+                                        </Button>
+
+                                        <Grid IsVisible="{Binding IsUrlCoverSource}" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                            <TextBox Text="{Binding CoverUrl}" PlaceholderText="https://example.com/cover.jpg"
+                                                     IsEnabled="{Binding !IsPreparingCover}" />
+                                            <Button Grid.Column="1" Command="{Binding UseCoverUrlCommand}"
+                                                    IsEnabled="{Binding !IsPreparingCover}" Classes="Compact">
+                                                <TextBlock Text="使用" />
                                             </Button>
                                         </Grid>
-                                        <TextBlock Text="JPG、JPEG 或 PNG" FontSize="11"
+
+                                        <StackPanel IsVisible="{Binding IsRandomCoverSource}" Spacing="6">
+                                            <ComboBox ItemsSource="{Binding RandomCoverProviders}" SelectedItem="{Binding SelectedRandomCoverProvider}"
+                                                      DisplayMemberBinding="{Binding Name}" IsEnabled="{Binding !IsPreparingCover}" />
+                                            <Button Command="{Binding PickRandomCoverCommand}" IsEnabled="{Binding !IsPreparingCover}">
+                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
+                                                    <fi:FluentIcon Icon="ArrowShuffle" IconVariant="Regular" FontSize="16" />
+                                                    <TextBlock Text="获取随机封面" />
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+
+                                        <TextBlock Text="封面规格" FontSize="11"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        <ComboBox ItemsSource="{Binding CoverSizes}" SelectedItem="{Binding SelectedCoverSize}"
+                                                  DisplayMemberBinding="{Binding Name}" IsEnabled="{Binding !IsPreparingCover}" />
+                                        <TextBlock Text="{Binding CoverSizeHint}" FontSize="11"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="获取后会按此规格居中裁切，并转换为可上传的 JPEG。" FontSize="11"
+                                                   TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
 
                                     <Button Command="{Binding UploadDraftCommand}" IsEnabled="{Binding !IsPublishing}" Classes="Accent"

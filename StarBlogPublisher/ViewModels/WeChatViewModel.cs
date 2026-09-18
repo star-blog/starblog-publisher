@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
+using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -22,6 +23,7 @@ namespace StarBlogPublisher.ViewModels;
 public partial class WeChatViewModel : PageViewModelBase {
     private readonly WeChatFormattingService _formattingService = new();
     private readonly WeChatDraftPublishApplicationService _publishService = new(AppSettings.Instance);
+    private readonly WeChatCoverImageService _coverImageService = new(AppSettings.Instance);
     private string _markdown = string.Empty;
     private string _sourceFilePath = string.Empty;
     private string _summary = string.Empty;
@@ -30,14 +32,38 @@ public partial class WeChatViewModel : PageViewModelBase {
     public WeChatViewModel() : base("公众号排版", Icon.Mail) {
         Themes = new ObservableCollection<WeChatTheme>(WeChatFormattingService.Themes);
         SelectedTheme = Themes.FirstOrDefault(theme => theme.Id == AppSettings.Instance.WeChatDefaultTheme) ?? Themes[0];
+        SelectedCoverSource = CoverSources[0];
+        SelectedCoverSize = CoverSizes[0];
+        SelectedRandomCoverProvider = RandomCoverProviders[0];
     }
 
     public ObservableCollection<WeChatTheme> Themes { get; }
+    public ObservableCollection<CoverSourceOption> CoverSources { get; } = [
+        new("local", "本地图片"),
+        new("url", "在线 URL"),
+        new("random", "随机图片")
+    ];
+    public ObservableCollection<CoverSizePreset> CoverSizes { get; } = [
+        new("头条封面", 900, 383, "900 × 383 · 2.35:1"),
+        new("次条封面", 500, 500, "500 × 500 · 1:1")
+    ];
+    public ObservableCollection<RandomCoverProvider> RandomCoverProviders { get; } = [
+        new("StarBlog PicLib", "https://blog.sblt.deali.cn:9000/Api/PicLib/Random/{0}/{1}?random={2}"),
+        new("Lorem Picsum", "https://picsum.photos/{0}/{1}.jpg?random={2}"),
+        new("LoremFlickr", "https://loremflickr.com/{0}/{1}?random={2}")
+    ];
 
     [ObservableProperty] private WeChatTheme? _selectedTheme;
     [ObservableProperty] private string _articleTitle = string.Empty;
     [ObservableProperty] private string _formattedHtml = string.Empty;
     [ObservableProperty] private string _coverPath = string.Empty;
+    [ObservableProperty] private Bitmap? _coverPreview;
+    [ObservableProperty] private string _coverUrl = string.Empty;
+    [ObservableProperty] private string _coverSourceDescription = "尚未选择封面图";
+    [ObservableProperty] private CoverSourceOption? _selectedCoverSource;
+    [ObservableProperty] private CoverSizePreset? _selectedCoverSize;
+    [ObservableProperty] private RandomCoverProvider? _selectedRandomCoverProvider;
+    [ObservableProperty] private bool _isPreparingCover;
     [ObservableProperty] private Uri? _previewUri;
     [ObservableProperty] private string _draftMediaId = string.Empty;
     [ObservableProperty] private string _statusMessage = "请先在「发布」页加载 Markdown 文件";
@@ -50,7 +76,13 @@ public partial class WeChatViewModel : PageViewModelBase {
     public bool HasDraftMediaId => !string.IsNullOrWhiteSpace(DraftMediaId);
     public bool HasFormattedHtml => !string.IsNullOrWhiteSpace(FormattedHtml);
     public bool HasCover => !string.IsNullOrWhiteSpace(CoverPath);
-    public string CoverFileName => HasCover ? Path.GetFileName(CoverPath) : "尚未选择封面图";
+    public bool IsLocalCoverSource => SelectedCoverSource?.Id == "local";
+    public bool IsUrlCoverSource => SelectedCoverSource?.Id == "url";
+    public bool IsRandomCoverSource => SelectedCoverSource?.Id == "random";
+    public string CoverSizeHint => SelectedCoverSize?.Hint ?? string.Empty;
+    public double CoverPreviewHeight => SelectedCoverSize == null
+        ? 122
+        : Math.Clamp(288d * SelectedCoverSize.Height / SelectedCoverSize.Width, 96, 192);
     public double InspectorPaneWidth => IsInspectorOpen ? 320 : 48;
 
     public void SyncFrom(PublishViewModel publish) {
@@ -92,7 +124,32 @@ public partial class WeChatViewModel : PageViewModelBase {
 
     partial void OnCoverPathChanged(string value) {
         OnPropertyChanged(nameof(HasCover));
-        OnPropertyChanged(nameof(CoverFileName));
+        CoverPreview?.Dispose();
+        CoverPreview = null;
+        if (string.IsNullOrWhiteSpace(value) || !File.Exists(value)) return;
+
+        try {
+            CoverPreview = new Bitmap(value);
+        }
+        catch (Exception ex) {
+            StatusMessage = $"无法加载封面预览: {ex.Message}";
+        }
+    }
+
+    partial void OnSelectedCoverSourceChanged(CoverSourceOption? value) {
+        OnPropertyChanged(nameof(IsLocalCoverSource));
+        OnPropertyChanged(nameof(IsUrlCoverSource));
+        OnPropertyChanged(nameof(IsRandomCoverSource));
+    }
+
+    partial void OnSelectedCoverSizeChanged(CoverSizePreset? value) {
+        OnPropertyChanged(nameof(CoverSizeHint));
+        OnPropertyChanged(nameof(CoverPreviewHeight));
+        if (!HasCover) return;
+
+        CoverPath = string.Empty;
+        CoverSourceDescription = "封面规格已调整，请重新选择图片";
+        StatusMessage = "封面规格已变更，请重新准备封面图";
     }
 
     partial void OnIsInspectorOpenChanged(bool value) {
@@ -135,8 +192,38 @@ public partial class WeChatViewModel : PageViewModelBase {
         });
         if (files.Count == 0) return;
 
-        CoverPath = files[0].Path.LocalPath;
-        StatusMessage = $"已选择封面图: {files[0].Name}";
+        SelectedCoverSource = CoverSources[0];
+        var filePath = files[0].Path.LocalPath;
+        await PrepareCoverAsync(
+            () => _coverImageService.PrepareLocalAsync(filePath, CoverWidth, CoverHeight),
+            $"本地图片 · {files[0].Name}");
+    }
+
+    [RelayCommand]
+    private async Task UseCoverUrl() {
+        if (!Uri.TryCreate(CoverUrl?.Trim(), UriKind.Absolute, out var uri) ||
+            (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) &&
+             !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))) {
+            StatusMessage = "请输入有效的 HTTP 或 HTTPS 图片 URL";
+            return;
+        }
+
+        SelectedCoverSource = CoverSources[1];
+        await PrepareCoverAsync(
+            () => _coverImageService.DownloadAndPrepareAsync(uri, CoverWidth, CoverHeight),
+            $"在线图片 · {uri.Host}");
+    }
+
+    [RelayCommand]
+    private async Task PickRandomCover() {
+        var provider = SelectedRandomCoverProvider;
+        if (provider == null) return;
+
+        SelectedCoverSource = CoverSources[2];
+        var uri = provider.CreateUri(CoverWidth, CoverHeight, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        await PrepareCoverAsync(
+            () => _coverImageService.DownloadAndPrepareAsync(uri, CoverWidth, CoverHeight),
+            $"随机图片 · {provider.Name}");
     }
 
     [RelayCommand]
@@ -243,6 +330,28 @@ public partial class WeChatViewModel : PageViewModelBase {
         GuiHost.ToastSuccess("已复制", successMessage);
     }
 
+    private int CoverWidth => SelectedCoverSize?.Width ?? 900;
+    private int CoverHeight => SelectedCoverSize?.Height ?? 383;
+
+    private async Task PrepareCoverAsync(Func<Task<string>> prepare, string sourceDescription) {
+        if (IsPreparingCover) return;
+
+        IsPreparingCover = true;
+        try {
+            StatusMessage = "正在准备公众号封面图…";
+            CoverPath = await prepare();
+            CoverSourceDescription = $"{sourceDescription} · {CoverSizeHint}";
+            StatusMessage = "封面图已按公众号规格准备完成";
+        }
+        catch (Exception ex) {
+            StatusMessage = $"准备封面图失败: {ex.Message}";
+            GuiHost.ToastError("准备封面图失败", ex.Message);
+        }
+        finally {
+            IsPreparingCover = false;
+        }
+    }
+
     /// <summary>
     /// Creates a local document for the embedded WebView. The canvas and frame styles
     /// belong only to the desktop preview; the generated fragment itself is unchanged
@@ -327,4 +436,13 @@ public partial class WeChatViewModel : PageViewModelBase {
         var withoutTags = Regex.Replace(withLineBreaks, @"<[^>]+>", string.Empty);
         return WebUtility.HtmlDecode(withoutTags).Trim();
     }
+}
+
+public sealed record CoverSourceOption(string Id, string Name);
+
+public sealed record CoverSizePreset(string Name, int Width, int Height, string Hint);
+
+public sealed record RandomCoverProvider(string Name, string UrlTemplate) {
+    public Uri CreateUri(int width, int height, long nonce) =>
+        new(string.Format(UrlTemplate, width, height, nonce));
 }
