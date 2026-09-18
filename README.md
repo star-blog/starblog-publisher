@@ -6,6 +6,8 @@
 ![CLI](https://img.shields.io/badge/CLI-Supported-brightgreen)
 ![MCP](https://img.shields.io/badge/MCP-Server-orange)
 
+![StarBlog Client Horizontal Logo](./docs/images/horizontal-logo.webp)
+
 StarBlog Publisher 是一款专为 [StarBlog博客系统](https://github.com/Deali-Axy/StarBlog) 设计的专业文章发布工具。支持三种使用方式：**桌面 GUI**、**命令行 CLI** 和 **MCP Server**（供 AI Agent 调用）。
 
 核心亮点：
