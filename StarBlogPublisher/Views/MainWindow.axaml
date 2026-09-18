@@ -17,7 +17,7 @@
         <vm:MainWindowViewModel />
     </Design.DataContext>
 
-    <ui:NavigationView PaneDisplayMode="LeftCompact"
+    <ui:NavigationView PaneDisplayMode="Left"
                        IsSettingsVisible="False"
                        IsBackButtonVisible="False"
                        OpenPaneLength="220"
@@ -37,39 +37,38 @@
         </ui:NavigationView.MenuItemTemplate>
 
         <ui:NavigationView.PaneFooter>
-            <StackPanel Margin="4,8" Spacing="4">
-                <Button Classes="Transparent"
-                        HorizontalAlignment="Center"
-                        Command="{Binding ToggleThemeCommand}"
-                        ToolTip.Tip="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}">
-                    <Panel>
-                        <fi:FluentIcon Icon="WeatherMoon" IconVariant="Regular" FontSize="16"
-                                       IsVisible="{Binding !IsDarkTheme}" />
-                        <fi:FluentIcon Icon="WeatherSunny" IconVariant="Regular" FontSize="16"
-                                       IsVisible="{Binding IsDarkTheme}" />
-                    </Panel>
-                </Button>
-                <Button Classes="Transparent"
-                        HorizontalAlignment="Center"
-                        Command="{Binding LoginCommand}"
-                        IsVisible="{Binding !IsLoggedIn}"
-                        ToolTip.Tip="登录">
-                    <fi:FluentIcon Icon="Person" IconVariant="Regular" FontSize="16" />
-                </Button>
-                <Button Classes="Transparent"
-                        HorizontalAlignment="Center"
-                        Command="{Binding LogoutCommand}"
-                        IsVisible="{Binding IsLoggedIn}"
-                        ToolTip.Tip="登出">
-                    <fi:FluentIcon Icon="SignOut" IconVariant="Regular" FontSize="16" />
-                </Button>
+            <StackPanel Margin="8,8" Spacing="4">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Button Classes="Transparent"
+                            Command="{Binding ToggleThemeCommand}"
+                            ToolTip.Tip="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}">
+                        <Panel>
+                            <fi:FluentIcon Icon="WeatherMoon" IconVariant="Regular" FontSize="16"
+                                           IsVisible="{Binding !IsDarkTheme}" />
+                            <fi:FluentIcon Icon="WeatherSunny" IconVariant="Regular" FontSize="16"
+                                           IsVisible="{Binding IsDarkTheme}" />
+                        </Panel>
+                    </Button>
+                    <Button Classes="Transparent"
+                            Command="{Binding LoginCommand}"
+                            IsVisible="{Binding !IsLoggedIn}"
+                            ToolTip.Tip="登录">
+                        <fi:FluentIcon Icon="Person" IconVariant="Regular" FontSize="16" />
+                    </Button>
+                    <Button Classes="Transparent"
+                            Command="{Binding LogoutCommand}"
+                            IsVisible="{Binding IsLoggedIn}"
+                            ToolTip.Tip="登出">
+                        <fi:FluentIcon Icon="SignOut" IconVariant="Regular" FontSize="16" />
+                    </Button>
+                </StackPanel>
             </StackPanel>
         </ui:NavigationView.PaneFooter>
 
-        <Grid RowDefinitions="Auto,*">
+        <Grid RowDefinitions="Auto,*" Margin="{Binding TitleBarContentMargin}">
             <ui:InfoBar x:Name="FeedbackBar"
                         Grid.Row="0"
-                        Margin="8,4,8,0"
+                        Margin="8,8,8,0"
                         IsClosable="True"
                         IsOpen="False" />
             <ContentControl Grid.Row="1" Content="{Binding ActivePage}" />

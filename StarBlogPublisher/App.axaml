@@ -62,5 +62,17 @@
             <Setter Property="Padding" Value="12,0" />
             <Setter Property="Height" Value="28" />
         </Style>
+        <Style Selector="DockPanel.WorkspaceLoaded[IsVisible=True]">
+            <Style.Animations>
+                <Animation Duration="0:0:0.22" FillMode="Forward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
     </Application.Styles>
 </Application>

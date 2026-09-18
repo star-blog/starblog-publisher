@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StarBlogPublisher.Models;
@@ -73,16 +74,25 @@ public partial class PublishViewModel : PageViewModelBase {
     [ObservableProperty] private int _wordCount;
     [ObservableProperty] private int _imageCount;
     [ObservableProperty] private string _aiProviderLabel = "";
+    [ObservableProperty] private bool _isLoadingDocument;
+    [ObservableProperty] private bool _isPreparingAi;
 
     public ObservableCollection<string> KeywordItems { get; } = new();
 
     public bool HasPublishResult => LastPublishResult?.Success == true;
+    public bool IsWorkspaceBusy => IsPublishing || IsLoadingDocument;
+    public bool IsWorkspaceBusyIndeterminate => IsLoadingDocument && !IsPublishing;
+    public string WorkspaceBusyMessage => IsPublishing ? StatusMessage : "正在打开文件...";
     public bool IsDocumentDirty => !string.Equals(ArticleContent, _loadedContent, StringComparison.Ordinal);
     public string DocumentFileName => string.IsNullOrWhiteSpace(_currentFilePath)
         ? "未命名.md"
         : Path.GetFileName(_currentFilePath);
     public string DocumentDisplayName => IsDocumentDirty ? $"{DocumentFileName} •" : DocumentFileName;
-    public string SaveStatusText => !HasLoadedArticle ? "未打开" : IsDocumentDirty ? "已修改" : "已加载";
+    public string SaveStatusText =>
+        !HasLoadedArticle ? "未打开"
+        : IsPreparingAi ? "正在生成摘要"
+        : IsDocumentDirty ? "已修改"
+        : "已加载";
     public string ConnectionStatusText => IsLoggedIn ? "StarBlog ● Connected" : "StarBlog ○ Offline";
     public SplitViewDisplayMode InspectorDisplayMode =>
         UseOverlayInspector ? SplitViewDisplayMode.Overlay : SplitViewDisplayMode.Inline;
@@ -118,6 +128,18 @@ public partial class PublishViewModel : PageViewModelBase {
     }
 
     partial void OnIsLoggedInChanged(bool value) => OnPropertyChanged(nameof(ConnectionStatusText));
+
+    partial void OnIsPublishingChanged(bool value) => NotifyWorkspaceBusy();
+
+    partial void OnIsLoadingDocumentChanged(bool value) => NotifyWorkspaceBusy();
+
+    partial void OnIsPreparingAiChanged(bool value) => OnPropertyChanged(nameof(SaveStatusText));
+
+    partial void OnStatusMessageChanged(string value) {
+        if (IsPublishing) {
+            OnPropertyChanged(nameof(WorkspaceBusyMessage));
+        }
+    }
 
     partial void OnArticleContentChanged(string value) {
         UpdateDocumentStats();
@@ -196,34 +218,48 @@ public partial class PublishViewModel : PageViewModelBase {
     }
 
     public async Task LoadFromPathAsync(string path, string? displayName = null) {
+        IsLoadingDocument = true;
         try {
-            ArticleContent = await File.ReadAllTextAsync(path, Encoding.UTF8);
-            _loadedContent = ArticleContent;
+            var content = await File.ReadAllTextAsync(path, Encoding.UTF8);
+            ArticleContent = content;
+            _loadedContent = content;
             ArticleTitle = Path.GetFileNameWithoutExtension(path);
             LastPublishResult = null;
             _currentFilePath = path;
-            HasLoadedArticle = true;
             IsPreviewVisible = false;
             UpdateDocumentStats();
             NotifyDocumentState();
+            HasLoadedArticle = true;
+            CanPublish = true;
 
             var name = displayName ?? Path.GetFileName(path);
-            if (AppSettings.Instance.EnableAI) {
-                await RegenerateDescription();
-                await GenerateSlug();
-                StatusMessage = $"已加载文件: {name}（AI已生成简介和Slug）";
-            }
-            else {
+            if (!AppSettings.Instance.EnableAI) {
                 ArticleDescription = ArticleContent.Limit(100);
-                StatusMessage = $"已加载文件: {name}";
             }
 
-            CanPublish = true;
+            StatusMessage = $"已加载文件: {name}";
             GuiHost.ToastSuccess("已加载", name);
+            IsLoadingDocument = false;
+            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Loaded);
+
+            if (AppSettings.Instance.EnableAI) {
+                IsPreparingAi = true;
+                try {
+                    await RegenerateDescription();
+                    await GenerateSlug();
+                    StatusMessage = $"已加载文件: {name}（AI已生成简介和Slug）";
+                }
+                finally {
+                    IsPreparingAi = false;
+                }
+            }
         }
         catch (Exception ex) {
             StatusMessage = "文件加载失败";
             GuiHost.ToastError("文件加载失败", ex.Message);
+        }
+        finally {
+            IsLoadingDocument = false;
         }
     }
 
@@ -681,31 +717,83 @@ public partial class PublishViewModel : PageViewModelBase {
         }
     }
 
-    private void RefreshFilteredCategories() {
-        var flattened = FlattenCategories(Categories);
-        if (!string.IsNullOrWhiteSpace(CategorySearchText)) {
-            flattened = flattened
-                .Where(item => item.Text?.Contains(CategorySearchText, StringComparison.OrdinalIgnoreCase) == true)
-                .ToList();
-        }
-
-        FilteredCategories = new ObservableCollection<Category>(flattened);
+    private void NotifyWorkspaceBusy() {
+        OnPropertyChanged(nameof(IsWorkspaceBusy));
+        OnPropertyChanged(nameof(IsWorkspaceBusyIndeterminate));
+        OnPropertyChanged(nameof(WorkspaceBusyMessage));
     }
 
-    private static List<Category> FlattenCategories(IEnumerable<Category>? categories) {
+    private void RefreshFilteredCategories() {
+        if (string.IsNullOrWhiteSpace(CategorySearchText)) {
+            FilteredCategories = Categories;
+            return;
+        }
+
+        FilteredCategories = new ObservableCollection<Category>(
+            FilterCategoryTree(Categories, CategorySearchText.Trim()));
+    }
+
+    private static List<Category> FilterCategoryTree(IEnumerable<Category>? categories, string query) {
         var result = new List<Category>();
         if (categories == null) {
             return result;
         }
 
         foreach (var category in categories) {
-            result.Add(category);
-            if (category.Nodes is { Count: > 0 }) {
-                result.AddRange(FlattenCategories(category.Nodes));
+            var selfMatch = category.Text?.Contains(query, StringComparison.OrdinalIgnoreCase) == true;
+            var filteredChildren = category.Nodes is { Count: > 0 }
+                ? FilterCategoryTree(category.Nodes, query)
+                : [];
+
+            if (selfMatch) {
+                result.Add(category);
+            }
+            else if (filteredChildren.Count > 0) {
+                result.Add(new Category {
+                    Id = category.Id,
+                    Text = category.Text,
+                    Href = category.Href,
+                    Tags = category.Tags,
+                    Nodes = filteredChildren
+                });
             }
         }
 
         return result;
+    }
+
+    private static Category? FindCategoryById(IEnumerable<Category>? categories, int id) {
+        if (categories == null) {
+            return null;
+        }
+
+        foreach (var category in categories) {
+            if (category.Id == id) {
+                return category;
+            }
+
+            var child = FindCategoryById(category.Nodes, id);
+            if (child != null) {
+                return child;
+            }
+        }
+
+        return null;
+    }
+
+    private bool _syncingCategory;
+
+    partial void OnSelectedCategoryChanged(Category? value) {
+        if (_syncingCategory || value == null) {
+            return;
+        }
+
+        var original = FindCategoryById(Categories, value.Id);
+        if (original != null && !ReferenceEquals(original, value)) {
+            _syncingCategory = true;
+            SelectedCategory = original;
+            _syncingCategory = false;
+        }
     }
 
     private static List<string> ParseKeywords(string? keywords) {

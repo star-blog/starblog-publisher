@@ -33,6 +33,7 @@ public partial class MainWindowViewModel : ViewModelBase {
     [ObservableProperty] private bool _hasCredentials;
     [ObservableProperty] private string _loginStatusMessage = "未登录";
     [ObservableProperty] private string _softwareVersion = ApplicationVersion.Value;
+    [ObservableProperty] private Thickness _titleBarContentMargin = new(0, 32, 0, 0);
 
     public MainWindowViewModel() {
         PublishPage = new PublishViewModel(this);
@@ -70,6 +71,17 @@ public partial class MainWindowViewModel : ViewModelBase {
         }
 
         SettingsPage.SyncDarkTheme(isDark);
+    }
+
+    public void UpdateTitleBarMetrics(double height) {
+        if (height <= 0) {
+            return;
+        }
+
+        var margin = new Thickness(0, height, 0, 0);
+        if (TitleBarContentMargin != margin) {
+            TitleBarContentMargin = margin;
+        }
     }
 
     partial void OnActivePageChanged(PageViewModelBase? value) {
