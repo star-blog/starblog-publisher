@@ -2,7 +2,7 @@
 
 ## 项目概述
 StarBlog Publisher 是一个跨平台博客发布系统（C# .NET），包含三个端：
-1. **GUI** — Avalonia UI 桌面应用（主入口）
+1. **GUI** — Avalonia + FluentAvalonia 桌面应用（主入口）
 2. **CLI** — 命令行工具，面向脚本和自动化
 3. **MCP Server** — 面向 AI Agent 的标准化工具接口
 
@@ -30,7 +30,7 @@ StarBlogPublisher.Core/       # 共享核心库（无 UI 依赖）
 │   └── AiApplicationService.cs
 └── Utils/                    # PromptBuilder, PromptTemplates 等
 
-StarBlogPublisher/            # GUI 项目（Avalonia）
+StarBlogPublisher/            # GUI 项目（Avalonia + FluentAvalonia）
 ├── Models/AvaloniaImageInfo.cs  # GUI 专属展示模型
 ├── ViewModels/               # ViewModel 层（薄壳，调用 Application 服务）
 ├── Views/                    # 视图层 (.axaml)
@@ -111,7 +111,7 @@ dotnet run --project StarBlogPublisher.Cli -- mcp
 
 ## 关键依赖
 - **框架**: .NET 10.0
-- **GUI**: Avalonia 11.3.10, CommunityToolkit.Mvvm 8.4.0
+- **GUI**: Avalonia 11.3.20, FluentAvaloniaUI 2.5.1, CommunityToolkit.Mvvm 8.4.2
 - **CLI**: System.CommandLine 2.0.8
 - **MCP**: ModelContextProtocol 1.3.0
 - **HTTP**: Refit 9.0.2
@@ -126,6 +126,8 @@ dotnet run --project StarBlogPublisher.Cli -- mcp
 - Nullable：enable
 - GUI 使用 Avalonia Compiled Bindings
 - MVVM 模式：CommunityToolkit.Mvvm [RelayCommand] + [ObservableProperty]
+- Fluent 控件优先使用 `NavigationView`、`SettingsExpander`、`NumberBox`、`InfoBar` 与 `TaskDialog`；通用图标使用 `SymbolIcon`，仅品牌标识可使用 FontAwesome Brands。
+- 需要遮罩的长任务使用 `Views/Controls/BusyOverlay`；需要二级页面导航时使用 `Views/Controls/StackPageHost` 与 `StackBreadcrumb`，避免再次复制页面宿主逻辑。
 
 ## 版本发布
 - CI/CD 触发格式：`v*.*.*` 标签

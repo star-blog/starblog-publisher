@@ -1,6 +1,6 @@
 # StarBlog Publisher
 
-![Avalonia](https://img.shields.io/badge/UI-Avalonia-blue)
+![FluentAvalonia](https://img.shields.io/badge/UI-FluentAvalonia%202.5-blue)
 ![.NET](https://img.shields.io/badge/.NET-10.0-purple)
 ![License](https://img.shields.io/badge/License-Apache%202.0-green)
 ![CLI](https://img.shields.io/badge/CLI-Supported-brightgreen)
@@ -11,6 +11,7 @@ StarBlog Publisher 是一款专为 [StarBlog博客系统](https://github.com/Dea
 核心亮点：
 
 * **三端共享架构**：GUI / CLI / MCP 共享同一套业务逻辑（Core 类库），行为一致
+* **Fluent 桌面体验**：基于 Avalonia 与 FluentAvalonia，提供单壳侧栏导航、系统化反馈与可访问的设置页
 * **Markdown 文章即写即发**：编辑、预览和发布一气呵成
 * **CLI 命令行工具**：支持脚本化、自动化的博客发布流程
 * **MCP Server**：让 Claude、Cursor、Copilot 等 AI Agent 直接操作你的博客
@@ -303,7 +304,7 @@ starblog mcp
 ## 技术栈
 
 - **框架**：.NET 10.0
-- **GUI**：Avalonia 11.3.20 + CommunityToolkit.Mvvm 8.4.2
+- **GUI**：Avalonia 11.3.20 + FluentAvaloniaUI 2.5.1 + CommunityToolkit.Mvvm 8.4.2
 - **CLI**：System.CommandLine 2.0.11
 - **MCP**：ModelContextProtocol 2.2.0
 - **HTTP**：Refit 15.2.0
