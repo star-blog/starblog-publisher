@@ -13,6 +13,8 @@
     <Application.Resources>
         <ResourceDictionary>
             <converters:BoolToThemeTextConverter x:Key="BoolToThemeTextConverter"/>
+            <!-- Keep dialogs modal while leaving the page behind them visually unchanged. -->
+            <SolidColorBrush x:Key="ContentDialogSmokeFill" Color="#00000000" />
         </ResourceDictionary>
     </Application.Resources>
 

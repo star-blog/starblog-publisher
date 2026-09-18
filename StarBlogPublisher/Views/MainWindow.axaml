@@ -20,8 +20,7 @@
         <Border DockPanel.Dock="Top"
                 Background="Transparent"
                 Height="48"
-                Padding="12,0"
-                wnd:AppWindow.AllowInteractionInTitleBar="True">
+                Padding="12,0">
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <TextBlock Text="StarBlog Publisher"
                            VerticalAlignment="Center"
@@ -65,9 +64,9 @@
                                 Command="{Binding ToggleThemeCommand}"
                                 ToolTip.Tip="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}">
                             <Panel>
-                                <ui:SymbolIcon Symbol="Help" FontSize="16"
+                                <ui:SymbolIcon Symbol="DarkTheme" FontSize="16"
                                                IsVisible="{Binding !IsDarkTheme}" />
-                                <ui:SymbolIcon Symbol="Setting" FontSize="16"
+                                <ui:SymbolIcon Symbol="WeatherSunny" FontSize="16"
                                                IsVisible="{Binding IsDarkTheme}" />
                             </Panel>
                         </Button>
@@ -75,13 +74,13 @@
                                 Command="{Binding LoginCommand}"
                                 IsVisible="{Binding !IsLoggedIn}"
                                 ToolTip.Tip="登录">
-                            <ui:SymbolIcon Symbol="Mail" FontSize="16" />
+                            <ui:SymbolIcon Symbol="Account" FontSize="16" />
                         </Button>
                         <Button Classes="Transparent"
                                 Command="{Binding LogoutCommand}"
                                 IsVisible="{Binding IsLoggedIn}"
                                 ToolTip.Tip="登出">
-                            <ui:SymbolIcon Symbol="Edit" FontSize="16" />
+                            <ui:SymbolIcon Symbol="LeaveChat" FontSize="16" />
                         </Button>
                     </StackPanel>
                     <TextBlock Text="{Binding LoginStatusMessage}"
