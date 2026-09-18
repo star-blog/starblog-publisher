@@ -1,6 +1,8 @@
 using System;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
+using Moq;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using StarBlogPublisher.Services;
@@ -18,7 +20,7 @@ public class WeChatCoverImageServiceTests {
                 await source.SaveAsPngAsync(sourcePath);
             }
 
-            var service = new WeChatCoverImageService(new AppSettings());
+            var service = new WeChatCoverImageService(new Mock<IHttpClientFactory>().Object);
             outputPath = await service.PrepareLocalAsync(sourcePath, 900, 383);
 
             Assert.EndsWith(".jpg", outputPath, StringComparison.OrdinalIgnoreCase);
