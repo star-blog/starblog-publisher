@@ -1,8 +1,8 @@
 ﻿using Avalonia;
 using Avalonia.Media;
 using System;
-using Projektanker.Icons.Avalonia;
-using Projektanker.Icons.Avalonia.FontAwesome;
+using Optris.Icons.Avalonia;
+using Optris.Icons.Avalonia.FontAwesome;
 
 namespace StarBlogPublisher;
 
@@ -16,8 +16,7 @@ sealed class Program {
 
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp() {
-        IconProvider.Current
-            .Register<FontAwesomeIconProvider>();
+        IconProvider.Current.Register<FontAwesomeIconProvider>();
 
         return AppBuilder.Configure<App>()
             .UsePlatformDetect()
