@@ -11,7 +11,7 @@
     <ScrollViewer>
         <StackPanel Margin="24" Spacing="16" MaxWidth="640" HorizontalAlignment="Center">
             <StackPanel Spacing="12" HorizontalAlignment="Center">
-                <Image Source="/Assets/logo.png" Width="160" Height="160" />
+                <Image Source="/Assets/logo.webp" Width="160" Height="160" />
                 <TextBlock Text="{Binding AppName}" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" />
                 <TextBlock Text="{Binding AppVersion}" HorizontalAlignment="Center"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
