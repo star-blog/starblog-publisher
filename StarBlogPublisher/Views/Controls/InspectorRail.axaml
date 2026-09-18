@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:fi="using:FluentIcons.Avalonia.Fluent"
+             xmlns:controls="using:StarBlogPublisher.Views.Controls"
              x:Class="StarBlogPublisher.Views.Controls.InspectorRail"
              x:DataType="vm:PublishViewModel"
              Padding="4">
@@ -26,11 +27,40 @@
         <StackPanel Spacing="4" Margin="0,8,0,0">
             <ToggleButton Classes="Icon"
                           HorizontalAlignment="Stretch"
-                          IsChecked="{Binding IsPreviewVisible}"
+                          IsChecked="{Binding IsSourceMode, Mode=OneWay}"
+                          Command="{Binding SetEditorModeCommand}"
+                          CommandParameter="Source"
+                          ToolTip.Tip="源码">
+                <fi:FluentIcon Icon="Code" IconVariant="Regular" FontSize="16" />
+            </ToggleButton>
+            <ToggleButton Classes="Icon"
+                          HorizontalAlignment="Stretch"
                           IsEnabled="{Binding CanPreview}"
-                          ToolTip.Tip="预览 Markdown">
+                          IsChecked="{Binding IsSplitMode, Mode=OneWay}"
+                          Command="{Binding SetEditorModeCommand}"
+                          CommandParameter="Split"
+                          ToolTip.Tip="分栏">
+                <fi:FluentIcon Icon="Table" IconVariant="Regular" FontSize="16" />
+            </ToggleButton>
+            <ToggleButton Classes="Icon"
+                          HorizontalAlignment="Stretch"
+                          IsEnabled="{Binding CanPreview}"
+                          IsChecked="{Binding IsPreviewMode, Mode=OneWay}"
+                          Command="{Binding SetEditorModeCommand}"
+                          CommandParameter="Preview"
+                          ToolTip.Tip="预览">
                 <fi:FluentIcon Icon="Eye" IconVariant="Regular" FontSize="16" />
             </ToggleButton>
+            <Button Classes="Icon"
+                    HorizontalAlignment="Stretch"
+                    ToolTip.Tip="编辑器选项">
+                <fi:FluentIcon Icon="TextFont" IconVariant="Regular" FontSize="16" />
+                <Button.Flyout>
+                    <Flyout Placement="LeftEdgeAlignedTop">
+                        <controls:EditorOptionsPanel />
+                    </Flyout>
+                </Button.Flyout>
+            </Button>
 
             <Button Classes="Icon"
                     HorizontalAlignment="Stretch"

@@ -9,24 +9,14 @@
              x:DataType="vm:PublishViewModel">
     <DockPanel>
         <Border DockPanel.Dock="Top" Classes="InspectorActions">
-            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*" ColumnSpacing="4">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="4">
                 <Button Classes="Icon"
                         Command="{Binding ToggleInspectorCommand}"
                         ToolTip.Tip="收起文章属性">
                     <fi:FluentIcon Icon="ChevronRight" IconVariant="Regular" FontSize="16" />
                 </Button>
 
-                <ToggleButton Grid.Column="1"
-                              IsChecked="{Binding IsPreviewVisible}"
-                              IsEnabled="{Binding CanPreview}"
-                              ToolTip.Tip="预览 Markdown">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <fi:FluentIcon Icon="Eye" IconVariant="Regular" FontSize="14" />
-                        <TextBlock Text="预览" />
-                    </StackPanel>
-                </ToggleButton>
-
-                <Button Grid.Column="2"
+                <Button Grid.Column="1"
                         Classes="Icon"
                         IsVisible="{Binding IsAIEnabled}"
                         IsEnabled="{Binding !IsPreparingAi}"
@@ -41,7 +31,7 @@
                     </Button.Flyout>
                 </Button>
 
-                <Button Grid.Column="3" Classes="Icon" ToolTip.Tip="更多">
+                <Button Grid.Column="2" Classes="Icon" ToolTip.Tip="更多">
                     <fi:FluentIcon Icon="MoreHorizontal" IconVariant="Regular" FontSize="16" />
                     <Button.Flyout>
                         <MenuFlyout Placement="BottomEdgeAlignedRight">
@@ -51,7 +41,7 @@
                     </Button.Flyout>
                 </Button>
 
-                <SplitButton Grid.Column="4"
+                <SplitButton Grid.Column="3"
                              HorizontalAlignment="Stretch"
                              HorizontalContentAlignment="Center"
                              Content="发布"
@@ -67,6 +57,46 @@
                         </MenuFlyout>
                     </SplitButton.Flyout>
                 </SplitButton>
+            </Grid>
+        </Border>
+
+        <Border DockPanel.Dock="Top" Classes="InspectorActions">
+            <Grid ColumnDefinitions="*,*,*,Auto" ColumnSpacing="4">
+                <ToggleButton Classes="EditorMode"
+                              HorizontalAlignment="Stretch"
+                              Content="源码"
+                              IsChecked="{Binding IsSourceMode, Mode=OneWay}"
+                              Command="{Binding SetEditorModeCommand}"
+                              CommandParameter="Source"
+                              ToolTip.Tip="只编辑 Markdown 源码" />
+                <ToggleButton Grid.Column="1"
+                              Classes="EditorMode"
+                              HorizontalAlignment="Stretch"
+                              Content="分栏"
+                              IsEnabled="{Binding CanPreview}"
+                              IsChecked="{Binding IsSplitMode, Mode=OneWay}"
+                              Command="{Binding SetEditorModeCommand}"
+                              CommandParameter="Split"
+                              ToolTip.Tip="编辑与预览并排" />
+                <ToggleButton Grid.Column="2"
+                              Classes="EditorMode"
+                              HorizontalAlignment="Stretch"
+                              Content="预览"
+                              IsEnabled="{Binding CanPreview}"
+                              IsChecked="{Binding IsPreviewMode, Mode=OneWay}"
+                              Command="{Binding SetEditorModeCommand}"
+                              CommandParameter="Preview"
+                              ToolTip.Tip="只看渲染预览" />
+                <Button Grid.Column="3"
+                        Classes="Icon"
+                        ToolTip.Tip="编辑器选项">
+                    <fi:FluentIcon Icon="TextFont" IconVariant="Regular" FontSize="16" />
+                    <Button.Flyout>
+                        <Flyout Placement="BottomEdgeAlignedRight">
+                            <controls:EditorOptionsPanel />
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
             </Grid>
         </Border>
 

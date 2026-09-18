@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:StarBlogPublisher.ViewModels"
+             x:Class="StarBlogPublisher.Views.Controls.EditorOptionsPanel"
+             x:DataType="vm:PublishViewModel">
+    <StackPanel Width="220" Spacing="10">
+        <TextBlock Text="编辑器" FontWeight="SemiBold" FontSize="12" />
+        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
+            <TextBlock Text="字号" VerticalAlignment="Center" FontSize="12" />
+            <Button Grid.Column="1"
+                    Classes="Compact"
+                    Content="−"
+                    Command="{Binding DecreaseEditorFontSizeCommand}" />
+            <TextBlock Grid.Column="2"
+                       MinWidth="24"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Text="{Binding EditorFontSize}" />
+            <Button Grid.Column="3"
+                    Classes="Compact"
+                    Content="+"
+                    Command="{Binding IncreaseEditorFontSizeCommand}" />
+        </Grid>
+        <CheckBox Content="自动换行"
+                  IsChecked="{Binding EditorWordWrap}" />
+        <CheckBox Content="显示行号"
+                  IsChecked="{Binding EditorShowLineNumbers}" />
+    </StackPanel>
+</UserControl>
