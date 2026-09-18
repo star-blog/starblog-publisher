@@ -10,6 +10,8 @@
              x:Class="StarBlogPublisher.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
     <UserControl.Resources>
+        <x:Double x:Key="SettingsFieldWidth">320</x:Double>
+        <x:Double x:Key="SettingsCompactControlWidth">140</x:Double>
         <fi:FluentIconSource x:Key="BlogIcon" Icon="Globe" IconVariant="Regular" />
         <fi:FluentIconSource x:Key="ProxyIcon" Icon="GlobeDesktop" IconVariant="Regular" />
         <fi:FluentIconSource x:Key="WeChatIcon" Icon="Chat" IconVariant="Regular" />
@@ -17,6 +19,13 @@
         <fi:FluentIconSource x:Key="AppearanceIcon" Icon="DarkTheme" IconVariant="Regular" />
         <fi:FluentIconSource x:Key="AiIcon" Icon="Bot" IconVariant="Regular" />
     </UserControl.Resources>
+
+    <UserControl.Styles>
+        <Style Selector="Border.SettingsField">
+            <Setter Property="Width" Value="{StaticResource SettingsFieldWidth}" />
+            <Setter Property="MinWidth" Value="{StaticResource SettingsFieldWidth}" />
+        </Style>
+    </UserControl.Styles>
 
     <Grid RowDefinitions="*,Auto">
         <ScrollViewer Grid.Row="0">
@@ -40,45 +49,51 @@
                     <ui:SettingsExpanderItem Content="后端 URL"
                                              Description="仅在启用自定义后端时生效">
                         <ui:SettingsExpanderItem.Footer>
-                            <TextBox Watermark="https://example.com"
-                                     Text="{Binding BackendUrl}"
-                                     IsEnabled="{Binding UseCustomBackend}"
-                                     MinWidth="320" Width="320" />
+                            <Border Classes="SettingsField">
+                                <TextBox Watermark="https://example.com"
+                                         Text="{Binding BackendUrl}"
+                                         IsEnabled="{Binding UseCustomBackend}" />
+                            </Border>
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>
 
                     <ui:SettingsExpanderItem Content="用户名">
                         <ui:SettingsExpanderItem.Footer>
-                            <TextBox Watermark="用户名"
-                                     Text="{Binding Username}"
-                                     MinWidth="280" Width="280" />
+                            <Border Classes="SettingsField">
+                                <TextBox Watermark="用户名" Text="{Binding Username}" />
+                            </Border>
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>
 
                     <ui:SettingsExpanderItem Content="密码">
                         <ui:SettingsExpanderItem.Footer>
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" MinWidth="280" Width="280">
-                                <TextBox Grid.Column="0"
-                                         Watermark="密码"
-                                         PasswordChar="{Binding ShowPassword, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
-                                         Text="{Binding Password}" />
-                                <Button Grid.Column="1" Classes="Icon"
-                                        ToolTip.Tip="显示或隐藏密码"
-                                        Command="{Binding TogglePasswordCommand}">
-                                    <fi:FluentIcon Icon="Eye" IconVariant="Regular" />
-                                </Button>
-                            </Grid>
+                            <Border Classes="SettingsField">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <TextBox Grid.Column="0"
+                                             Watermark="密码"
+                                             PasswordChar="{Binding ShowPassword, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
+                                             Text="{Binding Password}" />
+                                    <Button Grid.Column="1" Classes="Icon"
+                                            ToolTip.Tip="显示或隐藏密码"
+                                            Command="{Binding TogglePasswordCommand}">
+                                        <fi:FluentIcon Icon="Eye" IconVariant="Regular" />
+                                    </Button>
+                                </Grid>
+                            </Border>
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>
 
                     <ui:SettingsExpanderItem Content="超时时间"
                                              Description="范围为 1 至 600 秒">
                         <ui:SettingsExpanderItem.Footer>
-                            <ui:NumberBox Value="{Binding BackendTimeout}"
-                                          Minimum="1" Maximum="600"
-                                          SmallChange="1"
-                                          SpinButtonPlacementMode="Compact"
-                                          MinWidth="160" Width="160" />
+                            <Border Classes="SettingsField">
+                                <ui:NumberBox Value="{Binding BackendTimeout}"
+                                              Minimum="1" Maximum="600"
+                                              SmallChange="1"
+                                              SpinButtonPlacementMode="Compact"
+                                              Width="{StaticResource SettingsCompactControlWidth}"
+                                              HorizontalAlignment="Right" />
+                            </Border>
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>
                 </ui:SettingsExpander>
@@ -94,45 +109,54 @@
 
                     <ui:SettingsExpanderItem Content="代理类型">
                         <ui:SettingsExpanderItem.Footer>
-                            <ComboBox SelectedItem="{Binding ProxyType}"
-                                      IsEnabled="{Binding UseProxy}"
-                                      MinWidth="160" Width="160">
-                                <x:String>http</x:String>
-                                <x:String>https</x:String>
-                                <x:String>socks5</x:String>
-                            </ComboBox>
+                            <Border Classes="SettingsField">
+                                <ComboBox SelectedItem="{Binding ProxyType}"
+                                          IsEnabled="{Binding UseProxy}"
+                                          HorizontalAlignment="Stretch">
+                                    <x:String>http</x:String>
+                                    <x:String>https</x:String>
+                                    <x:String>socks5</x:String>
+                                </ComboBox>
+                            </Border>
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>
 
                     <ui:SettingsExpanderItem Content="主机名">
                         <ui:SettingsExpanderItem.Footer>
-                            <TextBox Watermark="代理主机名"
-                                     Text="{Binding ProxyHost}"
-                                     IsEnabled="{Binding UseProxy}"
-                                     MinWidth="280" Width="280" />
+                            <Border Classes="SettingsField">
+                                <TextBox Watermark="代理主机名"
+                                         Text="{Binding ProxyHost}"
+                                         IsEnabled="{Binding UseProxy}" />
+                            </Border>
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>
 
                     <ui:SettingsExpanderItem Content="端口">
                         <ui:SettingsExpanderItem.Footer>
-                            <ui:NumberBox Value="{Binding ProxyPort}"
-                                          Minimum="1" Maximum="65535"
-                                          SmallChange="1"
-                                          SpinButtonPlacementMode="Compact"
-                                          IsEnabled="{Binding UseProxy}"
-                                          MinWidth="160" Width="160" />
+                            <Border Classes="SettingsField">
+                                <ui:NumberBox Value="{Binding ProxyPort}"
+                                              Minimum="1" Maximum="65535"
+                                              SmallChange="1"
+                                              SpinButtonPlacementMode="Compact"
+                                              IsEnabled="{Binding UseProxy}"
+                                              Width="{StaticResource SettingsCompactControlWidth}"
+                                              HorizontalAlignment="Right" />
+                            </Border>
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>
 
                     <ui:SettingsExpanderItem Content="超时时间"
                                              Description="单位：秒">
                         <ui:SettingsExpanderItem.Footer>
-                            <ui:NumberBox Value="{Binding ProxyTimeout}"
-                                          Minimum="1" Maximum="600"
-                                          SmallChange="1"
-                                          SpinButtonPlacementMode="Compact"
-                                          IsEnabled="{Binding UseProxy}"
-                                          MinWidth="160" Width="160" />
+                            <Border Classes="SettingsField">
+                                <ui:NumberBox Value="{Binding ProxyTimeout}"
+                                              Minimum="1" Maximum="600"
+                                              SmallChange="1"
+                                              SpinButtonPlacementMode="Compact"
+                                              IsEnabled="{Binding UseProxy}"
+                                              Width="{StaticResource SettingsCompactControlWidth}"
+                                              HorizontalAlignment="Right" />
+                            </Border>
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>
                 </ui:SettingsExpander>
@@ -143,46 +167,51 @@
                                      IconSource="{StaticResource WeChatIcon}">
                     <ui:SettingsExpanderItem Content="AppId">
                         <ui:SettingsExpanderItem.Footer>
-                            <TextBox Watermark="微信公众号 AppId"
-                                     Text="{Binding WeChatAppId}"
-                                     MinWidth="320" Width="320" />
+                            <Border Classes="SettingsField">
+                                <TextBox Watermark="微信公众号 AppId"
+                                         Text="{Binding WeChatAppId}" />
+                            </Border>
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>
 
                     <ui:SettingsExpanderItem Content="AppSecret"
                                              Description="仅用于创建草稿，不会直接群发">
                         <ui:SettingsExpanderItem.Footer>
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" MinWidth="320" Width="320">
-                                <TextBox Grid.Column="0"
-                                         Watermark="微信公众号 AppSecret"
-                                         PasswordChar="{Binding ShowWeChatAppSecret, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
-                                         Text="{Binding WeChatAppSecret}" />
-                                <Button Grid.Column="1" Classes="Icon"
-                                        ToolTip.Tip="显示或隐藏 AppSecret"
-                                        Command="{Binding ToggleWeChatAppSecretCommand}">
-                                    <fi:FluentIcon Icon="Eye" IconVariant="Regular" />
-                                </Button>
-                            </Grid>
+                            <Border Classes="SettingsField">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <TextBox Grid.Column="0"
+                                             Watermark="微信公众号 AppSecret"
+                                             PasswordChar="{Binding ShowWeChatAppSecret, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
+                                             Text="{Binding WeChatAppSecret}" />
+                                    <Button Grid.Column="1" Classes="Icon"
+                                            ToolTip.Tip="显示或隐藏 AppSecret"
+                                            Command="{Binding ToggleWeChatAppSecretCommand}">
+                                        <fi:FluentIcon Icon="Eye" IconVariant="Regular" />
+                                    </Button>
+                                </Grid>
+                            </Border>
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>
 
                     <ui:SettingsExpanderItem Content="默认作者">
                         <ui:SettingsExpanderItem.Footer>
-                            <TextBox Watermark="可留空"
-                                     Text="{Binding WeChatAuthor}"
-                                     MinWidth="240" Width="240" />
+                            <Border Classes="SettingsField">
+                                <TextBox Watermark="可留空" Text="{Binding WeChatAuthor}" />
+                            </Border>
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>
 
                     <ui:SettingsExpanderItem Content="默认排版主题">
                         <ui:SettingsExpanderItem.Footer>
-                            <ComboBox SelectedItem="{Binding WeChatDefaultTheme}"
-                                      MinWidth="180" Width="180">
-                                <x:String>newspaper</x:String>
-                                <x:String>warm-card</x:String>
-                                <x:String>ocean-card</x:String>
-                                <x:String>tech</x:String>
-                            </ComboBox>
+                            <Border Classes="SettingsField">
+                                <ComboBox SelectedItem="{Binding WeChatDefaultTheme}"
+                                          HorizontalAlignment="Stretch">
+                                    <x:String>newspaper</x:String>
+                                    <x:String>warm-card</x:String>
+                                    <x:String>ocean-card</x:String>
+                                    <x:String>tech</x:String>
+                                </ComboBox>
+                            </Border>
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>
                 </ui:SettingsExpander>
@@ -218,95 +247,100 @@
 
                     <ui:SettingsExpanderItem Content="配置文件">
                         <ui:SettingsExpanderItem.Footer>
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" MinWidth="320" Width="320">
-                                <ComboBox Grid.Column="0"
-                                          ItemsSource="{Binding Profiles}"
-                                          SelectedItem="{Binding CurrentProfile}"
-                                          DisplayMemberBinding="{Binding Name}"
-                                          IsEnabled="{Binding EnableAI}" />
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
-                                    <Button Classes="Icon" ToolTip.Tip="添加新配置"
-                                            Command="{Binding AddProfileCommand}"
-                                            IsEnabled="{Binding EnableAI}">
-                                        <fi:FluentIcon Icon="Add" IconVariant="Regular" />
-                                    </Button>
-                                    <Button Classes="Icon" ToolTip.Tip="删除当前配置"
-                                            Command="{Binding DeleteProfileCommand}"
-                                            IsEnabled="{Binding EnableAI}">
-                                        <fi:FluentIcon Icon="Delete" IconVariant="Regular" />
-                                    </Button>
-                                    <Button Classes="Icon" ToolTip.Tip="重命名当前配置"
-                                            Command="{Binding RenameProfileCommand}"
-                                            IsEnabled="{Binding EnableAI}">
-                                        <fi:FluentIcon Icon="Edit" IconVariant="Regular" />
-                                    </Button>
-                                </StackPanel>
-                            </Grid>
+                            <Border Classes="SettingsField">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <ComboBox Grid.Column="0"
+                                              ItemsSource="{Binding Profiles}"
+                                              SelectedItem="{Binding CurrentProfile}"
+                                              DisplayMemberBinding="{Binding Name}"
+                                              IsEnabled="{Binding EnableAI}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                        <Button Classes="Icon" ToolTip.Tip="添加新配置"
+                                                Command="{Binding AddProfileCommand}"
+                                                IsEnabled="{Binding EnableAI}">
+                                            <fi:FluentIcon Icon="Add" IconVariant="Regular" />
+                                        </Button>
+                                        <Button Classes="Icon" ToolTip.Tip="删除当前配置"
+                                                Command="{Binding DeleteProfileCommand}"
+                                                IsEnabled="{Binding EnableAI}">
+                                            <fi:FluentIcon Icon="Delete" IconVariant="Regular" />
+                                        </Button>
+                                        <Button Classes="Icon" ToolTip.Tip="重命名当前配置"
+                                                Command="{Binding RenameProfileCommand}"
+                                                IsEnabled="{Binding EnableAI}">
+                                            <fi:FluentIcon Icon="Edit" IconVariant="Regular" />
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>
 
                     <ui:SettingsExpanderItem Content="提供商">
                         <ui:SettingsExpanderItem.Footer>
-                            <ComboBox SelectedValue="{Binding AIProvider}"
-                                      SelectedValueBinding="{Binding Name}"
-                                      ItemsSource="{Binding AIProviders}"
-                                      IsEnabled="{Binding EnableAI}"
-                                      MinWidth="240" Width="240">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding DisplayName}"
-                                                   ToolTip.Tip="{Binding Description}" />
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
+                            <Border Classes="SettingsField">
+                                <ComboBox SelectedValue="{Binding AIProvider}"
+                                          SelectedValueBinding="{Binding Name}"
+                                          ItemsSource="{Binding AIProviders}"
+                                          IsEnabled="{Binding EnableAI}"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding DisplayName}"
+                                                       ToolTip.Tip="{Binding Description}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </Border>
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>
 
                     <ui:SettingsExpanderItem Content="API Key">
                         <ui:SettingsExpanderItem.Footer>
-                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" MinWidth="360" Width="360">
-                                <TextBox Grid.Column="0"
-                                         Watermark="输入对应提供商的 API 密钥"
-                                         PasswordChar="{Binding ShowAIKey, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
-                                         Text="{Binding AIKey}"
-                                         IsEnabled="{Binding EnableAI}" />
-                                <Button Grid.Column="1" Classes="Icon"
-                                        Command="{Binding ToggleAIKeyCommand}"
-                                        ToolTip.Tip="显示或隐藏 API Key"
-                                        IsEnabled="{Binding EnableAI}">
-                                    <fi:FluentIcon Icon="Eye" IconVariant="Regular" />
-                                </Button>
-                                <Button Grid.Column="2" Classes="Compact"
-                                        Command="{Binding TestConnectionCommand}"
-                                        ToolTip.Tip="测试 API 连接并加载模型列表"
-                                        IsEnabled="{Binding EnableAI}">
-                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                            <Border Classes="SettingsField">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                    <TextBox Grid.Column="0"
+                                             Watermark="输入对应提供商的 API 密钥"
+                                             PasswordChar="{Binding ShowAIKey, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
+                                             Text="{Binding AIKey}"
+                                             IsEnabled="{Binding EnableAI}" />
+                                    <Button Grid.Column="1" Classes="Icon"
+                                            Command="{Binding ToggleAIKeyCommand}"
+                                            ToolTip.Tip="显示或隐藏 API Key"
+                                            IsEnabled="{Binding EnableAI}">
+                                        <fi:FluentIcon Icon="Eye" IconVariant="Regular" />
+                                    </Button>
+                                    <Button Grid.Column="2" Classes="Icon"
+                                            Command="{Binding TestConnectionCommand}"
+                                            ToolTip.Tip="测试 API 连接并加载模型列表"
+                                            IsEnabled="{Binding EnableAI}">
                                         <fi:FluentIcon Icon="PlugConnected" IconVariant="Regular" />
-                                        <TextBlock Text="测试" />
-                                    </StackPanel>
-                                </Button>
-                            </Grid>
+                                    </Button>
+                                </Grid>
+                            </Border>
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>
 
                     <ui:SettingsExpanderItem Content="模型">
                         <ui:SettingsExpanderItem.Footer>
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" MinWidth="320" Width="320">
-                                <AutoCompleteBox Grid.Column="0"
-                                                 Text="{Binding AIModel}"
-                                                 ItemsSource="{Binding AvailableModels}"
-                                                 IsEnabled="{Binding EnableAI}"
-                                                 MinimumPopulateDelay="0"
-                                                 MinimumPrefixLength="0"
-                                                 IsTextCompletionEnabled="True"
-                                                 FilterMode="ContainsOrdinal"
-                                                 GotFocus="AutoCompleteBox_GotFocus" />
-                                <ProgressBar Grid.Column="1"
-                                             IsIndeterminate="True"
-                                             IsVisible="{Binding IsLoadingModels}"
-                                             Width="24" Height="24"
-                                             VerticalAlignment="Center" />
-                            </Grid>
+                            <Border Classes="SettingsField">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <AutoCompleteBox Grid.Column="0"
+                                                     Text="{Binding AIModel}"
+                                                     ItemsSource="{Binding AvailableModels}"
+                                                     IsEnabled="{Binding EnableAI}"
+                                                     MinimumPopulateDelay="0"
+                                                     MinimumPrefixLength="0"
+                                                     IsTextCompletionEnabled="True"
+                                                     FilterMode="ContainsOrdinal"
+                                                     GotFocus="AutoCompleteBox_GotFocus" />
+                                    <ProgressBar Grid.Column="1"
+                                                 IsIndeterminate="True"
+                                                 IsVisible="{Binding IsLoadingModels}"
+                                                 Width="24" Height="24"
+                                                 VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>
 
@@ -314,10 +348,11 @@
                                              Description="仅自定义提供商需要"
                                              IsVisible="{Binding IsCustomProvider}">
                         <ui:SettingsExpanderItem.Footer>
-                            <TextBox Watermark="https://api.example.com/v1"
-                                     Text="{Binding AIApiBase}"
-                                     IsEnabled="{Binding EnableAI}"
-                                     MinWidth="320" Width="320" />
+                            <Border Classes="SettingsField">
+                                <TextBox Watermark="https://api.example.com/v1"
+                                         Text="{Binding AIApiBase}"
+                                         IsEnabled="{Binding EnableAI}" />
+                            </Border>
                         </ui:SettingsExpanderItem.Footer>
                     </ui:SettingsExpanderItem>
 
