@@ -25,6 +25,7 @@ public partial class WeChatViewModel : PageViewModelBase {
     private string _markdown = string.Empty;
     private string _sourceFilePath = string.Empty;
     private string _summary = string.Empty;
+    private string _previewPath = string.Empty;
 
     public WeChatViewModel() : base("公众号排版", Icon.Mail) {
         Themes = new ObservableCollection<WeChatTheme>(WeChatFormattingService.Themes);
@@ -37,19 +38,26 @@ public partial class WeChatViewModel : PageViewModelBase {
     [ObservableProperty] private string _articleTitle = string.Empty;
     [ObservableProperty] private string _formattedHtml = string.Empty;
     [ObservableProperty] private string _coverPath = string.Empty;
+    [ObservableProperty] private Uri? _previewUri;
     [ObservableProperty] private string _draftMediaId = string.Empty;
     [ObservableProperty] private string _statusMessage = "请先在「发布」页加载 Markdown 文件";
     [ObservableProperty] private string _markdownSourceMessage = string.Empty;
     [ObservableProperty] private bool _isPublishing;
     [ObservableProperty] private int _wordCount;
     [ObservableProperty] private bool _hasArticle;
+    [ObservableProperty] private bool _isInspectorOpen = true;
 
     public bool HasDraftMediaId => !string.IsNullOrWhiteSpace(DraftMediaId);
+    public bool HasFormattedHtml => !string.IsNullOrWhiteSpace(FormattedHtml);
+    public bool HasCover => !string.IsNullOrWhiteSpace(CoverPath);
+    public string CoverFileName => HasCover ? Path.GetFileName(CoverPath) : "尚未选择封面图";
+    public double InspectorPaneWidth => IsInspectorOpen ? 320 : 48;
 
     public void SyncFrom(PublishViewModel publish) {
         if (!publish.HasLoadedArticle || string.IsNullOrWhiteSpace(publish.CurrentFilePath) ||
             string.IsNullOrWhiteSpace(publish.ArticleContent)) {
             HasArticle = false;
+            PreviewUri = null;
             StatusMessage = "请先在「发布」页加载 Markdown 文件";
             return;
         }
@@ -78,6 +86,22 @@ public partial class WeChatViewModel : PageViewModelBase {
         OnPropertyChanged(nameof(HasDraftMediaId));
     }
 
+    partial void OnFormattedHtmlChanged(string value) {
+        OnPropertyChanged(nameof(HasFormattedHtml));
+    }
+
+    partial void OnCoverPathChanged(string value) {
+        OnPropertyChanged(nameof(HasCover));
+        OnPropertyChanged(nameof(CoverFileName));
+    }
+
+    partial void OnIsInspectorOpenChanged(bool value) {
+        OnPropertyChanged(nameof(InspectorPaneWidth));
+    }
+
+    [RelayCommand]
+    private void ToggleInspector() => IsInspectorOpen = !IsInspectorOpen;
+
     [RelayCommand]
     private void GenerateFormat() {
         if (!HasArticle || SelectedTheme == null) return;
@@ -87,6 +111,7 @@ public partial class WeChatViewModel : PageViewModelBase {
             ArticleTitle = result.Title;
             WordCount = result.WordCount;
             FormattedHtml = result.Html;
+            RefreshPreview();
             AppSettings.Instance.WeChatDefaultTheme = SelectedTheme.Id;
             StatusMessage = $"已按“{SelectedTheme.Name}”生成排版（约 {WordCount} 字）";
         }
@@ -143,19 +168,16 @@ public partial class WeChatViewModel : PageViewModelBase {
 
     [RelayCommand]
     private void OpenPreview() {
-        if (string.IsNullOrWhiteSpace(FormattedHtml)) {
+        if (!HasFormattedHtml) {
             StatusMessage = "没有可预览的排版内容";
             return;
         }
 
         try {
-            var previewDirectory = Path.Combine(Path.GetTempPath(), "StarBlogPublisher", "wechat-preview");
-            Directory.CreateDirectory(previewDirectory);
-            var previewPath = Path.Combine(previewDirectory, "wechat-preview.html");
-            var page =
-                $"<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>{WebUtility.HtmlEncode(ArticleTitle)}</title></head><body style=\"margin:0;padding:20px;background:#F3F4F6\">{FormattedHtml}</body></html>";
-            File.WriteAllText(previewPath, page, Encoding.UTF8);
-            Process.Start(new ProcessStartInfo(previewPath) { UseShellExecute = true });
+            RefreshPreview();
+            if (string.IsNullOrWhiteSpace(_previewPath)) return;
+
+            Process.Start(new ProcessStartInfo(_previewPath) { UseShellExecute = true });
             StatusMessage = "已在浏览器中打开排版预览";
         }
         catch (Exception ex) {
@@ -190,6 +212,7 @@ public partial class WeChatViewModel : PageViewModelBase {
             if (result.Success) {
                 DraftMediaId = result.DraftMediaId ?? string.Empty;
                 FormattedHtml = result.FormattedHtml ?? FormattedHtml;
+                RefreshPreview();
                 StatusMessage = "草稿已创建并通过校验，可在公众号后台的内容管理 → 草稿箱查看";
                 GuiHost.ToastSuccess("草稿已创建", "可在公众号后台草稿箱查看");
             }
@@ -218,6 +241,62 @@ public partial class WeChatViewModel : PageViewModelBase {
         await clipboard.SetTextAsync(content);
         StatusMessage = successMessage;
         GuiHost.ToastSuccess("已复制", successMessage);
+    }
+
+    /// <summary>
+    /// Creates a local document for the embedded WebView. The canvas and frame styles
+    /// belong only to the desktop preview; the generated fragment itself is unchanged
+    /// for clipboard and draft upload operations.
+    /// </summary>
+    private void RefreshPreview() {
+        if (!HasFormattedHtml) {
+            PreviewUri = null;
+            _previewPath = string.Empty;
+            return;
+        }
+
+        try {
+            var previewDirectory = Path.Combine(Path.GetTempPath(), "StarBlogPublisher", "wechat-preview");
+            Directory.CreateDirectory(previewDirectory);
+            _previewPath = Path.Combine(previewDirectory, "index.html");
+
+            var sourceDirectory = string.IsNullOrWhiteSpace(_sourceFilePath)
+                ? null
+                : Path.GetDirectoryName(_sourceFilePath);
+            var baseHref = string.IsNullOrWhiteSpace(sourceDirectory)
+                ? string.Empty
+                : new Uri(Path.EndsInDirectorySeparator(sourceDirectory)
+                    ? sourceDirectory
+                    : sourceDirectory + Path.DirectorySeparatorChar).AbsoluteUri;
+
+            var page = $$"""
+                <!doctype html>
+                <html lang="zh-CN">
+                <head>
+                  <meta charset="utf-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1">
+                  <base href="{{WebUtility.HtmlEncode(baseHref)}}">
+                  <title>{{WebUtility.HtmlEncode(ArticleTitle)}}</title>
+                  <style>
+                    * { box-sizing: border-box; }
+                    html, body { min-height: 100%; }
+                    body { margin: 0; padding: 32px 20px 48px; background: #f3f3f3; }
+                    .wechat-preview-frame { width: min(100%, 677px); min-height: 100%; margin: 0 auto; background: #fff; box-shadow: 0 2px 10px rgba(0, 0, 0, .08); }
+                    @media (max-width: 720px) { body { padding: 0; background: #fff; } .wechat-preview-frame { width: 100%; box-shadow: none; } }
+                  </style>
+                </head>
+                <body><main class="wechat-preview-frame">{{FormattedHtml}}</main></body>
+                </html>
+                """;
+
+            File.WriteAllText(_previewPath, page, Encoding.UTF8);
+            PreviewUri = new Uri($"{new Uri(_previewPath).AbsoluteUri}?v={DateTime.UtcNow.Ticks}");
+        }
+        catch (Exception ex) {
+            PreviewUri = null;
+            _previewPath = string.Empty;
+            StatusMessage = $"预览生成失败: {ex.Message}";
+        }
     }
 
     private static string CreateCfHtml(string htmlFragment) {

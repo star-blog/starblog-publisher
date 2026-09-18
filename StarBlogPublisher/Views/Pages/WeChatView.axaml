@@ -4,90 +4,136 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:i="https://github.com/projektanker/icons.avalonia"
-             xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:fi="using:FluentIcons.Avalonia.Fluent"
              mc:Ignorable="d"
              x:Class="StarBlogPublisher.Views.WeChatView"
              x:DataType="vm:WeChatViewModel">
     <Panel>
-        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8"
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10"
                     IsVisible="{Binding !HasArticle}">
             <i:Icon Value="fa-brands fa-weixin" FontSize="36" Foreground="#07C160" />
-            <TextBlock Text="请先在「发布」页加载 Markdown 文件" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            <TextBlock Text="先在「发布」页加载一篇 Markdown 文章" FontSize="16" HorizontalAlignment="Center" />
+            <TextBlock Text="文章会在这里生成适合公众号粘贴和草稿箱上传的排版。"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
         </StackPanel>
 
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="16" IsVisible="{Binding HasArticle}">
-            <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,0,16">
-                <i:Icon Value="fa-brands fa-weixin" FontSize="25" Foreground="#07C160" />
-                <StackPanel>
-                    <TextBlock Text="公众号排版与草稿箱" FontSize="22" FontWeight="Bold" />
-                    <TextBlock Text="生成微信兼容的内联样式 HTML；上传仅创建草稿，不会直接群发。"
-                               FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                </StackPanel>
-            </StackPanel>
-
-            <Border Classes="Card" Grid.Row="1" Margin="0,0,0,12" Padding="10">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <fi:FluentIcon Icon="Info" IconVariant="Regular" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding MarkdownSourceMessage}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                </StackPanel>
-            </Border>
-
-            <Grid Grid.Row="2" ColumnDefinitions="Auto,220,Auto,*,Auto" ColumnSpacing="10" Margin="0,0,0,12">
-                <TextBlock Grid.Column="0" Text="排版主题" VerticalAlignment="Center" FontWeight="SemiBold" />
-                <ComboBox Grid.Column="1" ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}"
-                          DisplayMemberBinding="{Binding Name}" />
-                <Button Grid.Column="2" Command="{Binding GenerateFormatCommand}">
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <fi:FluentIcon Icon="Edit" IconVariant="Regular" />
-                        <TextBlock Text="重新排版" />
-                    </StackPanel>
-                </Button>
-                <TextBlock Grid.Column="3" Text="{Binding WordCount, StringFormat=约 {0} 字}" VerticalAlignment="Center"
-                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                <Button Grid.Column="4" Command="{Binding OpenPreviewCommand}">
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <fi:FluentIcon Icon="Eye" IconVariant="Regular" />
-                        <TextBlock Text="浏览器预览" />
-                    </StackPanel>
-                </Button>
-            </Grid>
-
-            <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10" Margin="0,0,0,10">
-                <TextBlock Grid.Column="0" Text="封面图" VerticalAlignment="Center" FontWeight="SemiBold" />
-                <TextBox Grid.Column="1" Text="{Binding CoverPath}" IsReadOnly="True" PlaceholderText="请选择 JPG 或 PNG 封面图" />
-                <Button Grid.Column="2" Command="{Binding SelectCoverCommand}">
-                    <TextBlock Text="选择封面" />
-                </Button>
-                <Button Grid.Column="3" Command="{Binding UploadDraftCommand}" IsEnabled="{Binding !IsPublishing}" Classes="Accent">
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <fi:FluentIcon Icon="ArrowUpload" IconVariant="Regular" />
-                        <TextBlock Text="上传草稿箱" />
-                    </StackPanel>
-                </Button>
-            </Grid>
-
-            <Grid Grid.Row="4" RowDefinitions="Auto,*">
-                <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,6">
-                    <TextBlock Grid.Column="0" Text="微信排版 HTML" FontWeight="SemiBold" VerticalAlignment="Center" />
-                    <Button Grid.Column="2" Command="{Binding CopyHtmlCommand}">
-                        <StackPanel Orientation="Horizontal" Spacing="5">
-                            <fi:FluentIcon Icon="Copy" IconVariant="Regular" />
-                            <TextBlock Text="复制到公众号" />
-                        </StackPanel>
+        <DockPanel IsVisible="{Binding HasArticle}">
+            <Border DockPanel.Dock="Bottom" Classes="StatusBar">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding WordCount, StringFormat=约 {0} 字}" FontSize="11"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Grid.Column="1" Text="{Binding StatusMessage}" FontSize="11" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <TextBox Grid.Column="2" Text="{Binding DraftMediaId}" IsReadOnly="True"
+                             IsVisible="{Binding HasDraftMediaId}" Width="150" Height="24" FontSize="11" />
+                    <Button Grid.Column="3" Command="{Binding CopyDraftMediaIdCommand}" IsVisible="{Binding HasDraftMediaId}"
+                            Classes="Compact">
+                        <TextBlock Text="复制草稿 ID" FontSize="11" />
                     </Button>
                 </Grid>
-                <TextBox Grid.Row="1" Text="{Binding FormattedHtml}" IsReadOnly="True" AcceptsReturn="True"
-                         TextWrapping="Wrap" FontFamily="Consolas, Menlo, Monospace" />
-            </Grid>
+            </Border>
 
-            <Grid Grid.Row="5" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" Margin="0,14,0,0">
-                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" VerticalAlignment="Center" TextWrapping="Wrap" />
-                <TextBox Grid.Column="1" Text="{Binding DraftMediaId}" IsReadOnly="True" IsVisible="{Binding HasDraftMediaId}" Width="180" />
-                <Button Grid.Column="2" Command="{Binding CopyDraftMediaIdCommand}" IsVisible="{Binding HasDraftMediaId}">
-                    <TextBlock Text="复制草稿 ID" />
-                </Button>
+            <Grid ColumnDefinitions="*,Auto">
+                <NativeWebView Source="{Binding PreviewUri}" />
+
+                <Border Grid.Column="1" Width="{Binding InspectorPaneWidth}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1,0,0,0"
+                        Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}">
+                    <Panel>
+                        <DockPanel IsVisible="{Binding IsInspectorOpen}">
+                            <Border DockPanel.Dock="Top" Classes="InspectorActions">
+                                <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="4">
+                                    <Button Classes="Icon" Command="{Binding ToggleInspectorCommand}" ToolTip.Tip="收起排版设置">
+                                        <fi:FluentIcon Icon="ChevronRight" IconVariant="Regular" FontSize="16" />
+                                    </Button>
+                                    <Button Grid.Column="1" Classes="Icon" Command="{Binding OpenPreviewCommand}" ToolTip.Tip="在浏览器中打开">
+                                        <fi:FluentIcon Icon="Open" IconVariant="Regular" FontSize="16" />
+                                    </Button>
+                                    <Button Grid.Column="2" Classes="Icon" Command="{Binding GenerateFormatCommand}" ToolTip.Tip="重新排版">
+                                        <fi:FluentIcon Icon="ArrowSync" IconVariant="Regular" FontSize="16" />
+                                    </Button>
+                                    <Button Grid.Column="3" Classes="Accent Compact" HorizontalAlignment="Stretch"
+                                            Command="{Binding CopyHtmlCommand}" IsEnabled="{Binding HasFormattedHtml}">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5">
+                                            <fi:FluentIcon Icon="Copy" IconVariant="Regular" FontSize="16" />
+                                            <TextBlock Text="复制到公众号" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </Border>
+
+                            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel Margin="16,12" Spacing="14">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Text="主题" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}"
+                                                  DisplayMemberBinding="{Binding Name}" />
+                                        <TextBlock Text="切换后会自动刷新预览。" FontSize="11"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Text="草稿箱封面" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                            <TextBlock Text="{Binding CoverFileName}" TextTrimming="CharacterEllipsis"
+                                                       VerticalAlignment="Center" />
+                                            <Button Grid.Column="1" Command="{Binding SelectCoverCommand}" Classes="Compact">
+                                                <TextBlock Text="选择" />
+                                            </Button>
+                                        </Grid>
+                                        <TextBlock Text="JPG、JPEG 或 PNG" FontSize="11"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+
+                                    <Button Command="{Binding UploadDraftCommand}" IsEnabled="{Binding !IsPublishing}" Classes="Accent"
+                                            HorizontalAlignment="Stretch">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
+                                            <fi:FluentIcon Icon="ArrowUpload" IconVariant="Regular" FontSize="16" />
+                                            <TextBlock Text="上传至草稿箱" />
+                                        </StackPanel>
+                                    </Button>
+
+                                    <StackPanel Spacing="5">
+                                        <TextBlock Text="来源" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="{Binding MarkdownSourceMessage}" TextWrapping="Wrap" FontSize="11"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+
+                                    <Expander Header="HTML 源码">
+                                        <TextBox Margin="0,8,0,0" Text="{Binding FormattedHtml}" IsReadOnly="True" AcceptsReturn="True"
+                                                 TextWrapping="Wrap" Height="160" FontSize="11"
+                                                 FontFamily="Cascadia Code, Consolas, Menlo, Monospace" />
+                                    </Expander>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </DockPanel>
+
+                        <DockPanel IsVisible="{Binding !IsInspectorOpen}" Margin="4">
+                            <Button DockPanel.Dock="Top" Classes="Icon" HorizontalAlignment="Stretch"
+                                    Command="{Binding ToggleInspectorCommand}" ToolTip.Tip="展开排版设置">
+                                <fi:FluentIcon Icon="ChevronLeft" IconVariant="Regular" FontSize="16" />
+                            </Button>
+                            <Button DockPanel.Dock="Bottom" Classes="Icon" HorizontalAlignment="Stretch"
+                                    Command="{Binding UploadDraftCommand}" IsEnabled="{Binding !IsPublishing}" ToolTip.Tip="上传至草稿箱">
+                                <fi:FluentIcon Icon="ArrowUpload" IconVariant="Regular" FontSize="16" />
+                            </Button>
+                            <StackPanel Spacing="4" Margin="0,8,0,0">
+                                <Button Classes="Icon" HorizontalAlignment="Stretch" Command="{Binding GenerateFormatCommand}" ToolTip.Tip="重新排版">
+                                    <fi:FluentIcon Icon="ArrowSync" IconVariant="Regular" FontSize="16" />
+                                </Button>
+                                <Button Classes="Icon" HorizontalAlignment="Stretch" Command="{Binding OpenPreviewCommand}" ToolTip.Tip="在浏览器中打开">
+                                    <fi:FluentIcon Icon="Open" IconVariant="Regular" FontSize="16" />
+                                </Button>
+                                <Button Classes="Icon" HorizontalAlignment="Stretch" Command="{Binding CopyHtmlCommand}"
+                                        IsEnabled="{Binding HasFormattedHtml}" ToolTip.Tip="复制到公众号">
+                                    <fi:FluentIcon Icon="Copy" IconVariant="Regular" FontSize="16" />
+                                </Button>
+                            </StackPanel>
+                        </DockPanel>
+                    </Panel>
+                </Border>
             </Grid>
-        </Grid>
+        </DockPanel>
     </Panel>
 </UserControl>
