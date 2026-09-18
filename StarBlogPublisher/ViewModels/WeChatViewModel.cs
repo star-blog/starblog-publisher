@@ -11,6 +11,7 @@ using Avalonia.Input;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FluentIcons.Common;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
@@ -24,7 +25,7 @@ public partial class WeChatViewModel : PageViewModelBase {
     private string _sourceFilePath = string.Empty;
     private string _summary = string.Empty;
 
-    public WeChatViewModel() : base("公众号排版", FluentAvalonia.UI.Controls.Symbol.Mail) {
+    public WeChatViewModel() : base("公众号排版", Icon.Mail) {
         Themes = new ObservableCollection<WeChatTheme>(WeChatFormattingService.Themes);
         SelectedTheme = Themes.FirstOrDefault(theme => theme.Id == AppSettings.Instance.WeChatDefaultTheme) ?? Themes[0];
     }

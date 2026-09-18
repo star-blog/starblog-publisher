@@ -9,14 +9,14 @@ using CommunityToolkit.Mvvm.Input;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using Avalonia;
-using FluentAvalonia.UI.Controls;
+using FluentIcons.Common;
 
 namespace StarBlogPublisher.ViewModels;
 
 public partial class SettingsViewModel : PageViewModelBase {
     private readonly MainWindowViewModel _shell;
 
-    public SettingsViewModel(MainWindowViewModel shell) : base("设置", Symbol.Setting) {
+    public SettingsViewModel(MainWindowViewModel shell) : base("设置", Icon.Settings) {
         _shell = shell;
         Reload();
     }

@@ -5,6 +5,7 @@
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:converters="clr-namespace:StarBlogPublisher.Converters"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:fi="using:FluentIcons.Avalonia.Fluent"
              mc:Ignorable="d" d:DesignWidth="760" d:DesignHeight="800"
              x:Class="StarBlogPublisher.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
@@ -40,7 +41,7 @@
                                      Text="{Binding Password}" />
                             <Button Grid.Column="1" Classes="Icon" VerticalAlignment="Bottom"
                                     ToolTip.Tip="显示或隐藏密码" Command="{Binding TogglePasswordCommand}">
-                                <ui:SymbolIcon Symbol="View" />
+                                <fi:FluentIcon Icon="Eye" IconVariant="Regular" />
                             </Button>
                         </Grid>
                         <ui:NumberBox Header="超时时间（秒）" Description="范围为 1 至 600 秒。"
@@ -88,7 +89,7 @@
                                      Text="{Binding WeChatAppSecret}" />
                             <Button Grid.Column="1" Classes="Icon" VerticalAlignment="Bottom"
                                     ToolTip.Tip="显示或隐藏 AppSecret" Command="{Binding ToggleWeChatAppSecretCommand}">
-                                <ui:SymbolIcon Symbol="View" />
+                                <fi:FluentIcon Icon="Eye" IconVariant="Regular" />
                             </Button>
                         </Grid>
                         <StackPanel Spacing="4">
@@ -134,9 +135,9 @@
                                       SelectedItem="{Binding CurrentProfile}" DisplayMemberBinding="{Binding Name}" />
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
-                                <Button Classes="Icon" ToolTip.Tip="添加新配置" Command="{Binding AddProfileCommand}"><ui:SymbolIcon Symbol="Add" /></Button>
-                                <Button Classes="Icon" ToolTip.Tip="删除当前配置" Command="{Binding DeleteProfileCommand}"><ui:SymbolIcon Symbol="Delete" /></Button>
-                                <Button Classes="Icon" ToolTip.Tip="重命名当前配置" Command="{Binding RenameProfileCommand}"><ui:SymbolIcon Symbol="Edit" /></Button>
+                                <Button Classes="Icon" ToolTip.Tip="添加新配置" Command="{Binding AddProfileCommand}"><fi:FluentIcon Icon="Add" IconVariant="Regular" /></Button>
+                                <Button Classes="Icon" ToolTip.Tip="删除当前配置" Command="{Binding DeleteProfileCommand}"><fi:FluentIcon Icon="Delete" IconVariant="Regular" /></Button>
+                                <Button Classes="Icon" ToolTip.Tip="重命名当前配置" Command="{Binding RenameProfileCommand}"><fi:FluentIcon Icon="Edit" IconVariant="Regular" /></Button>
                             </StackPanel>
                         </Grid>
                         <StackPanel Spacing="4">
@@ -154,10 +155,10 @@
                                      PasswordChar="{Binding ShowAIKey, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
                                      Text="{Binding AIKey}" IsEnabled="{Binding EnableAI}" />
                             <Button Grid.Column="1" Classes="Icon" VerticalAlignment="Bottom" Command="{Binding ToggleAIKeyCommand}"
-                                    ToolTip.Tip="显示或隐藏 API Key" IsEnabled="{Binding EnableAI}"><ui:SymbolIcon Symbol="View" /></Button>
+                                    ToolTip.Tip="显示或隐藏 API Key" IsEnabled="{Binding EnableAI}"><fi:FluentIcon Icon="Eye" IconVariant="Regular" /></Button>
                             <Button Grid.Column="2" Classes="Compact" VerticalAlignment="Bottom" Command="{Binding TestConnectionCommand}"
                                     ToolTip.Tip="测试 API 连接并加载模型列表" IsEnabled="{Binding EnableAI}">
-                                <StackPanel Orientation="Horizontal" Spacing="5"><ui:SymbolIcon Symbol="Help" /><TextBlock Text="测试" /></StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="5"><fi:FluentIcon Icon="Info" IconVariant="Regular" /><TextBlock Text="测试" /></StackPanel>
                             </Button>
                         </Grid>
                         <TextBlock Text="模型名称" />
@@ -181,8 +182,8 @@
 
         <Border Grid.Row="1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Padding="16,12">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-                <Button Command="{Binding CancelCommand}"><StackPanel Orientation="Horizontal" Spacing="5"><ui:SymbolIcon Symbol="Cancel" /><TextBlock Text="还原" /></StackPanel></Button>
-                <Button Command="{Binding SaveCommand}" Classes="Accent"><StackPanel Orientation="Horizontal" Spacing="5"><ui:SymbolIcon Symbol="Save" /><TextBlock Text="保存更改" /></StackPanel></Button>
+                <Button Command="{Binding CancelCommand}"><StackPanel Orientation="Horizontal" Spacing="5"><fi:FluentIcon Icon="Dismiss" IconVariant="Regular" /><TextBlock Text="还原" /></StackPanel></Button>
+                <Button Command="{Binding SaveCommand}" Classes="Accent"><StackPanel Orientation="Horizontal" Spacing="5"><fi:FluentIcon Icon="Save" IconVariant="Regular" /><TextBlock Text="保存更改" /></StackPanel></Button>
             </StackPanel>
         </Border>
     </Grid>

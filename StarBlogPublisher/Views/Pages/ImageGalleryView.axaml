@@ -4,6 +4,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:fi="using:FluentIcons.Avalonia.Fluent"
              xmlns:converters="using:StarBlogPublisher.Converters"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="StarBlogPublisher.Views.ImageGalleryView"
@@ -30,7 +31,7 @@
                                                HorizontalAlignment="Center" VerticalAlignment="Center" />
                                         <Border Background="#80000000" CornerRadius="4" IsVisible="{Binding !Exists}">
                                             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
-                                                <ui:SymbolIcon Symbol="Help" FontSize="32" />
+                                                <fi:FluentIcon Icon="QuestionCircle" IconVariant="Regular" FontSize="32" />
                                                 <TextBlock Text="文件不存在" FontWeight="Bold" HorizontalAlignment="Center" />
                                             </StackPanel>
                                         </Border>
@@ -45,7 +46,7 @@
                                             Command="{Binding #GalleryRoot.((vm:ImageGalleryViewModel)DataContext).OpenFolderCommand}"
                                             CommandParameter="{Binding FilePath}">
                                         <StackPanel Orientation="Horizontal" Spacing="3">
-                                            <ui:SymbolIcon Symbol="Folder" FontSize="10" />
+                                            <fi:FluentIcon Icon="FolderOpen" IconVariant="Regular" FontSize="10" />
                                             <TextBlock Text="打开" FontSize="10" />
                                         </StackPanel>
                                     </Button>
@@ -53,7 +54,7 @@
                                             Command="{Binding #GalleryRoot.((vm:ImageGalleryViewModel)DataContext).CopyPathCommand}"
                                             CommandParameter="{Binding FilePath}">
                                         <StackPanel Orientation="Horizontal" Spacing="3">
-                                            <ui:SymbolIcon Symbol="Copy" FontSize="10" />
+                                            <fi:FluentIcon Icon="Copy" IconVariant="Regular" FontSize="10" />
                                             <TextBlock Text="复制" FontSize="10" />
                                         </StackPanel>
                                     </Button>
@@ -69,7 +70,7 @@
             <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" FontSize="12" />
             <Button Grid.Column="1" Command="{Binding RefreshCommand}" Padding="10,5">
                 <StackPanel Orientation="Horizontal" Spacing="5">
-                    <ui:SymbolIcon Symbol="Refresh" />
+                    <fi:FluentIcon Icon="ArrowClockwise" IconVariant="Regular" />
                     <TextBlock Text="刷新" />
                 </StackPanel>
             </Button>

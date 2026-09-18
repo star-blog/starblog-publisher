@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:fi="using:FluentIcons.Avalonia.Fluent"
              xmlns:controls="using:StarBlogPublisher.Views.Controls"
              mc:Ignorable="d" d:DesignWidth="520" d:DesignHeight="520"
              MinWidth="420" MinHeight="360"
@@ -20,7 +21,7 @@
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         Spacing="10">
-                <ui:SymbolIcon Symbol="Help" FontSize="32" />
+                <fi:FluentIcon Icon="QuestionCircle" IconVariant="Regular" FontSize="32" />
                 <TextBlock Text="{Binding ErrorMessage}" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="400" />
             </StackPanel>
         </Panel>

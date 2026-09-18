@@ -5,12 +5,13 @@
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:i="https://github.com/projektanker/icons.avalonia"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:fi="using:FluentIcons.Avalonia.Fluent"
              mc:Ignorable="d"
              x:Class="StarBlogPublisher.Views.PublishResultView"
              x:DataType="vm:PublishResultViewModel">
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="8">
         <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,0,16">
-            <ui:SymbolIcon Symbol="Accept" FontSize="24" />
+            <fi:FluentIcon Icon="CheckmarkCircle" IconVariant="Filled" FontSize="24" />
             <TextBlock Text="文章发布成功" FontSize="22" FontWeight="Bold" />
         </StackPanel>
 
@@ -25,12 +26,12 @@
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" Margin="8,0,0,0">
                 <Button Command="{Binding CopyUrlCommand}" ToolTip.Tip="复制 URL">
                     <StackPanel Orientation="Horizontal" Spacing="5">
-                        <ui:SymbolIcon Symbol="Copy" />
+                        <fi:FluentIcon Icon="Copy" IconVariant="Regular" />
                         <TextBlock Text="复制 URL" />
                     </StackPanel>
                 </Button>
                 <Button Command="{Binding OpenArticleCommand}" ToolTip.Tip="在浏览器中打开文章">
-                    <ui:SymbolIcon Symbol="Link" />
+                    <fi:FluentIcon Icon="Link" IconVariant="Regular" />
                 </Button>
             </StackPanel>
         </Grid>
@@ -40,7 +41,7 @@
                 <TextBlock Grid.Column="0" Text="发布后的 Markdown" FontWeight="SemiBold" VerticalAlignment="Center" />
                 <Button Grid.Column="2" Command="{Binding CopyMarkdownCommand}">
                     <StackPanel Orientation="Horizontal" Spacing="5">
-                        <ui:SymbolIcon Symbol="Copy" />
+                        <fi:FluentIcon Icon="Copy" IconVariant="Regular" />
                         <TextBlock Text="复制 Markdown" />
                     </StackPanel>
                 </Button>

@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:fi="using:FluentIcons.Avalonia.Fluent"
              xmlns:utils="clr-namespace:StarBlogPublisher.Utils;assembly=StarBlogPublisher.Core"
              mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
              x:Class="StarBlogPublisher.Views.CoverPromptView"
@@ -25,7 +26,7 @@
                         Command="{Binding GeneratePromptCommand}"
                         IsVisible="{Binding IsAIEnabled}" Classes="Accent" Padding="10,6">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <ui:SymbolIcon Symbol="Refresh" />
+                        <fi:FluentIcon Icon="ArrowClockwise" IconVariant="Regular" />
                         <TextBlock Text="生成" />
                     </StackPanel>
                 </Button>

@@ -1,15 +1,15 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using FluentAvalonia.UI.Controls;
+using FluentIcons.Common;
 
 namespace StarBlogPublisher.ViewModels;
 
 /// <summary>Sidebar page view-model base. Navigation uses Fluent symbols directly.</summary>
 public abstract partial class PageViewModelBase : ViewModelBase {
     [ObservableProperty] private string _title;
-    [ObservableProperty] private Symbol _navSymbol;
+    [ObservableProperty] private Icon _navIcon;
 
-    protected PageViewModelBase(string title, Symbol navSymbol = Symbol.Document) {
+    protected PageViewModelBase(string title, Icon navIcon = Icon.Document) {
         _title = title;
-        _navSymbol = navSymbol;
+        _navIcon = navIcon;
     }
 }

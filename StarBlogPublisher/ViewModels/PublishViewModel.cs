@@ -12,7 +12,7 @@ using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
 using StarBlogPublisher.Utils;
-using FluentAvalonia.UI.Controls;
+using FluentIcons.Common;
 
 namespace StarBlogPublisher.ViewModels;
 
@@ -23,7 +23,7 @@ public partial class PublishViewModel : PageViewModelBase {
     private readonly AiApplicationService _aiService;
     private string? _currentFilePath;
 
-    public PublishViewModel(MainWindowViewModel shell) : base("发布", Symbol.Edit) {
+    public PublishViewModel(MainWindowViewModel shell) : base("发布", Icon.Pen) {
         _shell = shell;
         _categoryService = new CategoryApplicationService(ApiService.Instance, shell.AuthService);
         _publishService = new ArticlePublishApplicationService(ApiService.Instance, shell.AuthService, AppSettings.Instance);

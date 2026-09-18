@@ -4,6 +4,7 @@
                xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                xmlns:ui="using:FluentAvalonia.UI.Controls"
+               xmlns:fi="using:FluentIcons.Avalonia.Fluent"
                xmlns:wnd="using:FluentAvalonia.UI.Windowing"
                mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="720"
                x:Class="StarBlogPublisher.Views.MainWindow"
@@ -51,7 +52,7 @@
                 <DataTemplate x:DataType="vm:PageViewModelBase">
                     <ui:NavigationViewItem Content="{Binding Title}">
                         <ui:NavigationViewItem.IconSource>
-                            <ui:SymbolIconSource Symbol="{Binding NavSymbol}" />
+                            <fi:FluentIconSource Icon="{Binding NavIcon}" IconVariant="Regular" />
                         </ui:NavigationViewItem.IconSource>
                     </ui:NavigationViewItem>
                 </DataTemplate>
@@ -64,9 +65,9 @@
                                 Command="{Binding ToggleThemeCommand}"
                                 ToolTip.Tip="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}">
                             <Panel>
-                                <ui:SymbolIcon Symbol="DarkTheme" FontSize="16"
+                                <fi:FluentIcon Icon="WeatherMoon" IconVariant="Regular" FontSize="16"
                                                IsVisible="{Binding !IsDarkTheme}" />
-                                <ui:SymbolIcon Symbol="WeatherSunny" FontSize="16"
+                                <fi:FluentIcon Icon="WeatherSunny" IconVariant="Regular" FontSize="16"
                                                IsVisible="{Binding IsDarkTheme}" />
                             </Panel>
                         </Button>
@@ -74,13 +75,13 @@
                                 Command="{Binding LoginCommand}"
                                 IsVisible="{Binding !IsLoggedIn}"
                                 ToolTip.Tip="登录">
-                            <ui:SymbolIcon Symbol="Account" FontSize="16" />
+                            <fi:FluentIcon Icon="Person" IconVariant="Regular" FontSize="16" />
                         </Button>
                         <Button Classes="Transparent"
                                 Command="{Binding LogoutCommand}"
                                 IsVisible="{Binding IsLoggedIn}"
                                 ToolTip.Tip="登出">
-                            <ui:SymbolIcon Symbol="LeaveChat" FontSize="16" />
+                            <fi:FluentIcon Icon="SignOut" IconVariant="Regular" FontSize="16" />
                         </Button>
                     </StackPanel>
                     <TextBlock Text="{Binding LoginStatusMessage}"

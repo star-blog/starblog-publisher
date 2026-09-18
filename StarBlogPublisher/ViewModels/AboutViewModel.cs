@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Avalonia.Controls.Notifications;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FluentIcons.Common;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Utils;
 
@@ -17,7 +18,7 @@ public partial class AboutViewModel : PageViewModelBase {
     private const string LatestReleaseApiUrl = "https://api.github.com/repos/star-blog/starblog-publisher/releases/latest";
     private static readonly HttpClient HttpClient = CreateHttpClient();
 
-    public AboutViewModel() : base("关于", FluentAvalonia.UI.Controls.Symbol.Help) {
+    public AboutViewModel() : base("关于", Icon.Info) {
     }
 
     [ObservableProperty] private string _appName = "StarBlog Publisher";
