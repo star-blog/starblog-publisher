@@ -1,0 +1,17 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="StarBlogPublisher.Views.Controls.BusyOverlay"
+             x:Name="Root"
+             IsVisible="{Binding IsBusy, ElementName=Root}">
+    <Border Background="#80000000">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
+            <ProgressBar Width="180"
+                         Value="{Binding Progress, ElementName=Root}"
+                         IsIndeterminate="{Binding IsIndeterminate, ElementName=Root}" />
+            <TextBlock Text="{Binding Message, ElementName=Root}"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       MaxWidth="280" />
+        </StackPanel>
+    </Border>
+</UserControl>

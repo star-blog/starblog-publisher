@@ -6,6 +6,7 @@
              xmlns:md="clr-namespace:Markdown.Avalonia;assembly=Markdown.Avalonia"
              xmlns:i="https://github.com/projektanker/icons.avalonia"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:controls="using:StarBlogPublisher.Views.Controls"
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="650"
              x:Class="StarBlogPublisher.Views.PublishEditorView"
              x:DataType="vm:PublishViewModel">
@@ -49,12 +50,11 @@
                 <TextBlock Grid.Column="6" Text="{Binding StatusMessage}" VerticalAlignment="Center"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
             </Grid>
-            <Border IsVisible="{Binding IsPublishing}" Background="#80000000" ZIndex="10">
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
-                    <ProgressBar IsIndeterminate="True" Width="160" />
-                    <TextBlock Text="正在发布..." HorizontalAlignment="Center" />
-                </StackPanel>
-            </Border>
+            <controls:BusyOverlay IsBusy="{Binding IsPublishing}"
+                                  Message="正在发布..."
+                                  Progress="{Binding PublishProgress}"
+                                  IsIndeterminate="False"
+                                  ZIndex="10" />
         </Panel>
 
         <TabControl SelectedIndex="{Binding SelectedTabIndex}">
@@ -169,16 +169,16 @@
                                 <Grid Grid.Column="1" RowDefinitions="Auto,*" IsVisible="{Binding IsLoggedIn}">
                                     <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="0,0,0,5">
                                         <TextBlock Grid.Column="0" Text="分类" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                        <Button Grid.Column="2" ToolTip.Tip="添加分类" Command="{Binding ShowAddCategoryCommand}"
-                                                Padding="6,2" Margin="0,0,4,0">
+                                    <Button Grid.Column="2" ToolTip.Tip="添加分类" Command="{Binding ShowAddCategoryCommand}"
+                                                Classes="Icon" Margin="0,0,4,0">
                                             <ui:SymbolIcon Symbol="Add" />
                                         </Button>
-                                        <Button Grid.Column="3" ToolTip.Tip="查看词云" Command="{Binding ShowWordCloudCommand}"
-                                                Padding="6,2" Margin="0,0,4,0">
+                                    <Button Grid.Column="3" ToolTip.Tip="查看词云" Command="{Binding ShowWordCloudCommand}"
+                                                Classes="Icon" Margin="0,0,4,0">
                                             <ui:SymbolIcon Symbol="Cloud" />
                                         </Button>
-                                        <Button Grid.Column="4" ToolTip.Tip="刷新分类" Command="{Binding RefreshCategoriesCommand}"
-                                                Padding="6,2">
+                                    <Button Grid.Column="4" ToolTip.Tip="刷新分类" Command="{Binding RefreshCategoriesCommand}"
+                                                Classes="Icon">
                                             <ui:SymbolIcon Symbol="Refresh" />
                                         </Button>
                                     </Grid>

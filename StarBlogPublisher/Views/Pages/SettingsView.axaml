@@ -131,13 +131,13 @@
                                 <ComboBox Grid.Column="0" ItemsSource="{Binding Profiles}" SelectedItem="{Binding CurrentProfile}"
                                           DisplayMemberBinding="{Binding Name}" />
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="8,0,0,0">
-                                    <Button ToolTip.Tip="添加新配置" Command="{Binding AddProfileCommand}">
+                                    <Button ToolTip.Tip="添加新配置" Command="{Binding AddProfileCommand}" Classes="Icon">
                                         <ui:SymbolIcon Symbol="Add" />
                                     </Button>
-                                    <Button ToolTip.Tip="删除当前配置" Command="{Binding DeleteProfileCommand}">
+                                    <Button ToolTip.Tip="删除当前配置" Command="{Binding DeleteProfileCommand}" Classes="Icon">
                                         <ui:SymbolIcon Symbol="Delete" />
                                     </Button>
-                                    <Button ToolTip.Tip="重命名当前配置" Command="{Binding RenameProfileCommand}">
+                                    <Button ToolTip.Tip="重命名当前配置" Command="{Binding RenameProfileCommand}" Classes="Icon">
                                         <ui:SymbolIcon Symbol="Edit" />
                                     </Button>
                                 </StackPanel>

@@ -25,5 +25,17 @@
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Padding" Value="16" />
         </Style>
+        <Style Selector="Button.Compact">
+            <Setter Property="Padding" Value="8,4" />
+        </Style>
+        <Style Selector="Button.Icon">
+            <Setter Property="MinWidth" Value="32" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="Padding" Value="8" />
+        </Style>
+        <Style Selector="StackPanel.PageContent">
+            <Setter Property="Margin" Value="16" />
+            <Setter Property="Spacing" Value="12" />
+        </Style>
     </Application.Styles>
 </Application>

@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:controls="using:StarBlogPublisher.Views.Controls"
              mc:Ignorable="d" d:DesignWidth="520" d:DesignHeight="520"
              MinWidth="420" MinHeight="360"
              x:Class="StarBlogPublisher.Views.WordCloudView"
@@ -23,11 +24,8 @@
                 <TextBlock Text="{Binding ErrorMessage}" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="400" />
             </StackPanel>
         </Panel>
-        <Border IsVisible="{Binding IsLoading}" Background="#80000000" ZIndex="10">
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
-                <ProgressBar IsIndeterminate="True" Width="160" />
-                <TextBlock Text="正在生成词云..." HorizontalAlignment="Center" />
-            </StackPanel>
-        </Border>
+        <controls:BusyOverlay IsBusy="{Binding IsLoading}"
+                              Message="正在生成词云..."
+                              ZIndex="10" />
     </Panel>
 </UserControl>
