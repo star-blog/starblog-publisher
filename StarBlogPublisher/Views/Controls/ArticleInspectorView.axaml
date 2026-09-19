@@ -45,7 +45,7 @@
                 <SplitButton Grid.Column="3"
                              HorizontalAlignment="Stretch"
                              HorizontalContentAlignment="Center"
-                             Content="发布"
+                             Content="发布到博客"
                              Classes="Accent"
                              Command="{Binding PublishCommand}"
                              IsEnabled="{Binding CanPublish}"
@@ -55,54 +55,19 @@
                             <MenuItem Header="发布到 StarBlog" Command="{Binding PublishCommand}" />
                             <MenuItem Header="发布并打开网页" Command="{Binding PublishAndOpenCommand}" />
                             <MenuItem Header="复制发布链接" Command="{Binding CopyPublishLinkCommand}" />
+                            <Separator />
+                            <MenuItem Header="公众号排版与草稿…" Command="{Binding ShowWeChatPublisherCommand}" />
                         </MenuFlyout>
                     </SplitButton.Flyout>
                 </SplitButton>
             </Grid>
         </Border>
 
-        <Border DockPanel.Dock="Top" Classes="InspectorActions">
-            <Grid ColumnDefinitions="*,*,*,Auto" ColumnSpacing="4">
-                <ToggleButton Classes="EditorMode"
-                              HorizontalAlignment="Stretch"
-                              Content="源码"
-                              IsChecked="{Binding IsSourceMode, Mode=OneWay}"
-                              Command="{Binding SetEditorModeCommand}"
-                              CommandParameter="Source"
-                              ToolTip.Tip="只编辑 Markdown 源码" />
-                <ToggleButton Grid.Column="1"
-                              Classes="EditorMode"
-                              HorizontalAlignment="Stretch"
-                              Content="分栏"
-                              IsEnabled="{Binding CanPreview}"
-                              IsChecked="{Binding IsSplitMode, Mode=OneWay}"
-                              Command="{Binding SetEditorModeCommand}"
-                              CommandParameter="Split"
-                              ToolTip.Tip="编辑与预览并排" />
-                <ToggleButton Grid.Column="2"
-                              Classes="EditorMode"
-                              HorizontalAlignment="Stretch"
-                              Content="预览"
-                              IsEnabled="{Binding CanPreview}"
-                              IsChecked="{Binding IsPreviewMode, Mode=OneWay}"
-                              Command="{Binding SetEditorModeCommand}"
-                              CommandParameter="Preview"
-                              ToolTip.Tip="只看渲染预览" />
-                <Button Grid.Column="3"
-                        Classes="Icon"
-                        ToolTip.Tip="编辑器选项">
-                    <fi:FluentIcon Icon="TextFont" IconVariant="Regular" FontSize="16" />
-                    <Button.Flyout>
-                        <Flyout Placement="BottomEdgeAlignedRight">
-                            <controls:EditorOptionsPanel />
-                        </Flyout>
-                    </Button.Flyout>
-                </Button>
-            </Grid>
-        </Border>
+
 
         <ScrollViewer>
-            <StackPanel Margin="16,12" Spacing="14">
+            <StackPanel Margin="14,12" Spacing="12">
+                <TextBlock Text="文章属性" FontWeight="SemiBold" />
                 <StackPanel Spacing="6" IsVisible="{Binding HasPublishResult}">
                     <TextBlock Text="已发布"
                                FontSize="13"
@@ -229,6 +194,8 @@
                              PlaceholderText="文章摘要" />
                 </StackPanel>
 
+                <Expander Header="更多属性" HorizontalAlignment="Stretch">
+                <StackPanel Spacing="12">
                 <StackPanel Spacing="6">
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Text="关键词" FontSize="12" VerticalAlignment="Center"
@@ -285,6 +252,8 @@
                     </Grid>
                     <TextBox Text="{Binding ArticleSlug}" PlaceholderText="url-slug" />
                 </StackPanel>
+                </StackPanel>
+                </Expander>
             </StackPanel>
         </ScrollViewer>
     </DockPanel>

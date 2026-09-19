@@ -92,7 +92,8 @@ public partial class PublishViewModel : PageViewModelBase {
     public bool IsWorkspaceBusy => IsPublishing || IsLoadingDocument;
     public bool IsWorkspaceBusyIndeterminate => IsLoadingDocument && !IsPublishing;
     public string WorkspaceBusyMessage => IsPublishing ? StatusMessage : "正在打开文件...";
-    public bool IsDocumentDirty => !string.Equals(ArticleContent, _loadedContent, StringComparison.Ordinal);
+    public bool IsDocumentDirty => HasLoadedArticle && (_isNewDocument || !string.Equals(ArticleContent, _loadedContent, StringComparison.Ordinal)
+        || !string.Equals(MetadataSnapshot(), _savedMetadata, StringComparison.Ordinal));
     public string DocumentFileName => string.IsNullOrWhiteSpace(_currentFilePath)
         ? "未命名.md"
         : Path.GetFileName(_currentFilePath);
@@ -189,7 +190,10 @@ public partial class PublishViewModel : PageViewModelBase {
             : "AI 关闭";
     }
 
-    partial void OnIsInspectorOpenChanged(bool value) => OnPropertyChanged(nameof(InspectorPaneWidth));
+    partial void OnIsInspectorOpenChanged(bool value) {
+        OnPropertyChanged(nameof(InspectorPaneWidth));
+        OnPropertyChanged(nameof(InspectorColumnWidth));
+    }
 
     partial void OnIsLoggedInChanged(bool value) {
         OnPropertyChanged(nameof(ConnectionStatusText));
@@ -231,7 +235,7 @@ public partial class PublishViewModel : PageViewModelBase {
 
     partial void OnEditorShowLineNumbersChanged(bool value) => PersistEditorPreferences();
 
-    partial void OnArticleTitleChanged(string value) => NotifyPublishReadiness();
+    partial void OnArticleTitleChanged(string value) => NotifyDocumentState();
 
     partial void OnIsLoadingDocumentChanged(bool value) => NotifyWorkspaceBusy();
 
@@ -244,12 +248,13 @@ public partial class PublishViewModel : PageViewModelBase {
     }
 
     partial void OnArticleContentChanged(string value) {
+        OnPropertyChanged(nameof(OutlineText));
         UpdateDocumentStats();
         NotifyDocumentState();
         RefreshPreview();
     }
 
-    partial void OnArticleKeywordsChanged(string value) => SyncKeywordItems();
+    partial void OnArticleKeywordsChanged(string value) { SyncKeywordItems(); NotifyDocumentState(); }
 
     partial void OnCategoriesChanged(ObservableCollection<Category> value) => RefreshFilteredCategories();
 
@@ -306,18 +311,7 @@ public partial class PublishViewModel : PageViewModelBase {
 
     [RelayCommand]
     private async Task SelectFile() {
-        var topLevel = GuiHost.GetTopLevel();
-        if (topLevel == null) return;
-
-        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions {
-            Title = "选择Markdown文件",
-            AllowMultiple = false,
-            FileTypeFilter = [new FilePickerFileType("Markdown") { Patterns = ["*.md"] }]
-        });
-
-        if (files.Count > 0) {
-            await LoadFromPathAsync(files[0].Path.LocalPath, files[0].Name);
-        }
+        await _shell.Workspace.OpenFilesCommand.ExecuteAsync(null);
     }
 
     public async Task LoadFromPathAsync(string path, string? displayName = null) {
@@ -337,13 +331,13 @@ public partial class PublishViewModel : PageViewModelBase {
             ArticleDescription = ArticleContent.Limit(100);
             ArticleSlug = string.Empty;
             ArticleKeywords = string.Empty;
+            SelectedCategory = null;
+            await LoadPropertiesAsync();
             NotifyPublishReadiness();
 
             var name = displayName ?? Path.GetFileName(path);
             StatusMessage = $"已加载文件: {name}";
-            GuiHost.ToastSuccess("已加载", name);
             IsLoadingDocument = false;
-            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Loaded);
         }
         catch (Exception ex) {
             StatusMessage = "文件加载失败";
@@ -363,7 +357,7 @@ public partial class PublishViewModel : PageViewModelBase {
         try {
             var previewDirectory = Path.Combine(Path.GetTempPath(), "StarBlogPublisher", "markdown-preview");
             Directory.CreateDirectory(previewDirectory);
-            var previewPath = Path.Combine(previewDirectory, "index.html");
+            var previewPath = Path.Combine(previewDirectory, _previewId + ".html");
             var pipeline = new MarkdownPipelineBuilder()
                 .UseAdvancedExtensions()
                 .DisableHtml()
@@ -614,7 +608,7 @@ public partial class PublishViewModel : PageViewModelBase {
             PublishProgress = 100;
             if (!string.IsNullOrWhiteSpace(result.Post.Content)) {
                 ArticleContent = result.Post.Content;
-                _loadedContent = ArticleContent;
+                NotifyDocumentState();
                 StatusMessage = "发布完成，已用服务器内容更新编辑器";
             }
             else {
@@ -764,6 +758,8 @@ public partial class PublishViewModel : PageViewModelBase {
             return;
         }
 
+        if (IsWorkspaceBusy) return;
+        if (IsDocumentDirty && !await GuiHost.ConfirmAsync("重新加载", "放弃当前正文和文章属性的修改，从磁盘重新加载？")) return;
         await LoadFromPathAsync(_currentFilePath);
     }
 
@@ -985,6 +981,7 @@ public partial class PublishViewModel : PageViewModelBase {
 
     private void NotifyDocumentState() {
         OnPropertyChanged(nameof(IsDocumentDirty));
+        OnPropertyChanged(nameof(CurrentFilePath));
         OnPropertyChanged(nameof(DocumentFileName));
         OnPropertyChanged(nameof(DocumentDisplayName));
         OnPropertyChanged(nameof(SaveStatusText));
@@ -1099,6 +1096,7 @@ public partial class PublishViewModel : PageViewModelBase {
         OnPropertyChanged(nameof(HasSelectedCategory));
         OnPropertyChanged(nameof(CategorySelectionText));
         OnPropertyChanged(nameof(CategorySelectionHint));
+        NotifyDocumentState();
         NotifyPublishReadiness();
     }
 

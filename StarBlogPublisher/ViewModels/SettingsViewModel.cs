@@ -472,6 +472,7 @@ public partial class SettingsViewModel : PageViewModelBase {
         settings.Save();
         _shell.ApplyTheme(IsDarkTheme);
         _shell.PublishPage.NotifyAiEnabled();
+        foreach (var document in _shell.Workspace.Documents) document.NotifyAiEnabled();
         GuiHost.ToastSuccess("设置", "已保存");
     }
 

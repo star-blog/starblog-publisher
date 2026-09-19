@@ -1,10 +1,12 @@
 using System;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using AvaloniaEdit.Search;
 using StarBlogPublisher.Editor;
 using StarBlogPublisher.ViewModels;
@@ -28,20 +30,57 @@ public partial class MarkdownEditorView : UserControl {
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e) {
         base.OnAttachedToVisualTree(e);
         ConfigureEditor();
+        if (_viewModel != null) {
+            _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+        }
         ApplyEditorChrome();
         SyncTextFromViewModel();
+        ScheduleRestoreEditorPosition();
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e) {
         if (_viewModel != null) {
+            SaveEditorPosition();
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
         }
 
         _viewModel = DataContext as PublishViewModel;
         if (_viewModel != null) {
+            _syncingText = true;
+            Editor.Document = _viewModel.EditorDocument;
+            _syncingText = false;
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
             SyncTextFromViewModel();
+            ScheduleRestoreEditorPosition();
         }
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) {
+        SaveEditorPosition();
+        if (_viewModel != null) _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    private void SaveEditorPosition() {
+        if (_viewModel == null || !_editorConfigured) return;
+        _viewModel.CaretOffset = Editor.CaretOffset;
+        _viewModel.VerticalOffset = Editor.VerticalOffset;
+        _viewModel.HorizontalOffset = Editor.HorizontalOffset;
+    }
+
+    private void RestoreEditorPosition() {
+        if (_viewModel == null || !_editorConfigured) return;
+        Editor.CaretOffset = Math.Clamp(_viewModel.CaretOffset, 0, Editor.Document.TextLength);
+        if (Editor.TextArea.TextView is ILogicalScrollable scrollable)
+            scrollable.Offset = new Vector(_viewModel.HorizontalOffset, _viewModel.VerticalOffset);
+    }
+
+    private void ScheduleRestoreEditorPosition() {
+        var document = _viewModel;
+        Dispatcher.UIThread.Post(() => {
+            if (ReferenceEquals(document, _viewModel)) RestoreEditorPosition();
+        }, DispatcherPriority.Loaded);
     }
 
     private void ConfigureEditor() {

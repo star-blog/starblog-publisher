@@ -14,7 +14,7 @@
               DragDrop.AllowDrop="True">
             <Border HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    Width="420"
+                    MaxWidth="420" Margin="20"
                     Padding="32,28"
                     CornerRadius="8"
                     BorderThickness="1"
@@ -43,10 +43,56 @@
                    IsVisible="{Binding HasLoadedArticle}">
             <controls:WorkspaceStatusBar DockPanel.Dock="Bottom" />
 
-            <Grid ColumnDefinitions="*,Auto">
-                <controls:MarkdownEditorView />
-                <Border Grid.Column="1"
-                        Width="{Binding InspectorPaneWidth}"
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MinWidth="220" />
+                    <ColumnDefinition Width="4" />
+                    <ColumnDefinition Width="{Binding InspectorColumnWidth, Mode=TwoWay}" />
+                </Grid.ColumnDefinitions>
+                <DockPanel>
+        <Border DockPanel.Dock="Top" Classes="InspectorActions">
+            <Grid ColumnDefinitions="*,*,*,Auto" ColumnSpacing="4">
+                <ToggleButton Classes="EditorMode"
+                              HorizontalAlignment="Stretch"
+                              Content="源码"
+                              IsChecked="{Binding IsSourceMode, Mode=OneWay}"
+                              Command="{Binding SetEditorModeCommand}"
+                              CommandParameter="Source"
+                              ToolTip.Tip="只编辑 Markdown 源码" />
+                <ToggleButton Grid.Column="1"
+                              Classes="EditorMode"
+                              HorizontalAlignment="Stretch"
+                              Content="分栏"
+                              IsEnabled="{Binding CanPreview}"
+                              IsChecked="{Binding IsSplitMode, Mode=OneWay}"
+                              Command="{Binding SetEditorModeCommand}"
+                              CommandParameter="Split"
+                              ToolTip.Tip="编辑与预览并排" />
+                <ToggleButton Grid.Column="2"
+                              Classes="EditorMode"
+                              HorizontalAlignment="Stretch"
+                              Content="预览"
+                              IsEnabled="{Binding CanPreview}"
+                              IsChecked="{Binding IsPreviewMode, Mode=OneWay}"
+                              Command="{Binding SetEditorModeCommand}"
+                              CommandParameter="Preview"
+                              ToolTip.Tip="只看渲染预览" />
+                <Button Grid.Column="3"
+                        Classes="Icon"
+                        ToolTip.Tip="编辑器选项">
+                    <fi:FluentIcon Icon="TextFont" IconVariant="Regular" FontSize="16" />
+                    <Button.Flyout>
+                        <Flyout Placement="BottomEdgeAlignedRight">
+                            <controls:EditorOptionsPanel />
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
+            </Grid>
+        </Border>
+                    <controls:MarkdownEditorView />
+                </DockPanel>
+                <GridSplitter Grid.Column="1" Width="4" ResizeDirection="Columns" IsVisible="{Binding IsInspectorOpen}" />
+                <Border Grid.Column="2"
                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1,0,0,0"
                         Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}">

@@ -21,7 +21,8 @@ public partial class MainWindowViewModel : ViewModelBase {
         AppSettings.Instance, GlobalState.Instance, ApiService.Instance
     );
 
-    public PublishViewModel PublishPage { get; }
+    public ArticleWorkspaceViewModel Workspace { get; }
+    public PublishViewModel PublishPage => Workspace.CurrentDocument;
     public WeChatViewModel WeChatPage { get; }
     public SettingsViewModel SettingsPage { get; }
     public AboutViewModel AboutPage { get; }
@@ -49,19 +50,18 @@ public partial class MainWindowViewModel : ViewModelBase {
 
     public MainWindowViewModel() : this(AppHttpClients.Factory) { }
 
-    internal MainWindowViewModel(IHttpClientFactory httpClientFactory) {
-        PublishPage = new PublishViewModel(this);
+    public MainWindowViewModel(IHttpClientFactory httpClientFactory, bool initializeSession = true, string? workspaceHistoryPath = null) {
+        Workspace = new ArticleWorkspaceViewModel(this, workspaceHistoryPath);
         WeChatPage = new WeChatViewModel(httpClientFactory);
         SettingsPage = new SettingsViewModel(this);
         AboutPage = new AboutViewModel();
-        Pages = [PublishPage, WeChatPage, SettingsPage, AboutPage];
-        ActivePage = PublishPage;
+        Pages = [Workspace, WeChatPage, SettingsPage, AboutPage];
+        ActivePage = Workspace;
 
-        GlobalState.Instance.StateChanged += OnGlobalStateChanged;
-        UpdateLoginState();
-
-        if (AuthService.HasCredentials) {
-            _ = Login();
+        if (initializeSession) {
+            GlobalState.Instance.StateChanged += OnGlobalStateChanged;
+            UpdateLoginState();
+            if (AuthService.HasCredentials) _ = Login();
         }
 
         IsDarkTheme = AppSettings.Instance.IsDarkTheme;
@@ -85,7 +85,7 @@ public partial class MainWindowViewModel : ViewModelBase {
         }
 
         SettingsPage.SyncDarkTheme(isDark);
-        PublishPage.RefreshPreviewForThemeChange();
+        foreach (var document in Workspace.Documents) document.RefreshPreviewForThemeChange();
     }
 
     public void UpdateTitleBarMetrics(double height, double rightInset) {
@@ -102,10 +102,10 @@ public partial class MainWindowViewModel : ViewModelBase {
 
     public void RefreshChromeTitle() {
         string title;
-        if (ActivePage is PublishViewModel publish && publish.HasLoadedArticle) {
-            title = publish.DocumentDisplayName;
+        if (ActivePage is ArticleWorkspaceViewModel && PublishPage.HasLoadedArticle) {
+            title = PublishPage.DocumentDisplayName;
         }
-        else if (ActivePage is PublishViewModel) {
+        else if (ActivePage is ArticleWorkspaceViewModel) {
             title = "StarBlog Publisher";
         }
         else {
@@ -209,10 +209,12 @@ public partial class MainWindowViewModel : ViewModelBase {
         IsLoggedIn = AuthService.IsLoggedIn;
         HasCredentials = AuthService.HasCredentials;
         LoginStatusMessage = AuthService.GetStatusMessage();
-        PublishPage.NotifyLoginState(IsLoggedIn);
+        Workspace.EmptyDocument.NotifyLoginState(IsLoggedIn);
+        foreach (var document in Workspace.Documents) document.NotifyLoginState(IsLoggedIn);
 
         if (IsLoggedIn && !wasLoggedIn) {
-            PublishPage.RefreshCategoriesCommand.Execute(null);
+            Workspace.EmptyDocument.RefreshCategoriesCommand.Execute(null);
+            foreach (var document in Workspace.Documents) document.RefreshCategoriesCommand.Execute(null);
         }
     }
 }
