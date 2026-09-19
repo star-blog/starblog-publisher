@@ -3,16 +3,20 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
+using StarBlogPublisher.Services.AI;
 using FluentIcons.Common;
 
 namespace StarBlogPublisher.ViewModels;
 
 public partial class SettingsViewModel : PageViewModelBase {
     private readonly MainWindowViewModel _shell;
+    private readonly AIModelCatalogService _modelCatalogService = new();
+    private string? _lastProviderName;
 
     public SettingsViewModel(MainWindowViewModel shell) : base("设置", Icon.Settings) {
         _shell = shell;
@@ -47,8 +51,11 @@ public partial class SettingsViewModel : PageViewModelBase {
     [ObservableProperty] private string _AIApiBase = string.Empty;
     [ObservableProperty] private bool _showAIKey;
     [ObservableProperty] private bool _isLoadingModels;
-    [ObservableProperty] private ObservableCollection<string> _availableModels = new();
+    [ObservableProperty] private Vector _settingsScrollOffset;
+    [ObservableProperty] private bool _isAiSettingsExpanded;
+    [ObservableProperty] private ObservableCollection<AIModelDescriptor> _availableModels = new();
     [ObservableProperty] private string _aiStatusMessage = "准备就绪";
+    [ObservableProperty] private string _aiModelDetails = "\u8bf7\u9009\u62e9\u6a21\u578b\u4ee5\u67e5\u770b\u76ee\u5f55\u8be6\u60c5\u3002";
     [ObservableProperty] private ObservableCollection<AIProfile> _profiles = new();
     [ObservableProperty] private AIProfile? _currentProfile;
 
@@ -147,12 +154,11 @@ public partial class SettingsViewModel : PageViewModelBase {
 
         OnPropertyChanged(nameof(IsCustomProvider));
         if (CurrentProvider == null) return;
+        var providerChanged = !string.Equals(_lastProviderName, CurrentProvider.Name, StringComparison.Ordinal);
+        _lastProviderName = CurrentProvider.Name;
         if (!IsCustomProvider) {
-            if (string.IsNullOrWhiteSpace(AIApiBase)) {
-                AIApiBase = CurrentProvider.DefaultApiBase;
-            }
-
-            if (string.IsNullOrWhiteSpace(AIModel)) {
+            AIApiBase = CurrentProvider.DefaultApiBase;
+            if (providerChanged || string.IsNullOrWhiteSpace(AIModel)) {
                 AIModel = CurrentProvider.DefaultModel;
             }
         }
@@ -166,7 +172,10 @@ public partial class SettingsViewModel : PageViewModelBase {
         AIKey = profile.Key;
         AIModel = profile.Model;
         AIApiBase = profile.ApiBase;
+        _ = RefreshModels();
     }
+
+    partial void OnAIModelChanged(string value) => UpdateSelectedModelDetails();
 
     private void SaveProfileSettings() {
         if (CurrentProfile == null) return;
@@ -200,19 +209,36 @@ public partial class SettingsViewModel : PageViewModelBase {
         AvailableModels.Clear();
 
         var apiBase = IsCustomProvider ? AIApiBase : CurrentProvider.DefaultApiBase;
-        var result = await CurrentProvider.GetModelsAsync(AIKey, apiBase);
+        var result = await _modelCatalogService.GetModelsAsync(CurrentProvider, AIKey, apiBase);
         foreach (var model in result.Models) {
             AvailableModels.Add(model);
         }
 
-        if (!string.IsNullOrEmpty(AIModel) && !AvailableModels.Contains(AIModel) && AvailableModels.Count > 0) {
-            AvailableModels.Add(AIModel);
+        if (!string.IsNullOrEmpty(AIModel) && AvailableModels.All(model => !string.Equals(model.Id, AIModel, StringComparison.OrdinalIgnoreCase))) {
+            AvailableModels.Add(new AIModelDescriptor(AIModel, Source: AIModelSource.SavedConfiguration));
         }
 
-        AiStatusMessage = result.Success
-            ? $"已加载 {AvailableModels.Count} 个模型"
-            : $"获取模型列表失败: {result.ErrorMessage}，已加载默认模型列表";
+        AiStatusMessage = $"{CurrentProvider.CapabilitySummary}. {result.Message}";
+        UpdateSelectedModelDetails();
         IsLoadingModels = false;
+    }
+
+    private void UpdateSelectedModelDetails() {
+        var model = AvailableModels.FirstOrDefault(item => string.Equals(item.Id, AIModel, StringComparison.OrdinalIgnoreCase));
+        if (model == null) {
+            AiModelDetails = string.IsNullOrWhiteSpace(AIModel)
+                ? "\u8bf7\u9009\u62e9\u6a21\u578b\u4ee5\u67e5\u770b\u76ee\u5f55\u8be6\u60c5\u3002"
+                : $"{AIModel}\uff1a\u5df2\u4fdd\u5b58\u7684\u6a21\u578b\uff0c\u5c1a\u672a\u5728\u63d0\u4f9b\u5546\u76ee\u5f55\u4e2d\u9a8c\u8bc1\u3002";
+            return;
+        }
+
+        var source = model.Source switch {
+            AIModelSource.Provider => "\u63d0\u4f9b\u5546\u76ee\u5f55",
+            AIModelSource.Recommended => "\u5185\u7f6e\u63a8\u8350",
+            _ => "\u5df2\u4fdd\u5b58\u7684\u914d\u7f6e\uff08\u5c1a\u672a\u901a\u8fc7\u63d0\u4f9b\u5546\u76ee\u5f55\u9a8c\u8bc1\uff09"
+        };
+        var context = model.ContextLength is null ? "\u4e0a\u4e0b\u6587\u7a97\u53e3\u672a\u77e5" : $"{model.ContextLength:N0} tokens \u4e0a\u4e0b\u6587\u7a97\u53e3";
+        AiModelDetails = $"{source}; {context}; {model.PriceSummary}.";
     }
 
     [RelayCommand]
@@ -285,6 +311,19 @@ public partial class SettingsViewModel : PageViewModelBase {
 
     [RelayCommand]
     private void TestConnection() => _ = RefreshModels();
+
+    [RelayCommand]
+    private Task OpenModelCatalog() {
+        IsAiSettingsExpanded = true;
+        return _shell.OpenModelCatalogAsync();
+    }
+
+    internal async Task<ModelCatalogSnapshot> RefreshModelCatalogAsync() {
+        await RefreshModels();
+        return new ModelCatalogSnapshot(AvailableModels.ToArray(), AiStatusMessage);
+    }
+
+    internal void SelectModel(string modelId) => AIModel = modelId;
 
     [RelayCommand]
     private void Save() {

@@ -25,6 +25,7 @@ public partial class MainWindowViewModel : ViewModelBase {
     public WeChatViewModel WeChatPage { get; }
     public SettingsViewModel SettingsPage { get; }
     public AboutViewModel AboutPage { get; }
+    public ModelCatalogPageViewModel? ModelCatalogPage { get; private set; }
 
     public IReadOnlyList<PageViewModelBase> Pages { get; }
 
@@ -42,6 +43,7 @@ public partial class MainWindowViewModel : ViewModelBase {
     [ObservableProperty] private Thickness _titleBarTitleMargin = new(60, 0, 140, 0);
 
     private double _titleBarRightInset = 140;
+    private bool _restoreSettingsAfterModelCatalog;
     private const double CompactPaneLength = 48;
     private const double OpenPaneLength = 220;
 
@@ -130,7 +132,12 @@ public partial class MainWindowViewModel : ViewModelBase {
             weChat.SyncFrom(PublishPage);
         }
         else if (value is SettingsViewModel settings) {
-            settings.Reload();
+            if (_restoreSettingsAfterModelCatalog) {
+                _restoreSettingsAfterModelCatalog = false;
+            }
+            else {
+                settings.Reload();
+            }
         }
 
         RefreshChromeTitle();
@@ -145,6 +152,18 @@ public partial class MainWindowViewModel : ViewModelBase {
     public void NavigateToWeChat() {
         WeChatPage.SyncFrom(PublishPage);
         ActivePage = WeChatPage;
+    }
+
+    public async System.Threading.Tasks.Task OpenModelCatalogAsync() {
+        var page = new ModelCatalogPageViewModel(SettingsPage, ReturnToSettingsFromModelCatalog);
+        ModelCatalogPage = page;
+        ActivePage = page;
+        await page.RefreshAsync();
+    }
+
+    private void ReturnToSettingsFromModelCatalog() {
+        _restoreSettingsAfterModelCatalog = true;
+        ActivePage = SettingsPage;
     }
 
     [RelayCommand]

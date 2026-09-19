@@ -28,7 +28,9 @@
     </UserControl.Styles>
 
     <Grid RowDefinitions="*,Auto">
-        <ScrollViewer Grid.Row="0">
+        <ScrollViewer x:Name="SettingsScrollViewer"
+                      Grid.Row="0"
+                      Offset="{Binding SettingsScrollOffset, Mode=TwoWay}">
             <StackPanel Classes="PageContent" MaxWidth="1000" HorizontalAlignment="Center" Spacing="4">
                 <StackPanel Spacing="4" Margin="0,0,0,12">
                     <TextBlock Text="设置" FontSize="28" FontWeight="SemiBold" />
@@ -249,7 +251,8 @@
                 <!-- AI 创作 -->
                 <ui:FASettingsExpander Header="AI 创作"
                                      Description="AI 提供商、模型与配置文件"
-                                     IconSource="{StaticResource AiIcon}">
+                                     IconSource="{StaticResource AiIcon}"
+                                     IsExpanded="{Binding IsAiSettingsExpanded, Mode=TwoWay}">
                     <ui:FASettingsExpander.Footer>
                         <ToggleSwitch OnContent="已启用" OffContent="已禁用"
                                       IsChecked="{Binding EnableAI}" />
@@ -334,17 +337,17 @@
                     <ui:FASettingsExpanderItem Content="模型">
                         <ui:FASettingsExpanderItem.Footer>
                             <Border Classes="SettingsField">
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                    <AutoCompleteBox Grid.Column="0"
-                                                     Text="{Binding AIModel}"
-                                                     ItemsSource="{Binding AvailableModels}"
-                                                     IsEnabled="{Binding EnableAI}"
-                                                     MinimumPopulateDelay="0"
-                                                     MinimumPrefixLength="0"
-                                                     IsTextCompletionEnabled="True"
-                                                     FilterMode="ContainsOrdinal"
-                                                     GotFocus="AutoCompleteBox_GotFocus" />
-                                    <ProgressBar Grid.Column="1"
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                    <TextBox Grid.Column="0"
+                                             Text="{Binding AIModel}"
+                                             IsReadOnly="True"
+                                             IsEnabled="{Binding EnableAI}" />
+                                    <Button Grid.Column="1"
+                                            Command="{Binding OpenModelCatalogCommand}"
+                                            IsEnabled="{Binding EnableAI}">
+                                        <TextBlock Text="&#x9009;&#x62E9;&#x6A21;&#x578B;" />
+                                    </Button>
+                                    <ProgressBar Grid.Column="2"
                                                  IsIndeterminate="True"
                                                  IsVisible="{Binding IsLoadingModels}"
                                                  Width="24" Height="24"
@@ -353,6 +356,9 @@
                             </Border>
                         </ui:FASettingsExpanderItem.Footer>
                     </ui:FASettingsExpanderItem>
+
+                    <ui:FASettingsExpanderItem Content="&#x6A21;&#x578B;&#x8BE6;&#x60C5;"
+                                                 Description="{Binding AiModelDetails}" />
 
                     <ui:FASettingsExpanderItem Content="API Base URL"
                                              Description="仅自定义提供商需要"

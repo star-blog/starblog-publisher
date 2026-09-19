@@ -8,6 +8,12 @@ using System.Threading.Tasks;
 
 namespace StarBlogPublisher.Services;
 
+public enum AIModelCatalogKind {
+    OpenAICompatible,
+    OpenRouter,
+    Unsupported
+}
+
 public class AIProviderInfo
 {
     public string Name { get; set; }
@@ -16,6 +22,22 @@ public class AIProviderInfo
     public string DefaultApiBase { get; set; }
     public string DefaultModel { get; set; }
     public List<string> DefaultModels { get; set; } = new List<string>();
+
+    /// <summary>Describes discovery support of the adapter currently shipped by this application.</summary>
+    public AIModelCatalogKind ModelCatalogKind => Name switch {
+        "openrouter" => AIModelCatalogKind.OpenRouter,
+        // Anthropic's native API does not expose the OpenAI-compatible /models contract.
+        "claude" => AIModelCatalogKind.Unsupported,
+        _ => AIModelCatalogKind.OpenAICompatible
+    };
+
+    public bool SupportsPriceCatalog => ModelCatalogKind == AIModelCatalogKind.OpenRouter;
+
+    public string CapabilitySummary => ModelCatalogKind switch {
+        AIModelCatalogKind.OpenRouter => "OpenAI 兼容调用、在线模型目录、上下文窗口与实时价格",
+        AIModelCatalogKind.OpenAICompatible => "OpenAI 兼容调用与在线模型目录；价格由提供商账单页管理",
+        _ => "需要原生适配器；当前不会将其误判为 OpenAI 兼容接口"
+    };
 
     private static readonly List<AIProviderInfo> Providers = [
         // 所有内置服务商均使用 OpenAI Chat Completions 兼容接口，

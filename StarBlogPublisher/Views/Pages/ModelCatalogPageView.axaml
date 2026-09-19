@@ -1,0 +1,91 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:StarBlogPublisher.ViewModels"
+             xmlns:ai="using:StarBlogPublisher.Services.AI"
+             xmlns:fi="using:FluentIcons.Avalonia.Fluent"
+             x:Class="StarBlogPublisher.Views.ModelCatalogPageView"
+             x:DataType="vm:ModelCatalogPageViewModel">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="16" Margin="32,24">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="16">
+            <StackPanel Spacing="4">
+                <TextBlock Text="&#x6A21;&#x578B;&#x76EE;&#x5F55;" FontSize="26" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding ProviderName}" Opacity="0.75" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button Command="{Binding RefreshCommand}" IsEnabled="{Binding !IsRefreshing}">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <fi:FluentIcon Icon="ArrowSync" IconVariant="Regular" />
+                        <TextBlock Text="&#x5237;&#x65B0;&#x76EE;&#x5F55;" />
+                    </StackPanel>
+                </Button>
+                <Button Command="{Binding ReturnToSettingsCommand}">
+                    <TextBlock Text="&#x8FD4;&#x56DE;&#x8BBE;&#x7F6E;" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <Border Grid.Row="1" Padding="12" CornerRadius="6" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+        </Border>
+
+        <Grid Grid.Row="2" ColumnDefinitions="2*,*" ColumnSpacing="16" MinHeight="360">
+            <Border Grid.Column="0" Padding="12" CornerRadius="6" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+                <Grid RowDefinitions="Auto,*" RowSpacing="12">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <TextBox Text="{Binding SearchText}" PlaceholderText="&#x641C;&#x7D22;&#x6A21;&#x578B; ID &#x6216;&#x540D;&#x79F0;" />
+                        <TextBlock Grid.Column="1" Text="{Binding ModelCountText}" VerticalAlignment="Center" Opacity="0.7" />
+                    </Grid>
+                    <ListBox Grid.Row="1" ItemsSource="{Binding FilteredModels}" SelectedItem="{Binding SelectedModel}">
+                        <ListBox.Styles>
+                            <Style Selector="ListBoxItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            </Style>
+                        </ListBox.Styles>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="ai:AIModelDescriptor">
+                                <Border Padding="10" Margin="0,2" CornerRadius="4">
+                                    <StackPanel Spacing="4">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="1" Text="{Binding SourceSummary}" Opacity="0.7" />
+                                        </Grid>
+                                        <TextBlock Text="{Binding Id}" FontFamily="Consolas" FontSize="12" Opacity="0.8" TextTrimming="CharacterEllipsis" />
+                                        <StackPanel Orientation="Horizontal" Spacing="16">
+                                            <TextBlock Text="{Binding ContextSummary}" FontSize="12" Opacity="0.7" />
+                                            <TextBlock Text="{Binding PriceSummary}" FontSize="12" Opacity="0.7" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1" Padding="18" CornerRadius="6" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="&#x6A21;&#x578B;&#x8BE6;&#x60C5;" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding SelectedModel.Name}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding SelectedModel.Id}" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap" Opacity="0.8" />
+                    <TextBlock Text="{Binding SelectedModel.SourceSummary}" />
+                    <TextBlock Text="{Binding SelectedModel.ContextSummary}" />
+                    <TextBlock Text="{Binding SelectedModel.PriceSummary}" TextWrapping="Wrap" />
+                    <StackPanel Spacing="5" Margin="0,12,0,0">
+                        <TextBlock Text="&#x81EA;&#x5B9A;&#x4E49;&#x6A21;&#x578B; ID&#xFF08;&#x53EF;&#x9009;&#xFF09;" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding CustomModelId}" PlaceholderText="provider/model-id" />
+                        <TextBlock Text="&#x624B;&#x5DE5;&#x8F93;&#x5165;&#x65F6;&#x4F1A;&#x4F18;&#x5148;&#x4F7F;&#x7528;&#x8BE5; ID&#x3002;" FontSize="12" Opacity="0.7" TextWrapping="Wrap" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Command="{Binding ReturnToSettingsCommand}">
+                <TextBlock Text="&#x53D6;&#x6D88;" />
+            </Button>
+            <Button Command="{Binding ApplyModelCommand}" Classes="Accent">
+                <TextBlock Text="&#x4F7F;&#x7528;&#x6240;&#x9009;&#x6A21;&#x578B;" />
+            </Button>
+        </StackPanel>
+    </Grid>
+</UserControl>
