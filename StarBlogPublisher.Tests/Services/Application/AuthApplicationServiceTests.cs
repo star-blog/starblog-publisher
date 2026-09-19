@@ -57,7 +57,7 @@ public class AuthApplicationServiceTests {
     }
 
     [Fact]
-    public void GetStatusMessage_LoggedIn_ReturnsLoggedIn() {
+    public async Task GetStatusMessage_LoggedIn_ReturnsLoggedIn() {
         _settings.Username = "user";
         _settings.Password = "pass";
         _mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
@@ -65,12 +65,12 @@ public class AuthApplicationServiceTests {
                 Data = new LoginToken { Token = "test-token" }
             });
 
-        _service.LoginAsync("user", "pass").Wait();
+        await _service.LoginAsync("user", "pass");
         _service.GetStatusMessage().Should().Be("已登录");
     }
 
     [Fact]
-    public void GetStatusInfo_LoggedIn_ReturnsSessionCredentialSource() {
+    public async Task GetStatusInfo_LoggedIn_ReturnsSessionCredentialSource() {
         _settings.Username = "user";
         _settings.Password = "pass";
         _mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
@@ -78,7 +78,7 @@ public class AuthApplicationServiceTests {
                 Data = new LoginToken { Token = "test-token" }
             });
 
-        _service.LoginAsync("user", "pass").Wait();
+        await _service.LoginAsync("user", "pass");
 
         var status = _service.GetStatusInfo();
 
@@ -165,13 +165,13 @@ public class AuthApplicationServiceTests {
     // === Logout ===
 
     [Fact]
-    public void Logout_ClearsLoginState() {
+    public async Task Logout_ClearsLoginState() {
         // First login
         _mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
             .ReturnsAsync(new ApiResponse<LoginToken> {
                 Data = new LoginToken { Token = "token" }
             });
-        _service.LoginAsync("user", "pass").Wait();
+        await _service.LoginAsync("user", "pass");
 
         _service.Logout();
 
@@ -254,14 +254,14 @@ public class AuthApplicationServiceTests {
     }
 
     [Fact]
-    public void LogoutAndClearCredentials_ClearsLoginStateAndSavedCredentials() {
+    public async Task LogoutAndClearCredentials_ClearsLoginStateAndSavedCredentials() {
         _settings.Username = "user";
         _settings.Password = "pass";
         _mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
             .ReturnsAsync(new ApiResponse<LoginToken> {
                 Data = new LoginToken { Token = "token" }
             });
-        _service.LoginAsync("user", "pass").Wait();
+        await _service.LoginAsync("user", "pass");
 
         _service.LogoutAndClearCredentials();
 
