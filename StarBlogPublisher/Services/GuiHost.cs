@@ -5,6 +5,8 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Notifications;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input.Platform;
+using Avalonia.Layout;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
 
@@ -16,6 +18,9 @@ namespace StarBlogPublisher.Services;
 public static class GuiHost {
     private static FAInfoBar? _feedbackBar;
     private static DispatcherTimer? _feedbackTimer;
+    private static Button? _copyButton;
+    private static DispatcherTimer? _copyButtonResetTimer;
+    private static string _pendingCopyText = string.Empty;
 
     public static TopLevel? GetTopLevel() {
         return Avalonia.Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime { MainWindow: { } window }
@@ -26,7 +31,10 @@ public static class GuiHost {
     public static Window? GetMainWindow() => GetTopLevel() as Window;
 
     /// <summary>Registers the Fluent feedback surface after the main window has opened.</summary>
-    public static void SetFeedbackBar(FAInfoBar feedbackBar) => _feedbackBar = feedbackBar;
+    public static void SetFeedbackBar(FAInfoBar feedbackBar) {
+        _feedbackBar = feedbackBar;
+        EnsureCopyActionButton(feedbackBar);
+    }
 
     public static void ToastInfo(string title, string content) =>
         ShowFeedback(title, content, FAInfoBarSeverity.Informational, TimeSpan.FromSeconds(4));
@@ -38,24 +46,67 @@ public static class GuiHost {
         ShowFeedback(title, content, FAInfoBarSeverity.Warning, TimeSpan.FromSeconds(5));
 
     public static void ToastError(string title, string content) =>
-        ShowFeedback(title, content, FAInfoBarSeverity.Error, TimeSpan.FromSeconds(7));
+        ShowFeedback(title, content, FAInfoBarSeverity.Error, TimeSpan.FromSeconds(12));
 
     private static void ShowFeedback(string title, string content, FAInfoBarSeverity severity, TimeSpan duration) {
         Dispatcher.UIThread.Post(() => {
             if (_feedbackBar == null) return;
 
+            EnsureCopyActionButton(_feedbackBar);
             _feedbackTimer?.Stop();
+            _copyButtonResetTimer?.Stop();
+            if (_copyButton != null) _copyButton.Content = "复制";
+
+            _pendingCopyText = string.IsNullOrWhiteSpace(title)
+                ? content
+                : string.IsNullOrWhiteSpace(content) ? title : $"{title}\n{content}";
             _feedbackBar.Title = title;
             _feedbackBar.Message = content;
             _feedbackBar.Severity = severity;
             _feedbackBar.IsOpen = true;
 
+            // Errors stay longer so the copy action is usable before auto-dismiss.
             _feedbackTimer ??= new DispatcherTimer();
             _feedbackTimer.Interval = duration;
             _feedbackTimer.Tick -= CloseFeedback;
             _feedbackTimer.Tick += CloseFeedback;
             _feedbackTimer.Start();
         });
+    }
+
+    private static void EnsureCopyActionButton(FAInfoBar feedbackBar) {
+        if (_copyButton != null) {
+            feedbackBar.ActionButton = _copyButton;
+            return;
+        }
+
+        _copyButton = new Button {
+            Content = "复制",
+            HorizontalAlignment = HorizontalAlignment.Right,
+            MinWidth = 64
+        };
+        _copyButton.Click += async (_, _) => await CopyFeedbackAsync();
+        feedbackBar.ActionButton = _copyButton;
+    }
+
+    private static async Task CopyFeedbackAsync() {
+        var clipboard = GetTopLevel()?.Clipboard;
+        if (clipboard == null || string.IsNullOrWhiteSpace(_pendingCopyText)) return;
+
+        await clipboard.SetTextAsync(_pendingCopyText);
+        if (_copyButton != null) {
+            _copyButton.Content = "已复制";
+            _copyButtonResetTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
+            _copyButtonResetTimer.Tick -= ResetCopyButtonLabel;
+            _copyButtonResetTimer.Tick += ResetCopyButtonLabel;
+            _copyButtonResetTimer.Stop();
+            _copyButtonResetTimer.Start();
+        }
+    }
+
+    private static void ResetCopyButtonLabel(object? sender, EventArgs e) {
+        _copyButtonResetTimer?.Stop();
+        if (_copyButton != null) _copyButton.Content = "复制";
     }
 
     private static void CloseFeedback(object? sender, EventArgs e) {
