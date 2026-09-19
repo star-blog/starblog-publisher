@@ -10,6 +10,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="Microsoft.Agents.AI.Workflows" Version="1.21.0" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
         <PackageReference Include="Refit" Version="15.2.0" />
         <PackageReference Include="Refit.Newtonsoft.Json" Version="15.2.0" />

@@ -1,6 +1,8 @@
 using System;
 using System.ClientModel;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -56,6 +58,12 @@ public class AiService {
         if (provider == null) {
             _chatClient = null;
             _logger.LogWarning("AI provider not found: {Provider}", settings.AIProvider);
+            return false;
+        }
+
+        if (provider.ModelCatalogKind == AIModelCatalogKind.Unsupported) {
+            _chatClient = null;
+            _logger.LogWarning("AI provider requires a native adapter and cannot use the current OpenAI-compatible client: {Provider}", provider.Name);
             return false;
         }
 
@@ -115,6 +123,21 @@ public class AiService {
         }
         catch (Exception ex) {
             throw new Exception($"AI文本生成失败: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Requests a provider-enforced JSON-schema response and deserializes it into <typeparamref name="T"/>.
+    /// This is used for data that the application will write into article fields; callers must still validate it.
+    /// </summary>
+    public async Task<T> GenerateStructuredAsync<T>(string prompt, CancellationToken cancellationToken = default)
+        where T : class {
+        try {
+            var response = await ChatClient.GetResponseAsync<T>(prompt, cancellationToken: cancellationToken);
+            return response.Result ?? throw new InvalidOperationException("AI 没有返回符合预期结构的数据。");
+        }
+        catch (Exception ex) {
+            throw new InvalidOperationException($"AI 结构化生成失败: {ex.Message}", ex);
         }
     }
 

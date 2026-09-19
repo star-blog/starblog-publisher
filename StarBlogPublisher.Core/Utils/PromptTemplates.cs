@@ -4,6 +4,24 @@ using StarBlogPublisher.Models;
 namespace StarBlogPublisher.Utils;
 
 public static partial class PromptTemplates {
+    /// <summary>Structured, all-at-once metadata proposal. The response schema is supplied by the caller.</summary>
+    public const string ArticleMetadataDraft =
+        """
+        你是专业技术内容编辑。基于标题和 Markdown 正文，生成一份供作者审阅的文章元数据草案。
+
+        规则：
+        - 只基于正文，不编造事实、版本、数据或引用；不确定的地方写入 warnings。
+        - titles 提供 3 到 5 个候选项；每项的 title 准确、自然，不使用标题党；rationale 简短说明差异。
+        - summary 为 80 到 160 个汉字的中性简介，不使用“作为 AI”。
+        - tags 为 5 到 10 个去重关键词，每个不超过 32 个字符。
+        - slugCandidates 为 1 到 3 个小写英文 URL slug 候选，只含 a-z、0-9 和连字符，最多 50 个字符。
+        - 这是草案，绝不暗示已修改文章或已发布。
+
+        原标题：{{title}}
+        Markdown 正文：
+        {{content}}
+        """;
+
     #region 关键词提取
 
     /// <summary>

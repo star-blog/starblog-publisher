@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using StarBlogPublisher.Services.AI;
 using StarBlogPublisher.Utils;
 
 namespace StarBlogPublisher.Services.Application;
@@ -23,6 +26,64 @@ public class AiApplicationService {
     /// AI 功能是否可用
     /// </summary>
     public bool IsEnabled => _settings.EnableAI;
+
+    /// <summary>
+    /// Generates all publication metadata in one structured request. The result is a proposal only;
+    /// callers decide which fields to apply.
+    /// </summary>
+    public async Task<AiResult<ArticleMetadataDraft>> GenerateMetadataDraftAsync(
+        string title,
+        string content,
+        CancellationToken cancellationToken = default) {
+        ArgumentException.ThrowIfNullOrWhiteSpace(title);
+        ArgumentException.ThrowIfNullOrWhiteSpace(content);
+
+        var prompt = PromptBuilder
+            .Create(PromptTemplates.ArticleMetadataDraft)
+            .AddParameter("title", title)
+            .AddParameter("content", content)
+            .Build();
+        var startedAt = DateTimeOffset.UtcNow;
+        var stopwatch = Stopwatch.StartNew();
+        try {
+            var draft = await _aiService.GenerateStructuredAsync<ArticleMetadataDraft>(prompt, cancellationToken);
+            var normalized = draft.Normalize(CleanSlug);
+            return new AiResult<ArticleMetadataDraft>(
+                normalized,
+                new AiExecutionInfo(
+                    "article-metadata-draft",
+                    _settings.AIProvider,
+                    _settings.AIModel,
+                    startedAt,
+                    stopwatch.Elapsed),
+                normalized.Warnings);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException) {
+            // Older OpenAI-compatible gateways often do not implement JSON-schema output.
+            // Keep them usable during migration, while making the lower-quality path visible.
+            var summary = await GenerateSummaryAsync(title, content);
+            var tags = await GenerateKeywordsAsync(title, content);
+            var slug = await GenerateSlugAsync(title);
+            var legacyDraft = new ArticleMetadataDraft(
+                [new TitleCandidate(title, "保留原始标题：当前模型不支持结构化标题候选。")],
+                summary,
+                tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+                [slug],
+                ["当前模型或网关不支持结构化输出，已使用兼容模式生成草案。"])
+                .Normalize(CleanSlug);
+
+            return new AiResult<ArticleMetadataDraft>(
+                legacyDraft,
+                new AiExecutionInfo(
+                    "article-metadata-draft",
+                    _settings.AIProvider,
+                    _settings.AIModel,
+                    startedAt,
+                    stopwatch.Elapsed,
+                    UsedFallback: true),
+                legacyDraft.Warnings);
+        }
+    }
 
     /// <summary>
     /// 生成文章摘要（流式）
