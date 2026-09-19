@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -18,8 +19,15 @@ namespace StarBlogPublisher.Services.Application;
 public sealed class WeChatDraftPublishApplicationService {
     private const int MaxContentImageBytes = 1024 * 1024;
     private const int MaxCoverImageBytes = 2 * 1024 * 1024;
+    /// <summary>WeChat draft digest (description) hard limit.</summary>
+    public const int MaxDigestLength = 120;
     private static readonly SemaphoreSlim TokenLock = new(1, 1);
     private static WeChatAccessToken? _tokenCache;
+    // WeChat draft/add expects raw UTF-8 Chinese in JSON. Default System.Text.Json escapes
+    // non-ASCII as \uXXXX, which WeChat then stores/displays literally.
+    private static readonly JsonSerializerOptions WeChatJsonOptions = new() {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
     private readonly AppSettings _settings;
     private readonly IHttpClientFactory _httpClientFactory;
 
@@ -219,6 +227,15 @@ public sealed class WeChatDraftPublishApplicationService {
         return normalized is ".png" or ".jpg" or ".jpeg" ? (normalized == ".jpeg" ? ".jpg" : normalized) : ".jpg";
     }
 
+    /// <summary>Truncates digest to WeChat's 120-character limit.</summary>
+    public static string TruncateDigest(string? summary) {
+        if (string.IsNullOrEmpty(summary)) return string.Empty;
+        return summary.Length <= MaxDigestLength ? summary : summary[..MaxDigestLength];
+    }
+
+    internal static string SerializeWeChatJson<T>(T value) =>
+        JsonSerializer.Serialize(value, WeChatJsonOptions);
+
     private async Task<string> CreateDraftAsync(
         string token,
         string title,
@@ -232,7 +249,7 @@ public sealed class WeChatDraftPublishApplicationService {
                 new {
                     title,
                     author,
-                    digest = summary,
+                    digest = TruncateDigest(summary),
                     content = html,
                     thumb_media_id = thumbMediaId,
                     show_cover_pic = 0,
@@ -241,7 +258,7 @@ public sealed class WeChatDraftPublishApplicationService {
                 }
             }
         };
-        using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+        using var content = new StringContent(SerializeWeChatJson(payload), Encoding.UTF8, "application/json");
         using var response = await client.PostAsync($"cgi-bin/draft/add?access_token={Uri.EscapeDataString(token)}", content);
         var document = await ReadResponseAsync(response);
         ThrowIfWeChatError(response, document, "创建公众号草稿");
@@ -250,7 +267,7 @@ public sealed class WeChatDraftPublishApplicationService {
 
     private async Task VerifyDraftAsync(string token, string draftMediaId) {
         using var client = _httpClientFactory.CreateClient(WeChatHttpClientRegistration.ApiClientName);
-        using var content = new StringContent(JsonSerializer.Serialize(new { media_id = draftMediaId }), Encoding.UTF8, "application/json");
+        using var content = new StringContent(SerializeWeChatJson(new { media_id = draftMediaId }), Encoding.UTF8, "application/json");
         using var response = await client.PostAsync($"cgi-bin/draft/get?access_token={Uri.EscapeDataString(token)}", content);
         var document = await ReadResponseAsync(response);
         ThrowIfWeChatError(response, document, "校验公众号草稿");

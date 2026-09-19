@@ -39,6 +39,31 @@ public class WeChatDraftPublishApplicationServiceTests {
     }
 
     [Fact]
+    public void TruncateDigest_CapsAt120Characters() {
+        var longDigest = new string('摘', 150);
+
+        var truncated = WeChatDraftPublishApplicationService.TruncateDigest(longDigest);
+
+        truncated.Should().HaveLength(WeChatDraftPublishApplicationService.MaxDigestLength);
+        truncated.Should().Be(new string('摘', 120));
+    }
+
+    [Fact]
+    public void SerializeWeChatJson_KeepsRawChineseInsteadOfUnicodeEscapes() {
+        var json = WeChatDraftPublishApplicationService.SerializeWeChatJson(new {
+            title = "团队 Web 开发规范",
+            author = "作者",
+            digest = "摘要内容"
+        });
+
+        json.Should().Contain("团队 Web 开发规范");
+        json.Should().Contain("作者");
+        json.Should().Contain("摘要内容");
+        json.Should().NotContain("\\u56E2");
+        json.Should().NotContain("\\u4F5C");
+    }
+
+    [Fact]
     public async Task PublishAsync_UploadsCoverAsPermanentImageMaterial_WithCompatibleMultipart() {
         var coverPath = Path.Combine(Path.GetTempPath(), $"starblog-cover-{Guid.NewGuid():N}.jpg");
         await File.WriteAllBytesAsync(coverPath, [0xFF, 0xD8, 0xFF, 0xD9]);
@@ -53,12 +78,13 @@ public class WeChatDraftPublishApplicationServiceTests {
             // Unique credentials avoid cross-test hits on the static access-token cache.
             settings.WeChatAppId = $"app-cover-{Guid.NewGuid():N}";
             settings.WeChatAppSecret = "secret";
-            settings.WeChatAuthor = "Author";
+            settings.WeChatAuthor = "星博作者";
 
+            var longDigest = new string('摘', 150);
             var result = await service.PublishAsync(
-                FormatResult("<p>no images</p>"),
+                FormatResult("<p>no images</p>", "团队 Web 开发规范"),
                 Path.GetTempPath(),
-                "summary",
+                longDigest,
                 coverPath);
 
             result.Success.Should().BeTrue(result.ErrorMessage);
@@ -75,6 +101,14 @@ public class WeChatDraftPublishApplicationServiceTests {
             upload.BodyText.Should().Contain("name=\"media\"");
             upload.BodyText.Should().Contain("filename=\"media.jpg\"");
             upload.BodyText.Should().NotContain("filename*=");
+
+            var draft = handler.Requests.Should().ContainSingle(r =>
+                r.Uri.AbsoluteUri.Contains("cgi-bin/draft/add", StringComparison.Ordinal)).Subject;
+            draft.BodyText.Should().Contain("团队 Web 开发规范");
+            draft.BodyText.Should().Contain("星博作者");
+            draft.BodyText.Should().Contain($"\"digest\":\"{new string('摘', 120)}\"");
+            draft.BodyText.Should().NotContain("\\u56E2");
+            draft.BodyText.Should().NotContain(new string('摘', 121));
         }
         finally {
             File.Delete(coverPath);
@@ -141,8 +175,8 @@ public class WeChatDraftPublishApplicationServiceTests {
         result.ErrorMessage.Should().Contain("封面");
     }
 
-    private static WeChatFormatResult FormatResult(string html) => new() {
-        Title = "Hello",
+    private static WeChatFormatResult FormatResult(string html, string title = "Hello") => new() {
+        Title = title,
         Html = html,
         WordCount = 10,
         Theme = new WeChatTheme("test", "Test", "#000", "#111", "#fff", "#222")
