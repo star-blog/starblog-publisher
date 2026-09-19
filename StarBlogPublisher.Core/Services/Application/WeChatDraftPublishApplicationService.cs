@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -132,7 +131,12 @@ public sealed class WeChatDraftPublishApplicationService {
                     }
 
                     ValidateImage(imagePath, MaxContentImageBytes, "正文图片");
-                    var uploadedUrl = await UploadImageAsync("cgi-bin/media/uploadimg", token, imagePath, "url");
+                    var uploadedUrl = await UploadImageAsync(
+                        "cgi-bin/media/uploadimg",
+                        token,
+                        imagePath,
+                        "url",
+                        "上传正文图片");
                     replacement = match.Value.Replace(match.Groups["src"].Value, WebUtility.HtmlEncode(uploadedUrl), StringComparison.Ordinal);
                     urls.Add(uploadedUrl);
                 }
@@ -153,22 +157,66 @@ public sealed class WeChatDraftPublishApplicationService {
 
     private async Task<string> UploadCoverAsync(string coverPath, string token) {
         ValidateImage(coverPath, MaxCoverImageBytes, "封面图");
-        return await UploadImageAsync("cgi-bin/material/add_material?type=thumb", token, coverPath, "media_id");
+        // Permanent image material (not thumb): draft thumb_media_id accepts image media_id,
+        // and type=image matches our 2 MB JPG/PNG cover prep path.
+        return await UploadImageAsync(
+            "cgi-bin/material/add_material?type=image",
+            token,
+            coverPath,
+            "media_id",
+            "上传封面图");
     }
 
-    private async Task<string> UploadImageAsync(string endpoint, string token, string imagePath, string resultField) {
+    private async Task<string> UploadImageAsync(
+        string endpoint,
+        string token,
+        string imagePath,
+        string resultField,
+        string action) {
         using var client = _httpClientFactory.CreateClient(WeChatHttpClientRegistration.ApiClientName);
-        using var form = new MultipartFormDataContent();
-        await using var file = File.OpenRead(imagePath);
-        using var fileContent = new StreamContent(file);
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue(GetImageMimeType(imagePath));
-        form.Add(fileContent, "media", Path.GetFileName(imagePath));
+        var fileBytes = await File.ReadAllBytesAsync(imagePath);
+        using var content = CreateWeChatMediaContent(fileBytes, Path.GetExtension(imagePath));
 
         var separator = endpoint.Contains('?') ? "&" : "?";
-        using var response = await client.PostAsync($"{endpoint}{separator}access_token={Uri.EscapeDataString(token)}", form);
+        using var response = await client.PostAsync(
+            $"{endpoint}{separator}access_token={Uri.EscapeDataString(token)}",
+            content);
         var document = await ReadResponseAsync(response);
-        ThrowIfWeChatError(response, document, "上传图片");
-        return GetRequiredString(document, resultField, "上传图片");
+        ThrowIfWeChatError(response, document, action);
+        return GetRequiredString(document, resultField, action);
+    }
+
+    /// <summary>
+    /// Builds a curl-compatible multipart body. WeChat rejects .NET MultipartFormDataContent
+    /// (unquoted disposition fields / filename*) with 41005 media data missing.
+    /// </summary>
+    internal static ByteArrayContent CreateWeChatMediaContent(byte[] fileBytes, string extension) {
+        var boundary = "----StarBlogFormBoundary" + Guid.NewGuid().ToString("N");
+        var normalizedExtension = NormalizeImageExtension(extension);
+        var fileName = "media" + normalizedExtension;
+        var mime = normalizedExtension == ".png" ? "image/png" : "image/jpeg";
+
+        var header = $"--{boundary}\r\n" +
+                     $"Content-Disposition: form-data; name=\"media\"; filename=\"{fileName}\"\r\n" +
+                     $"Content-Type: {mime}\r\n\r\n";
+        var footer = $"\r\n--{boundary}--\r\n";
+
+        var headerBytes = Encoding.UTF8.GetBytes(header);
+        var footerBytes = Encoding.UTF8.GetBytes(footer);
+        var body = new byte[headerBytes.Length + fileBytes.Length + footerBytes.Length];
+        Buffer.BlockCopy(headerBytes, 0, body, 0, headerBytes.Length);
+        Buffer.BlockCopy(fileBytes, 0, body, headerBytes.Length, fileBytes.Length);
+        Buffer.BlockCopy(footerBytes, 0, body, headerBytes.Length + fileBytes.Length, footerBytes.Length);
+
+        var content = new ByteArrayContent(body);
+        // Keep boundary unquoted; MediaTypeHeaderValue quoting can break WeChat parsers.
+        content.Headers.TryAddWithoutValidation("Content-Type", $"multipart/form-data; boundary={boundary}");
+        return content;
+    }
+
+    private static string NormalizeImageExtension(string extension) {
+        var normalized = extension.ToLowerInvariant();
+        return normalized is ".png" or ".jpg" or ".jpeg" ? (normalized == ".jpeg" ? ".jpg" : normalized) : ".jpg";
     }
 
     private async Task<string> CreateDraftAsync(
@@ -260,10 +308,6 @@ public sealed class WeChatDraftPublishApplicationService {
             throw new InvalidOperationException($"{imageType}不能超过 {maxBytes / 1024 / 1024} MB");
         }
     }
-
-    private static string GetImageMimeType(string imagePath) => Path.GetExtension(imagePath).ToLowerInvariant() == ".png"
-        ? "image/png"
-        : "image/jpeg";
 
     private static async Task<JsonDocument> ReadResponseAsync(HttpResponseMessage response) {
         var text = await response.Content.ReadAsStringAsync();
