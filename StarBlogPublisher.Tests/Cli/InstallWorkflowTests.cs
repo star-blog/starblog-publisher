@@ -5,6 +5,21 @@ namespace StarBlogPublisher.Tests.Cli;
 
 public class InstallWorkflowTests {
     [Fact]
+    public void HomeDirectory_Path_PrefersExplicitHomeEnvironmentVariable() {
+        var originalHome = Environment.GetEnvironmentVariable("HOME");
+        var tempHome = Path.Combine(Path.GetTempPath(), $"starblog-home-{Guid.NewGuid():N}");
+
+        try {
+            Environment.SetEnvironmentVariable("HOME", tempHome);
+
+            HomeDirectory.Path.Should().Be(Path.GetFullPath(tempHome));
+        }
+        finally {
+            Environment.SetEnvironmentVariable("HOME", originalHome);
+        }
+    }
+
+    [Fact]
     public void Run_McpClaudeCode_FallsBackToFileWriteWithoutSerializerMetadataDependency() {
         var originalHome = Environment.GetEnvironmentVariable("HOME");
         var originalRunner = ClaudeCodeMcpInstaller.CliRunner;

@@ -160,7 +160,14 @@ public static class AgentRegistry {
 }
 
 internal static class HomeDirectory {
-    public static string Path => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+    public static string Path {
+        get {
+            var homeOverride = Environment.GetEnvironmentVariable("HOME");
+            return string.IsNullOrWhiteSpace(homeOverride)
+                ? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+                : System.IO.Path.GetFullPath(homeOverride);
+        }
+    }
 }
 
 internal static class SkillInstaller {
