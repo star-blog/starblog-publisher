@@ -9,4 +9,6 @@ namespace StarBlogPublisher.Services;
 [JsonSerializable(typeof(LegacyAppSettingsSnapshot))]
 [JsonSerializable(typeof(AIProfile))]
 [JsonSerializable(typeof(List<AIProfile>))]
+[JsonSerializable(typeof(WeChatAccountProfile))]
+[JsonSerializable(typeof(List<WeChatAccountProfile>))]
 internal partial class AppSettingsJsonContext : JsonSerializerContext;

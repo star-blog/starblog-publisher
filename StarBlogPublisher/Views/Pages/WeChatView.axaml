@@ -64,13 +64,20 @@
                             </Border>
 
                             <Border DockPanel.Dock="Bottom" Classes="InspectorActions">
-                                <Button Command="{Binding UploadDraftCommand}" IsEnabled="{Binding !IsPublishing}" Classes="Accent"
-                                        HorizontalAlignment="Stretch">
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
-                                        <fi:FluentIcon Icon="ArrowUpload" IconVariant="Regular" FontSize="16" />
-                                        <TextBlock Text="上传至草稿箱" />
-                                    </StackPanel>
-                                </Button>
+                                <StackPanel Spacing="6">
+                                    <ComboBox ItemsSource="{Binding WeChatAccounts}"
+                                              SelectedItem="{Binding SelectedWeChatAccount}"
+                                              DisplayMemberBinding="{Binding DisplayName}"
+                                              IsEnabled="{Binding HasWeChatAccounts}"
+                                              PlaceholderText="选择公众号账号" />
+                                    <Button Command="{Binding UploadDraftCommand}" IsEnabled="{Binding !IsPublishing}" Classes="Accent"
+                                            HorizontalAlignment="Stretch">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
+                                            <fi:FluentIcon Icon="ArrowUpload" IconVariant="Regular" FontSize="16" />
+                                            <TextBlock Text="上传至草稿箱" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
                             </Border>
 
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled">

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -22,28 +23,44 @@ public sealed class WeChatDraftPublishApplicationService {
     /// <summary>WeChat draft digest (description) hard limit.</summary>
     public const int MaxDigestLength = 120;
     private static readonly SemaphoreSlim TokenLock = new(1, 1);
-    private static WeChatAccessToken? _tokenCache;
+    private static readonly ConcurrentDictionary<string, WeChatAccessToken> TokenCache = new(StringComparer.Ordinal);
     // WeChat draft/add expects raw UTF-8 Chinese in JSON. Default System.Text.Json escapes
     // non-ASCII as \uXXXX, which WeChat then stores/displays literally.
     private static readonly JsonSerializerOptions WeChatJsonOptions = new() {
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
-    private readonly AppSettings _settings;
+    private readonly AppSettings? _legacySettings;
     private readonly IHttpClientFactory _httpClientFactory;
 
-    public WeChatDraftPublishApplicationService(AppSettings settings, IHttpClientFactory httpClientFactory) {
-        _settings = settings;
+    public WeChatDraftPublishApplicationService(IHttpClientFactory httpClientFactory) {
         _httpClientFactory = httpClientFactory;
     }
 
+    public WeChatDraftPublishApplicationService(AppSettings settings, IHttpClientFactory httpClientFactory) : this(httpClientFactory) {
+        _legacySettings = settings;
+    }
+
+    public Task<WeChatDraftPublishResult> PublishAsync(
+        WeChatFormatResult formatResult,
+        string sourceDirectory,
+        string summary,
+        string? coverPath,
+        Action<int, string>? onProgress = null) {
+        if (_legacySettings == null) {
+            throw new InvalidOperationException("A WeChat account must be selected before publishing.");
+        }
+        return PublishAsync(_legacySettings.CurrentWeChatAccount, formatResult, sourceDirectory, summary, coverPath, onProgress);
+    }
+
     public async Task<WeChatDraftPublishResult> PublishAsync(
+        WeChatAccountProfile account,
         WeChatFormatResult formatResult,
         string sourceDirectory,
         string summary,
         string? coverPath,
         Action<int, string>? onProgress = null) {
         try {
-            if (string.IsNullOrWhiteSpace(_settings.WeChatAppId) || string.IsNullOrWhiteSpace(_settings.WeChatAppSecret)) {
+            if (string.IsNullOrWhiteSpace(account.AppId) || string.IsNullOrWhiteSpace(account.AppSecret)) {
                 return WeChatDraftPublishResult.Fail("请先在设置中配置微信公众号 AppId 和 AppSecret");
             }
 
@@ -52,25 +69,26 @@ public sealed class WeChatDraftPublishApplicationService {
             }
 
             onProgress?.Invoke(10, "正在获取微信公众号访问凭据...");
-            var token = await GetAccessTokenAsync();
+            var token = await GetAccessTokenAsync(account);
 
             onProgress?.Invoke(25, "正在上传正文图片...");
-            var (html, imageUrls) = await UploadContentImagesAsync(formatResult.Html, sourceDirectory, token, onProgress);
+            var (html, imageUrls) = await UploadContentImagesAsync(account, formatResult.Html, sourceDirectory, token, onProgress);
 
             onProgress?.Invoke(75, "正在上传封面图...");
-            var thumbMediaId = await UploadCoverAsync(coverPath, token);
+            var thumbMediaId = await UploadCoverAsync(account, coverPath, token);
 
             onProgress?.Invoke(88, "正在创建公众号草稿...");
             var draftMediaId = await CreateDraftAsync(
+                account,
                 token,
                 formatResult.Title,
                 html,
                 thumbMediaId,
-                _settings.WeChatAuthor,
+                account.Author,
                 summary);
 
             onProgress?.Invoke(96, "正在校验公众号草稿...");
-            await VerifyDraftAsync(token, draftMediaId);
+            await VerifyDraftAsync(account, token, draftMediaId);
             onProgress?.Invoke(100, "草稿已创建");
 
             return WeChatDraftPublishResult.Ok(draftMediaId, html, thumbMediaId, imageUrls);
@@ -80,22 +98,22 @@ public sealed class WeChatDraftPublishApplicationService {
         }
     }
 
-    private async Task<string> GetAccessTokenAsync() {
-        var cacheKey = $"{WeChatHttpClientRegistration.GetApiBaseAddress(_settings)}:{_settings.WeChatAppId}:{_settings.WeChatAppSecret}";
-        if (_tokenCache is { } cached && cached.Key == cacheKey && cached.ExpiresAt > DateTimeOffset.UtcNow.AddMinutes(5)) {
+    private async Task<string> GetAccessTokenAsync(WeChatAccountProfile account) {
+        var cacheKey = $"{WeChatHttpClientRegistration.GetApiBaseAddress(account)}:{account.AppId}:{account.AppSecret}:{account.ApiAuthorization}";
+        if (TokenCache.TryGetValue(account.Id, out var cached) && cached.Key == cacheKey && cached.ExpiresAt > DateTimeOffset.UtcNow.AddMinutes(5)) {
             return cached.Token;
         }
 
         await TokenLock.WaitAsync();
         try {
-            if (_tokenCache is { } refreshedCache && refreshedCache.Key == cacheKey && refreshedCache.ExpiresAt > DateTimeOffset.UtcNow.AddMinutes(5)) {
+            if (TokenCache.TryGetValue(account.Id, out var refreshedCache) && refreshedCache.Key == cacheKey && refreshedCache.ExpiresAt > DateTimeOffset.UtcNow.AddMinutes(5)) {
                 return refreshedCache.Token;
             }
 
-            using var client = _httpClientFactory.CreateClient(WeChatHttpClientRegistration.ApiClientName);
+            using var client = CreateApiClient(account);
             var url = "cgi-bin/token?grant_type=client_credential"
-                + $"&appid={Uri.EscapeDataString(_settings.WeChatAppId)}"
-                + $"&secret={Uri.EscapeDataString(_settings.WeChatAppSecret)}";
+                + $"&appid={Uri.EscapeDataString(account.AppId)}"
+                + $"&secret={Uri.EscapeDataString(account.AppSecret)}";
             using var response = await client.GetAsync(url);
             var document = await ReadResponseAsync(response);
             ThrowIfWeChatError(response, document, "获取 access token");
@@ -104,7 +122,7 @@ public sealed class WeChatDraftPublishApplicationService {
             var expiresIn = document.RootElement.TryGetProperty("expires_in", out var expiresElement) && expiresElement.TryGetInt32(out var seconds)
                 ? seconds
                 : 7200;
-            _tokenCache = new WeChatAccessToken(cacheKey, token, DateTimeOffset.UtcNow.AddSeconds(expiresIn));
+            TokenCache[account.Id] = new WeChatAccessToken(cacheKey, token, DateTimeOffset.UtcNow.AddSeconds(expiresIn));
             return token;
         }
         finally {
@@ -113,6 +131,7 @@ public sealed class WeChatDraftPublishApplicationService {
     }
 
     private async Task<(string Html, IReadOnlyList<string> ImageUrls)> UploadContentImagesAsync(
+        WeChatAccountProfile account,
         string html,
         string sourceDirectory,
         string token,
@@ -140,6 +159,7 @@ public sealed class WeChatDraftPublishApplicationService {
 
                     ValidateImage(imagePath, MaxContentImageBytes, "正文图片");
                     var uploadedUrl = await UploadImageAsync(
+                        account,
                         "cgi-bin/media/uploadimg",
                         token,
                         imagePath,
@@ -163,11 +183,12 @@ public sealed class WeChatDraftPublishApplicationService {
         return (output.ToString(), urls);
     }
 
-    private async Task<string> UploadCoverAsync(string coverPath, string token) {
+    private async Task<string> UploadCoverAsync(WeChatAccountProfile account, string coverPath, string token) {
         ValidateImage(coverPath, MaxCoverImageBytes, "封面图");
         // Permanent image material (not thumb): draft thumb_media_id accepts image media_id,
         // and type=image matches our 2 MB JPG/PNG cover prep path.
         return await UploadImageAsync(
+            account,
             "cgi-bin/material/add_material?type=image",
             token,
             coverPath,
@@ -176,12 +197,13 @@ public sealed class WeChatDraftPublishApplicationService {
     }
 
     private async Task<string> UploadImageAsync(
+        WeChatAccountProfile account,
         string endpoint,
         string token,
         string imagePath,
         string resultField,
         string action) {
-        using var client = _httpClientFactory.CreateClient(WeChatHttpClientRegistration.ApiClientName);
+        using var client = CreateApiClient(account);
         var fileBytes = await File.ReadAllBytesAsync(imagePath);
         using var content = CreateWeChatMediaContent(fileBytes, Path.GetExtension(imagePath));
 
@@ -263,13 +285,14 @@ public sealed class WeChatDraftPublishApplicationService {
     }
 
     private async Task<string> CreateDraftAsync(
+        WeChatAccountProfile account,
         string token,
         string title,
         string html,
         string thumbMediaId,
         string author,
         string summary) {
-        using var client = _httpClientFactory.CreateClient(WeChatHttpClientRegistration.ApiClientName);
+        using var client = CreateApiClient(account);
         var payload = new {
             articles = new[] {
                 new {
@@ -291,8 +314,8 @@ public sealed class WeChatDraftPublishApplicationService {
         return GetRequiredString(document, "media_id", "创建公众号草稿");
     }
 
-    private async Task VerifyDraftAsync(string token, string draftMediaId) {
-        using var client = _httpClientFactory.CreateClient(WeChatHttpClientRegistration.ApiClientName);
+    private async Task VerifyDraftAsync(WeChatAccountProfile account, string token, string draftMediaId) {
+        using var client = CreateApiClient(account);
         using var content = new StringContent(SerializeWeChatJson(new { media_id = draftMediaId }), Encoding.UTF8, "application/json");
         using var response = await client.PostAsync($"cgi-bin/draft/get?access_token={Uri.EscapeDataString(token)}", content);
         var document = await ReadResponseAsync(response);
@@ -300,6 +323,12 @@ public sealed class WeChatDraftPublishApplicationService {
         if (!document.RootElement.TryGetProperty("news_item", out _)) {
             throw new InvalidOperationException("公众号未返回已创建的草稿内容");
         }
+    }
+
+    private HttpClient CreateApiClient(WeChatAccountProfile account) {
+        var client = _httpClientFactory.CreateClient(WeChatHttpClientRegistration.ApiClientName);
+        WeChatHttpClientRegistration.ConfigureApiClient(client, account);
+        return client;
     }
 
     private async Task<string?> DownloadExternalImageAsync(string url) {

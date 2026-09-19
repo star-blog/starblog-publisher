@@ -35,6 +35,7 @@ public partial class SettingsViewModel : PageViewModelBase {
     [ObservableProperty] private int _backendTimeout;
     [ObservableProperty] private bool _showPassword;
     [ObservableProperty] private bool _enableRegexImageParsing;
+    [ObservableProperty] private string _weChatAccountName = string.Empty;
     [ObservableProperty] private string _weChatAppId = string.Empty;
     [ObservableProperty] private string _weChatApiBaseUrl = WeChatHttpClientRegistration.OfficialApiBaseUrl;
     [ObservableProperty] private string _weChatApiAuthorization = string.Empty;
@@ -43,6 +44,8 @@ public partial class SettingsViewModel : PageViewModelBase {
     [ObservableProperty] private string _weChatDefaultTheme = "newspaper";
     [ObservableProperty] private bool _showWeChatAppSecret;
     [ObservableProperty] private bool _showWeChatApiAuthorization;
+    [ObservableProperty] private ObservableCollection<WeChatAccountProfile> _weChatAccounts = new();
+    [ObservableProperty] private WeChatAccountProfile? _currentWeChatAccount;
     [ObservableProperty] private bool _isDarkTheme;
     private bool _syncingTheme;
 
@@ -92,13 +95,9 @@ public partial class SettingsViewModel : PageViewModelBase {
             Password = settings.Password;
             BackendTimeout = settings.BackendTimeout;
             EnableRegexImageParsing = settings.EnableRegexImageParsing;
-            WeChatAppId = settings.WeChatAppId;
-            WeChatApiBaseUrl = settings.WeChatApiBaseUrl;
-            WeChatApiAuthorization = settings.WeChatApiAuthorization;
-            WeChatAppSecret = settings.WeChatAppSecret;
-            WeChatAuthor = settings.WeChatAuthor;
             WeChatDefaultTheme = settings.WeChatDefaultTheme;
             IsDarkTheme = settings.IsDarkTheme;
+            LoadWeChatAccounts();
             LoadProfiles();
         }
         finally {
@@ -178,6 +177,44 @@ public partial class SettingsViewModel : PageViewModelBase {
         _ = RefreshModels();
     }
 
+    private void LoadWeChatAccounts() {
+        var settings = AppSettings.Instance;
+        WeChatAccounts.Clear();
+        foreach (var account in settings.WeChatAccounts) {
+            WeChatAccounts.Add(account.Clone());
+        }
+
+        CurrentWeChatAccount = WeChatAccounts.FirstOrDefault(account => account.Id == settings.CurrentWeChatAccountId)
+            ?? WeChatAccounts.FirstOrDefault();
+    }
+
+    partial void OnCurrentWeChatAccountChanged(WeChatAccountProfile? value) {
+        if (value != null) LoadWeChatAccountSettings(value);
+    }
+
+    partial void OnCurrentWeChatAccountChanging(WeChatAccountProfile? value) {
+        SaveWeChatAccountSettings();
+    }
+
+    private void LoadWeChatAccountSettings(WeChatAccountProfile account) {
+        WeChatAccountName = account.Name;
+        WeChatAppId = account.AppId;
+        WeChatApiBaseUrl = account.ApiBaseUrl;
+        WeChatApiAuthorization = account.ApiAuthorization;
+        WeChatAppSecret = account.AppSecret;
+        WeChatAuthor = account.Author;
+    }
+
+    private void SaveWeChatAccountSettings() {
+        if (CurrentWeChatAccount == null) return;
+        CurrentWeChatAccount.Name = WeChatAccountName.Trim();
+        CurrentWeChatAccount.AppId = WeChatAppId.Trim();
+        CurrentWeChatAccount.ApiBaseUrl = WeChatApiBaseUrl.Trim();
+        CurrentWeChatAccount.ApiAuthorization = WeChatApiAuthorization.Trim();
+        CurrentWeChatAccount.AppSecret = WeChatAppSecret;
+        CurrentWeChatAccount.Author = WeChatAuthor.Trim();
+    }
+
     partial void OnAIModelChanged(string value) => UpdateSelectedModelDetails();
 
     private void SaveProfileSettings() {
@@ -197,6 +234,37 @@ public partial class SettingsViewModel : PageViewModelBase {
 
     [RelayCommand]
     private void ToggleWeChatApiAuthorization() => ShowWeChatApiAuthorization = !ShowWeChatApiAuthorization;
+
+    [RelayCommand]
+    private async Task AddWeChatAccount() {
+        var name = await GuiHost.PromptAsync("添加公众号账号", "新公众号", "请输入用于区分此公众号的名称");
+        if (string.IsNullOrWhiteSpace(name)) return;
+
+        var accountName = name.Trim();
+        if (WeChatAccounts.Any(account => string.Equals(account.Name, accountName, StringComparison.Ordinal))) {
+            GuiHost.ToastWarning("公众号账号", "已存在同名账号，请使用其他名称。");
+            return;
+        }
+
+        SaveWeChatAccountSettings();
+        var account = new WeChatAccountProfile { Name = accountName };
+        WeChatAccounts.Add(account);
+        CurrentWeChatAccount = account;
+    }
+
+    [RelayCommand]
+    private async Task DeleteWeChatAccount() {
+        if (CurrentWeChatAccount == null || WeChatAccounts.Count <= 1) {
+            GuiHost.ToastWarning("公众号账号", "至少需要保留一个公众号账号。");
+            return;
+        }
+
+        if (!await GuiHost.ConfirmAsync("删除公众号账号", $"确定要删除 \"{CurrentWeChatAccount.DisplayName}\" 吗？")) return;
+
+        var index = WeChatAccounts.IndexOf(CurrentWeChatAccount);
+        WeChatAccounts.Remove(CurrentWeChatAccount);
+        CurrentWeChatAccount = WeChatAccounts[Math.Min(index, WeChatAccounts.Count - 1)];
+    }
 
     [RelayCommand]
     private void ToggleAIKey() => ShowAIKey = !ShowAIKey;
@@ -334,6 +402,26 @@ public partial class SettingsViewModel : PageViewModelBase {
     [RelayCommand]
     private void Save() {
         SaveProfileSettings();
+        SaveWeChatAccountSettings();
+        if (WeChatAccounts.Any(account => string.IsNullOrWhiteSpace(account.Name))) {
+            GuiHost.ToastError("公众号账号无效", "请为每个公众号账号填写名称。");
+            return;
+        }
+        if (WeChatAccounts.GroupBy(account => account.Name, StringComparer.Ordinal).Any(group => group.Count() > 1)) {
+            GuiHost.ToastError("公众号账号无效", "公众号账号名称不能重复。");
+            return;
+        }
+        foreach (var account in WeChatAccounts) {
+            if (!WeChatHttpClientRegistration.TryGetApiBaseAddress(account.ApiBaseUrl, out var baseAddress)) {
+                GuiHost.ToastError("微信 API 地址无效", $"账号“{account.DisplayName}”需要完整的 HTTP 或 HTTPS Base URL。");
+                return;
+            }
+            if (!WeChatHttpClientRegistration.IsValidApiAuthorization(account.ApiAuthorization)) {
+                GuiHost.ToastError("微信 API Authorization 无效", $"账号“{account.DisplayName}”的 Authorization 值格式无效。");
+                return;
+            }
+            account.ApiBaseUrl = baseAddress.AbsoluteUri;
+        }
         if (!WeChatHttpClientRegistration.TryGetApiBaseAddress(WeChatApiBaseUrl, out var weChatApiBaseAddress)) {
             GuiHost.ToastError("微信 API 地址无效", "请输入完整的 HTTP 或 HTTPS Base URL。");
             return;
@@ -362,6 +450,8 @@ public partial class SettingsViewModel : PageViewModelBase {
         settings.WeChatApiAuthorization = WeChatApiAuthorization;
         settings.WeChatAppSecret = WeChatAppSecret;
         settings.WeChatAuthor = WeChatAuthor;
+        settings.WeChatAccounts = WeChatAccounts.Select(account => account.Clone()).ToList();
+        settings.CurrentWeChatAccountId = CurrentWeChatAccount?.Id ?? settings.WeChatAccounts[0].Id;
         settings.WeChatDefaultTheme = WeChatDefaultTheme;
         settings.IsDarkTheme = IsDarkTheme;
 

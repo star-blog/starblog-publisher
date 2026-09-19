@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using StarBlogPublisher.Services.Security;
@@ -110,7 +111,17 @@ public class AppSettings {
     }
 
     public string WeChatAuthor { get; set; } = string.Empty;
+    public List<WeChatAccountProfile> WeChatAccounts { get; set; } = new();
+    public string CurrentWeChatAccountId { get; set; } = string.Empty;
     public string WeChatDefaultTheme { get; set; } = "newspaper";
+
+    /// <summary>Returns the active account, creating a migrated default profile when needed.</summary>
+    public WeChatAccountProfile CurrentWeChatAccount {
+        get {
+            EnsureWeChatAccounts();
+            return WeChatAccounts.First(profile => profile.Id == CurrentWeChatAccountId);
+        }
+    }
 
     // 主题设置
     public bool IsDarkTheme { get; set; } = false;
@@ -147,6 +158,7 @@ public class AppSettings {
                     if (settings.AIProfiles == null || settings.AIProfiles.Count == 0) {
                         settings.MigrateToProfiles();
                     }
+                    settings.EnsureWeChatAccounts();
 
                     return settings;
                 }
@@ -159,6 +171,7 @@ public class AppSettings {
 
         var defaultSettings = new AppSettings();
         defaultSettings.MigrateToProfiles();
+        defaultSettings.EnsureWeChatAccounts();
         return defaultSettings;
     }
 
@@ -197,6 +210,8 @@ public class AppSettings {
             _encryptedWeChatApiAuthorization = snapshot.EncryptedWeChatApiAuthorization ?? string.Empty,
             _encryptedWeChatAppSecret = snapshot.EncryptedWeChatAppSecret ?? string.Empty,
             WeChatAuthor = snapshot.WeChatAuthor ?? string.Empty,
+            WeChatAccounts = snapshot.WeChatAccounts ?? new List<WeChatAccountProfile>(),
+            CurrentWeChatAccountId = snapshot.CurrentWeChatAccountId ?? string.Empty,
             WeChatDefaultTheme = snapshot.WeChatDefaultTheme ?? "newspaper",
             IsDarkTheme = snapshot.IsDarkTheme,
             EnableRegexImageParsing = snapshot.EnableRegexImageParsing,
@@ -207,6 +222,7 @@ public class AppSettings {
     }
 
     private AppSettingsSnapshot ToSnapshot() {
+        var currentWeChatAccount = CurrentWeChatAccount;
         return new AppSettingsSnapshot {
             UseProxy = UseProxy,
             ProxyType = ProxyType,
@@ -225,11 +241,14 @@ public class AppSettings {
             Username = Username,
             EncryptedPassword = _encryptedPassword,
             BackendTimeout = BackendTimeout,
-            WeChatAppId = WeChatAppId,
-            WeChatApiBaseUrl = WeChatApiBaseUrl,
-            EncryptedWeChatApiAuthorization = _encryptedWeChatApiAuthorization,
-            EncryptedWeChatAppSecret = _encryptedWeChatAppSecret,
-            WeChatAuthor = WeChatAuthor,
+            // Keep the legacy fields populated for older clients that only support one account.
+            WeChatAppId = currentWeChatAccount.AppId,
+            WeChatApiBaseUrl = currentWeChatAccount.ApiBaseUrl,
+            EncryptedWeChatApiAuthorization = currentWeChatAccount.EncryptedApiAuthorization,
+            EncryptedWeChatAppSecret = currentWeChatAccount.EncryptedAppSecret,
+            WeChatAuthor = currentWeChatAccount.Author,
+            WeChatAccounts = WeChatAccounts,
+            CurrentWeChatAccountId = CurrentWeChatAccountId,
             WeChatDefaultTheme = WeChatDefaultTheme,
             IsDarkTheme = IsDarkTheme,
             EnableRegexImageParsing = EnableRegexImageParsing,
@@ -254,6 +273,37 @@ public class AppSettings {
             }
         };
         CurrentAIProfile = "默认";
+    }
+
+    private void EnsureWeChatAccounts() {
+        WeChatAccounts ??= new List<WeChatAccountProfile>();
+        if (WeChatAccounts.Count == 0) {
+            WeChatAccounts.Add(new WeChatAccountProfile {
+                Name = "默认公众号",
+                AppId = WeChatAppId,
+                ApiBaseUrl = string.IsNullOrWhiteSpace(WeChatApiBaseUrl)
+                    ? WeChatHttpClientRegistration.OfficialApiBaseUrl
+                    : WeChatApiBaseUrl,
+                Author = WeChatAuthor,
+                EncryptedAppSecret = _encryptedWeChatAppSecret,
+                EncryptedApiAuthorization = _encryptedWeChatApiAuthorization
+            });
+        }
+
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var account in WeChatAccounts) {
+            if (string.IsNullOrWhiteSpace(account.Id) || !ids.Add(account.Id)) {
+                account.Id = Guid.NewGuid().ToString("N");
+                ids.Add(account.Id);
+            }
+            if (string.IsNullOrWhiteSpace(account.ApiBaseUrl)) {
+                account.ApiBaseUrl = WeChatHttpClientRegistration.OfficialApiBaseUrl;
+            }
+        }
+
+        if (!WeChatAccounts.Any(profile => profile.Id == CurrentWeChatAccountId)) {
+            CurrentWeChatAccountId = WeChatAccounts[0].Id;
+        }
     }
 
     public void Save() {
@@ -321,6 +371,8 @@ internal sealed class AppSettingsSnapshot {
     public string EncryptedWeChatApiAuthorization { get; set; } = string.Empty;
     public string EncryptedWeChatAppSecret { get; set; } = string.Empty;
     public string WeChatAuthor { get; set; } = string.Empty;
+    public List<WeChatAccountProfile> WeChatAccounts { get; set; } = new();
+    public string CurrentWeChatAccountId { get; set; } = string.Empty;
     public string WeChatDefaultTheme { get; set; } = "newspaper";
     public bool IsDarkTheme { get; set; }
     public bool EnableRegexImageParsing { get; set; }
@@ -356,6 +408,8 @@ internal sealed class LegacyAppSettingsSnapshot {
     public string WeChatAppSecret { get; set; } = string.Empty;
     public string EncryptedWeChatAppSecret { get; set; } = string.Empty;
     public string WeChatAuthor { get; set; } = string.Empty;
+    public List<WeChatAccountProfile> WeChatAccounts { get; set; } = new();
+    public string CurrentWeChatAccountId { get; set; } = string.Empty;
     public string WeChatDefaultTheme { get; set; } = "newspaper";
     public bool IsDarkTheme { get; set; }
     public bool EnableRegexImageParsing { get; set; }
@@ -364,6 +418,27 @@ internal sealed class LegacyAppSettingsSnapshot {
     public bool EditorShowLineNumbers { get; set; }
 
     public AppSettingsSnapshot ToAppSettingsSnapshot() {
+        var weChatAccounts = WeChatAccounts ?? new List<WeChatAccountProfile>();
+        if (weChatAccounts.Count == 0) {
+            weChatAccounts.Add(new WeChatAccountProfile {
+                Name = "默认公众号",
+                AppId = WeChatAppId,
+                ApiBaseUrl = string.IsNullOrWhiteSpace(WeChatApiBaseUrl)
+                    ? WeChatHttpClientRegistration.OfficialApiBaseUrl
+                    : WeChatApiBaseUrl,
+                Author = WeChatAuthor,
+                EncryptedAppSecret = !string.IsNullOrWhiteSpace(EncryptedWeChatAppSecret)
+                    ? EncryptedWeChatAppSecret
+                    : EncryptionService.Encrypt(WeChatAppSecret),
+                EncryptedApiAuthorization = !string.IsNullOrWhiteSpace(EncryptedWeChatApiAuthorization)
+                    ? EncryptedWeChatApiAuthorization
+                    : EncryptionService.Encrypt(WeChatApiAuthorization)
+            });
+        }
+        var currentWeChatAccountId = weChatAccounts.Any(account => account.Id == CurrentWeChatAccountId)
+            ? CurrentWeChatAccountId
+            : weChatAccounts[0].Id;
+
         return new AppSettingsSnapshot {
             UseProxy = UseProxy,
             ProxyType = ProxyType,
@@ -395,6 +470,8 @@ internal sealed class LegacyAppSettingsSnapshot {
                 ? EncryptedWeChatAppSecret
                 : EncryptionService.Encrypt(WeChatAppSecret),
             WeChatAuthor = WeChatAuthor,
+            WeChatAccounts = weChatAccounts,
+            CurrentWeChatAccountId = currentWeChatAccountId,
             WeChatDefaultTheme = WeChatDefaultTheme,
             IsDarkTheme = IsDarkTheme,
             EnableRegexImageParsing = EnableRegexImageParsing,

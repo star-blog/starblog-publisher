@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 
 namespace StarBlogPublisher.Tests.Services;
@@ -37,7 +38,7 @@ public class WeChatHttpClientRegistrationTests {
         factory.CreateClient(WeChatHttpClientRegistration.ApiClientName).BaseAddress
             .Should().Be(new Uri("https://first-proxy.example.com/"));
 
-        settings.WeChatApiBaseUrl = "https://second-proxy.example.com/wechat";
+        settings.CurrentWeChatAccount.ApiBaseUrl = "https://second-proxy.example.com/wechat";
 
         factory.CreateClient(WeChatHttpClientRegistration.ApiClientName).BaseAddress
             .Should().Be(new Uri("https://second-proxy.example.com/wechat/"));
@@ -55,6 +56,21 @@ public class WeChatHttpClientRegistrationTests {
 
         client.DefaultRequestHeaders.Authorization!.Scheme.Should().Be("Bearer");
         client.DefaultRequestHeaders.Authorization.Parameter.Should().Be("relay-token");
+    }
+
+    [Fact]
+    public void ConfigureApiClient_UsesTheSelectedAccountInsteadOfTheActiveAccount() {
+        var selectedAccount = new WeChatAccountProfile {
+            Name = "Second account",
+            ApiBaseUrl = "https://second-proxy.example.com/wechat",
+            ApiAuthorization = "Bearer second-token"
+        };
+        using var client = new HttpClient();
+
+        WeChatHttpClientRegistration.ConfigureApiClient(client, selectedAccount);
+
+        client.BaseAddress.Should().Be(new Uri("https://second-proxy.example.com/wechat/"));
+        client.DefaultRequestHeaders.Authorization!.Parameter.Should().Be("second-token");
     }
 
     [Theory]

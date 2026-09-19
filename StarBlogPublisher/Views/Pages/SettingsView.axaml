@@ -167,6 +167,39 @@
                 <ui:FASettingsExpander Header="微信公众号"
                                      Description="创建草稿箱所需的公众号凭据与默认值；AppSecret 会加密保存在本机"
                                      IconSource="{StaticResource WeChatIcon}">
+                    <ui:FASettingsExpanderItem Content="公众号账号"
+                                             Description="每个账号可使用独立的 AppId、AppSecret 和 relay 设置。">
+                        <ui:FASettingsExpanderItem.Footer>
+                            <Border Classes="SettingsField">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                    <ComboBox Grid.Column="0"
+                                              ItemsSource="{Binding WeChatAccounts}"
+                                              SelectedItem="{Binding CurrentWeChatAccount}"
+                                              DisplayMemberBinding="{Binding DisplayName}" />
+                                    <Button Grid.Column="1" Classes="Icon"
+                                            ToolTip.Tip="添加公众号账号"
+                                            Command="{Binding AddWeChatAccountCommand}">
+                                        <fi:FluentIcon Icon="Add" IconVariant="Regular" />
+                                    </Button>
+                                    <Button Grid.Column="2" Classes="Icon"
+                                            ToolTip.Tip="删除当前公众号账号"
+                                            Command="{Binding DeleteWeChatAccountCommand}">
+                                        <fi:FluentIcon Icon="Delete" IconVariant="Regular" />
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </ui:FASettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem>
+
+                    <ui:FASettingsExpanderItem Content="账号名称">
+                        <ui:FASettingsExpanderItem.Footer>
+                            <Border Classes="SettingsField">
+                                <TextBox PlaceholderText="例如：公司公众号"
+                                         Text="{Binding WeChatAccountName}" />
+                            </Border>
+                        </ui:FASettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem>
+
                     <ui:FASettingsExpanderItem Content="AppId">
                         <ui:FASettingsExpanderItem.Footer>
                             <Border Classes="SettingsField">

@@ -30,16 +30,18 @@ public partial class WeChatViewModel : PageViewModelBase {
     private string _previewPath = string.Empty;
 
     public WeChatViewModel(IHttpClientFactory httpClientFactory) : base("公众号排版", Icon.Mail) {
-        _publishService = new WeChatDraftPublishApplicationService(AppSettings.Instance, httpClientFactory);
+        _publishService = new WeChatDraftPublishApplicationService(httpClientFactory);
         _coverImageService = new WeChatCoverImageService(httpClientFactory);
         Themes = new ObservableCollection<WeChatTheme>(WeChatFormattingService.Themes);
         SelectedTheme = Themes.FirstOrDefault(theme => theme.Id == AppSettings.Instance.WeChatDefaultTheme) ?? Themes[0];
+        LoadWeChatAccounts();
         SelectedCoverSource = CoverSources[0];
         SelectedCoverSize = CoverSizes[0];
         SelectedRandomCoverProvider = RandomCoverProviders[0];
     }
 
     public ObservableCollection<WeChatTheme> Themes { get; }
+    public ObservableCollection<WeChatAccountProfile> WeChatAccounts { get; } = new();
     public ObservableCollection<CoverSourceOption> CoverSources { get; } = [
         new("local", "本地图片"),
         new("url", "在线 URL"),
@@ -56,6 +58,7 @@ public partial class WeChatViewModel : PageViewModelBase {
     ];
 
     [ObservableProperty] private WeChatTheme? _selectedTheme;
+    [ObservableProperty] private WeChatAccountProfile? _selectedWeChatAccount;
     [ObservableProperty] private string _articleTitle = string.Empty;
     /// <summary>WeChat draft digest/description, separate from StarBlog article summary (max 120).</summary>
     [ObservableProperty] private string _digest = string.Empty;
@@ -78,6 +81,7 @@ public partial class WeChatViewModel : PageViewModelBase {
     [ObservableProperty] private bool _isInspectorOpen = true;
 
     public bool HasDraftMediaId => !string.IsNullOrWhiteSpace(DraftMediaId);
+    public bool HasWeChatAccounts => WeChatAccounts.Count > 0;
     public bool HasFormattedHtml => !string.IsNullOrWhiteSpace(FormattedHtml);
     public bool HasCover => !string.IsNullOrWhiteSpace(CoverPath);
     public int DigestMaxLength => WeChatDraftPublishApplicationService.MaxDigestLength;
@@ -95,6 +99,7 @@ public partial class WeChatViewModel : PageViewModelBase {
     public double InspectorPaneWidth => IsInspectorOpen ? 320 : 48;
 
     public void SyncFrom(PublishViewModel publish) {
+        LoadWeChatAccounts();
         if (!publish.HasLoadedArticle || string.IsNullOrWhiteSpace(publish.CurrentFilePath) ||
             string.IsNullOrWhiteSpace(publish.ArticleContent)) {
             HasArticle = false;
@@ -121,6 +126,14 @@ public partial class WeChatViewModel : PageViewModelBase {
 
     partial void OnSelectedThemeChanged(WeChatTheme? value) {
         if (value != null && HasArticle) GenerateFormat();
+    }
+
+    partial void OnSelectedWeChatAccountChanged(WeChatAccountProfile? value) {
+        if (value == null) return;
+        var settings = AppSettings.Instance;
+        if (settings.CurrentWeChatAccountId == value.Id) return;
+        settings.CurrentWeChatAccountId = value.Id;
+        settings.Save();
     }
 
     partial void OnDigestChanged(string value) {
@@ -314,6 +327,11 @@ public partial class WeChatViewModel : PageViewModelBase {
 
         var currentTheme = SelectedTheme;
         if (currentTheme == null) return;
+        var account = SelectedWeChatAccount;
+        if (account == null) {
+            StatusMessage = "请先在设置中添加并选择公众号账号";
+            return;
+        }
 
         IsPublishing = true;
         DraftMediaId = string.Empty;
@@ -326,6 +344,7 @@ public partial class WeChatViewModel : PageViewModelBase {
             };
             var sourceDirectory = Path.GetDirectoryName(_sourceFilePath) ?? Environment.CurrentDirectory;
             var result = await _publishService.PublishAsync(
+                account,
                 formatResult,
                 sourceDirectory,
                 WeChatDraftPublishApplicationService.TruncateDigest(Digest),
@@ -367,6 +386,18 @@ public partial class WeChatViewModel : PageViewModelBase {
 
     private int CoverWidth => SelectedCoverSize?.Width ?? 900;
     private int CoverHeight => SelectedCoverSize?.Height ?? 383;
+
+    private void LoadWeChatAccounts() {
+        var settings = AppSettings.Instance;
+        WeChatAccounts.Clear();
+        foreach (var account in settings.WeChatAccounts) {
+            WeChatAccounts.Add(account.Clone());
+        }
+
+        SelectedWeChatAccount = WeChatAccounts.FirstOrDefault(account => account.Id == settings.CurrentWeChatAccountId)
+            ?? WeChatAccounts.FirstOrDefault();
+        OnPropertyChanged(nameof(HasWeChatAccounts));
+    }
 
     private async Task PrepareCoverAsync(Func<Task<string>> prepare, string sourceDescription) {
         if (IsPreparingCover) return;

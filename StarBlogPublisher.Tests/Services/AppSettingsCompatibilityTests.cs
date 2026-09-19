@@ -72,6 +72,10 @@ public class AppSettingsCompatibilityTests {
         snapshot.WeChatApiBaseUrl.Should().Be("https://wechat-proxy.example.com/api/");
         snapshot.EncryptedWeChatApiAuthorization.Should().NotBeNullOrWhiteSpace();
         snapshot.EncryptedWeChatApiAuthorization.Should().NotBe("Bearer relay-token");
+        snapshot.WeChatAccounts.Should().ContainSingle();
+        snapshot.CurrentWeChatAccountId.Should().Be(snapshot.WeChatAccounts[0].Id);
+        snapshot.WeChatAccounts[0].ApiBaseUrl.Should().Be("https://wechat-proxy.example.com/api/");
+        snapshot.WeChatAccounts[0].ApiAuthorization.Should().Be("Bearer relay-token");
         snapshot.IsDarkTheme.Should().BeTrue();
         snapshot.EnableRegexImageParsing.Should().BeTrue();
     }

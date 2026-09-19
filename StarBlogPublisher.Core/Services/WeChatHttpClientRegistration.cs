@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using Microsoft.Extensions.DependencyInjection;
+using StarBlogPublisher.Models;
 
 namespace StarBlogPublisher.Services;
 
@@ -19,9 +20,8 @@ public static class WeChatHttpClientRegistration {
     /// </summary>
     public static IServiceCollection AddWeChatHttpClients(this IServiceCollection services, AppSettings settings) {
         services.AddHttpClient(ApiClientName, client => {
-            client.BaseAddress = GetApiBaseAddress(settings);
             client.Timeout = GetTimeout(settings);
-            ApplyAuthorizationHeader(client, settings);
+            ConfigureApiClient(client, settings.CurrentWeChatAccount);
         }).ConfigurePrimaryHttpMessageHandler(() => CreateHandler(settings));
 
         services.AddHttpClient(ImageDownloadClientName, client => {
@@ -33,7 +33,12 @@ public static class WeChatHttpClientRegistration {
 
     /// <summary>Returns a normalized HTTP(S) base URL, falling back to the official endpoint.</summary>
     public static Uri GetApiBaseAddress(AppSettings settings) {
-        return TryGetApiBaseAddress(settings.WeChatApiBaseUrl, out var apiBaseAddress)
+        return GetApiBaseAddress(settings.CurrentWeChatAccount);
+    }
+
+    /// <summary>Returns the configured base address for an individual account.</summary>
+    public static Uri GetApiBaseAddress(WeChatAccountProfile account) {
+        return TryGetApiBaseAddress(account.ApiBaseUrl, out var apiBaseAddress)
             ? apiBaseAddress
             : new Uri(OfficialApiBaseUrl);
     }
@@ -57,9 +62,16 @@ public static class WeChatHttpClientRegistration {
         return true;
     }
 
+    /// <summary>Configures an API client for the supplied account without mutating global settings.</summary>
+    public static void ConfigureApiClient(HttpClient client, WeChatAccountProfile account) {
+        client.BaseAddress = GetApiBaseAddress(account);
+        client.DefaultRequestHeaders.Authorization = null;
+        ApplyAuthorizationHeader(client, account);
+    }
+
     /// <summary>Applies the optional Authorization header required by a WeChat relay.</summary>
-    internal static void ApplyAuthorizationHeader(HttpClient client, AppSettings settings) {
-        var authorization = settings.WeChatApiAuthorization.Trim();
+    internal static void ApplyAuthorizationHeader(HttpClient client, WeChatAccountProfile account) {
+        var authorization = account.ApiAuthorization.Trim();
         if (authorization.Length == 0) return;
 
         // AuthenticationHeaderValue validates the value and prevents control characters
