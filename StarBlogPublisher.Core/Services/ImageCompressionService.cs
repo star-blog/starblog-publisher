@@ -250,7 +250,9 @@ public class ImageCompressionService : IDisposable
     /// </summary>
     private static bool HasTransparency(Image image)
     {
-        return image.PixelType.BitsPerPixel == 32 || image.PixelType.ToString().Contains("Rgba");
+        var pixelType = image.PixelType;
+        return pixelType?.BitsPerPixel == 32 ||
+               pixelType?.ToString()?.Contains("Rgba", StringComparison.OrdinalIgnoreCase) == true;
     }
 
     /// <summary>

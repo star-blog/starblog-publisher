@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace StarBlogPublisher.Services;
 
@@ -16,12 +17,12 @@ public enum AIModelCatalogKind {
 
 public class AIProviderInfo
 {
-    public string Name { get; set; }
-    public string DisplayName { get; set; }
-    public string Description { get; set; }
-    public string DefaultApiBase { get; set; }
-    public string DefaultModel { get; set; }
-    public List<string> DefaultModels { get; set; } = new List<string>();
+    public string Name { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string DefaultApiBase { get; set; } = string.Empty;
+    public string DefaultModel { get; set; } = string.Empty;
+    public List<string> DefaultModels { get; set; } = [];
 
     /// <summary>Describes discovery support of the adapter currently shipped by this application.</summary>
     public AIModelCatalogKind ModelCatalogKind => Name switch {
@@ -200,7 +201,7 @@ public class AIProviderInfo
     /// <returns>包含模型列表和状态的元组：(模型列表, 是否成功, 错误信息)</returns>
     public async Task<(List<string> Models, bool Success, string ErrorMessage)> GetModelsAsync(
         string apiKey,
-        string apiBase = null)
+        string? apiBase = null)
     {
         try
         {
@@ -238,10 +239,17 @@ public class AIProviderInfo
                 var content = await response.Content.ReadAsStringAsync();
                 var modelsData = JsonSerializer.Deserialize<ModelsResponse>(content);
 
-                if (modelsData?.Data != null && modelsData.Data.Count > 0)
+                if (modelsData?.Data != null)
                 {
-                    var modelList = modelsData.Data.ConvertAll(m => m.Id);
-                    return (modelList, true, string.Empty);
+                    var modelList = modelsData.Data
+                        .Where(model => !string.IsNullOrWhiteSpace(model.Id))
+                        .Select(model => model.Id!)
+                        .ToList();
+
+                    if (modelList.Count > 0)
+                    {
+                        return (modelList, true, string.Empty);
+                    }
                 }
             }
 
@@ -259,11 +267,11 @@ public class AIProviderInfo
 
     private class ModelsResponse
     {
-        public List<ModelInfo> Data { get; set; }
+        public List<ModelInfo>? Data { get; set; }
     }
 
     private class ModelInfo
     {
-        public string Id { get; set; }
+        public string? Id { get; set; }
     }
 }

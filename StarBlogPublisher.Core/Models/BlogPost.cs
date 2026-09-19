@@ -6,12 +6,12 @@ namespace StarBlogPublisher.Models;
 /// 博客文章
 /// </summary>
 public class BlogPost {
-    public string Id { get; set; }
+    public string Id { get; set; } = string.Empty;
 
     /// <summary>
     /// 标题
     /// </summary>
-    public string Title { get; set; }
+    public string Title { get; set; } = string.Empty;
 
     /// <summary>
     /// 文章链接，设置后可以通过以下形式访问文章
