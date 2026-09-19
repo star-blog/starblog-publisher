@@ -379,6 +379,9 @@ public partial class PublishViewModel : PageViewModelBase {
             }
 
             var body = Markdig.Markdown.ToHtml(ArticleContent, pipeline);
+            var previewThemeClass = AppSettings.Instance.IsDarkTheme
+                ? "preview-dark"
+                : "preview-light";
             var document = $$"""
                 <!doctype html>
                 <html lang="zh-CN">
@@ -387,7 +390,7 @@ public partial class PublishViewModel : PageViewModelBase {
                   <meta name="viewport" content="width=device-width, initial-scale=1">
                   <base href="{{WebUtility.HtmlEncode(baseHref)}}">
                   <style>
-                    :root { color-scheme: light dark; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; }
+                    :root { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; }
                     body { box-sizing: border-box; max-width: 920px; margin: 0 auto; padding: 28px 36px 56px; color: #1f2328; background: #fff; font-size: 16px; line-height: 1.72; }
                     h1, h2, h3, h4, h5, h6 { line-height: 1.3; margin: 1.45em 0 .65em; color: #111827; }
                     h1 { font-size: 2em; border-bottom: 1px solid #d8dee4; padding-bottom: .35em; } h2 { font-size: 1.55em; border-bottom: 1px solid #e5e7eb; padding-bottom: .3em; } h3 { font-size: 1.25em; }
@@ -399,10 +402,16 @@ public partial class PublishViewModel : PageViewModelBase {
                     table { display: block; width: max-content; max-width: 100%; overflow: auto; border-collapse: collapse; margin-bottom: 1em; } th, td { padding: .45em .75em; border: 1px solid #d0d7de; } th { background: #f6f8fa; }
                     img { display: block; max-width: 100%; height: auto; margin: 1em 0; border-radius: 6px; }
                     hr { height: 1px; border: 0; background: #d8dee4; margin: 2em 0; }
-                    @media (prefers-color-scheme: dark) { body { color: #e6edf3; background: #0d1117; } h1,h2,h3,h4,h5,h6 { color: #f0f6fc; border-color: #30363d; } a { color: #58a6ff; } code { background: #161b22; color: #ff7b72; } blockquote, th { color: #b1bac4; background: #161b22; border-color: #3b434b; } th,td { border-color: #30363d; } hr { background: #30363d; } }
+                    body.preview-dark { color-scheme: dark; color: #e6edf3; background: #0d1117; }
+                    body.preview-dark h1, body.preview-dark h2, body.preview-dark h3, body.preview-dark h4, body.preview-dark h5, body.preview-dark h6 { color: #f0f6fc; border-color: #30363d; }
+                    body.preview-dark a { color: #58a6ff; }
+                    body.preview-dark code { background: #161b22; color: #ff7b72; }
+                    body.preview-dark blockquote, body.preview-dark th { color: #b1bac4; background: #161b22; border-color: #3b434b; }
+                    body.preview-dark th, body.preview-dark td { border-color: #30363d; }
+                    body.preview-dark hr { background: #30363d; }
                   </style>
                 </head>
-                <body>{{body}}</body>
+                <body class="{{previewThemeClass}}">{{body}}</body>
                 </html>
                 """;
             File.WriteAllText(previewPath, document, Encoding.UTF8);
@@ -413,6 +422,11 @@ public partial class PublishViewModel : PageViewModelBase {
             StatusMessage = $"预览生成失败: {ex.Message}";
         }
     }
+
+    /// <summary>
+    /// Regenerates the local HTML document so its explicit color class follows the app theme.
+    /// </summary>
+    public void RefreshPreviewForThemeChange() => RefreshPreview();
 
     [RelayCommand]
     private async Task CopyContent() {

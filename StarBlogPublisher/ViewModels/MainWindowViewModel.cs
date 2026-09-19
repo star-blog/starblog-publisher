@@ -85,6 +85,7 @@ public partial class MainWindowViewModel : ViewModelBase {
         }
 
         SettingsPage.SyncDarkTheme(isDark);
+        PublishPage.RefreshPreviewForThemeChange();
     }
 
     public void UpdateTitleBarMetrics(double height, double rightInset) {
