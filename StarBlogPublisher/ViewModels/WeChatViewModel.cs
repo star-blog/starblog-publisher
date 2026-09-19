@@ -27,7 +27,6 @@ public partial class WeChatViewModel : PageViewModelBase {
     private readonly WeChatCoverImageService _coverImageService;
     private string _markdown = string.Empty;
     private string _sourceFilePath = string.Empty;
-    private string _summary = string.Empty;
     private string _previewPath = string.Empty;
 
     public WeChatViewModel(IHttpClientFactory httpClientFactory) : base("公众号排版", Icon.Mail) {
@@ -58,6 +57,8 @@ public partial class WeChatViewModel : PageViewModelBase {
 
     [ObservableProperty] private WeChatTheme? _selectedTheme;
     [ObservableProperty] private string _articleTitle = string.Empty;
+    /// <summary>WeChat draft digest/description, separate from StarBlog article summary (max 120).</summary>
+    [ObservableProperty] private string _digest = string.Empty;
     [ObservableProperty] private string _formattedHtml = string.Empty;
     [ObservableProperty] private string _coverPath = string.Empty;
     [ObservableProperty] private Bitmap? _coverPreview;
@@ -79,6 +80,9 @@ public partial class WeChatViewModel : PageViewModelBase {
     public bool HasDraftMediaId => !string.IsNullOrWhiteSpace(DraftMediaId);
     public bool HasFormattedHtml => !string.IsNullOrWhiteSpace(FormattedHtml);
     public bool HasCover => !string.IsNullOrWhiteSpace(CoverPath);
+    public int DigestMaxLength => WeChatDraftPublishApplicationService.MaxDigestLength;
+    public int DigestRemainingLength => Math.Max(0, DigestMaxLength - (Digest?.Length ?? 0));
+    public string DigestCounterText => $"{Digest?.Length ?? 0}/{DigestMaxLength}";
     public bool IsLocalCoverSource => SelectedCoverSource?.Id == "local";
     public bool IsUrlCoverSource => SelectedCoverSource?.Id == "url";
     public bool IsRandomCoverSource => SelectedCoverSource?.Id == "random";
@@ -106,7 +110,7 @@ public partial class WeChatViewModel : PageViewModelBase {
 
         _markdown = usesPublishedMarkdown ? publishedMarkdown! : publish.ArticleContent;
         _sourceFilePath = publish.CurrentFilePath;
-        _summary = publish.ArticleDescription;
+        Digest = WeChatDraftPublishApplicationService.TruncateDigest(publish.ArticleDescription);
         ArticleTitle = publish.ArticleTitle;
         MarkdownSourceMessage = usesPublishedMarkdown
             ? "当前使用 StarBlog 发布后返回的 Markdown；其中的图片链接已替换为博客 URL，上传草稿时会再转存到微信 CDN。"
@@ -117,6 +121,16 @@ public partial class WeChatViewModel : PageViewModelBase {
 
     partial void OnSelectedThemeChanged(WeChatTheme? value) {
         if (value != null && HasArticle) GenerateFormat();
+    }
+
+    partial void OnDigestChanged(string value) {
+        if (value.Length > DigestMaxLength) {
+            Digest = value[..DigestMaxLength];
+            return;
+        }
+
+        OnPropertyChanged(nameof(DigestRemainingLength));
+        OnPropertyChanged(nameof(DigestCounterText));
     }
 
     partial void OnDraftMediaIdChanged(string value) {
@@ -311,7 +325,11 @@ public partial class WeChatViewModel : PageViewModelBase {
                 Theme = currentTheme
             };
             var sourceDirectory = Path.GetDirectoryName(_sourceFilePath) ?? Environment.CurrentDirectory;
-            var result = await _publishService.PublishAsync(formatResult, sourceDirectory, _summary, CoverPath,
+            var result = await _publishService.PublishAsync(
+                formatResult,
+                sourceDirectory,
+                WeChatDraftPublishApplicationService.TruncateDigest(Digest),
+                CoverPath,
                 (progress, message) => StatusMessage = $"{progress}% · {message}");
             if (result.Success) {
                 DraftMediaId = result.DraftMediaId ?? string.Empty;

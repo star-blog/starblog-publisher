@@ -87,6 +87,25 @@
                                     </StackPanel>
 
                                     <StackPanel Spacing="6">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Text="摘要" FontSize="12" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding DigestCounterText}" FontSize="11"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        </Grid>
+                                        <TextBox Text="{Binding Digest}"
+                                                 PlaceholderText="用于公众号草稿 digest，最多 120 字"
+                                                 AcceptsReturn="True"
+                                                 TextWrapping="Wrap"
+                                                 MaxLength="{Binding DigestMaxLength}"
+                                                 MinHeight="72"
+                                                 MaxHeight="120" />
+                                        <TextBlock Text="独立于 StarBlog 文章摘要；从发布页同步时会自动带入并截断到 120 字。"
+                                                   FontSize="11" TextWrapping="Wrap"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+
+                                    <StackPanel Spacing="6">
                                         <TextBlock Text="封面" FontSize="12" FontWeight="SemiBold"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                         <Border Height="{Binding CoverPreviewHeight}" CornerRadius="6" ClipToBounds="True"

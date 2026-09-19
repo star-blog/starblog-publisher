@@ -59,6 +59,17 @@ public class WeChatViewModelTests {
     }
 
     [Fact]
+    public void Digest_IsClampedToWeChatLimit() {
+        var viewModel = CreateViewModel();
+
+        viewModel.Digest = new string('摘', 150);
+
+        viewModel.Digest.Should().HaveLength(120);
+        viewModel.DigestCounterText.Should().Be("120/120");
+        viewModel.DigestRemainingLength.Should().Be(0);
+    }
+
+    [Fact]
     public async Task UseCoverUrlCommand_InvalidUrl_DoesNotStartAnExternalRequest() {
         var viewModel = CreateViewModel();
         viewModel.CoverUrl = "not a URL";
