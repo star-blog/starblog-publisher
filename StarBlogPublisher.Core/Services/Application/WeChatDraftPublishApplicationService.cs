@@ -236,6 +236,32 @@ public sealed class WeChatDraftPublishApplicationService {
     internal static string SerializeWeChatJson<T>(T value) =>
         JsonSerializer.Serialize(value, WeChatJsonOptions);
 
+    /// <summary>
+    /// Removes whitespace between HTML tags for draft/add. WeChat's rich-text editor treats
+    /// those newlines/spaces as editable breaks (unlike paste from clipboard), which warps lists.
+    /// Code blocks inside &lt;pre&gt; are preserved.
+    /// </summary>
+    public static string MinifyHtmlForWeChatDraft(string html) {
+        if (string.IsNullOrEmpty(html)) return string.Empty;
+
+        var protectedBlocks = new List<string>();
+        string Protect(Match match) {
+            protectedBlocks.Add(match.Value);
+            return $"\u0000PRE{protectedBlocks.Count - 1}\u0000";
+        }
+
+        var result = Regex.Replace(html, @"<pre\b[^>]*>[\s\S]*?</pre>", Protect, RegexOptions.IgnoreCase);
+        // Collapse gaps between tags, and between tags and protected pre placeholders.
+        result = Regex.Replace(result, @">\s+<", "><");
+        result = Regex.Replace(result, @">\s+\u0000", ">\u0000");
+        result = Regex.Replace(result, @"\u0000\s+<", "\u0000<");
+        for (var index = 0; index < protectedBlocks.Count; index++) {
+            result = result.Replace($"\u0000PRE{index}\u0000", protectedBlocks[index], StringComparison.Ordinal);
+        }
+
+        return result;
+    }
+
     private async Task<string> CreateDraftAsync(
         string token,
         string title,
@@ -250,7 +276,7 @@ public sealed class WeChatDraftPublishApplicationService {
                     title,
                     author,
                     digest = TruncateDigest(summary),
-                    content = html,
+                    content = MinifyHtmlForWeChatDraft(html),
                     thumb_media_id = thumbMediaId,
                     show_cover_pic = 0,
                     need_open_comment = 1,

@@ -64,6 +64,18 @@ public class WeChatDraftPublishApplicationServiceTests {
     }
 
     [Fact]
+    public void MinifyHtmlForWeChatDraft_CollapsesWhitespaceBetweenTagsButKeepsPreContent() {
+        var html = "<ul style=\"margin:0\">\n<li>one</li>\n<li>two</li>\n</ul>\n<pre style=\"x\">line1\nline2\n</pre>";
+
+        var minified = WeChatDraftPublishApplicationService.MinifyHtmlForWeChatDraft(html);
+
+        minified.Should().Contain("<ul style=\"margin:0\"><li>one</li><li>two</li></ul>");
+        minified.Should().NotMatchRegex(@">\s*\n\s*<");
+        var pre = System.Text.RegularExpressions.Regex.Match(minified, @"<pre[\s\S]*?</pre>").Value;
+        pre.Should().Contain("line1\nline2\n");
+    }
+
+    [Fact]
     public async Task PublishAsync_UploadsCoverAsPermanentImageMaterial_WithCompatibleMultipart() {
         var coverPath = Path.Combine(Path.GetTempPath(), $"starblog-cover-{Guid.NewGuid():N}.jpg");
         await File.WriteAllBytesAsync(coverPath, [0xFF, 0xD8, 0xFF, 0xD9]);
@@ -82,7 +94,7 @@ public class WeChatDraftPublishApplicationServiceTests {
 
             var longDigest = new string('摘', 150);
             var result = await service.PublishAsync(
-                FormatResult("<p>no images</p>", "团队 Web 开发规范"),
+                FormatResult("<ul>\n<li>one</li>\n<li>two</li>\n</ul>", "团队 Web 开发规范"),
                 Path.GetTempPath(),
                 longDigest,
                 coverPath);
@@ -109,6 +121,10 @@ public class WeChatDraftPublishApplicationServiceTests {
             draft.BodyText.Should().Contain($"\"digest\":\"{new string('摘', 120)}\"");
             draft.BodyText.Should().NotContain("\\u56E2");
             draft.BodyText.Should().NotContain(new string('摘', 121));
+            draft.BodyText.Should().Contain("<ul><li>one</li><li>two</li></ul>");
+            draft.BodyText.Should().NotContain("<ul>\\n<li>");
+            // Returned HTML for preview/copy keeps original formatting with newlines.
+            result.FormattedHtml.Should().Contain("<ul>\n<li>one</li>");
         }
         finally {
             File.Delete(coverPath);
