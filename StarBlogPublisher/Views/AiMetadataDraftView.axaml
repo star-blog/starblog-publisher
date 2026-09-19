@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:StarBlogPublisher.ViewModels"
+             x:Class="StarBlogPublisher.Views.AiMetadataDraftView"
+             x:DataType="vm:AiMetadataDraftViewModel">
+    <StackPanel Margin="8" Spacing="12">
+        <TextBlock Text="以下内容尚未写入文章。请编辑或选择后再应用。" TextWrapping="Wrap" />
+        <StackPanel Spacing="6">
+            <TextBlock Text="标题候选" FontWeight="SemiBold" />
+            <ComboBox ItemsSource="{Binding TitleCandidates}" SelectedItem="{Binding SelectedTitleCandidate}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="{Binding Title}" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding Rationale}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </StackPanel>
+        <StackPanel Spacing="6">
+            <TextBlock Text="摘要" FontWeight="SemiBold" />
+            <TextBox Text="{Binding Summary}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="80" />
+        </StackPanel>
+        <StackPanel Spacing="6">
+            <TextBlock Text="关键词（逗号分隔）" FontWeight="SemiBold" />
+            <TextBox Text="{Binding Tags}" />
+        </StackPanel>
+        <StackPanel Spacing="6">
+            <TextBlock Text="Slug 候选" FontWeight="SemiBold" />
+            <ComboBox ItemsSource="{Binding SlugCandidates}" SelectedItem="{Binding SelectedSlug}" />
+        </StackPanel>
+        <StackPanel Spacing="6">
+            <TextBlock Text="注意事项" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding Warnings}" TextWrapping="Wrap" />
+        </StackPanel>
+        <Button Content="应用所选草案" Command="{Binding ApplyCommand}" HorizontalAlignment="Right" />
+    </StackPanel>
+</UserControl>

@@ -1,0 +1,9 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:StarBlogPublisher.ViewModels"
+             x:Class="StarBlogPublisher.Views.PublicationReviewView"
+             x:DataType="vm:PublicationReviewViewModel">
+    <ScrollViewer Margin="8">
+        <TextBlock Text="{Binding ReviewText}" TextWrapping="Wrap" />
+    </ScrollViewer>
+</UserControl>

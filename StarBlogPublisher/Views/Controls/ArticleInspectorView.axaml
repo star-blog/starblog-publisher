@@ -24,6 +24,7 @@
                     <fi:FluentIcon Icon="Sparkle" IconVariant="Regular" FontSize="16" />
                     <Button.Flyout>
                         <MenuFlyout Placement="BottomEdgeAlignedRight">
+                            <MenuItem Header="发布前 AI 审校" Command="{Binding ReviewBeforePublishCommand}" />
                             <MenuItem Header="补全元数据" Command="{Binding FillMetadataCommand}" />
                             <MenuItem Header="生成封面" Command="{Binding ShowCoverPromptCommand}" />
                             <MenuItem Header="分析文章图片" Command="{Binding AnalyzeImagesCommand}" />

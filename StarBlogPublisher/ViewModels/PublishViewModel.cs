@@ -17,6 +17,7 @@ using Markdig;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
+using StarBlogPublisher.Services.AI;
 using StarBlogPublisher.Utils;
 using FluentIcons.Common;
 
@@ -27,6 +28,7 @@ public partial class PublishViewModel : PageViewModelBase {
     private readonly CategoryApplicationService _categoryService;
     private readonly ArticlePublishApplicationService _publishService;
     private readonly AiApplicationService _aiService;
+    private readonly PublicationReviewWorkflow _publicationReviewWorkflow;
     private string? _currentFilePath;
     private string _loadedContent = "";
 
@@ -35,6 +37,7 @@ public partial class PublishViewModel : PageViewModelBase {
         _categoryService = new CategoryApplicationService(ApiService.Instance, shell.AuthService);
         _publishService = new ArticlePublishApplicationService(ApiService.Instance, shell.AuthService, AppSettings.Instance);
         _aiService = new AiApplicationService(AiService.Instance, AppSettings.Instance);
+        _publicationReviewWorkflow = new PublicationReviewWorkflow(AiService.Instance);
         IsAIEnabled = AppSettings.Instance.EnableAI;
         NotifyAiEnabled();
         InitializeTitleOptimizationTemplates();
@@ -462,14 +465,61 @@ public partial class PublishViewModel : PageViewModelBase {
 
         IsPreparingAi = true;
         try {
-            await RegenerateDescription();
-            await GenerateKeywords();
-            await GenerateSlug();
-            StatusMessage = "AI已补全摘要、关键词和 Slug";
+            var result = await _aiService.GenerateMetadataDraftAsync(ArticleTitle, ArticleContent);
+            await GuiHost.ShowContentAsync(
+                new AiMetadataDraftViewModel(result.Data, ApplyMetadataDraft),
+                "AI 元数据草案");
+            StatusMessage = "AI 元数据草案已生成；请确认后应用。";
         }
         finally {
             IsPreparingAi = false;
         }
+    }
+
+    [RelayCommand]
+    private async Task ReviewBeforePublish() {
+        if (!_aiService.IsEnabled || string.IsNullOrWhiteSpace(ArticleTitle) || string.IsNullOrWhiteSpace(ArticleContent)) {
+            StatusMessage = "无法审校：AI 未启用，或文章标题/正文为空。";
+            return;
+        }
+
+        IsPreparingAi = true;
+        try {
+            StatusMessage = "正在进行发布前 AI 审校...";
+            var result = await _publicationReviewWorkflow.ReviewAsync(
+                ArticleTitle,
+                ArticleContent,
+                ArticleDescription);
+            await GuiHost.ShowContentAsync(new PublicationReviewViewModel(result.Data), "发布前 AI 审校");
+            StatusMessage = "发布前 AI 审校完成；未自动修改文章。";
+        }
+        catch (Exception ex) {
+            StatusMessage = $"发布前审校失败: {ex.Message}";
+            GuiHost.ToastError("发布前审校失败", ex.Message);
+        }
+        finally {
+            IsPreparingAi = false;
+        }
+    }
+
+    private void ApplyMetadataDraft(SelectedArticleMetadata selected) {
+        if (!string.IsNullOrWhiteSpace(selected.Title)) {
+            ArticleTitle = selected.Title.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(selected.Summary)) {
+            ArticleDescription = selected.Summary.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(selected.Tags)) {
+            ArticleKeywords = selected.Tags.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(selected.Slug)) {
+            ArticleSlug = AiApplicationService.CleanSlug(selected.Slug);
+        }
+
+        StatusMessage = "已应用所选 AI 元数据草案。";
     }
 
     [RelayCommand]
