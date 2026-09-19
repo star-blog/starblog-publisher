@@ -20,16 +20,21 @@ public static class EncryptionService {
         var plainBytes = Encoding.UTF8.GetBytes(plainText);
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-            // Windows平台使用ProtectedData
-            var encryptedBytes = ProtectedData.Protect(
-                plainBytes, EntropyBytes, DataProtectionScope.CurrentUser
-            );
-            return Convert.ToBase64String(encryptedBytes);
+            try {
+                var encryptedBytes = ProtectedData.Protect(
+                    plainBytes, EntropyBytes, DataProtectionScope.CurrentUser
+                );
+                return Convert.ToBase64String(encryptedBytes);
+            }
+            catch (CryptographicException) {
+                // CI and other restricted user contexts may not have access to DPAPI.
+            }
+            catch (PlatformNotSupportedException) {
+                // Fall back to the cross-platform implementation below.
+            }
         }
-        else {
-            // 非Windows平台使用AES加密
-            return EncryptWithAes(plainBytes, EncryptionKey);
-        }
+
+        return EncryptWithAes(plainBytes, EncryptionKey);
     }
 
     public static string Decrypt(string encryptedText) {
@@ -40,19 +45,23 @@ public static class EncryptionService {
             var encryptedBytes = Convert.FromBase64String(encryptedText);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                // Windows平台使用ProtectedData
-                var plainBytes =
-                    ProtectedData.Unprotect(
+                try {
+                    var plainBytes = ProtectedData.Unprotect(
                         encryptedBytes,
                         EntropyBytes,
                         DataProtectionScope.CurrentUser
                     );
-                return Encoding.UTF8.GetString(plainBytes);
+                    return Encoding.UTF8.GetString(plainBytes);
+                }
+                catch (CryptographicException) {
+                    // The value may have been written by the AES fallback.
+                }
+                catch (PlatformNotSupportedException) {
+                    // Use the cross-platform implementation below.
+                }
             }
-            else {
-                // 非Windows平台使用AES解密
-                return DecryptWithAes(encryptedText, EncryptionKey);
-            }
+
+            return DecryptWithAes(encryptedText, EncryptionKey);
         }
         catch {
             // 解密失败时返回空字符串
