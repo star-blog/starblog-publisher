@@ -42,4 +42,30 @@ public class WeChatHttpClientRegistrationTests {
         factory.CreateClient(WeChatHttpClientRegistration.ApiClientName).BaseAddress
             .Should().Be(new Uri("https://second-proxy.example.com/wechat/"));
     }
+
+    [Fact]
+    public void RegisteredApiClient_AppliesConfiguredRelayAuthorizationHeader() {
+        var settings = new AppSettings { WeChatApiAuthorization = "Bearer relay-token" };
+        var services = new ServiceCollection();
+        services.AddWeChatHttpClients(settings);
+        using var provider = services.BuildServiceProvider();
+
+        var client = provider.GetRequiredService<IHttpClientFactory>()
+            .CreateClient(WeChatHttpClientRegistration.ApiClientName);
+
+        client.DefaultRequestHeaders.Authorization!.Scheme.Should().Be("Bearer");
+        client.DefaultRequestHeaders.Authorization.Parameter.Should().Be("relay-token");
+    }
+
+    [Theory]
+    [InlineData("Bearer relay-token")]
+    [InlineData("Basic cmVsYXk6dG9rZW4=")]
+    public void IsValidApiAuthorization_AcceptsValidAuthorizationValues(string value) {
+        WeChatHttpClientRegistration.IsValidApiAuthorization(value).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsValidApiAuthorization_RejectsMalformedAuthorizationValue() {
+        WeChatHttpClientRegistration.IsValidApiAuthorization("Bearer\r\nmalicious").Should().BeFalse();
+    }
 }

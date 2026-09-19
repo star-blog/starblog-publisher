@@ -37,10 +37,12 @@ public partial class SettingsViewModel : PageViewModelBase {
     [ObservableProperty] private bool _enableRegexImageParsing;
     [ObservableProperty] private string _weChatAppId = string.Empty;
     [ObservableProperty] private string _weChatApiBaseUrl = WeChatHttpClientRegistration.OfficialApiBaseUrl;
+    [ObservableProperty] private string _weChatApiAuthorization = string.Empty;
     [ObservableProperty] private string _weChatAppSecret = string.Empty;
     [ObservableProperty] private string _weChatAuthor = string.Empty;
     [ObservableProperty] private string _weChatDefaultTheme = "newspaper";
     [ObservableProperty] private bool _showWeChatAppSecret;
+    [ObservableProperty] private bool _showWeChatApiAuthorization;
     [ObservableProperty] private bool _isDarkTheme;
     private bool _syncingTheme;
 
@@ -92,6 +94,7 @@ public partial class SettingsViewModel : PageViewModelBase {
             EnableRegexImageParsing = settings.EnableRegexImageParsing;
             WeChatAppId = settings.WeChatAppId;
             WeChatApiBaseUrl = settings.WeChatApiBaseUrl;
+            WeChatApiAuthorization = settings.WeChatApiAuthorization;
             WeChatAppSecret = settings.WeChatAppSecret;
             WeChatAuthor = settings.WeChatAuthor;
             WeChatDefaultTheme = settings.WeChatDefaultTheme;
@@ -191,6 +194,9 @@ public partial class SettingsViewModel : PageViewModelBase {
 
     [RelayCommand]
     private void ToggleWeChatAppSecret() => ShowWeChatAppSecret = !ShowWeChatAppSecret;
+
+    [RelayCommand]
+    private void ToggleWeChatApiAuthorization() => ShowWeChatApiAuthorization = !ShowWeChatApiAuthorization;
 
     [RelayCommand]
     private void ToggleAIKey() => ShowAIKey = !ShowAIKey;
@@ -333,6 +339,11 @@ public partial class SettingsViewModel : PageViewModelBase {
             return;
         }
 
+        if (!WeChatHttpClientRegistration.IsValidApiAuthorization(WeChatApiAuthorization)) {
+            GuiHost.ToastError("微信 API Authorization 无效", "请输入完整的 Authorization 值，例如 Bearer relay-token。");
+            return;
+        }
+
         var settings = AppSettings.Instance;
 
         settings.UseProxy = UseProxy;
@@ -348,6 +359,7 @@ public partial class SettingsViewModel : PageViewModelBase {
         settings.EnableRegexImageParsing = EnableRegexImageParsing;
         settings.WeChatAppId = WeChatAppId;
         settings.WeChatApiBaseUrl = weChatApiBaseAddress.AbsoluteUri;
+        settings.WeChatApiAuthorization = WeChatApiAuthorization;
         settings.WeChatAppSecret = WeChatAppSecret;
         settings.WeChatAuthor = WeChatAuthor;
         settings.WeChatDefaultTheme = WeChatDefaultTheme;

@@ -84,7 +84,19 @@ public class AppSettings {
     // 微信公众号设置
     public string WeChatAppId { get; set; } = string.Empty;
     public string WeChatApiBaseUrl { get; set; } = WeChatHttpClientRegistration.OfficialApiBaseUrl;
+    private string _encryptedWeChatApiAuthorization = string.Empty;
     private string _encryptedWeChatAppSecret = string.Empty;
+
+    [JsonIgnore]
+    public string WeChatApiAuthorization {
+        get => EncryptionService.Decrypt(_encryptedWeChatApiAuthorization);
+        set => _encryptedWeChatApiAuthorization = EncryptionService.Encrypt(value);
+    }
+
+    public string EncryptedWeChatApiAuthorization {
+        get => _encryptedWeChatApiAuthorization;
+        set => _encryptedWeChatApiAuthorization = value;
+    }
 
     [JsonIgnore]
     public string WeChatAppSecret {
@@ -182,6 +194,7 @@ public class AppSettings {
             WeChatApiBaseUrl = string.IsNullOrWhiteSpace(snapshot.WeChatApiBaseUrl)
                 ? WeChatHttpClientRegistration.OfficialApiBaseUrl
                 : snapshot.WeChatApiBaseUrl,
+            _encryptedWeChatApiAuthorization = snapshot.EncryptedWeChatApiAuthorization ?? string.Empty,
             _encryptedWeChatAppSecret = snapshot.EncryptedWeChatAppSecret ?? string.Empty,
             WeChatAuthor = snapshot.WeChatAuthor ?? string.Empty,
             WeChatDefaultTheme = snapshot.WeChatDefaultTheme ?? "newspaper",
@@ -214,6 +227,7 @@ public class AppSettings {
             BackendTimeout = BackendTimeout,
             WeChatAppId = WeChatAppId,
             WeChatApiBaseUrl = WeChatApiBaseUrl,
+            EncryptedWeChatApiAuthorization = _encryptedWeChatApiAuthorization,
             EncryptedWeChatAppSecret = _encryptedWeChatAppSecret,
             WeChatAuthor = WeChatAuthor,
             WeChatDefaultTheme = WeChatDefaultTheme,
@@ -304,6 +318,7 @@ internal sealed class AppSettingsSnapshot {
     public int BackendTimeout { get; set; } = 30;
     public string WeChatAppId { get; set; } = string.Empty;
     public string WeChatApiBaseUrl { get; set; } = WeChatHttpClientRegistration.OfficialApiBaseUrl;
+    public string EncryptedWeChatApiAuthorization { get; set; } = string.Empty;
     public string EncryptedWeChatAppSecret { get; set; } = string.Empty;
     public string WeChatAuthor { get; set; } = string.Empty;
     public string WeChatDefaultTheme { get; set; } = "newspaper";
@@ -336,6 +351,8 @@ internal sealed class LegacyAppSettingsSnapshot {
     public int BackendTimeout { get; set; } = 30;
     public string WeChatAppId { get; set; } = string.Empty;
     public string WeChatApiBaseUrl { get; set; } = WeChatHttpClientRegistration.OfficialApiBaseUrl;
+    public string WeChatApiAuthorization { get; set; } = string.Empty;
+    public string EncryptedWeChatApiAuthorization { get; set; } = string.Empty;
     public string WeChatAppSecret { get; set; } = string.Empty;
     public string EncryptedWeChatAppSecret { get; set; } = string.Empty;
     public string WeChatAuthor { get; set; } = string.Empty;
@@ -371,6 +388,9 @@ internal sealed class LegacyAppSettingsSnapshot {
             BackendTimeout = BackendTimeout,
             WeChatAppId = WeChatAppId,
             WeChatApiBaseUrl = WeChatApiBaseUrl,
+            EncryptedWeChatApiAuthorization = !string.IsNullOrWhiteSpace(EncryptedWeChatApiAuthorization)
+                ? EncryptedWeChatApiAuthorization
+                : EncryptionService.Encrypt(WeChatApiAuthorization),
             EncryptedWeChatAppSecret = !string.IsNullOrWhiteSpace(EncryptedWeChatAppSecret)
                 ? EncryptedWeChatAppSecret
                 : EncryptionService.Encrypt(WeChatAppSecret),

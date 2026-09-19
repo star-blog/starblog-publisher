@@ -1,6 +1,7 @@
 using System;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace StarBlogPublisher.Services;
@@ -20,6 +21,7 @@ public static class WeChatHttpClientRegistration {
         services.AddHttpClient(ApiClientName, client => {
             client.BaseAddress = GetApiBaseAddress(settings);
             client.Timeout = GetTimeout(settings);
+            ApplyAuthorizationHeader(client, settings);
         }).ConfigurePrimaryHttpMessageHandler(() => CreateHandler(settings));
 
         services.AddHttpClient(ImageDownloadClientName, client => {
@@ -53,6 +55,27 @@ public static class WeChatHttpClientRegistration {
         var normalized = builder.Uri.AbsoluteUri.TrimEnd('/') + "/";
         apiBaseAddress = new Uri(normalized, UriKind.Absolute);
         return true;
+    }
+
+    /// <summary>Applies the optional Authorization header required by a WeChat relay.</summary>
+    internal static void ApplyAuthorizationHeader(HttpClient client, AppSettings settings) {
+        var authorization = settings.WeChatApiAuthorization.Trim();
+        if (authorization.Length == 0) return;
+
+        // AuthenticationHeaderValue validates the value and prevents control characters
+        // from being persisted as an HTTP header. The value includes its scheme, for
+        // example: "Bearer relay-token".
+        if (!AuthenticationHeaderValue.TryParse(authorization, out var header)) {
+            throw new InvalidOperationException("微信 API Authorization 头格式无效。");
+        }
+
+        client.DefaultRequestHeaders.Authorization = header;
+    }
+
+    /// <summary>Checks whether an optional Authorization header value is valid.</summary>
+    public static bool IsValidApiAuthorization(string? value) {
+        return string.IsNullOrWhiteSpace(value) ||
+               AuthenticationHeaderValue.TryParse(value.Trim(), out _);
     }
 
     private static TimeSpan GetTimeout(AppSettings settings) =>

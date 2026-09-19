@@ -186,6 +186,25 @@
                         </ui:FASettingsExpanderItem.Footer>
                     </ui:FASettingsExpanderItem>
 
+                    <ui:FASettingsExpanderItem Content="微信 Relay Authorization"
+                                             Description="仅在使用需要认证的 relay 时填写；填写完整 Authorization 值，例如 Bearer relay-token。该值会加密保存在本机。">
+                        <ui:FASettingsExpanderItem.Footer>
+                            <Border Classes="SettingsField">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <TextBox Grid.Column="0"
+                                             PlaceholderText="Bearer relay-token"
+                                             PasswordChar="{Binding ShowWeChatApiAuthorization, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
+                                             Text="{Binding WeChatApiAuthorization}" />
+                                    <Button Grid.Column="1" Classes="Icon"
+                                            ToolTip.Tip="显示或隐藏 Authorization"
+                                            Command="{Binding ToggleWeChatApiAuthorizationCommand}">
+                                        <fi:FluentIcon Icon="Eye" IconVariant="Regular" />
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </ui:FASettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem>
+
                     <ui:FASettingsExpanderItem Content="AppSecret"
                                              Description="仅用于创建草稿，不会直接群发">
                         <ui:FASettingsExpanderItem.Footer>

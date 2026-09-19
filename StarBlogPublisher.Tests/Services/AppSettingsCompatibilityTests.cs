@@ -35,6 +35,7 @@ public class AppSettingsCompatibilityTests {
           "Password": "plain-password",
           "BackendTimeout": 45,
           "WeChatApiBaseUrl": "https://wechat-proxy.example.com/api/",
+          "WeChatApiAuthorization": "Bearer relay-token",
           "IsDarkTheme": true,
           "EnableRegexImageParsing": true
         }
@@ -69,6 +70,8 @@ public class AppSettingsCompatibilityTests {
         snapshot.EncryptedPassword.Should().NotBe("plain-password");
         snapshot.BackendTimeout.Should().Be(45);
         snapshot.WeChatApiBaseUrl.Should().Be("https://wechat-proxy.example.com/api/");
+        snapshot.EncryptedWeChatApiAuthorization.Should().NotBeNullOrWhiteSpace();
+        snapshot.EncryptedWeChatApiAuthorization.Should().NotBe("Bearer relay-token");
         snapshot.IsDarkTheme.Should().BeTrue();
         snapshot.EnableRegexImageParsing.Should().BeTrue();
     }
