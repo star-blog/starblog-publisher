@@ -37,6 +37,21 @@ public partial class MainWindow : FAAppWindow {
         DataContextChanged += (_, _) => InitializeShellMenus();
     }
 
+    private void OnShellNavigationItemInvoked(object? sender, FANavigationViewItemInvokedEventArgs e) {
+        if (DataContext is not MainWindowViewModel vm) return;
+        var tag = (e.InvokedItem as ShellFooterNavItem)?.Tag
+                  ?? (e.InvokedItemContainer as FANavigationViewItem)?.Tag as string;
+        switch (tag) {
+            case "theme":
+                vm.ToggleThemeCommand.Execute(null);
+                break;
+            case "account":
+                if (vm.IsLoggedIn) vm.LogoutCommand.Execute(null);
+                else vm.LoginCommand.Execute(null);
+                break;
+        }
+    }
+
     private void InitializeShellMenus() {
         if (DataContext is not MainWindowViewModel vm) return;
         vm.CanEdit = CanEditTarget;

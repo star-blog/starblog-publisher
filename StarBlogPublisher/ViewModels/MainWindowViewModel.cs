@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FluentIcons.Common;
 using System.Net.Http;
 using Avalonia;
 using Avalonia.Styling;
@@ -29,6 +30,9 @@ public partial class MainWindowViewModel : ViewModelBase {
     public ModelCatalogPageViewModel? ModelCatalogPage { get; private set; }
 
     public IReadOnlyList<PageViewModelBase> Pages { get; }
+    public ShellFooterNavItem ThemeFooterItem { get; }
+    public ShellFooterNavItem AccountFooterItem { get; }
+    public IReadOnlyList<ShellFooterNavItem> FooterNavItems { get; }
     public bool IsWorkspaceActive => ActivePage == Workspace;
     public PageViewModelBase? SecondaryPage => IsWorkspaceActive ? null : ActivePage;
 
@@ -85,6 +89,9 @@ public partial class MainWindowViewModel : ViewModelBase {
         SettingsPage = new SettingsViewModel(this);
         AboutPage = new AboutViewModel();
         Pages = [Workspace, WeChatPage, SettingsPage, AboutPage];
+        ThemeFooterItem = new ShellFooterNavItem { Tag = "theme", Title = "主题" };
+        AccountFooterItem = new ShellFooterNavItem { Tag = "account", Title = "登录" };
+        FooterNavItems = [ThemeFooterItem, AccountFooterItem];
         ActivePage = Workspace;
 
         if (initializeSession) {
@@ -94,7 +101,21 @@ public partial class MainWindowViewModel : ViewModelBase {
         }
 
         IsDarkTheme = AppSettings.Instance.IsDarkTheme;
+        RefreshFooterNavItems();
         InitializeCommands();
+    }
+
+    partial void OnIsDarkThemeChanged(bool value) => RefreshFooterNavItems();
+
+    partial void OnIsLoggedInChanged(bool value) => RefreshFooterNavItems();
+
+    private void RefreshFooterNavItems() {
+        ThemeFooterItem.NavIcon = IsDarkTheme ? Icon.WeatherSunny : Icon.WeatherMoon;
+        ThemeFooterItem.ToolTip = IsDarkTheme ? "切换到浅色" : "切换到深色";
+
+        AccountFooterItem.NavIcon = IsLoggedIn ? Icon.SignOut : Icon.Person;
+        AccountFooterItem.Title = IsLoggedIn ? "登出" : "登录";
+        AccountFooterItem.ToolTip = AccountFooterItem.Title;
     }
 
     /// <summary>

@@ -24,7 +24,8 @@
     </Design.DataContext>
 
     <Panel>
-        <ui:FANavigationView PaneDisplayMode="LeftCompact"
+        <ui:FANavigationView x:Name="ShellNavigationView"
+                           PaneDisplayMode="LeftCompact"
                            IsPaneToggleButtonVisible="False"
                            Margin="{Binding TitleBarContentMargin}"
                            IsSettingsVisible="False"
@@ -33,46 +34,21 @@
                            CompactPaneLength="48"
                            IsPaneOpen="{Binding IsPaneOpen, Mode=TwoWay}"
                            MenuItemsSource="{Binding Pages}"
-                           SelectedItem="{Binding ActivePage, Mode=TwoWay}">
+                           FooterMenuItemsSource="{Binding FooterNavItems}"
+                           SelectedItem="{Binding ActivePage, Mode=TwoWay}"
+                           ItemInvoked="OnShellNavigationItemInvoked">
             <ui:FANavigationView.MenuItemTemplate>
-                <DataTemplate x:DataType="vm:PageViewModelBase">
+                <DataTemplate x:DataType="vm:INavigationMenuItem">
                     <ui:FANavigationViewItem Content="{Binding Title}"
-                                           ToolTip.Tip="{Binding Title}">
+                                           Tag="{Binding Tag}"
+                                           SelectsOnInvoked="{Binding SelectsOnInvoked}"
+                                           ToolTip.Tip="{Binding ToolTip}">
                         <ui:FANavigationViewItem.IconSource>
                             <fi:FluentIconSource Icon="{Binding NavIcon}" IconVariant="Regular" />
                         </ui:FANavigationViewItem.IconSource>
                     </ui:FANavigationViewItem>
                 </DataTemplate>
             </ui:FANavigationView.MenuItemTemplate>
-
-            <ui:FANavigationView.PaneFooter>
-                <StackPanel Margin="8,8" Spacing="4">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                        <Button Classes="Transparent"
-                                Command="{Binding ToggleThemeCommand}"
-                                ToolTip.Tip="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeTextConverter}}">
-                            <Panel>
-                                <fi:FluentIcon Icon="WeatherMoon" IconVariant="Regular" FontSize="16"
-                                               IsVisible="{Binding !IsDarkTheme}" />
-                                <fi:FluentIcon Icon="WeatherSunny" IconVariant="Regular" FontSize="16"
-                                               IsVisible="{Binding IsDarkTheme}" />
-                            </Panel>
-                        </Button>
-                        <Button Classes="Transparent"
-                                Command="{Binding LoginCommand}"
-                                IsVisible="{Binding !IsLoggedIn}"
-                                ToolTip.Tip="登录">
-                            <fi:FluentIcon Icon="Person" IconVariant="Regular" FontSize="16" />
-                        </Button>
-                        <Button Classes="Transparent"
-                                Command="{Binding LogoutCommand}"
-                                IsVisible="{Binding IsLoggedIn}"
-                                ToolTip.Tip="登出">
-                            <fi:FluentIcon Icon="SignOut" IconVariant="Regular" FontSize="16" />
-                        </Button>
-                    </StackPanel>
-                </StackPanel>
-            </ui:FANavigationView.PaneFooter>
 
             <Grid RowDefinitions="Auto,*">
                 <ui:FAInfoBar x:Name="FeedbackBar"
