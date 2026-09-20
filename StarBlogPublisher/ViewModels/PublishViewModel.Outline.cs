@@ -26,6 +26,7 @@ public partial class PublishViewModel {
         DocumentFileName, OutlineEntries.LastOrDefault(h => h.Line <= CursorLine)?.Title
     }.Where(part => !string.IsNullOrWhiteSpace(part)));
     public event Action<int>? NavigateToLineRequested;
+    public event Action<int>? NavigatePreviewToLineRequested;
 
     private void UpdateOutline() {
         OutlineEntries.Clear();
@@ -43,7 +44,8 @@ public partial class PublishViewModel {
     partial void OnCursorColumnChanged(int value) => OnPropertyChanged(nameof(CursorPositionText));
 
     [RelayCommand] private void NavigateToHeading(ArticleHeading heading) {
-        EditorMode = MarkdownEditorMode.Source;
-        NavigateToLineRequested?.Invoke(heading.Line);
+        if (IsPreviewPaneVisible) NavigatePreviewToLineRequested?.Invoke(heading.Line);
+        if (IsSourcePaneVisible) NavigateToLineRequested?.Invoke(heading.Line);
+        else { CursorLine = heading.Line; CursorColumn = 1; }
     }
 }

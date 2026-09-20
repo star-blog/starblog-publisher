@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -19,9 +21,13 @@ public partial class MarkdownEditorView : UserControl {
     private MarkdownSyntaxColorizer? _colorizer;
     private bool _syncingText;
     private bool _editorConfigured;
+    private int? _pendingPreviewLine;
+    private double? _pendingPreviewSourceLine;
+    private double? _sourceLineBeforeModeChange;
 
     public MarkdownEditorView() {
         InitializeComponent();
+        PreviewBrowser.NavigationCompleted += async (_, _) => await ScrollPreviewToPendingHeading();
         DataContextChanged += OnDataContextChanged;
         ActualThemeVariantChanged += OnActualThemeVariantChanged;
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
@@ -32,9 +38,13 @@ public partial class MarkdownEditorView : UserControl {
         ConfigureEditor();
         if (_viewModel != null) {
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _viewModel.PropertyChanging -= OnViewModelPropertyChanging;
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+            _viewModel.PropertyChanging += OnViewModelPropertyChanging;
             _viewModel.NavigateToLineRequested -= NavigateToLine;
+            _viewModel.NavigatePreviewToLineRequested -= NavigatePreviewToLine;
             _viewModel.NavigateToLineRequested += NavigateToLine;
+            _viewModel.NavigatePreviewToLineRequested += NavigatePreviewToLine;
         }
         ApplyEditorChrome();
         SyncTextFromViewModel();
@@ -45,16 +55,23 @@ public partial class MarkdownEditorView : UserControl {
         if (_viewModel != null) {
             SaveEditorPosition();
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _viewModel.PropertyChanging -= OnViewModelPropertyChanging;
             _viewModel.NavigateToLineRequested -= NavigateToLine;
+            _viewModel.NavigatePreviewToLineRequested -= NavigatePreviewToLine;
         }
 
+        _pendingPreviewLine = null;
+        _pendingPreviewSourceLine = null;
+        _sourceLineBeforeModeChange = null;
         _viewModel = DataContext as PublishViewModel;
         if (_viewModel != null) {
             _syncingText = true;
             Editor.Document = _viewModel.EditorDocument;
             _syncingText = false;
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+            _viewModel.PropertyChanging += OnViewModelPropertyChanging;
             _viewModel.NavigateToLineRequested += NavigateToLine;
+            _viewModel.NavigatePreviewToLineRequested += NavigatePreviewToLine;
             SyncTextFromViewModel();
             ScheduleRestoreEditorPosition();
         }
@@ -63,7 +80,12 @@ public partial class MarkdownEditorView : UserControl {
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) {
         SaveEditorPosition();
         if (_viewModel != null) _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        if (_viewModel != null) _viewModel.PropertyChanging -= OnViewModelPropertyChanging;
         if (_viewModel != null) _viewModel.NavigateToLineRequested -= NavigateToLine;
+        if (_viewModel != null) _viewModel.NavigatePreviewToLineRequested -= NavigatePreviewToLine;
+        _pendingPreviewLine = null;
+        _pendingPreviewSourceLine = null;
+        _sourceLineBeforeModeChange = null;
         base.OnDetachedFromVisualTree(e);
     }
 
@@ -120,8 +142,35 @@ public partial class MarkdownEditorView : UserControl {
         _syncingText = false;
     }
 
+    private void OnViewModelPropertyChanging(object? sender, System.ComponentModel.PropertyChangingEventArgs e) {
+        if (e.PropertyName != nameof(PublishViewModel.EditorMode)) return;
+        _sourceLineBeforeModeChange = null;
+        if (_viewModel is not { IsSourcePaneVisible: true }) return;
+        var view = Editor.TextArea.TextView;
+        if (!view.VisualLinesValid) return;
+        var firstVisible = view.VisualLines.FirstOrDefault(line => line.VisualTop + line.Height > view.VerticalOffset);
+        if (firstVisible == null) return;
+        var fraction = Math.Clamp((view.VerticalOffset - firstVisible.VisualTop) / firstVisible.Height, 0, 1);
+        _sourceLineBeforeModeChange = firstVisible.FirstDocumentLine.LineNumber
+            + fraction * (firstVisible.LastDocumentLine.LineNumber - firstVisible.FirstDocumentLine.LineNumber + 1);
+    }
+
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) {
+        if (e.PropertyName == nameof(PublishViewModel.EditorMode)
+            && _viewModel is { IsPreviewPaneVisible: true } document
+            && _sourceLineBeforeModeChange is { } sourceLine) {
+            _sourceLineBeforeModeChange = null;
+            _pendingPreviewLine = null;
+            _pendingPreviewSourceLine = sourceLine;
+            // Wait for the new preview width before calculating its block positions.
+            Dispatcher.UIThread.Post(async () => {
+                if (ReferenceEquals(document, _viewModel)) await ScrollPreviewToPendingHeading();
+            }, DispatcherPriority.Loaded);
+        }
         if (e.PropertyName == nameof(PublishViewModel.ArticleContent)) {
+            _pendingPreviewLine = null;
+            _pendingPreviewSourceLine = null;
+            _sourceLineBeforeModeChange = null;
             SyncTextFromViewModel();
         }
     }
@@ -188,6 +237,50 @@ public partial class MarkdownEditorView : UserControl {
             "TextFillColorSecondaryBrush", isDark ? Brushes.LightGray : Brushes.Gray);
         Editor.TextArea.TextView.CurrentLineBackground =
             new SolidColorBrush(isDark ? Color.FromArgb(36, 255, 255, 255) : Color.FromArgb(28, 0, 0, 0));
+    }
+
+    private async void NavigatePreviewToLine(int line) {
+        _pendingPreviewSourceLine = null;
+        _pendingPreviewLine = line;
+        await ScrollPreviewToPendingHeading();
+    }
+
+    private async System.Threading.Tasks.Task ScrollPreviewToPendingHeading() {
+        if ((_pendingPreviewLine == null && _pendingPreviewSourceLine == null)
+            || _viewModel is not { IsPreviewPaneVisible: true } document) return;
+        try {
+            // Only scroll the current document; a tab switch may still be loading its WebView page.
+            var expectedUrl = System.Text.Json.JsonSerializer.Serialize(document.PreviewUri?.AbsoluteUri);
+            var sourceLine = _pendingPreviewSourceLine?.ToString(CultureInfo.InvariantCulture) ?? "null";
+            await PreviewBrowser.InvokeScript($$"""
+                (() => {
+                    if (window.location.href !== {{expectedUrl}}) return false;
+                    const sourceLine = {{sourceLine}};
+                    if (sourceLine !== null) {
+                        const blocks = Array.from(document.querySelectorAll('[data-source-line]'))
+                            .map(element => ({ element, start: Number(element.dataset.sourceLine), end: Number(element.dataset.sourceEnd) }))
+                            .filter(block => block.element.getBoundingClientRect().height > 0)
+                            .sort((a, b) => a.start - b.start || b.end - a.end);
+                        if (!blocks.length) return false;
+                        const preceding = blocks.filter(block => block.start <= sourceLine);
+                        const containing = preceding.filter(block => sourceLine < block.end + 1);
+                        const block = containing.length ? containing[containing.length - 1]
+                            : preceding.length ? preceding[preceding.length - 1] : blocks[0];
+                        const rect = block.element.getBoundingClientRect();
+                        const fraction = Math.max(0, Math.min(1, (sourceLine - block.start) / Math.max(1, block.end - block.start + 1)));
+                        window.scrollTo({ top: window.scrollY + rect.top + rect.height * fraction, behavior: 'instant' });
+                        return true;
+                    }
+                    const heading = document.querySelector('[data-outline-line="{{_pendingPreviewLine}}"]');
+                    if (!heading) return false;
+                    heading.scrollIntoView({ block: 'start', behavior: 'instant' });
+                    return true;
+                })()
+                """);
+        }
+        catch (Exception) {
+            // NavigationCompleted retries requests made while the native browser is initializing.
+        }
     }
 
     private void NavigateToLine(int line) {

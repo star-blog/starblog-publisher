@@ -76,6 +76,36 @@ public sealed class ShellCommandTests : IDisposable {
         requested.Should().Be(7);
     }
 
+    [Theory]
+    [InlineData(MarkdownEditorMode.Source)]
+    [InlineData(MarkdownEditorMode.Preview)]
+    [InlineData(MarkdownEditorMode.Split)]
+    public void OutlineNavigation_PreservesModeAndTargetsVisiblePanes(MarkdownEditorMode mode) {
+        var shell = CreateShell();
+        shell.Workspace.NewDocumentCommand.Execute(null);
+        var document = shell.PublishPage;
+        document.ArticleContent = "# Same\n\n## Same\n\nSetext\n------\n";
+        document.EditorMode = mode;
+        var heading = document.OutlineEntries.Last();
+        var requested = 0;
+        document.NavigateToLineRequested += line => requested = line;
+        var previewRequests = new List<int>();
+        document.NavigatePreviewToLineRequested += previewRequests.Add;
+        var originalUri = document.PreviewUri!;
+        document.NavigateToHeadingCommand.Execute(heading);
+        document.EditorMode.Should().Be(mode);
+        requested.Should().Be(mode == MarkdownEditorMode.Preview ? 0 : heading.Line);
+        document.PreviewUri.Should().Be(originalUri);
+        if (mode == MarkdownEditorMode.Source) previewRequests.Should().BeEmpty();
+        else {
+            document.NavigateToHeadingCommand.Execute(heading);
+            previewRequests.Should().Equal(heading.Line, heading.Line);
+        }
+        var html = File.ReadAllText(originalUri.LocalPath);
+        html.Should().Contain("data-outline-line=\"1\"").And.Contain("data-outline-line=\"3\"").And.Contain("data-outline-line=\"5\"");
+        html.Should().Contain("id=\"same\"");
+    }
+
     [Fact]
     public void FocusMode_RestoresLayoutAcrossDocumentSwitches() {
         var workspace = CreateShell().Workspace;

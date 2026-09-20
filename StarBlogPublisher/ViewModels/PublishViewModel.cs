@@ -14,6 +14,8 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Markdig;
+using Markdig.Renderers.Html;
+using Markdig.Syntax;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
@@ -373,7 +375,17 @@ public partial class PublishViewModel : PageViewModelBase {
                     : articleDirectory + Path.DirectorySeparatorChar).AbsoluteUri;
             }
 
-            var body = Markdig.Markdown.ToHtml(ArticleContent, pipeline);
+            var markdown = Markdig.Markdown.Parse(ArticleContent, pipeline);
+            foreach (var block in markdown.Descendants<Block>()) {
+                var line = ArticleContent.AsSpan(0, Math.Clamp(block.Span.Start, 0, ArticleContent.Length)).Count('\n') + 1;
+                var endLine = ArticleContent.AsSpan(0, Math.Clamp(block.Span.End + 1, 0, ArticleContent.Length)).Count('\n') + 1;
+                var attributes = block.GetAttributes();
+                attributes.AddProperty("data-source-line", line.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                attributes.AddProperty("data-source-end", endLine.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                if (block is HeadingBlock)
+                    attributes.AddProperty("data-outline-line", line.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            var body = Markdig.Markdown.ToHtml(markdown, pipeline);
             var previewThemeClass = AppSettings.Instance.IsDarkTheme
                 ? "preview-dark"
                 : "preview-light";
