@@ -149,6 +149,22 @@ public class ArticleWorkspaceViewModelTests : IDisposable {
     }
 
     [Fact]
+    public async Task OpeningArticle_BuildsMarkdownExplorerTreeForItsDirectory() {
+        var workspace = CreateShell().Workspace;
+        var article = await Article("root.md", "# Root");
+        var nestedDirectory = Path.Combine(_directory, "guides");
+        Directory.CreateDirectory(nestedDirectory);
+        await File.WriteAllTextAsync(Path.Combine(nestedDirectory, "nested.md"), "# Nested");
+        await File.WriteAllTextAsync(Path.Combine(_directory, "notes.txt"), "ignore");
+
+        await workspace.OpenPathAsync(article);
+
+        workspace.WorkspaceRootName.Should().Be(new DirectoryInfo(_directory).Name);
+        workspace.WorkspaceFiles.Select(node => node.Name).Should().Contain(["root.md", "guides"]);
+        workspace.WorkspaceFiles.Single(node => node.Name == "guides").Children.Single().Name.Should().Be("nested.md");
+    }
+
+    [Fact]
     public async Task RestoreSession_ReopensSavedFilesAndSelectedTab() {
         var workspace = CreateShell().Workspace;
         var one = await Article("one.md", "one");

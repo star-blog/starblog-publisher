@@ -96,9 +96,12 @@ public sealed class ShellCommandTests : IDisposable {
     }
 
     [Fact]
-    public void WorkspaceLayout_RestoresVisibilityAndInspectorWidth() {
+    public void WorkspaceLayout_RestoresVisibilityAndPanelWidths() {
         var shell = CreateShell();
         shell.Workspace.NewDocumentCommand.Execute(null);
+        shell.Workspace.IsSidebarOpen = false;
+        shell.Workspace.IsSidebarOpen = true;
+        shell.Workspace.SidebarColumnWidth = new Avalonia.Controls.GridLength(280);
         shell.Workspace.IsSidebarOpen = false;
         shell.Workspace.IsTaskPanelOpen = true;
         shell.PublishPage.InspectorColumnWidth = new Avalonia.Controls.GridLength(360);
@@ -106,6 +109,8 @@ public sealed class ShellCommandTests : IDisposable {
         var restored = CreateShell();
         restored.Workspace.NewDocumentCommand.Execute(null);
         restored.Workspace.IsSidebarOpen.Should().BeFalse();
+        restored.Workspace.IsSidebarOpen = true;
+        restored.Workspace.SidebarColumnWidth.Value.Should().Be(280);
         restored.Workspace.IsTaskPanelOpen.Should().BeTrue();
         restored.PublishPage.IsInspectorOpen.Should().BeFalse();
         restored.PublishPage.ExpandedInspectorWidth.Should().Be(360);

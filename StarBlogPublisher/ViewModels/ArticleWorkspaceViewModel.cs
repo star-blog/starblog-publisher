@@ -22,11 +22,19 @@ public partial class ArticleWorkspaceViewModel : PageViewModelBase {
     private WorkspaceLayout _layout = new();
     public ObservableCollection<PublishViewModel> Documents { get; } = new();
     public ObservableCollection<RecentArticle> RecentFiles { get; } = new();
+    public ObservableCollection<ArticleWorkspaceTreeNode> WorkspaceFiles { get; } = new();
     public PublishViewModel EmptyDocument { get; }
     [ObservableProperty] private PublishViewModel? _activeDocument;
     [ObservableProperty] private bool _isSidebarOpen = true;
     [ObservableProperty] private bool _isTaskPanelOpen;
     [ObservableProperty] private bool _isFocusMode;
+    [ObservableProperty] private bool _isOpenDocumentsExpanded = true;
+    [ObservableProperty] private bool _isRecentFilesExpanded;
+    [ObservableProperty] private bool _isOutlineExpanded = true;
+    [ObservableProperty] private bool _isWorkspaceTreeExpanded = true;
+    [ObservableProperty] private string _workspaceRootName = "文章工作区";
+    [ObservableProperty] private string? _workspaceRootPath;
+    private double _sidebarWidth = 240;
     private bool _sidebarBeforeFocus;
     private bool _tasksBeforeFocus;
     private readonly Dictionary<PublishViewModel, bool> _inspectorsBeforeFocus = new();
@@ -41,6 +49,7 @@ public partial class ArticleWorkspaceViewModel : PageViewModelBase {
         _layout = _previousSession.Layout ?? new();
         _isSidebarOpen = _layout.SidebarOpen;
         _isTaskPanelOpen = _layout.TasksOpen;
+        _sidebarWidth = Math.Clamp(_layout.SidebarWidth, 180, 420);
         foreach (var path in (_previousSession.RecentFiles ?? []).Where(p => !string.IsNullOrWhiteSpace(p)).Distinct().Take(12)) RecentFiles.Add(new(path));
         EmptyDocument = new PublishViewModel(shell);
         Documents.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasDocuments));
@@ -50,6 +59,7 @@ public partial class ArticleWorkspaceViewModel : PageViewModelBase {
         if (value != null) value.PropertyChanged += OnDocumentLayoutChanged;
         if (IsFocusMode && value != null) HideInspectorForFocus(value);
         OnPropertyChanged(nameof(CurrentDocument));
+        RefreshWorkspaceFiles();
         _shell.RefreshChromeTitle();
         SaveHistory();
     }
@@ -57,7 +67,24 @@ public partial class ArticleWorkspaceViewModel : PageViewModelBase {
     partial void OnActiveDocumentChanging(PublishViewModel? value) {
         if (ActiveDocument != null) ActiveDocument.PropertyChanged -= OnDocumentLayoutChanged;
     }
-    partial void OnIsSidebarOpenChanged(bool value) { if (!IsFocusMode) SaveHistory(); }
+    public Avalonia.Controls.GridLength SidebarColumnWidth {
+        get => new(IsSidebarOpen ? _sidebarWidth : 0);
+        set {
+            if (!value.IsAbsolute || !IsSidebarOpen) return;
+            var width = Math.Clamp(value.Value, 180, 420);
+            if (Math.Abs(width - _sidebarWidth) < 0.1) return;
+            _sidebarWidth = width;
+            OnPropertyChanged();
+            SaveHistory();
+        }
+    }
+    public Avalonia.Controls.GridLength SidebarSplitterColumnWidth => new(IsSidebarOpen ? 4 : 0);
+
+    partial void OnIsSidebarOpenChanged(bool value) {
+        OnPropertyChanged(nameof(SidebarColumnWidth));
+        OnPropertyChanged(nameof(SidebarSplitterColumnWidth));
+        if (!IsFocusMode) SaveHistory();
+    }
     partial void OnIsTaskPanelOpenChanged(bool value) { if (!IsFocusMode) SaveHistory(); }
     private void OnDocumentLayoutChanged(object? sender, PropertyChangedEventArgs e) {
         if (IsFocusMode || sender is not PublishViewModel document) return;
@@ -69,6 +96,39 @@ public partial class ArticleWorkspaceViewModel : PageViewModelBase {
     private void ApplyLayout(PublishViewModel document) {
         document.InspectorColumnWidth = new Avalonia.Controls.GridLength(Math.Clamp(_layout.InspectorWidth, 240, 480));
         document.IsInspectorOpen = _layout.InspectorOpen;
+    }
+
+    private void RefreshWorkspaceFiles() {
+        WorkspaceFiles.Clear();
+        var filePath = ActiveDocument?.CurrentFilePath;
+        if (string.IsNullOrWhiteSpace(filePath)) {
+            WorkspaceRootName = "文章工作区";
+            WorkspaceRootPath = null;
+            return;
+        }
+
+        var directory = Path.GetDirectoryName(filePath);
+        if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory)) return;
+        WorkspaceRootPath = directory;
+        WorkspaceRootName = new DirectoryInfo(directory).Name;
+        foreach (var entry in ReadDirectory(directory, 0)) WorkspaceFiles.Add(entry);
+    }
+
+    private static IEnumerable<ArticleWorkspaceTreeNode> ReadDirectory(string directory, int depth) {
+        if (depth > 4) yield break;
+        IEnumerable<string> entries;
+        try { entries = Directory.EnumerateFileSystemEntries(directory).OrderBy(path => !Directory.Exists(path)).ThenBy(Path.GetFileName, StringComparer.CurrentCultureIgnoreCase).ToArray(); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { yield break; }
+
+        foreach (var path in entries) {
+            if (Directory.Exists(path)) {
+                var children = ReadDirectory(path, depth + 1).ToArray();
+                if (children.Length > 0) yield return new(path, true, children);
+            }
+            else if (path.EndsWith(".md", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".markdown", StringComparison.OrdinalIgnoreCase)) {
+                yield return new(path, false, []);
+            }
+        }
     }
 
     [RelayCommand] private void ToggleSidebar() => IsSidebarOpen = !IsSidebarOpen;
@@ -143,7 +203,11 @@ public partial class ArticleWorkspaceViewModel : PageViewModelBase {
     }
 
     private void SaveHistory() {
-        if (!IsFocusMode) _layout = _layout with { SidebarOpen = IsSidebarOpen, TasksOpen = IsTaskPanelOpen };
+        if (!IsFocusMode) _layout = _layout with {
+            SidebarOpen = IsSidebarOpen,
+            TasksOpen = IsTaskPanelOpen,
+            SidebarWidth = _sidebarWidth
+        };
         _historyStore.Save(new(RecentFiles.Select(item => item.Path).ToArray(),
             Documents.Select(d => d.CurrentFilePath).OfType<string>().ToArray(), ActiveDocument?.CurrentFilePath, _layout));
     }
@@ -203,4 +267,17 @@ public partial class ArticleWorkspaceViewModel : PageViewModelBase {
 
 public sealed record RecentArticle(string Path) {
     public string FileName => System.IO.Path.GetFileName(Path);
+}
+
+public sealed class ArticleWorkspaceTreeNode {
+    public ArticleWorkspaceTreeNode(string path, bool isDirectory, IEnumerable<ArticleWorkspaceTreeNode> children) {
+        Path = path;
+        IsDirectory = isDirectory;
+        Name = System.IO.Path.GetFileName(path);
+        Children = new(children);
+    }
+    public string Path { get; }
+    public string Name { get; }
+    public bool IsDirectory { get; }
+    public ObservableCollection<ArticleWorkspaceTreeNode> Children { get; }
 }

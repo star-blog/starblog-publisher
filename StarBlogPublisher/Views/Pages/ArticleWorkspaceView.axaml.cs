@@ -27,6 +27,10 @@ public partial class ArticleWorkspaceView : UserControl {
         if (DataContext is ArticleWorkspaceViewModel workspace && sender is Button { DataContext: ArticleHeading heading })
             workspace.CurrentDocument.NavigateToHeadingCommand.Execute(heading);
     }
+    private async void OnWorkspaceTreeSelectionChanged(object? sender, SelectionChangedEventArgs e) {
+        if (DataContext is ArticleWorkspaceViewModel workspace && sender is TreeView { SelectedItem: ArticleWorkspaceTreeNode { IsDirectory: false } file })
+            await workspace.OpenPathAsync(file.Path);
+    }
     private void OnTaskActivate(object? sender, RoutedEventArgs e) {
         if (DataContext is ArticleWorkspaceViewModel workspace && sender is Button { DataContext: PublishViewModel document }) workspace.ActiveDocument = document;
     }

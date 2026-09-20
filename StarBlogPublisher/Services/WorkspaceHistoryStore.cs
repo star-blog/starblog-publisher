@@ -4,7 +4,12 @@ using System.Text.Json;
 
 namespace StarBlogPublisher.Services;
 
-public sealed record WorkspaceLayout(bool SidebarOpen = true, bool TasksOpen = false, bool InspectorOpen = true, double InspectorWidth = 300);
+public sealed record WorkspaceLayout(
+    bool SidebarOpen = true,
+    bool TasksOpen = false,
+    bool InspectorOpen = true,
+    double InspectorWidth = 300,
+    double SidebarWidth = 240);
 public sealed record WorkspaceHistory(string[] RecentFiles, string[] OpenFiles, string? ActiveFile, WorkspaceLayout? Layout = null);
 
 public sealed class WorkspaceHistoryStore(string path) {
