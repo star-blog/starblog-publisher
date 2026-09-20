@@ -91,7 +91,13 @@
 
         <Grid Height="{Binding TitleBarHeight}" Margin="0,0,140,0" VerticalAlignment="Top" ColumnDefinitions="48,Auto,*,Auto">
             <Border Background="Transparent" PointerPressed="OnTitleBarPointerPressed">
-                <TextBlock Text="✦" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
+                <Image Source="/Assets/logo.webp"
+                       Width="24"
+                       Height="24"
+                       Stretch="Uniform"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       IsHitTestVisible="False" />
             </Border>
             <Menu x:Name="MainMenu" Grid.Column="1" VerticalAlignment="Center" Background="Transparent" />
             <Menu x:Name="CompactMenu" Grid.Column="1" VerticalAlignment="Center" Background="Transparent" IsVisible="False" />
