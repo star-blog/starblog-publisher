@@ -24,8 +24,7 @@
     </Design.DataContext>
 
     <Panel>
-        <ui:FANavigationView x:Name="ShellNavigationView"
-                           PaneDisplayMode="LeftCompact"
+        <ui:FANavigationView PaneDisplayMode="LeftCompact"
                            IsPaneToggleButtonVisible="False"
                            Margin="{Binding TitleBarContentMargin}"
                            IsSettingsVisible="False"

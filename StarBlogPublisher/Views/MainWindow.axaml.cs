@@ -39,8 +39,9 @@ public partial class MainWindow : FAAppWindow {
 
     private void OnShellNavigationItemInvoked(object? sender, FANavigationViewItemInvokedEventArgs e) {
         if (DataContext is not MainWindowViewModel vm) return;
-        var tag = (e.InvokedItem as ShellFooterNavItem)?.Tag
-                  ?? (e.InvokedItemContainer as FANavigationViewItem)?.Tag as string;
+        if (e.InvokedItemContainer is not FANavigationViewItem container) return;
+        // InvokedItem is the item Content (title string), not the footer data object.
+        var tag = (container.DataContext as ShellFooterNavItem)?.Tag ?? container.Tag as string;
         switch (tag) {
             case "theme":
                 vm.ToggleThemeCommand.Execute(null);

@@ -3,9 +3,7 @@ using FluentIcons.Common;
 
 namespace StarBlogPublisher.ViewModels;
 
-/// <summary>
-/// 侧栏底部操作项（主题、登录）。须为数据对象，由 NavigationView MenuItemTemplate 生成 FANavigationViewItem。
-/// </summary>
+/// <summary>侧栏底部动作项（主题切换、登录/登出），不是页面导航。</summary>
 public partial class ShellFooterNavItem : ObservableObject, INavigationMenuItem {
     public required string Tag { get; init; }
 
