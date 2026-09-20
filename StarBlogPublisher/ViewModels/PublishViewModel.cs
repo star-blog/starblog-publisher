@@ -104,7 +104,7 @@ public partial class PublishViewModel : PageViewModelBase {
         : IsDocumentDirty ? "已修改"
         : "已加载";
     public string ConnectionStatusText => IsLoggedIn ? "StarBlog ● Connected" : "StarBlog ○ Offline";
-    public double InspectorPaneWidth => IsInspectorOpen ? 320 : 48;
+    public double InspectorPaneWidth => IsInspectorOpen ? _inspectorWidth : 0;
     public bool CanPreview => HasLoadedArticle && !string.IsNullOrWhiteSpace(ArticleContent);
     public bool IsSourcePaneVisible => EditorMode != MarkdownEditorMode.Preview;
     public bool IsPreviewPaneVisible => EditorMode != MarkdownEditorMode.Source;
@@ -248,6 +248,7 @@ public partial class PublishViewModel : PageViewModelBase {
     }
 
     partial void OnArticleContentChanged(string value) {
+        UpdateOutline();
         OnPropertyChanged(nameof(OutlineText));
         UpdateDocumentStats();
         NotifyDocumentState();
@@ -982,6 +983,7 @@ public partial class PublishViewModel : PageViewModelBase {
     private void NotifyDocumentState() {
         OnPropertyChanged(nameof(IsDocumentDirty));
         OnPropertyChanged(nameof(CurrentFilePath));
+        OnPropertyChanged(nameof(BreadcrumbText));
         OnPropertyChanged(nameof(DocumentFileName));
         OnPropertyChanged(nameof(DocumentDisplayName));
         OnPropertyChanged(nameof(SaveStatusText));
@@ -1003,6 +1005,7 @@ public partial class PublishViewModel : PageViewModelBase {
         OnPropertyChanged(nameof(ShowPublishBlockers));
         OnPropertyChanged(nameof(ShowReadyToPublish));
         OnPropertyChanged(nameof(PublishReadinessText));
+        NotifyPublishTarget();
     }
 
     private void SyncKeywordItems() {

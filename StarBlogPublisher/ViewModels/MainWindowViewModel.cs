@@ -29,6 +29,8 @@ public partial class MainWindowViewModel : ViewModelBase {
     public ModelCatalogPageViewModel? ModelCatalogPage { get; private set; }
 
     public IReadOnlyList<PageViewModelBase> Pages { get; }
+    public bool IsWorkspaceActive => ActivePage == Workspace;
+    public PageViewModelBase? SecondaryPage => IsWorkspaceActive ? null : ActivePage;
 
     [ObservableProperty] private PageViewModelBase? _activePage;
     [ObservableProperty] private bool _isDarkTheme;
@@ -65,6 +67,7 @@ public partial class MainWindowViewModel : ViewModelBase {
         }
 
         IsDarkTheme = AppSettings.Instance.IsDarkTheme;
+        InitializeCommands();
     }
 
     /// <summary>
@@ -129,6 +132,8 @@ public partial class MainWindowViewModel : ViewModelBase {
     }
 
     partial void OnActivePageChanged(PageViewModelBase? value) {
+        OnPropertyChanged(nameof(IsWorkspaceActive));
+        OnPropertyChanged(nameof(SecondaryPage));
         if (value is WeChatViewModel weChat) {
             weChat.SyncFrom(PublishPage);
         }

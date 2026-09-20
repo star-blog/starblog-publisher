@@ -33,6 +33,8 @@ public partial class MarkdownEditorView : UserControl {
         if (_viewModel != null) {
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+            _viewModel.NavigateToLineRequested -= NavigateToLine;
+            _viewModel.NavigateToLineRequested += NavigateToLine;
         }
         ApplyEditorChrome();
         SyncTextFromViewModel();
@@ -43,6 +45,7 @@ public partial class MarkdownEditorView : UserControl {
         if (_viewModel != null) {
             SaveEditorPosition();
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _viewModel.NavigateToLineRequested -= NavigateToLine;
         }
 
         _viewModel = DataContext as PublishViewModel;
@@ -51,6 +54,7 @@ public partial class MarkdownEditorView : UserControl {
             Editor.Document = _viewModel.EditorDocument;
             _syncingText = false;
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+            _viewModel.NavigateToLineRequested += NavigateToLine;
             SyncTextFromViewModel();
             ScheduleRestoreEditorPosition();
         }
@@ -59,6 +63,7 @@ public partial class MarkdownEditorView : UserControl {
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) {
         SaveEditorPosition();
         if (_viewModel != null) _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        if (_viewModel != null) _viewModel.NavigateToLineRequested -= NavigateToLine;
         base.OnDetachedFromVisualTree(e);
     }
 
@@ -96,6 +101,11 @@ public partial class MarkdownEditorView : UserControl {
         Editor.TextArea.RightClickMovesCaret = true;
         Editor.Background = Brushes.Transparent;
         Editor.TextChanged += OnEditorTextChanged;
+        Editor.TextArea.Caret.PositionChanged += (_, _) => {
+            if (_viewModel == null) return;
+            _viewModel.CursorLine = Editor.TextArea.Caret.Line;
+            _viewModel.CursorColumn = Editor.TextArea.Caret.Column;
+        };
         _searchPanel = SearchPanel.Install(Editor);
         ReplaceColorizer();
     }
@@ -178,6 +188,17 @@ public partial class MarkdownEditorView : UserControl {
             "TextFillColorSecondaryBrush", isDark ? Brushes.LightGray : Brushes.Gray);
         Editor.TextArea.TextView.CurrentLineBackground =
             new SolidColorBrush(isDark ? Color.FromArgb(36, 255, 255, 255) : Color.FromArgb(28, 0, 0, 0));
+    }
+
+    private void NavigateToLine(int line) {
+        var document = _viewModel;
+        Dispatcher.UIThread.Post(() => {
+            if (document != _viewModel) return;
+            line = Math.Clamp(line, 1, Editor.Document.LineCount);
+            Editor.CaretOffset = Editor.Document.GetLineByNumber(line).Offset;
+            Editor.ScrollToLine(line);
+            Editor.Focus();
+        }, DispatcherPriority.Loaded);
     }
 
     private IBrush BrushOrFallback(string key, IBrush fallback) {

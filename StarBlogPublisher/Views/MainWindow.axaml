@@ -1,6 +1,7 @@
 <wnd:FAAppWindow xmlns="https://github.com/avaloniaui"
                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                xmlns:vm="using:StarBlogPublisher.ViewModels"
+               xmlns:views="using:StarBlogPublisher.Views"
                xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                xmlns:ui="using:FluentAvalonia.UI.Controls"
@@ -13,12 +14,19 @@
                WindowStartupLocation="CenterScreen"
                MinWidth="800" MinHeight="600">
 
+    <wnd:FAAppWindow.Styles>
+        <Style Selector="MenuItem.ChromeMenuItem"><Setter Property="Padding" Value="9,5" /><Setter Property="FontSize" Value="12" /></Style>
+        <Style Selector="Button.ChromeButton"><Setter Property="Padding" Value="7,3" /><Setter Property="MinHeight" Value="26" /><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /></Style>
+    </wnd:FAAppWindow.Styles>
+
     <Design.DataContext>
         <vm:MainWindowViewModel />
     </Design.DataContext>
 
     <Panel>
-        <ui:FANavigationView PaneDisplayMode="Left"
+        <ui:FANavigationView PaneDisplayMode="LeftCompact"
+                           IsPaneToggleButtonVisible="False"
+                           Margin="{Binding TitleBarContentMargin}"
                            IsSettingsVisible="False"
                            IsBackButtonVisible="False"
                            OpenPaneLength="220"
@@ -66,33 +74,37 @@
                 </StackPanel>
             </ui:FANavigationView.PaneFooter>
 
-            <Grid RowDefinitions="Auto,*" Margin="{Binding TitleBarContentMargin}">
+            <Grid RowDefinitions="Auto,*">
                 <ui:FAInfoBar x:Name="FeedbackBar"
                             Grid.Row="0"
                             Margin="8,8,8,0"
                             IsClosable="True"
                             IsOpen="False" />
-                <ContentControl Grid.Row="1" Content="{Binding ActivePage}" />
+                <Panel Grid.Row="1">
+                    <Border IsVisible="{Binding IsWorkspaceActive}">
+                        <views:ArticleWorkspaceView DataContext="{Binding Workspace}" />
+                    </Border>
+                    <ContentControl Content="{Binding SecondaryPage}" IsVisible="{Binding !IsWorkspaceActive}" />
+                </Panel>
             </Grid>
         </ui:FANavigationView>
 
-        <!-- Keep the drag surface clear of the NavigationView pane toggle (48px) and
-             the system caption buttons (140px).  Otherwise it intercepts the centre
-             of the hamburger button when content is extended into the title bar. -->
-        <Border Height="{Binding TitleBarHeight}"
-                Margin="48,0,140,0"
-                VerticalAlignment="Top"
-                Background="Transparent"
-                PointerPressed="OnTitleBarPointerPressed" />
-        <Border Height="{Binding TitleBarHeight}"
-                VerticalAlignment="Top"
-                IsHitTestVisible="False">
-            <TextBlock Text="{Binding ChromeTitle}"
-                       Margin="{Binding TitleBarTitleMargin}"
-                       VerticalAlignment="Center"
-                       FontSize="13"
-                       FontWeight="SemiBold"
-                       TextTrimming="CharacterEllipsis" />
-        </Border>
+        <Grid Height="{Binding TitleBarHeight}" Margin="0,0,140,0" VerticalAlignment="Top" ColumnDefinitions="48,Auto,*,Auto">
+            <Border Background="Transparent" PointerPressed="OnTitleBarPointerPressed">
+                <TextBlock Text="✦" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
+            </Border>
+            <Menu x:Name="MainMenu" Grid.Column="1" VerticalAlignment="Center" Background="Transparent" />
+            <Menu x:Name="CompactMenu" Grid.Column="1" VerticalAlignment="Center" Background="Transparent" IsVisible="False" />
+            <Border x:Name="TitleDragRegion" Grid.Column="2" Background="Transparent" PointerPressed="OnTitleBarPointerPressed" Padding="20,0">
+                <Button x:Name="CommandCenter" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="360" MinHeight="26" Padding="12,3" Click="OnQuickOpen" ToolTip.Tip="搜索已打开及最近文章 · Ctrl+P；命令面板 · Ctrl+Shift+P">
+                    <TextBlock Text="搜索文章或命令…    Ctrl+P" FontSize="12" TextTrimming="CharacterEllipsis" />
+                </Button>
+            </Border>
+            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Margin="0,0,8,0" IsVisible="{Binding IsWorkspaceActive}">
+                <Button Classes="ChromeButton" Command="{Binding Workspace.ToggleSidebarCommand}" ToolTip.Tip="文件侧栏 · Ctrl+B"><fi:FluentIcon Icon="PanelLeft" FontSize="15" /></Button>
+                <Button Classes="ChromeButton" Command="{Binding Workspace.ToggleTasksCommand}" ToolTip.Tip="任务面板 · Ctrl+J"><fi:FluentIcon Icon="PanelBottom" FontSize="15" /></Button>
+                <Button Classes="ChromeButton" Command="{Binding Workspace.CurrentDocument.ToggleInspectorCommand}" ToolTip.Tip="文章属性 · Ctrl+Alt+B"><fi:FluentIcon Icon="PanelRight" FontSize="15" /></Button>
+            </StackPanel>
+        </Grid>
     </Panel>
 </wnd:FAAppWindow>

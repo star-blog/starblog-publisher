@@ -13,8 +13,9 @@ namespace StarBlogPublisher.ViewModels;
 
 public partial class PublishViewModel {
     private double _inspectorWidth = 300;
+    public double ExpandedInspectorWidth => _inspectorWidth;
     public Avalonia.Controls.GridLength InspectorColumnWidth {
-        get => new(IsInspectorOpen ? _inspectorWidth : 48);
+        get => new(IsInspectorOpen ? _inspectorWidth : 0);
         set {
             if (IsInspectorOpen && value.IsAbsolute) _inspectorWidth = Math.Clamp(value.Value, 240, 480);
             OnPropertyChanged();
@@ -63,16 +64,16 @@ public partial class PublishViewModel {
     }
 
     [RelayCommand] private Task SaveDocument() => SaveDocumentAsync();
-    public async Task<bool> SaveDocumentAsync() {
+    public async Task<bool> SaveDocumentAsync(bool saveAs = false) {
         if (!HasLoadedArticle || IsWorkspaceBusy || _isSaving) return false;
         _isSaving = true;
         try {
             var path = _currentFilePath;
-            if (string.IsNullOrEmpty(path)) {
+            if (saveAs || string.IsNullOrEmpty(path)) {
                 var storage = GuiHost.GetTopLevel()?.StorageProvider;
                 if (storage == null) return false;
                 var file = await storage.SaveFilePickerAsync(new FilePickerSaveOptions {
-                    Title = "保存 Markdown 文章", SuggestedFileName = "未命名.md", DefaultExtension = "md",
+                    Title = "保存 Markdown 文章", SuggestedFileName = DocumentFileName, DefaultExtension = "md",
                     FileTypeChoices = [new FilePickerFileType("Markdown") { Patterns = ["*.md"] }]
                 });
                 path = file?.TryGetLocalPath();

@@ -27,6 +27,7 @@
                            Text="{Binding EditorModeLabel}" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                <TextBlock FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{Binding CursorPositionText}" />
                 <TextBlock FontSize="11"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                            Text="{Binding AiProviderLabel}"

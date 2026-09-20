@@ -3,67 +3,77 @@
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:fi="using:FluentIcons.Avalonia.Fluent"
              xmlns:views="using:StarBlogPublisher.Views"
+             xmlns:controls="using:StarBlogPublisher.Views.Controls"
              x:Class="StarBlogPublisher.Views.ArticleWorkspaceView"
              x:DataType="vm:ArticleWorkspaceViewModel"
              DragDrop.AllowDrop="True">
     <UserControl.Styles>
+        <Style Selector="Button.FileRow"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Padding" Value="6,4" /><Setter Property="MinHeight" Value="28" /></Style>
+        <Style Selector="Expander /template/ ToggleButton"><Setter Property="Padding" Value="6,4" /><Setter Property="MinHeight" Value="30" /></Style>
+        <Style Selector="Expander"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Padding" Value="0" /></Style>
         <Style Selector="Button.WorkspaceAction"><Setter Property="Padding" Value="10,5" /><Setter Property="MinHeight" Value="30" /></Style>
         <Style Selector="ListBox.DocumentTabs ListBoxItem"><Setter Property="Padding" Value="0" /><Setter Property="Margin" Value="0" /></Style>
         <Style Selector="ListBox.DocumentTabs ListBoxItem:selected /template/ ContentPresenter"><Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" /><Setter Property="BorderThickness" Value="0,2,0,0" /></Style>
     </UserControl.Styles>
     <DockPanel>
-        <Border DockPanel.Dock="Top" Padding="12,7" BorderThickness="0,0,0,1"
-                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
-            <Grid ColumnDefinitions="*,Auto">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <Button Classes="WorkspaceAction" Content="文件" ToolTip.Tip="文件操作">
-                        <Button.Flyout><MenuFlyout>
-                            <MenuItem Header="新建文章      Ctrl+N" Command="{Binding NewDocumentCommand}" />
-                            <MenuItem Header="打开文件…    Ctrl+O" Command="{Binding OpenFilesCommand}" />
-                            <MenuItem Header="恢复上次打开的文章" Command="{Binding RestoreSessionCommand}" IsEnabled="{Binding HasPreviousSession}" />
-                            <MenuItem Header="保存文章      Ctrl+S" Command="{Binding SaveActiveCommand}" IsEnabled="{Binding HasDocuments}" />
-                            <MenuItem Header="关闭文章      Ctrl+W" Command="{Binding CloseActiveCommand}" IsEnabled="{Binding HasDocuments}" />
-                        </MenuFlyout></Button.Flyout>
-                    </Button>
-                    <Button Classes="WorkspaceAction" Content="新建" Command="{Binding NewDocumentCommand}" />
-                    <Button Classes="WorkspaceAction" Content="打开文章…" Command="{Binding OpenFilesCommand}" />
-                    <Button Classes="WorkspaceAction" Content="保存" Command="{Binding SaveActiveCommand}" IsEnabled="{Binding HasDocuments}" ToolTip.Tip="保存正文与文章属性 · Ctrl+S" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                    <Button Classes="WorkspaceAction" Command="{Binding ToggleSidebarCommand}" ToolTip.Tip="文件侧栏 · Ctrl+B"><fi:FluentIcon Icon="PanelLeft" FontSize="16" /></Button>
-                    <Button Classes="WorkspaceAction" Command="{Binding CurrentDocument.ToggleInspectorCommand}" ToolTip.Tip="文章属性"><fi:FluentIcon Icon="PanelRight" FontSize="16" /></Button>
-                </StackPanel>
-            </Grid>
-        </Border>
+        <controls:WorkspaceStatusBar DockPanel.Dock="Bottom" DataContext="{Binding CurrentDocument}" />
         <Grid ColumnDefinitions="Auto,*">
             <Border Width="210" IsVisible="{Binding IsSidebarOpen}" BorderThickness="0,0,1,0"
                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                     Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}">
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel Margin="10,16" Spacing="10">
-                        <TextBlock Text="文章工作区" FontSize="12" FontWeight="SemiBold" Margin="6,0,0,4" />
-                        <TextBlock Text="已打开" Opacity="0.65" FontSize="12" Margin="6,0" />
-                        <ListBox ItemsSource="{Binding Documents}" SelectedItem="{Binding ActiveDocument, Mode=TwoWay}" Background="Transparent">
-                            <ListBox.ItemTemplate><DataTemplate x:DataType="vm:PublishViewModel">
-                                <TextBlock Text="{Binding DocumentDisplayName}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding CurrentFilePath}" />
-                            </DataTemplate></ListBox.ItemTemplate>
-                        </ListBox>
-                        <Separator />
-                        <TextBlock Text="最近打开" Opacity="0.65" FontSize="12" Margin="6,0" />
-                        <ItemsControl ItemsSource="{Binding RecentFiles}">
-                            <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:RecentArticle">
-                                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Classes="Transparent" Click="OnRecentClick" Padding="6" ToolTip.Tip="{Binding Path}">
-                                    <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" />
-                                </Button>
-                            </DataTemplate></ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        <Separator />
-                        <TextBlock Text="当前文章大纲" Opacity="0.65" FontSize="12" Margin="6,0" />
-                        <TextBlock Text="{Binding CurrentDocument.OutlineText}" TextWrapping="Wrap" Margin="6,0" FontSize="12" LineHeight="25" />
+                    <StackPanel Margin="8,10" Spacing="4">
+                        <TextBlock Text="文章资源管理器" FontSize="12" FontWeight="SemiBold" Margin="8,2,0,10" />
+                        <Expander Header="已打开" IsExpanded="True" HorizontalAlignment="Stretch">
+                            <ListBox ItemsSource="{Binding Documents}" SelectedItem="{Binding ActiveDocument, Mode=TwoWay}" Background="Transparent">
+                                <ListBox.ItemTemplate><DataTemplate x:DataType="vm:PublishViewModel">
+                                    <TextBlock Text="{Binding DocumentDisplayName}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding CurrentFilePath}" />
+                                </DataTemplate></ListBox.ItemTemplate>
+                            </ListBox>
+                        </Expander>
+                        <Expander Header="最近打开" IsExpanded="False" HorizontalAlignment="Stretch">
+                            <ItemsControl ItemsSource="{Binding RecentFiles}">
+                                <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:RecentArticle">
+                                    <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Classes="FileRow" Click="OnRecentClick" ToolTip.Tip="{Binding Path}">
+                                        <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" />
+                                    </Button>
+                                </DataTemplate></ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Expander>
+                        <Expander Header="文章大纲" IsExpanded="True" HorizontalAlignment="Stretch">
+                            <ItemsControl ItemsSource="{Binding CurrentDocument.OutlineEntries}">
+                                <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ArticleHeading">
+                                    <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Classes="FileRow" Click="OnOutlineClick" Margin="{Binding Indentation}" ToolTip.Tip="{Binding Title}">
+                                        <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" FontSize="12" />
+                                    </Button>
+                                </DataTemplate></ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Expander>
                     </StackPanel>
                 </ScrollViewer>
             </Border>
             <DockPanel Grid.Column="1">
+                <Border DockPanel.Dock="Bottom" IsVisible="{Binding IsTaskPanelOpen}" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Height="180">
+                    <DockPanel Margin="12,6">
+                        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                            <TextBlock Text="文章任务与状态" FontSize="12" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Content="×" Command="{Binding ToggleTasksCommand}" Classes="Transparent" Padding="6,0" ToolTip.Tip="关闭任务面板" />
+                        </Grid>
+                        <TextBlock Text="打开文章后可在这里查看各篇文章的任务状态。" IsVisible="{Binding !HasDocuments}" Opacity="0.65" />
+                        <ScrollViewer IsVisible="{Binding HasDocuments}">
+                            <ItemsControl ItemsSource="{Binding Documents}">
+                                <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:PublishViewModel">
+                                    <Grid ColumnDefinitions="180,*,Auto" RowDefinitions="Auto,Auto" Margin="0,2,0,6">
+                                        <Button Classes="FileRow" Click="OnTaskActivate" HorizontalContentAlignment="Left"><TextBlock Text="{Binding DocumentDisplayName}" TextTrimming="CharacterEllipsis" /></Button>
+                                        <TextBlock Grid.Column="1" Text="{Binding StatusMessage}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="10,0" />
+                                        <Button Grid.Column="2" Content="查看结果" IsVisible="{Binding HasPublishResult}" Click="OnTaskResult" Classes="FileRow" />
+                                        <ProgressBar Grid.Row="1" Grid.ColumnSpan="3" Value="{Binding PublishProgress}" IsVisible="{Binding IsPublishing}" Height="2" />
+                                    </Grid>
+                                </DataTemplate></ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
                 <ListBox DockPanel.Dock="Top" Classes="DocumentTabs" ItemsSource="{Binding Documents}"
                          SelectedItem="{Binding ActiveDocument, Mode=TwoWay}" IsVisible="{Binding HasDocuments}"
                          ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled"
@@ -71,6 +81,18 @@
                     <ListBox.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ListBox.ItemsPanel>
                     <ListBox.ItemTemplate><DataTemplate x:DataType="vm:PublishViewModel">
                         <Border BorderThickness="0,0,1,1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Padding="12,5,5,5">
+                            <Border.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="保存" Command="{Binding SaveDocumentCommand}" />
+                                    <MenuItem Header="另存为…" Tag="saveAs" Click="OnTabMenuClick" />
+                                    <Separator />
+                                    <MenuItem Header="关闭" Tag="close" Click="OnTabMenuClick" />
+                                    <MenuItem Header="关闭其他标签" Tag="others" Click="OnTabMenuClick" />
+                                    <MenuItem Header="关闭右侧标签" Tag="right" Click="OnTabMenuClick" />
+                                    <Separator />
+                                    <MenuItem Header="复制文件路径" Tag="path" Click="OnTabMenuClick" />
+                                </ContextMenu>
+                            </Border.ContextMenu>
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <TextBlock Text="{Binding DocumentDisplayName}" MaxWidth="230" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip.Tip="{Binding CurrentFilePath}" />
                                 <TextBlock Text="发布中" IsVisible="{Binding IsPublishing}" VerticalAlignment="Center" FontSize="11" />

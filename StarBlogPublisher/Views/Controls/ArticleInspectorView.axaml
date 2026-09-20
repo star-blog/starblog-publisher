@@ -8,66 +8,30 @@
              x:Class="StarBlogPublisher.Views.Controls.ArticleInspectorView"
              x:DataType="vm:PublishViewModel">
     <DockPanel>
-        <Border DockPanel.Dock="Top" Classes="InspectorActions">
-            <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="4">
-                <Button Classes="Icon"
-                        Command="{Binding ToggleInspectorCommand}"
-                        ToolTip.Tip="收起文章属性">
-                    <fi:FluentIcon Icon="ChevronRight" IconVariant="Regular" FontSize="16" />
-                </Button>
-
-                <Button Grid.Column="1"
-                        Classes="Icon"
-                        IsVisible="{Binding IsAIEnabled}"
-                        IsEnabled="{Binding !IsPreparingAi}"
-                        ToolTip.Tip="AI">
-                    <fi:FluentIcon Icon="Sparkle" IconVariant="Regular" FontSize="16" />
-                    <Button.Flyout>
-                        <MenuFlyout Placement="BottomEdgeAlignedRight">
-                            <MenuItem Header="发布前 AI 审校" Command="{Binding ReviewBeforePublishCommand}" />
-                            <MenuItem Header="补全元数据" Command="{Binding FillMetadataCommand}" />
-                            <MenuItem Header="生成封面" Command="{Binding ShowCoverPromptCommand}" />
-                            <MenuItem Header="分析文章图片" Command="{Binding AnalyzeImagesCommand}" />
-                        </MenuFlyout>
-                    </Button.Flyout>
-                </Button>
-
-                <Button Grid.Column="2" Classes="Icon" ToolTip.Tip="更多">
-                    <fi:FluentIcon Icon="MoreHorizontal" IconVariant="Regular" FontSize="16" />
-                    <Button.Flyout>
-                        <MenuFlyout Placement="BottomEdgeAlignedRight">
-                            <MenuItem Header="复制 Markdown" Command="{Binding CopyContentCommand}" />
-                            <MenuItem Header="重新加载" Command="{Binding ReloadDocumentCommand}" />
-                        </MenuFlyout>
-                    </Button.Flyout>
-                </Button>
-
-                <SplitButton Grid.Column="3"
-                             HorizontalAlignment="Stretch"
-                             HorizontalContentAlignment="Center"
-                             Content="发布到博客"
-                             Classes="Accent"
-                             Command="{Binding PublishCommand}"
-                             IsEnabled="{Binding CanPublish}"
-                             ToolTip.Tip="{Binding PublishReadinessText}">
-                    <SplitButton.Flyout>
-                        <MenuFlyout Placement="BottomEdgeAlignedRight">
-                            <MenuItem Header="发布到 StarBlog" Command="{Binding PublishCommand}" />
-                            <MenuItem Header="发布并打开网页" Command="{Binding PublishAndOpenCommand}" />
-                            <MenuItem Header="复制发布链接" Command="{Binding CopyPublishLinkCommand}" />
-                            <Separator />
-                            <MenuItem Header="公众号排版与草稿…" Command="{Binding ShowWeChatPublisherCommand}" />
-                        </MenuFlyout>
-                    </SplitButton.Flyout>
-                </SplitButton>
+        <Border DockPanel.Dock="Top" Padding="12,5" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="文章属性" FontSize="12" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Content="×" Command="{Binding ToggleInspectorCommand}" Classes="Transparent" Padding="6,0" MinHeight="24" ToolTip.Tip="收起文章属性" />
             </Grid>
         </Border>
-
-
-
+        <Border DockPanel.Dock="Bottom" Padding="12" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+            <StackPanel Spacing="8">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <TextBlock Text="发布目标" FontSize="12" VerticalAlignment="Center" />
+                    <ComboBox Grid.Column="1" SelectedIndex="{Binding PublishTargetIndex, Mode=TwoWay}" HorizontalAlignment="Stretch" MinHeight="28" Padding="8,4">
+                        <ComboBoxItem Content="StarBlog" />
+                        <ComboBoxItem Content="微信公众号" />
+                    </ComboBox>
+                </Grid>
+                <TextBlock Text="{Binding TargetReadinessText}" TextWrapping="Wrap" FontSize="11" Opacity="0.7" />
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                    <Button Content="登录" IsVisible="{Binding NeedsBlogLogin}" Command="{Binding RequestLoginCommand}" Padding="10,5" />
+                    <Button Grid.Column="1" Content="{Binding PrimaryPublishLabel}" Command="{Binding PublishToTargetCommand}" IsEnabled="{Binding CanPublishToTarget}" Classes="Accent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="10,5" />
+                </Grid>
+            </StackPanel>
+        </Border>
         <ScrollViewer>
             <StackPanel Margin="14,12" Spacing="12">
-                <TextBlock Text="文章属性" FontWeight="SemiBold" />
                 <StackPanel Spacing="6" IsVisible="{Binding HasPublishResult}">
                     <TextBlock Text="已发布"
                                FontSize="13"
@@ -79,26 +43,6 @@
                         <TextBlock Text="查看发布结果" />
                     </Button>
                 </StackPanel>
-
-                <StackPanel Spacing="6" IsVisible="{Binding ShowPublishBlockers}">
-                    <TextBlock Text="{Binding PublishReadinessText}"
-                               FontSize="13"
-                               FontWeight="SemiBold"
-                               TextWrapping="Wrap"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    <Button HorizontalAlignment="Left"
-                            Classes="Compact"
-                            Command="{Binding RequestLoginCommand}"
-                            IsVisible="{Binding NeedsLoginToPublish}">
-                        <TextBlock Text="登录" />
-                    </Button>
-                </StackPanel>
-
-                <TextBlock Text="可发布"
-                           FontSize="13"
-                           FontWeight="SemiBold"
-                           IsVisible="{Binding ShowReadyToPublish}"
-                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
 
                 <StackPanel Spacing="6">
                     <Grid ColumnDefinitions="*,Auto">
