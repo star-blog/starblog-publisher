@@ -424,3 +424,5 @@ dotnet build.cs
 ---
 
 **StarBlog Publisher** - 为 StarBlog 打造的专业发布工具，让博客发布变得简单高效！
+
+测试命令与真实窗口回归说明见 [测试指南](docs/testing.md)。
