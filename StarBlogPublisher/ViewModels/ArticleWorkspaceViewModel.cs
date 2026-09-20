@@ -27,6 +27,25 @@ public partial class ArticleWorkspaceViewModel : PageViewModelBase {
     [ObservableProperty] private bool _isSidebarOpen = true;
     [ObservableProperty] private bool _isTaskPanelOpen;
     [ObservableProperty] private bool _isFocusMode;
+    [ObservableProperty] private bool _isOpenedExpanded = true;
+    [ObservableProperty] private bool _isRecentExpanded;
+    [ObservableProperty] private bool _isOutlineExpanded = true;
+    private double _sidebarWidth = 240;
+    public double SidebarMinimumWidth => IsSidebarOpen ? 180 : 0;
+    public Avalonia.Controls.GridLength SidebarColumnWidth {
+        get => new(IsSidebarOpen ? _sidebarWidth : 0);
+        set {
+            if (!IsSidebarOpen || !value.IsAbsolute || !double.IsFinite(value.Value)) return;
+            var width = Math.Clamp(value.Value, 180, 420);
+            if (_sidebarWidth == width) return;
+            _sidebarWidth = width;
+            OnPropertyChanged();
+            SaveHistory();
+        }
+    }
+    partial void OnIsOpenedExpandedChanged(bool value) => SaveHistory();
+    partial void OnIsRecentExpandedChanged(bool value) => SaveHistory();
+    partial void OnIsOutlineExpandedChanged(bool value) => SaveHistory();
     private bool _sidebarBeforeFocus;
     private bool _tasksBeforeFocus;
     private readonly Dictionary<PublishViewModel, bool> _inspectorsBeforeFocus = new();
@@ -41,6 +60,10 @@ public partial class ArticleWorkspaceViewModel : PageViewModelBase {
         _layout = _previousSession.Layout ?? new();
         _isSidebarOpen = _layout.SidebarOpen;
         _isTaskPanelOpen = _layout.TasksOpen;
+        _sidebarWidth = double.IsFinite(_layout.SidebarWidth) ? Math.Clamp(_layout.SidebarWidth, 180, 420) : 240;
+        _isOpenedExpanded = _layout.OpenedExpanded;
+        _isRecentExpanded = _layout.RecentExpanded;
+        _isOutlineExpanded = _layout.OutlineExpanded;
         foreach (var path in (_previousSession.RecentFiles ?? []).Where(p => !string.IsNullOrWhiteSpace(p)).Distinct().Take(12)) RecentFiles.Add(new(path));
         EmptyDocument = new PublishViewModel(shell);
         Documents.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasDocuments));
@@ -57,7 +80,7 @@ public partial class ArticleWorkspaceViewModel : PageViewModelBase {
     partial void OnActiveDocumentChanging(PublishViewModel? value) {
         if (ActiveDocument != null) ActiveDocument.PropertyChanged -= OnDocumentLayoutChanged;
     }
-    partial void OnIsSidebarOpenChanged(bool value) { if (!IsFocusMode) SaveHistory(); }
+    partial void OnIsSidebarOpenChanged(bool value) { OnPropertyChanged(nameof(SidebarMinimumWidth)); OnPropertyChanged(nameof(SidebarColumnWidth)); if (!IsFocusMode) SaveHistory(); }
     partial void OnIsTaskPanelOpenChanged(bool value) { if (!IsFocusMode) SaveHistory(); }
     private void OnDocumentLayoutChanged(object? sender, PropertyChangedEventArgs e) {
         if (IsFocusMode || sender is not PublishViewModel document) return;
@@ -144,6 +167,8 @@ public partial class ArticleWorkspaceViewModel : PageViewModelBase {
 
     private void SaveHistory() {
         if (!IsFocusMode) _layout = _layout with { SidebarOpen = IsSidebarOpen, TasksOpen = IsTaskPanelOpen };
+        _layout = _layout with { SidebarWidth = _sidebarWidth, OpenedExpanded = IsOpenedExpanded,
+            RecentExpanded = IsRecentExpanded, OutlineExpanded = IsOutlineExpanded };
         _historyStore.Save(new(RecentFiles.Select(item => item.Path).ToArray(),
             Documents.Select(d => d.CurrentFilePath).OfType<string>().ToArray(), ActiveDocument?.CurrentFilePath, _layout));
     }

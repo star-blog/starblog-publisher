@@ -112,6 +112,31 @@ public sealed class ShellCommandTests : IDisposable {
     }
 
     [Fact]
+    public void SidebarLayout_PersistsWidthAndSections_AndSurvivesFocusMode() {
+        var workspace = CreateShell().Workspace;
+        workspace.SidebarColumnWidth.Value.Should().Be(240);
+        workspace.IsRecentExpanded.Should().BeFalse();
+        workspace.SidebarColumnWidth = new Avalonia.Controls.GridLength(320);
+        workspace.IsOpenedExpanded = false;
+        workspace.IsRecentExpanded = true;
+        workspace.IsOutlineExpanded = false;
+        workspace.ToggleFocusCommand.Execute(null);
+        workspace.SidebarColumnWidth.Value.Should().Be(0);
+        workspace.SidebarColumnWidth = new Avalonia.Controls.GridLength(0);
+        workspace.ToggleFocusCommand.Execute(null);
+        workspace.SidebarColumnWidth.Value.Should().Be(320);
+        var restored = CreateShell().Workspace;
+        restored.SidebarColumnWidth.Value.Should().Be(320);
+        restored.IsOpenedExpanded.Should().BeFalse();
+        restored.IsRecentExpanded.Should().BeTrue();
+        restored.IsOutlineExpanded.Should().BeFalse();
+        restored.SidebarColumnWidth = new Avalonia.Controls.GridLength(900);
+        restored.SidebarColumnWidth.Value.Should().Be(420);
+        restored.SidebarColumnWidth = new Avalonia.Controls.GridLength(20);
+        restored.SidebarColumnWidth.Value.Should().Be(180);
+    }
+
+    [Fact]
     public void EditCommands_DelegateToFocusedControlHandler() {
         var shell = CreateShell();
         string? action = null;

@@ -9,50 +9,129 @@
              DragDrop.AllowDrop="True">
     <UserControl.Styles>
         <Style Selector="Button.FileRow"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Padding" Value="6,4" /><Setter Property="MinHeight" Value="28" /></Style>
-        <Style Selector="Expander /template/ ToggleButton"><Setter Property="Padding" Value="6,4" /><Setter Property="MinHeight" Value="30" /></Style>
-        <Style Selector="Expander"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Padding" Value="0" /></Style>
+        <Style Selector="ToggleButton.SectionHeader">
+            <Setter Property="Height" Value="28" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Template"><ControlTemplate>
+                <Border Name="HeaderSurface" Background="Transparent" Padding="{TemplateBinding Padding}" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+                    <Grid ColumnDefinitions="16,*,Auto">
+                        <TextBlock Name="Chevron" Text="›" VerticalAlignment="Center" />
+                        <ContentPresenter Grid.Column="1" Content="{TemplateBinding Content}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{TemplateBinding Tag}" Opacity="0.5" VerticalAlignment="Center" FontSize="11" />
+                    </Grid>
+                </Border>
+            </ControlTemplate></Setter>
+        </Style>
+        <Style Selector="ToggleButton.SectionHeader:checked /template/ TextBlock#Chevron"><Setter Property="Text" Value="⌄" /></Style>
+        <Style Selector="ToggleButton.SectionHeader:pointerover /template/ Border#HeaderSurface"><Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" /></Style>
+        <Style Selector="ToggleButton.SectionHeader:focus-visible /template/ Border#HeaderSurface"><Setter Property="BorderThickness" Value="1" /><Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" /></Style>
+        <Style Selector="ListBox.SidebarFiles ListBoxItem">
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template"><ControlTemplate>
+                <Border Name="RowSurface" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                    <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center" />
+                </Border>
+            </ControlTemplate></Setter>
+        </Style>
+        <Style Selector="ListBox.SidebarFiles ListBoxItem:pointerover"><Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" /></Style>
+        <Style Selector="ListBox.SidebarFiles ListBoxItem:selected"><Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" /></Style>
+        <Style Selector="ListBox.SidebarFiles:focus-within ListBoxItem:selected"><Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" /></Style>
+        <Style Selector="ListBox.SidebarFiles ListBoxItem:focus-visible /template/ Border#RowSurface"><Setter Property="BorderThickness" Value="1" /><Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" /></Style>
+        <Style Selector="Button.RowClose"><Setter Property="Opacity" Value="0" /><Setter Property="Width" Value="22" /><Setter Property="Height" Value="22" /><Setter Property="MinHeight" Value="0" /><Setter Property="Padding" Value="0" /><Setter Property="CornerRadius" Value="3" /></Style>
+        <Style Selector="ListBoxItem:pointerover Button.RowClose"><Setter Property="Opacity" Value="1" /></Style>
+        <Style Selector="ListBoxItem:selected Button.RowClose"><Setter Property="Opacity" Value="1" /></Style>
+        <Style Selector="ListBoxItem:focus-within Button.RowClose"><Setter Property="Opacity" Value="1" /></Style>
+        <Style Selector="Button.SidebarTool"><Setter Property="Width" Value="24" /><Setter Property="Height" Value="24" /><Setter Property="MinHeight" Value="0" /><Setter Property="Padding" Value="0" /></Style>
+        <Style Selector="Button.TabClose"><Setter Property="Width" Value="24" /><Setter Property="Height" Value="24" /><Setter Property="MinHeight" Value="0" /><Setter Property="Padding" Value="0" /></Style>
+        <Style Selector="Button.SidebarTool, Button.RowClose, Button.TabClose">
+            <Setter Property="Template"><ControlTemplate>
+                <Border Name="ActionSurface" Background="Transparent" CornerRadius="3">
+                    <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+            </ControlTemplate></Setter>
+        </Style>
+        <Style Selector="Button.SidebarTool:pointerover /template/ Border#ActionSurface, Button.RowClose:pointerover /template/ Border#ActionSurface, Button.TabClose:pointerover /template/ Border#ActionSurface"><Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" /></Style>
+        <Style Selector="Button.SidebarTool:focus-visible /template/ Border#ActionSurface, Button.RowClose:focus-visible /template/ Border#ActionSurface, Button.TabClose:focus-visible /template/ Border#ActionSurface"><Setter Property="BorderThickness" Value="1" /><Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" /></Style>
+        <Style Selector="Button.TabClose:pressed /template/ Border#ActionSurface"><Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" /></Style>
+        <Style Selector="Button.OutlineRow"><Setter Property="Height" Value="28" /><Setter Property="CornerRadius" Value="0" /></Style>
         <Style Selector="Button.WorkspaceAction"><Setter Property="Padding" Value="10,5" /><Setter Property="MinHeight" Value="30" /></Style>
         <Style Selector="ListBox.DocumentTabs ListBoxItem"><Setter Property="Padding" Value="0" /><Setter Property="Margin" Value="0" /></Style>
         <Style Selector="ListBox.DocumentTabs ListBoxItem:selected /template/ ContentPresenter"><Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" /><Setter Property="BorderThickness" Value="0,2,0,0" /></Style>
     </UserControl.Styles>
     <DockPanel>
         <controls:WorkspaceStatusBar DockPanel.Dock="Bottom" DataContext="{Binding CurrentDocument}" />
-        <Grid ColumnDefinitions="Auto,*">
-            <Border Width="210" IsVisible="{Binding IsSidebarOpen}" BorderThickness="0,0,1,0"
-                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="{Binding SidebarColumnWidth, Mode=TwoWay}" MinWidth="{Binding SidebarMinimumWidth}" MaxWidth="420" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border IsVisible="{Binding IsSidebarOpen}" ClipToBounds="True"
                     Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}">
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel Margin="8,10" Spacing="4">
-                        <TextBlock Text="文章资源管理器" FontSize="12" FontWeight="SemiBold" Margin="8,2,0,10" />
-                        <Expander Header="已打开" IsExpanded="True" HorizontalAlignment="Stretch">
-                            <ListBox ItemsSource="{Binding Documents}" SelectedItem="{Binding ActiveDocument, Mode=TwoWay}" Background="Transparent">
-                                <ListBox.ItemTemplate><DataTemplate x:DataType="vm:PublishViewModel">
-                                    <TextBlock Text="{Binding DocumentDisplayName}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding CurrentFilePath}" />
-                                </DataTemplate></ListBox.ItemTemplate>
-                            </ListBox>
-                        </Expander>
-                        <Expander Header="最近打开" IsExpanded="False" HorizontalAlignment="Stretch">
-                            <ItemsControl ItemsSource="{Binding RecentFiles}">
-                                <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:RecentArticle">
-                                    <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Classes="FileRow" Click="OnRecentClick" ToolTip.Tip="{Binding Path}">
-                                        <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" />
-                                    </Button>
-                                </DataTemplate></ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </Expander>
-                        <Expander Header="文章大纲" IsExpanded="True" HorizontalAlignment="Stretch">
-                            <ItemsControl ItemsSource="{Binding CurrentDocument.OutlineEntries}">
-                                <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ArticleHeading">
-                                    <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Classes="FileRow" Click="OnOutlineClick" Margin="{Binding Indentation}" ToolTip.Tip="{Binding Title}">
-                                        <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" FontSize="12" />
-                                    </Button>
-                                </DataTemplate></ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </Expander>
-                    </StackPanel>
-                </ScrollViewer>
+                <Grid RowDefinitions="40,Auto,Auto,Auto,Auto,Auto,*">
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="16,0,8,0">
+                        <TextBlock Text="文章" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Classes="Transparent SidebarTool" Command="{Binding NewDocumentCommand}" ToolTip.Tip="新建文章 (Ctrl+N)" AutomationProperties.Name="新建文章"><fi:SymbolIcon Symbol="DocumentAdd" FontSize="14" /></Button>
+                        <Button Grid.Column="2" Classes="Transparent SidebarTool" Command="{Binding OpenFilesCommand}" ToolTip.Tip="打开文章 (Ctrl+O)" AutomationProperties.Name="打开文章"><fi:SymbolIcon Symbol="FolderOpen" FontSize="14" /></Button>
+                        <Button Grid.Column="3" Classes="Transparent SidebarTool" Content="⋯" ToolTip.Tip="更多操作" AutomationProperties.Name="更多文章操作">
+                            <Button.Flyout><MenuFlyout>
+                                <MenuItem Header="保存全部" Command="{Binding SaveAllCommand}" />
+                                <MenuItem Header="关闭全部文章" Command="{Binding CloseAllCommand}" />
+                                <MenuItem Header="恢复上次会话" Command="{Binding RestoreSessionCommand}" />
+                                <Separator />
+                                <MenuItem Header="收起侧栏" Command="{Binding ToggleSidebarCommand}" />
+                            </MenuFlyout></Button.Flyout>
+                        </Button>
+                    </Grid>
+                    <ToggleButton Grid.Row="1" Classes="SectionHeader" Content="已打开" Tag="{Binding Documents.Count}" IsChecked="{Binding IsOpenedExpanded}" />
+                    <Grid Grid.Row="2" IsVisible="{Binding IsOpenedExpanded}">
+                        <ListBox Classes="SidebarFiles" ItemsSource="{Binding Documents}" SelectedItem="{Binding ActiveDocument, Mode=TwoWay}" Background="Transparent" MaxHeight="168" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.ItemTemplate><DataTemplate x:DataType="vm:PublishViewModel">
+                                <Grid ColumnDefinitions="20,*,10,22" Height="28" ToolTip.Tip="{Binding CurrentFilePath}">
+                                    <fi:SymbolIcon Symbol="Document" FontSize="14" Opacity="0.65" HorizontalAlignment="Left" />
+                                    <TextBlock Grid.Column="1" Text="{Binding DocumentFileName}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" Text="•" IsVisible="{Binding IsDocumentDirty}" VerticalAlignment="Center" ToolTip.Tip="有未保存的修改" />
+                                    <Button Grid.Column="3" Classes="Transparent RowClose" Content="×" Click="OnCloseTab" ToolTip.Tip="关闭文章" AutomationProperties.Name="关闭文章" />
+                                </Grid>
+                            </DataTemplate></ListBox.ItemTemplate>
+                        </ListBox>
+                        <TextBlock Text="尚未打开文章" IsVisible="{Binding !HasDocuments}" Margin="24,6" FontSize="12" Opacity="0.5" />
+                    </Grid>
+                    <ToggleButton Grid.Row="3" Classes="SectionHeader" Content="最近打开" Tag="{Binding RecentFiles.Count}" IsChecked="{Binding IsRecentExpanded}" />
+                    <ScrollViewer Grid.Row="4" IsVisible="{Binding IsRecentExpanded}" MaxHeight="140" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding RecentFiles}">
+                            <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:RecentArticle">
+                                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Classes="FileRow OutlineRow" Padding="8,0" Click="OnRecentClick" ToolTip.Tip="{Binding Path}">
+                                    <Grid ColumnDefinitions="20,*">
+                                        <fi:SymbolIcon Symbol="Document" FontSize="14" Opacity="0.5" HorizontalAlignment="Left" />
+                                        <TextBlock Grid.Column="1" Text="{Binding FileName}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    </Grid>
+                                </Button>
+                            </DataTemplate></ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                    <ToggleButton Grid.Row="5" Classes="SectionHeader" Content="文章大纲" Tag="{Binding CurrentDocument.OutlineEntries.Count}" IsChecked="{Binding IsOutlineExpanded}" />
+                    <ScrollViewer Grid.Row="6" IsVisible="{Binding IsOutlineExpanded}" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding CurrentDocument.OutlineEntries}" Margin="0,4">
+                            <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ArticleHeading">
+                                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Classes="FileRow OutlineRow" Click="OnOutlineClick" Margin="{Binding Indentation}" ToolTip.Tip="{Binding Title}" Padding="8,0">
+                                    <Grid ColumnDefinitions="20,*">
+                                        <TextBlock Text="{Binding LevelLabel}" FontSize="10" Opacity="0.45" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Title}" TextTrimming="CharacterEllipsis" FontSize="12" VerticalAlignment="Center" />
+                                    </Grid>
+                                </Button>
+                            </DataTemplate></ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
             </Border>
-            <DockPanel Grid.Column="1">
+            <GridSplitter Grid.Column="1" Width="3" HorizontalAlignment="Stretch" Background="{DynamicResource CardStrokeColorDefaultBrush}" IsVisible="{Binding IsSidebarOpen}" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
+            <DockPanel Grid.Column="2">
                 <Border DockPanel.Dock="Bottom" IsVisible="{Binding IsTaskPanelOpen}" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Height="180">
                     <DockPanel Margin="12,6">
                         <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,6">
@@ -96,7 +175,7 @@
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <TextBlock Text="{Binding DocumentDisplayName}" MaxWidth="230" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip.Tip="{Binding CurrentFilePath}" />
                                 <TextBlock Text="发布中" IsVisible="{Binding IsPublishing}" VerticalAlignment="Center" FontSize="11" />
-                                <Button Content="×" Classes="Transparent" Padding="5,0" MinHeight="24" Click="OnCloseTab" ToolTip.Tip="关闭文章" />
+                                <Button Content="×" Classes="TabClose" Click="OnCloseTab" ToolTip.Tip="关闭文章" AutomationProperties.Name="关闭文章" />
                             </StackPanel>
                         </Border>
                     </DataTemplate></ListBox.ItemTemplate>

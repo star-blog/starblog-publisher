@@ -12,7 +12,8 @@ using Markdig.Syntax.Inlines;
 namespace StarBlogPublisher.ViewModels;
 
 public sealed record ArticleHeading(string Title, int Line, int Level) {
-    public Thickness Indentation => new((Level - 1) * 10, 0, 0, 0);
+    public Thickness Indentation => new((Level - 1) * 12, 0, 0, 0);
+    public string LevelLabel => $"H{Level}";
 }
 
 public partial class PublishViewModel {
