@@ -386,7 +386,7 @@ public partial class PublishViewModel : PageViewModelBase {
                     attributes.AddProperty("data-outline-line", line.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
             var body = Markdig.Markdown.ToHtml(markdown, pipeline);
-            var previewThemeClass = AppSettings.Instance.IsDarkTheme
+            var previewThemeClass = _shell.IsDarkTheme
                 ? "preview-dark"
                 : "preview-light";
             var document = $$"""

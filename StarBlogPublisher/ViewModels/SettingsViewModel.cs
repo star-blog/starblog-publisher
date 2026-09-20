@@ -21,6 +21,8 @@ public partial class SettingsViewModel : PageViewModelBase {
     public SettingsViewModel(MainWindowViewModel shell) : base("设置", Icon.Settings) {
         _shell = shell;
         Reload();
+        Profiles.CollectionChanged += (_, _) => UpdateDirtyState();
+        WeChatAccounts.CollectionChanged += (_, _) => UpdateDirtyState();
     }
 
     [ObservableProperty] private bool _useProxy;
@@ -57,7 +59,6 @@ public partial class SettingsViewModel : PageViewModelBase {
     [ObservableProperty] private bool _showAIKey;
     [ObservableProperty] private bool _isLoadingModels;
     [ObservableProperty] private Vector _settingsScrollOffset;
-    [ObservableProperty] private bool _isAiSettingsExpanded;
     [ObservableProperty] private ObservableCollection<AIModelDescriptor> _availableModels = new();
     [ObservableProperty] private string _aiStatusMessage = "准备就绪";
     [ObservableProperty] private string _aiModelDetails = "\u8bf7\u9009\u62e9\u6a21\u578b\u4ee5\u67e5\u770b\u76ee\u5f55\u8be6\u60c5\u3002";
@@ -67,6 +68,11 @@ public partial class SettingsViewModel : PageViewModelBase {
     public List<AIProviderInfo> AIProviders { get; } = AIProviderInfo.GetProviders();
 
     public bool IsCustomProvider => AIProvider == "custom";
+
+    public AIProviderInfo? SelectedAIProvider {
+        get => AIProviders.FirstOrDefault(provider => provider.Name == AIProvider);
+        set { if (value != null && value.Name != AIProvider) AIProvider = value.Name; }
+    }
 
     private AIProviderInfo? _currentProviderInfo;
 
@@ -82,6 +88,7 @@ public partial class SettingsViewModel : PageViewModelBase {
 
     public void Reload() {
         var settings = AppSettings.Instance;
+        _loadingDraft = true;
         _syncingTheme = true;
         try {
             UseProxy = settings.UseProxy;
@@ -89,7 +96,8 @@ public partial class SettingsViewModel : PageViewModelBase {
             ProxyHost = settings.ProxyHost;
             ProxyPort = settings.ProxyPort;
             ProxyTimeout = settings.ProxyTimeout;
-            UseCustomBackend = settings.UseCustomBackend;
+            // Legacy clients selected a backend by URL alone; show the service actually in use.
+            UseCustomBackend = settings.UseCustomBackend || !string.IsNullOrWhiteSpace(settings.BackendUrl);
             BackendUrl = settings.BackendUrl;
             Username = settings.Username;
             Password = settings.Password;
@@ -102,7 +110,9 @@ public partial class SettingsViewModel : PageViewModelBase {
         }
         finally {
             _syncingTheme = false;
+            _loadingDraft = false;
         }
+        AcceptChanges();
     }
 
     /// <summary>
@@ -110,6 +120,7 @@ public partial class SettingsViewModel : PageViewModelBase {
     /// </summary>
     public void SyncDarkTheme(bool isDark) {
         if (IsDarkTheme == isDark) return;
+        var wasDirty = HasChanges;
         _syncingTheme = true;
         try {
             IsDarkTheme = isDark;
@@ -117,13 +128,14 @@ public partial class SettingsViewModel : PageViewModelBase {
         finally {
             _syncingTheme = false;
         }
+        if (!wasDirty) AcceptChanges();
     }
 
     private void LoadProfiles() {
         var settings = AppSettings.Instance;
         Profiles.Clear();
         foreach (var profile in settings.AIProfiles) {
-            Profiles.Add(profile);
+            Profiles.Add(profile.Clone());
         }
 
         var currentProfileName = settings.CurrentAIProfile;
@@ -147,6 +159,10 @@ public partial class SettingsViewModel : PageViewModelBase {
         if (value != null) LoadProfileSettings(value);
     }
 
+    partial void OnCurrentProfileChanging(AIProfile? value) {
+        if (!_loadingDraft) SaveProfileSettings();
+    }
+
     partial void OnAIProviderChanged(string value) {
         var provider = AIProviders.FirstOrDefault(p => p.DisplayName == value || p.Name == value);
         if (provider != null && provider.Name != value) {
@@ -155,6 +171,7 @@ public partial class SettingsViewModel : PageViewModelBase {
         }
 
         OnPropertyChanged(nameof(IsCustomProvider));
+        OnPropertyChanged(nameof(SelectedAIProvider));
         if (CurrentProvider == null) return;
         var providerChanged = !string.Equals(_lastProviderName, CurrentProvider.Name, StringComparison.Ordinal);
         _lastProviderName = CurrentProvider.Name;
@@ -165,16 +182,21 @@ public partial class SettingsViewModel : PageViewModelBase {
             }
         }
 
-        _ = RefreshModels();
+        ResetModelCatalog();
     }
 
     private void LoadProfileSettings(AIProfile profile) {
-        EnableAI = profile.EnableAI;
-        AIProvider = profile.Provider;
-        AIKey = profile.Key;
-        AIModel = profile.Model;
-        AIApiBase = profile.ApiBase;
-        _ = RefreshModels();
+        var wasLoading = _loadingDraft;
+        _loadingDraft = true;
+        try {
+            EnableAI = profile.EnableAI;
+            AIProvider = profile.Provider;
+            AIKey = profile.Key;
+            AIModel = profile.Model;
+            AIApiBase = profile.ApiBase;
+            ResetModelCatalog();
+        }
+        finally { _loadingDraft = wasLoading; }
     }
 
     private void LoadWeChatAccounts() {
@@ -193,26 +215,35 @@ public partial class SettingsViewModel : PageViewModelBase {
     }
 
     partial void OnCurrentWeChatAccountChanging(WeChatAccountProfile? value) {
-        SaveWeChatAccountSettings();
+        if (!_loadingDraft) SaveWeChatAccountSettings();
     }
 
     private void LoadWeChatAccountSettings(WeChatAccountProfile account) {
-        WeChatAccountName = account.Name;
-        WeChatAppId = account.AppId;
-        WeChatApiBaseUrl = account.ApiBaseUrl;
-        WeChatApiAuthorization = account.ApiAuthorization;
-        WeChatAppSecret = account.AppSecret;
-        WeChatAuthor = account.Author;
+        var wasLoading = _loadingDraft;
+        _loadingDraft = true;
+        try {
+            WeChatAccountName = account.Name;
+            WeChatAppId = account.AppId;
+            WeChatApiBaseUrl = account.ApiBaseUrl;
+            WeChatApiAuthorization = account.ApiAuthorization;
+            WeChatAppSecret = account.AppSecret;
+            WeChatAuthor = account.Author;
+            UseWeChatRelay = !string.Equals(account.ApiBaseUrl.TrimEnd('/'), WeChatHttpClientRegistration.OfficialApiBaseUrl.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)
+                || !string.IsNullOrEmpty(account.ApiAuthorization);
+            _relayUrl = UseWeChatRelay ? account.ApiBaseUrl : string.Empty;
+            _relayAuthorization = account.ApiAuthorization;
+        }
+        finally { _loadingDraft = wasLoading; }
     }
 
     private void SaveWeChatAccountSettings() {
         if (CurrentWeChatAccount == null) return;
-        CurrentWeChatAccount.Name = WeChatAccountName.Trim();
-        CurrentWeChatAccount.AppId = WeChatAppId.Trim();
-        CurrentWeChatAccount.ApiBaseUrl = WeChatApiBaseUrl.Trim();
-        CurrentWeChatAccount.ApiAuthorization = WeChatApiAuthorization.Trim();
+        CurrentWeChatAccount.Name = WeChatAccountName;
+        CurrentWeChatAccount.AppId = WeChatAppId;
+        CurrentWeChatAccount.ApiBaseUrl = WeChatApiBaseUrl;
+        CurrentWeChatAccount.ApiAuthorization = WeChatApiAuthorization;
         CurrentWeChatAccount.AppSecret = WeChatAppSecret;
-        CurrentWeChatAccount.Author = WeChatAuthor.Trim();
+        CurrentWeChatAccount.Author = WeChatAuthor;
     }
 
     partial void OnAIModelChanged(string value) => UpdateSelectedModelDetails();
@@ -271,19 +302,33 @@ public partial class SettingsViewModel : PageViewModelBase {
 
     partial void OnIsDarkThemeChanged(bool value) {
         if (_syncingTheme) return;
-        _shell.ApplyTheme(value);
+        _shell.PreviewTheme(value);
     }
+
+    private void ResetModelCatalog() {
+        ++_catalogRequest;
+        IsLoadingModels = false;
+        AvailableModels.Clear();
+        AiStatusMessage = "填写凭据后，点击“获取模型”加载目录。";
+        UpdateSelectedModelDetails();
+    }
+
+    partial void OnAIKeyChanged(string value) => ResetModelCatalog();
+    partial void OnAIApiBaseChanged(string value) => ResetModelCatalog();
 
     [RelayCommand]
     private async Task RefreshModels() {
         if (CurrentProvider == null) return;
 
+        var request = ++_catalogRequest;
+        var provider = CurrentProvider;
         IsLoadingModels = true;
         AiStatusMessage = "正在加载模型列表...";
         AvailableModels.Clear();
 
         var apiBase = IsCustomProvider ? AIApiBase : CurrentProvider.DefaultApiBase;
-        var result = await _modelCatalogService.GetModelsAsync(CurrentProvider, AIKey, apiBase);
+        var result = await _modelCatalogService.GetModelsAsync(provider, AIKey, apiBase);
+        if (request != _catalogRequest) return;
         foreach (var model in result.Models) {
             AvailableModels.Add(model);
         }
@@ -292,7 +337,7 @@ public partial class SettingsViewModel : PageViewModelBase {
             AvailableModels.Add(new AIModelDescriptor(AIModel, Source: AIModelSource.SavedConfiguration));
         }
 
-        AiStatusMessage = $"{CurrentProvider.CapabilitySummary}. {result.Message}";
+        AiStatusMessage = $"{provider.CapabilitySummary}. {result.Message}";
         UpdateSelectedModelDetails();
         IsLoadingModels = false;
     }
@@ -317,13 +362,13 @@ public partial class SettingsViewModel : PageViewModelBase {
 
     [RelayCommand]
     private async Task AddProfile() {
-        var name = await GuiHost.PromptAsync("添加配置文件", "新配置", "请输入配置文件名称");
+        var name = await GuiHost.PromptAsync("添加配置方案", "新配置", "请输入配置方案名称");
         if (string.IsNullOrWhiteSpace(name)) return;
 
         var profileName = name.Trim();
         if (Profiles.Any(p => p.Name == profileName)) {
-            AiStatusMessage = "已存在同名配置文件，请使用其他名称";
-            GuiHost.ToastWarning("配置文件", AiStatusMessage);
+            AiStatusMessage = "已存在同名配置方案，请使用其他名称";
+            GuiHost.ToastWarning("配置方案", AiStatusMessage);
             return;
         }
 
@@ -338,19 +383,19 @@ public partial class SettingsViewModel : PageViewModelBase {
         };
         Profiles.Add(newProfile);
         CurrentProfile = newProfile;
-        AiStatusMessage = $"已添加配置文件 \"{profileName}\"";
+        AiStatusMessage = $"已添加配置方案 \"{profileName}\"";
     }
 
     [RelayCommand]
     private async Task DeleteProfile() {
         if (CurrentProfile == null) return;
         if (Profiles.Count <= 1) {
-            AiStatusMessage = "至少需要保留一个配置文件";
-            GuiHost.ToastWarning("配置文件", AiStatusMessage);
+            AiStatusMessage = "至少需要保留一个配置方案";
+            GuiHost.ToastWarning("配置方案", AiStatusMessage);
             return;
         }
 
-        if (!await GuiHost.ConfirmAsync("删除配置文件", $"确定要删除配置文件 \"{CurrentProfile.Name}\" 吗？")) {
+        if (!await GuiHost.ConfirmAsync("删除配置方案", $"确定要删除配置方案 \"{CurrentProfile.Name}\" 吗？")) {
             return;
         }
 
@@ -361,34 +406,32 @@ public partial class SettingsViewModel : PageViewModelBase {
             CurrentProfile = Profiles[Math.Min(index, Profiles.Count - 1)];
         }
 
-        AiStatusMessage = $"已删除配置文件 \"{profileName}\"";
+        AiStatusMessage = $"已删除配置方案 \"{profileName}\"";
     }
 
     [RelayCommand]
     private async Task RenameProfile() {
         if (CurrentProfile == null) return;
-        var newName = await GuiHost.PromptAsync("重命名配置文件", CurrentProfile.Name, "请输入新的配置文件名称");
+        var newName = await GuiHost.PromptAsync("重命名配置方案", CurrentProfile.Name, "请输入新的配置方案名称");
         if (string.IsNullOrWhiteSpace(newName)) return;
 
         newName = newName.Trim();
         if (newName != CurrentProfile.Name && Profiles.Any(p => p.Name == newName)) {
-            AiStatusMessage = "已存在同名配置文件，请使用其他名称";
-            GuiHost.ToastWarning("配置文件", AiStatusMessage);
+            AiStatusMessage = "已存在同名配置方案，请使用其他名称";
+            GuiHost.ToastWarning("配置方案", AiStatusMessage);
             return;
         }
 
         var oldName = CurrentProfile.Name;
         CurrentProfile.Name = newName;
         OnPropertyChanged(nameof(Profiles));
-        AiStatusMessage = $"已将配置文件 \"{oldName}\" 重命名为 \"{newName}\"";
+        UpdateDirtyState();
+        AiStatusMessage = $"已将配置方案 \"{oldName}\" 重命名为 \"{newName}\"";
     }
 
     [RelayCommand]
-    private void TestConnection() => _ = RefreshModels();
-
-    [RelayCommand]
     private Task OpenModelCatalog() {
-        IsAiSettingsExpanded = true;
+        SelectedSection = 3;
         return _shell.OpenModelCatalogAsync();
     }
 
@@ -403,36 +446,20 @@ public partial class SettingsViewModel : PageViewModelBase {
     private void Save() {
         SaveProfileSettings();
         SaveWeChatAccountSettings();
-        if (WeChatAccounts.Any(account => string.IsNullOrWhiteSpace(account.Name))) {
-            GuiHost.ToastError("公众号账号无效", "请为每个公众号账号填写名称。");
+        if (!ValidateDraft()) return;
+        if (!AppSettings.Instance.TryUpdate(ApplyDraft, out var error)) {
+            ValidationMessage = error ?? "保存失败，请重试。";
             return;
         }
-        if (WeChatAccounts.GroupBy(account => account.Name, StringComparer.Ordinal).Any(group => group.Count() > 1)) {
-            GuiHost.ToastError("公众号账号无效", "公众号账号名称不能重复。");
-            return;
-        }
-        foreach (var account in WeChatAccounts) {
-            if (!WeChatHttpClientRegistration.TryGetApiBaseAddress(account.ApiBaseUrl, out var baseAddress)) {
-                GuiHost.ToastError("微信 API 地址无效", $"账号“{account.DisplayName}”需要完整的 HTTP 或 HTTPS Base URL。");
-                return;
-            }
-            if (!WeChatHttpClientRegistration.IsValidApiAuthorization(account.ApiAuthorization)) {
-                GuiHost.ToastError("微信 API Authorization 无效", $"账号“{account.DisplayName}”的 Authorization 值格式无效。");
-                return;
-            }
-            account.ApiBaseUrl = baseAddress.AbsoluteUri;
-        }
-        if (!WeChatHttpClientRegistration.TryGetApiBaseAddress(WeChatApiBaseUrl, out var weChatApiBaseAddress)) {
-            GuiHost.ToastError("微信 API 地址无效", "请输入完整的 HTTP 或 HTTPS Base URL。");
-            return;
-        }
+        AcceptChanges();
+        _shell.ApplyTheme(IsDarkTheme);
+        _shell.PublishPage.NotifyAiEnabled();
+        foreach (var document in _shell.Workspace.Documents) document.NotifyAiEnabled();
+        GuiHost.ToastSuccess("设置", "已保存");
+    }
 
-        if (!WeChatHttpClientRegistration.IsValidApiAuthorization(WeChatApiAuthorization)) {
-            GuiHost.ToastError("微信 API Authorization 无效", "请输入完整的 Authorization 值，例如 Bearer relay-token。");
-            return;
-        }
-
-        var settings = AppSettings.Instance;
+    private void ApplyDraft(AppSettings settings) {
+        WeChatHttpClientRegistration.TryGetApiBaseAddress(WeChatApiBaseUrl, out var weChatApiBaseAddress);
 
         settings.UseProxy = UseProxy;
         settings.ProxyType = ProxyType;
@@ -440,7 +467,7 @@ public partial class SettingsViewModel : PageViewModelBase {
         settings.ProxyPort = ProxyPort;
         settings.ProxyTimeout = ProxyTimeout;
         settings.UseCustomBackend = UseCustomBackend;
-        settings.BackendUrl = BackendUrl;
+        settings.BackendUrl = UseCustomBackend ? BackendUrl.Trim() : string.Empty;
         settings.Username = Username;
         settings.Password = Password;
         settings.BackendTimeout = BackendTimeout;
@@ -462,23 +489,19 @@ public partial class SettingsViewModel : PageViewModelBase {
         settings.AIApiBase = AIApiBase;
         settings.AIProfiles.Clear();
         foreach (var profile in Profiles) {
-            settings.AIProfiles.Add(profile);
+            settings.AIProfiles.Add(profile.Clone());
         }
 
         if (CurrentProfile != null) {
             settings.CurrentAIProfile = CurrentProfile.Name;
         }
 
-        settings.Save();
-        _shell.ApplyTheme(IsDarkTheme);
-        _shell.PublishPage.NotifyAiEnabled();
-        foreach (var document in _shell.Workspace.Documents) document.NotifyAiEnabled();
-        GuiHost.ToastSuccess("设置", "已保存");
     }
 
     [RelayCommand]
     private void Cancel() {
         Reload();
+        _shell.PreviewTheme(IsDarkTheme);
         GuiHost.ToastInfo("设置", "已还原为上次保存的配置");
     }
 }

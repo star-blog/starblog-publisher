@@ -306,6 +306,39 @@ public class AppSettings {
         }
     }
 
+    /// <summary>Persist an isolated edit before making it visible to running services.</summary>
+    public bool TryUpdate(Action<AppSettings> update, out string? error) {
+        error = null;
+        if (HasLoadError) {
+            error = "原配置文件加载失败，已停止写回。请先检查配置文件。";
+            return false;
+        }
+        var candidate = FromSnapshot(ToSnapshot());
+        candidate.AIProfiles = AIProfiles.Select(profile => profile.Clone()).ToList();
+        candidate.WeChatAccounts = WeChatAccounts.Select(account => account.Clone()).ToList();
+        update(candidate);
+        var temporaryPath = ConfigPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try {
+            var directory = Path.GetDirectoryName(ConfigPath);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            var json = JsonSerializer.Serialize(candidate.ToSnapshot(), AppSettingsJsonContext.Default.AppSettingsSnapshot);
+            File.WriteAllText(temporaryPath, json);
+            File.Move(temporaryPath, ConfigPath, overwrite: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
+            error = "无法写入配置文件，请检查文件权限和磁盘空间后重试。";
+            return false;
+        }
+        finally {
+            try { if (File.Exists(temporaryPath)) File.Delete(temporaryPath); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
+        update(this);
+        SettingsChanged?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
     public void Save() {
         if (HasLoadError) {
             Trace.TraceWarning(

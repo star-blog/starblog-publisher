@@ -1,453 +1,291 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:vm="using:StarBlogPublisher.ViewModels"
-             xmlns:converters="clr-namespace:StarBlogPublisher.Converters"
-             xmlns:ui="using:FluentAvalonia.UI.Controls"
-             xmlns:fi="using:FluentIcons.Avalonia.Fluent"
-             mc:Ignorable="d" d:DesignWidth="760" d:DesignHeight="800"
-             x:Class="StarBlogPublisher.Views.SettingsView"
-             x:DataType="vm:SettingsViewModel">
-    <UserControl.Resources>
-        <x:Double x:Key="SettingsFieldWidth">320</x:Double>
-        <x:Double x:Key="SettingsCompactControlWidth">140</x:Double>
-        <fi:FluentIconSource x:Key="BlogIcon" Icon="Globe" IconVariant="Regular" />
-        <fi:FluentIconSource x:Key="ProxyIcon" Icon="GlobeDesktop" IconVariant="Regular" />
-        <fi:FluentIconSource x:Key="WeChatIcon" Icon="Chat" IconVariant="Regular" />
-        <fi:FluentIconSource x:Key="ImageIcon" Icon="Image" IconVariant="Regular" />
-        <fi:FluentIconSource x:Key="AppearanceIcon" Icon="DarkTheme" IconVariant="Regular" />
-        <fi:FluentIconSource x:Key="AiIcon" Icon="Bot" IconVariant="Regular" />
-    </UserControl.Resources>
-
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:StarBlogPublisher.ViewModels" xmlns:converters="clr-namespace:StarBlogPublisher.Converters" xmlns:ui="using:FluentAvalonia.UI.Controls" x:Class="StarBlogPublisher.Views.SettingsView" x:DataType="vm:SettingsViewModel">
     <UserControl.Styles>
-        <Style Selector="Border.SettingsField">
-            <Setter Property="Width" Value="{StaticResource SettingsFieldWidth}" />
-            <Setter Property="MinWidth" Value="{StaticResource SettingsFieldWidth}" />
+        <Style Selector="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="TextBlock.Hint">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style Selector="TextBlock.SectionTitle">
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBlock.GroupTitle">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,12,0,0"/>
+        </Style>
+        <Style Selector="StackPanel.Field">
+            <Setter Property="Spacing" Value="6"/>
+        </Style>
+        <Style Selector="StackPanel.Form">
+            <Setter Property="Spacing" Value="18"/>
+        </Style>
+        <Style Selector="ComboBox">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="MinWidth" Value="0"/>
+        </Style>
+        <Style Selector="Expander">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Border.Rule">
+            <Setter Property="Height" Value="1"/>
+            <Setter Property="Background" Value="{DynamicResource CardStrokeColorDefaultBrush}"/>
+            <Setter Property="Margin" Value="0,6"/>
         </Style>
     </UserControl.Styles>
-
-    <Grid RowDefinitions="*,Auto">
-        <ScrollViewer x:Name="SettingsScrollViewer"
-                      Grid.Row="0"
-                      Offset="{Binding SettingsScrollOffset, Mode=TwoWay}">
-            <StackPanel Classes="PageContent" MaxWidth="1000" HorizontalAlignment="Center" Spacing="4">
-                <StackPanel Spacing="4" Margin="0,0,0,12">
-                    <TextBlock Text="设置" FontSize="28" FontWeight="SemiBold" />
-                    <TextBlock Text="更改发布服务、公众号、外观与 AI 的本地配置。"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                </StackPanel>
-
-                <!-- 博客与登录 -->
-                <ui:FASettingsExpander Header="博客与登录"
-                                     Description="StarBlog 服务地址和登录凭据"
-                                     IconSource="{StaticResource BlogIcon}"
-                                     IsExpanded="True">
-                    <ui:FASettingsExpander.Footer>
-                        <ToggleSwitch OnContent="自定义后端" OffContent="默认后端"
-                                      IsChecked="{Binding UseCustomBackend}" />
-                    </ui:FASettingsExpander.Footer>
-
-                    <ui:FASettingsExpanderItem Content="后端 URL"
-                                             Description="仅在启用自定义后端时生效">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <TextBox PlaceholderText="https://example.com"
-                                         Text="{Binding BackendUrl}"
-                                         IsEnabled="{Binding UseCustomBackend}" />
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-
-                    <ui:FASettingsExpanderItem Content="用户名">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <TextBox PlaceholderText="用户名" Text="{Binding Username}" />
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-
-                    <ui:FASettingsExpanderItem Content="密码">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                    <TextBox Grid.Column="0"
-                                             PlaceholderText="密码"
-                                             PasswordChar="{Binding ShowPassword, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
-                                             Text="{Binding Password}" />
-                                    <Button Grid.Column="1" Classes="Icon"
-                                            ToolTip.Tip="显示或隐藏密码"
-                                            Command="{Binding TogglePasswordCommand}">
-                                        <fi:FluentIcon Icon="Eye" IconVariant="Regular" />
-                                    </Button>
-                                </Grid>
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-
-                    <ui:FASettingsExpanderItem Content="超时时间"
-                                             Description="范围为 1 至 600 秒">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <ui:FANumberBox Value="{Binding BackendTimeout}"
-                                              Minimum="1" Maximum="600"
-                                              SmallChange="1"
-                                              SpinButtonPlacementMode="Compact"
-                                              Width="{StaticResource SettingsCompactControlWidth}"
-                                              HorizontalAlignment="Right" />
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-                </ui:FASettingsExpander>
-
-                <!-- 网络代理 -->
-                <ui:FASettingsExpander Header="网络代理"
-                                     Description="用于连接 StarBlog 与 AI 服务的代理设置"
-                                     IconSource="{StaticResource ProxyIcon}">
-                    <ui:FASettingsExpander.Footer>
-                        <ToggleSwitch OnContent="已启用" OffContent="已禁用"
-                                      IsChecked="{Binding UseProxy}" />
-                    </ui:FASettingsExpander.Footer>
-
-                    <ui:FASettingsExpanderItem Content="代理类型">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <ComboBox SelectedItem="{Binding ProxyType}"
-                                          IsEnabled="{Binding UseProxy}"
-                                          HorizontalAlignment="Stretch">
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Grid Margin="32,24,32,20" MaxWidth="1080" ColumnDefinitions="176,*">
+            <TextBlock Text="设置" FontSize="26" FontWeight="SemiBold"/>
+            <TextBlock Grid.Column="1" Text="管理本机的偏好、发布账号与服务连接" Classes="Hint" VerticalAlignment="Center"/>
+        </Grid>
+        <Grid Grid.Row="1" Margin="32,0,32,0" MaxWidth="1080" ColumnDefinitions="160,16,*">
+            <ListBox x:Name="SettingsNavigation" SelectedIndex="{Binding SelectedSection}" VerticalAlignment="Top" Background="Transparent" BorderThickness="0">
+                <ListBoxItem Content="常规" Padding="14,11"/>
+                <ListBoxItem Content="{Binding BlogNavigationLabel}" Padding="14,11"/>
+                <ListBoxItem Content="{Binding WeChatNavigationLabel}" Padding="14,11"/>
+                <ListBoxItem Content="{Binding AiNavigationLabel}" Padding="14,11"/>
+                <ListBoxItem Content="{Binding ProxyNavigationLabel}" Padding="14,11"/>
+            </ListBox>
+            <ScrollViewer x:Name="SettingsScrollViewer" Grid.Column="2" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Visible" Offset="{Binding SettingsScrollOffset, Mode=TwoWay}">
+                <StackPanel x:Name="SettingsForm" MaxWidth="720" HorizontalAlignment="Stretch" Margin="12,0,16,32" Spacing="16">
+                    <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" Padding="12" CornerRadius="6" IsVisible="{Binding HasValidationError}">
+                        <TextBlock Text="{Binding ValidationMessage}"/>
+                    </Border>
+                    <StackPanel Classes="Form" IsVisible="{Binding IsGeneralSection}">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="常规" Classes="SectionTitle"/>
+                            <TextBlock Classes="Hint" Text="让写作环境更合你的习惯。"/>
+                        </StackPanel>
+                        <TextBlock Classes="GroupTitle" Text="外观"/>
+                        <ToggleSwitch Content="深色主题" IsChecked="{Binding IsDarkTheme}" OnContent="已开启" OffContent="已关闭"/>
+                        <TextBlock Classes="Hint" Text="即时预览，保存后保留；撤销可恢复原主题。"/>
+                        <Border Classes="Rule"/>
+                        <TextBlock Classes="GroupTitle" Text="文章处理"/>
+                        <ToggleSwitch Content="兼容含空格的图片路径" IsChecked="{Binding EnableRegexImageParsing}" OnContent="已开启" OffContent="已关闭"/>
+                        <TextBlock Classes="Hint" Text="使用额外规则识别特殊图片路径，可能产生误判。通常无需开启。"/>
+                    </StackPanel>
+                    <StackPanel Classes="Form" IsVisible="{Binding IsBlogSection}">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="博客连接" Classes="SectionTitle"/>
+                            <TextBlock Classes="Hint" Text="配置 StarBlog 服务和登录凭据。"/>
+                        </StackPanel>
+                        <TextBlock Classes="GroupTitle" Text="服务地址"/>
+                        <StackPanel Orientation="Horizontal" Spacing="20">
+                            <RadioButton GroupName="BackendSource" Content="默认服务" IsChecked="{Binding !UseCustomBackend}"/>
+                            <RadioButton GroupName="BackendSource" Content="自定义服务" IsChecked="{Binding UseCustomBackend}"/>
+                        </StackPanel>
+                        <StackPanel Classes="Form" IsVisible="{Binding !UseCustomBackend}">
+                            <TextBlock Classes="Hint" Text="默认地址：https://blog.deali.cn/"/>
+                        </StackPanel>
+                        <StackPanel Classes="Form" IsVisible="{Binding UseCustomBackend}">
+                            <StackPanel Classes="Field">
+                                <TextBlock Text="服务 URL"/>
+                                <TextBox Text="{Binding BackendUrl}" DataValidationErrors.Errors="{Binding BackendErrors}" PlaceholderText="https://blog.example.com/"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <Border Classes="Rule"/>
+                        <TextBlock Classes="GroupTitle" Text="登录凭据"/>
+                        <StackPanel Classes="Field">
+                            <TextBlock Text="用户名"/>
+                            <TextBox Text="{Binding Username}" PlaceholderText="StarBlog 用户名"/>
+                        </StackPanel>
+                        <StackPanel Classes="Field">
+                            <TextBlock Text="密码"/>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <TextBox Text="{Binding Password}" PasswordChar="{Binding ShowPassword, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"/>
+                                <Button Grid.Column="1" Content="显示 / 隐藏" Command="{Binding TogglePasswordCommand}"/>
+                            </Grid>
+                        </StackPanel>
+                        <Expander Header="高级连接设置">
+                            <StackPanel Classes="Form" Margin="0,12">
+                                <StackPanel Classes="Field">
+                                    <TextBlock Text="请求超时（秒）"/>
+                                    <ui:FANumberBox Value="{Binding BackendTimeout}" Minimum="1" Maximum="600" SpinButtonPlacementMode="Compact" Width="160" HorizontalAlignment="Left"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+                    </StackPanel>
+                    <StackPanel Classes="Form" IsVisible="{Binding IsWeChatSection}">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="微信公众号" Classes="SectionTitle"/>
+                            <TextBlock Classes="Hint" Text="配置用于创建公众号草稿的账号，不会直接群发。"/>
+                        </StackPanel>
+                        <StackPanel Classes="Field">
+                            <TextBlock Text="当前账号（保存后用于发布）"/>
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                <ComboBox ItemsSource="{Binding WeChatAccounts}" SelectedItem="{Binding CurrentWeChatAccount}" DisplayMemberBinding="{Binding DisplayName}"/>
+                                <Button Grid.Column="1" Content="添加账号" Command="{Binding AddWeChatAccountCommand}"/>
+                                <Button Grid.Column="2" Content="···" ToolTip.Tip="更多操作" AutomationProperties.Name="更多操作">
+                                    <Button.Flyout>
+                                        <MenuFlyout>
+                                            <MenuItem Header="删除当前账号" Command="{Binding DeleteWeChatAccountCommand}"/>
+                                        </MenuFlyout>
+                                    </Button.Flyout>
+                                </Button>
+                            </Grid>
+                        </StackPanel>
+                        <TextBlock Classes="GroupTitle" Text="账号凭据"/>
+                        <StackPanel Classes="Field">
+                            <TextBlock Text="账号名称"/>
+                            <TextBox Text="{Binding WeChatAccountName}" DataValidationErrors.Errors="{Binding AccountNameErrors}" PlaceholderText="用于区分不同公众号"/>
+                        </StackPanel>
+                        <StackPanel Classes="Field">
+                            <TextBlock Text="AppId"/>
+                            <TextBox Text="{Binding WeChatAppId}" PlaceholderText="公众号 AppId"/>
+                        </StackPanel>
+                        <StackPanel Classes="Field">
+                            <TextBlock Text="AppSecret"/>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <TextBox Text="{Binding WeChatAppSecret}" PasswordChar="{Binding ShowWeChatAppSecret, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"/>
+                                <Button Grid.Column="1" Content="显示 / 隐藏" Command="{Binding ToggleWeChatAppSecretCommand}"/>
+                            </Grid>
+                        </StackPanel>
+                        <TextBlock Classes="Hint" Text="密钥加密保存在本机。"/>
+                        <Border Classes="Rule"/>
+                        <TextBlock Classes="GroupTitle" Text="发布默认值"/>
+                        <StackPanel Classes="Field">
+                            <TextBlock Text="默认作者 · 当前账号"/>
+                            <TextBox Text="{Binding WeChatAuthor}" PlaceholderText="可留空"/>
+                        </StackPanel>
+                        <StackPanel Classes="Field">
+                            <TextBlock Text="默认排版主题 · 所有账号"/>
+                            <ComboBox SelectedValue="{Binding WeChatDefaultTheme}" SelectedValueBinding="{ReflectionBinding Tag}">
+                                <ComboBoxItem Content="报刊风格" Tag="newspaper"/>
+                                <ComboBoxItem Content="暖色卡片" Tag="warm-card"/>
+                                <ComboBoxItem Content="海洋卡片" Tag="ocean-card"/>
+                                <ComboBoxItem Content="科技风格" Tag="tech"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <Expander Header="高级连接设置" x:Name="WeChatAdvanced" IsExpanded="{Binding IsWeChatAdvancedExpanded}">
+                            <StackPanel Classes="Form" Margin="0,12">
+                                <TextBlock Classes="Hint" Text="仅影响当前账号。默认使用微信官方接口。"/>
+                                <StackPanel Orientation="Horizontal" Spacing="20">
+                                    <RadioButton GroupName="WeChatSource" Content="官方接口" IsChecked="{Binding !UseWeChatRelay}"/>
+                                    <RadioButton GroupName="WeChatSource" Content="自定义中转" IsChecked="{Binding UseWeChatRelay}"/>
+                                </StackPanel>
+                                <StackPanel Classes="Form" IsVisible="{Binding UseWeChatRelay}">
+                                    <StackPanel Classes="Field">
+                                        <TextBlock Text="中转服务 URL"/>
+                                        <TextBox Text="{Binding WeChatApiBaseUrl}" DataValidationErrors.Errors="{Binding RelayUrlErrors}" PlaceholderText="https://relay.example.com/"/>
+                                    </StackPanel>
+                                    <TextBlock Classes="Hint" Text="使用固定 IP 的中转服务，需转发 /cgi-bin 路径。"/>
+                                    <StackPanel Classes="Field">
+                                        <TextBlock Text="中转认证（可选）"/>
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                            <TextBox Text="{Binding WeChatApiAuthorization}" DataValidationErrors.Errors="{Binding RelayAuthErrors}" PasswordChar="{Binding ShowWeChatApiAuthorization, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"/>
+                                            <Button Grid.Column="1" Content="显示 / 隐藏" Command="{Binding ToggleWeChatApiAuthorizationCommand}"/>
+                                        </Grid>
+                                    </StackPanel>
+                                    <TextBlock Classes="Hint" Text="填写完整的 Authorization 值，如 Bearer relay-token，加密保存在本机。"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+                    </StackPanel>
+                    <StackPanel Classes="Form" IsVisible="{Binding IsAiSection}">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="AI 创作" Classes="SectionTitle"/>
+                            <TextBlock Classes="Hint" Text="管理服务与模型，关闭使用后仍可编辑配置。"/>
+                        </StackPanel>
+                        <StackPanel Classes="Field">
+                            <TextBlock Text="当前配置方案（保存后用于创作）"/>
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                <ComboBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding CurrentProfile}" DisplayMemberBinding="{Binding Name}"/>
+                                <Button Grid.Column="1" Content="添加方案" Command="{Binding AddProfileCommand}"/>
+                                <Button Grid.Column="2" Content="···" ToolTip.Tip="更多操作" AutomationProperties.Name="更多操作">
+                                    <Button.Flyout>
+                                        <MenuFlyout>
+                                            <MenuItem Header="重命名" Command="{Binding RenameProfileCommand}"/>
+                                            <MenuItem Header="删除当前方案" Command="{Binding DeleteProfileCommand}"/>
+                                        </MenuFlyout>
+                                    </Button.Flyout>
+                                </Button>
+                            </Grid>
+                        </StackPanel>
+                        <ToggleSwitch Content="使用此方案的 AI 创作" IsChecked="{Binding EnableAI}" OnContent="已开启" OffContent="已关闭"/>
+                        <Border Classes="Rule"/>
+                        <TextBlock Classes="GroupTitle" Text="服务凭据"/>
+                        <StackPanel Classes="Field">
+                            <TextBlock Text="提供商"/>
+                            <ComboBox SelectedItem="{Binding SelectedAIProvider}" ItemsSource="{Binding AIProviders}" DisplayMemberBinding="{Binding DisplayName}"/>
+                        </StackPanel>
+                        <StackPanel Classes="Form" IsVisible="{Binding IsCustomProvider}">
+                            <StackPanel Classes="Field">
+                                <TextBlock Text="API Base URL"/>
+                                <TextBox Text="{Binding AIApiBase}" DataValidationErrors.Errors="{Binding AiUrlErrors}" PlaceholderText="https://api.example.com/v1"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel Classes="Field">
+                            <TextBlock Text="API Key"/>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <TextBox Text="{Binding AIKey}" PasswordChar="{Binding ShowAIKey, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"/>
+                                <Button Grid.Column="1" Content="显示 / 隐藏" Command="{Binding ToggleAIKeyCommand}"/>
+                            </Grid>
+                        </StackPanel>
+                        <Button Content="获取模型" Command="{Binding RefreshModelsCommand}"/>
+                        <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoadingModels}" Height="3"/>
+                        <TextBlock Text="{Binding AiStatusMessage}" Classes="Hint"/>
+                        <TextBlock Classes="Hint" Text="使用当前填写的凭据获取目录，不会保存配置，也不代表已验证模型调用能力。"/>
+                        <Border Classes="Rule"/>
+                        <TextBlock Classes="GroupTitle" Text="创作模型"/>
+                        <StackPanel Classes="Field">
+                            <TextBlock Text="模型 ID"/>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <TextBox Text="{Binding AIModel}" PlaceholderText="输入模型 ID，或从目录选择"/>
+                                <Button Grid.Column="1" Content="选择模型" Command="{Binding OpenModelCatalogCommand}"/>
+                            </Grid>
+                        </StackPanel>
+                        <TextBlock Text="{Binding AiModelDetails}" Classes="Hint"/>
+                    </StackPanel>
+                    <StackPanel Classes="Form" IsVisible="{Binding IsProxySection}">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="网络代理" Classes="SectionTitle"/>
+                            <TextBlock Classes="Hint" Text="用于连接 StarBlog 与 AI 服务；公众号中转在账号中单独配置。"/>
+                        </StackPanel>
+                        <ToggleSwitch Content="使用网络代理" IsChecked="{Binding UseProxy}" OnContent="已开启" OffContent="已关闭"/>
+                        <StackPanel Classes="Form" IsVisible="{Binding UseProxy}">
+                            <TextBlock Classes="GroupTitle" Text="代理服务器"/>
+                            <StackPanel Classes="Field">
+                                <TextBlock Text="代理类型"/>
+                                <ComboBox SelectedItem="{Binding ProxyType}">
                                     <x:String>http</x:String>
                                     <x:String>https</x:String>
                                     <x:String>socks5</x:String>
                                 </ComboBox>
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-
-                    <ui:FASettingsExpanderItem Content="主机名">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <TextBox PlaceholderText="代理主机名"
-                                         Text="{Binding ProxyHost}"
-                                         IsEnabled="{Binding UseProxy}" />
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-
-                    <ui:FASettingsExpanderItem Content="端口">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <ui:FANumberBox Value="{Binding ProxyPort}"
-                                              Minimum="1" Maximum="65535"
-                                              SmallChange="1"
-                                              SpinButtonPlacementMode="Compact"
-                                              IsEnabled="{Binding UseProxy}"
-                                              Width="{StaticResource SettingsCompactControlWidth}"
-                                              HorizontalAlignment="Right" />
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-
-                    <ui:FASettingsExpanderItem Content="超时时间"
-                                             Description="单位：秒">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <ui:FANumberBox Value="{Binding ProxyTimeout}"
-                                              Minimum="1" Maximum="600"
-                                              SmallChange="1"
-                                              SpinButtonPlacementMode="Compact"
-                                              IsEnabled="{Binding UseProxy}"
-                                              Width="{StaticResource SettingsCompactControlWidth}"
-                                              HorizontalAlignment="Right" />
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-                </ui:FASettingsExpander>
-
-                <!-- 微信公众号 -->
-                <ui:FASettingsExpander Header="微信公众号"
-                                     Description="创建草稿箱所需的公众号凭据与默认值；AppSecret 会加密保存在本机"
-                                     IconSource="{StaticResource WeChatIcon}">
-                    <ui:FASettingsExpanderItem Content="公众号账号"
-                                             Description="每个账号可使用独立的 AppId、AppSecret 和 relay 设置。">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                                    <ComboBox Grid.Column="0"
-                                              ItemsSource="{Binding WeChatAccounts}"
-                                              SelectedItem="{Binding CurrentWeChatAccount}"
-                                              DisplayMemberBinding="{Binding DisplayName}" />
-                                    <Button Grid.Column="1" Classes="Icon"
-                                            ToolTip.Tip="添加公众号账号"
-                                            Command="{Binding AddWeChatAccountCommand}">
-                                        <fi:FluentIcon Icon="Add" IconVariant="Regular" />
-                                    </Button>
-                                    <Button Grid.Column="2" Classes="Icon"
-                                            ToolTip.Tip="删除当前公众号账号"
-                                            Command="{Binding DeleteWeChatAccountCommand}">
-                                        <fi:FluentIcon Icon="Delete" IconVariant="Regular" />
-                                    </Button>
-                                </Grid>
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-
-                    <ui:FASettingsExpanderItem Content="账号名称">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <TextBox PlaceholderText="例如：公司公众号"
-                                         Text="{Binding WeChatAccountName}" />
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-
-                    <ui:FASettingsExpanderItem Content="AppId">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <TextBox PlaceholderText="微信公众号 AppId"
-                                         Text="{Binding WeChatAppId}" />
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-
-                    <ui:FASettingsExpanderItem Content="微信 API Base URL"
-                                             Description="默认使用官方地址。填写固定 IP 服务器上的反向代理地址时，代理需转发 /cgi-bin 路径。">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <TextBox PlaceholderText="https://api.weixin.qq.com/"
-                                         Text="{Binding WeChatApiBaseUrl}" />
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-
-                    <ui:FASettingsExpanderItem Content="微信 Relay Authorization"
-                                             Description="仅在使用需要认证的 relay 时填写；填写完整 Authorization 值，例如 Bearer relay-token。该值会加密保存在本机。">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                    <TextBox Grid.Column="0"
-                                             PlaceholderText="Bearer relay-token"
-                                             PasswordChar="{Binding ShowWeChatApiAuthorization, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
-                                             Text="{Binding WeChatApiAuthorization}" />
-                                    <Button Grid.Column="1" Classes="Icon"
-                                            ToolTip.Tip="显示或隐藏 Authorization"
-                                            Command="{Binding ToggleWeChatApiAuthorizationCommand}">
-                                        <fi:FluentIcon Icon="Eye" IconVariant="Regular" />
-                                    </Button>
-                                </Grid>
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-
-                    <ui:FASettingsExpanderItem Content="AppSecret"
-                                             Description="仅用于创建草稿，不会直接群发">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                    <TextBox Grid.Column="0"
-                                             PlaceholderText="微信公众号 AppSecret"
-                                             PasswordChar="{Binding ShowWeChatAppSecret, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
-                                             Text="{Binding WeChatAppSecret}" />
-                                    <Button Grid.Column="1" Classes="Icon"
-                                            ToolTip.Tip="显示或隐藏 AppSecret"
-                                            Command="{Binding ToggleWeChatAppSecretCommand}">
-                                        <fi:FluentIcon Icon="Eye" IconVariant="Regular" />
-                                    </Button>
-                                </Grid>
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-
-                    <ui:FASettingsExpanderItem Content="默认作者">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <TextBox PlaceholderText="可留空" Text="{Binding WeChatAuthor}" />
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-
-                    <ui:FASettingsExpanderItem Content="默认排版主题">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <ComboBox SelectedItem="{Binding WeChatDefaultTheme}"
-                                          HorizontalAlignment="Stretch">
-                                    <x:String>newspaper</x:String>
-                                    <x:String>warm-card</x:String>
-                                    <x:String>ocean-card</x:String>
-                                    <x:String>tech</x:String>
-                                </ComboBox>
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-                </ui:FASettingsExpander>
-
-                <!-- 图片识别：单行开关 -->
-                <ui:FASettingsExpander Header="图片识别"
-                                     Description="启用后会额外识别带空格的路径，可能产生误判；仅在处理特殊路径时开启"
-                                     IconSource="{StaticResource ImageIcon}">
-                    <ui:FASettingsExpander.Footer>
-                        <ToggleSwitch OnContent="正则识别" OffContent="标准识别"
-                                      IsChecked="{Binding EnableRegexImageParsing}" />
-                    </ui:FASettingsExpander.Footer>
-                </ui:FASettingsExpander>
-
-                <!-- 外观：单行开关 -->
-                <ui:FASettingsExpander Header="外观"
-                                     Description="也可从左侧栏底部的主题按钮快速切换"
-                                     IconSource="{StaticResource AppearanceIcon}">
-                    <ui:FASettingsExpander.Footer>
-                        <ToggleSwitch OnContent="深色" OffContent="浅色"
-                                      IsChecked="{Binding IsDarkTheme}" />
-                    </ui:FASettingsExpander.Footer>
-                </ui:FASettingsExpander>
-
-                <!-- AI 创作 -->
-                <ui:FASettingsExpander Header="AI 创作"
-                                     Description="AI 提供商、模型与配置文件"
-                                     IconSource="{StaticResource AiIcon}"
-                                     IsExpanded="{Binding IsAiSettingsExpanded, Mode=TwoWay}">
-                    <ui:FASettingsExpander.Footer>
-                        <ToggleSwitch OnContent="已启用" OffContent="已禁用"
-                                      IsChecked="{Binding EnableAI}" />
-                    </ui:FASettingsExpander.Footer>
-
-                    <ui:FASettingsExpanderItem Content="配置文件">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                    <ComboBox Grid.Column="0"
-                                              ItemsSource="{Binding Profiles}"
-                                              SelectedItem="{Binding CurrentProfile}"
-                                              DisplayMemberBinding="{Binding Name}"
-                                              IsEnabled="{Binding EnableAI}" />
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
-                                        <Button Classes="Icon" ToolTip.Tip="添加新配置"
-                                                Command="{Binding AddProfileCommand}"
-                                                IsEnabled="{Binding EnableAI}">
-                                            <fi:FluentIcon Icon="Add" IconVariant="Regular" />
-                                        </Button>
-                                        <Button Classes="Icon" ToolTip.Tip="删除当前配置"
-                                                Command="{Binding DeleteProfileCommand}"
-                                                IsEnabled="{Binding EnableAI}">
-                                            <fi:FluentIcon Icon="Delete" IconVariant="Regular" />
-                                        </Button>
-                                        <Button Classes="Icon" ToolTip.Tip="重命名当前配置"
-                                                Command="{Binding RenameProfileCommand}"
-                                                IsEnabled="{Binding EnableAI}">
-                                            <fi:FluentIcon Icon="Edit" IconVariant="Regular" />
-                                        </Button>
+                            </StackPanel>
+                            <StackPanel Classes="Field">
+                                <TextBlock Text="主机名"/>
+                                <TextBox Text="{Binding ProxyHost}" PlaceholderText="127.0.0.1"/>
+                            </StackPanel>
+                            <StackPanel Classes="Field">
+                                <TextBlock Text="端口"/>
+                                <ui:FANumberBox Value="{Binding ProxyPort}" Minimum="0" Maximum="65535" SpinButtonPlacementMode="Compact" Width="160" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                            <Expander Header="高级连接设置">
+                                <StackPanel Classes="Form" Margin="0,12">
+                                    <StackPanel Classes="Field">
+                                        <TextBlock Text="请求超时（秒）"/>
+                                        <ui:FANumberBox Value="{Binding ProxyTimeout}" Minimum="1" Maximum="600" SpinButtonPlacementMode="Compact" Width="160" HorizontalAlignment="Left"/>
                                     </StackPanel>
-                                </Grid>
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-
-                    <ui:FASettingsExpanderItem Content="提供商">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <ComboBox SelectedValue="{Binding AIProvider}"
-                                          SelectedValueBinding="{Binding Name}"
-                                          ItemsSource="{Binding AIProviders}"
-                                          IsEnabled="{Binding EnableAI}"
-                                          HorizontalAlignment="Stretch">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding DisplayName}"
-                                                       ToolTip.Tip="{Binding Description}" />
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-
-                    <ui:FASettingsExpanderItem Content="API Key">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                                    <TextBox Grid.Column="0"
-                                             PlaceholderText="输入对应提供商的 API 密钥"
-                                             PasswordChar="{Binding ShowAIKey, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"
-                                             Text="{Binding AIKey}"
-                                             IsEnabled="{Binding EnableAI}" />
-                                    <Button Grid.Column="1" Classes="Icon"
-                                            Command="{Binding ToggleAIKeyCommand}"
-                                            ToolTip.Tip="显示或隐藏 API Key"
-                                            IsEnabled="{Binding EnableAI}">
-                                        <fi:FluentIcon Icon="Eye" IconVariant="Regular" />
-                                    </Button>
-                                    <Button Grid.Column="2" Classes="Icon"
-                                            Command="{Binding TestConnectionCommand}"
-                                            ToolTip.Tip="测试 API 连接并加载模型列表"
-                                            IsEnabled="{Binding EnableAI}">
-                                        <fi:FluentIcon Icon="PlugConnected" IconVariant="Regular" />
-                                    </Button>
-                                </Grid>
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-
-                    <ui:FASettingsExpanderItem Content="模型">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                                    <TextBox Grid.Column="0"
-                                             Text="{Binding AIModel}"
-                                             IsReadOnly="True"
-                                             IsEnabled="{Binding EnableAI}" />
-                                    <Button Grid.Column="1"
-                                            Command="{Binding OpenModelCatalogCommand}"
-                                            IsEnabled="{Binding EnableAI}">
-                                        <TextBlock Text="&#x9009;&#x62E9;&#x6A21;&#x578B;" />
-                                    </Button>
-                                    <ProgressBar Grid.Column="2"
-                                                 IsIndeterminate="True"
-                                                 IsVisible="{Binding IsLoadingModels}"
-                                                 Width="24" Height="24"
-                                                 VerticalAlignment="Center" />
-                                </Grid>
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-
-                    <ui:FASettingsExpanderItem Content="&#x6A21;&#x578B;&#x8BE6;&#x60C5;"
-                                                 Description="{Binding AiModelDetails}" />
-
-                    <ui:FASettingsExpanderItem Content="API Base URL"
-                                             Description="仅自定义提供商需要"
-                                             IsVisible="{Binding IsCustomProvider}">
-                        <ui:FASettingsExpanderItem.Footer>
-                            <Border Classes="SettingsField">
-                                <TextBox PlaceholderText="https://api.example.com/v1"
-                                         Text="{Binding AIApiBase}"
-                                         IsEnabled="{Binding EnableAI}" />
-                            </Border>
-                        </ui:FASettingsExpanderItem.Footer>
-                    </ui:FASettingsExpanderItem>
-
-                    <ui:FASettingsExpanderItem Content="状态"
-                                             Description="{Binding AiStatusMessage}" />
-                </ui:FASettingsExpander>
-            </StackPanel>
-        </ScrollViewer>
-
-        <Border Grid.Row="1"
-                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                BorderThickness="0,1,0,0"
-                Padding="16,12">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-                <Button Command="{Binding CancelCommand}">
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <fi:FluentIcon Icon="Dismiss" IconVariant="Regular" />
-                        <TextBlock Text="还原" />
+                                </StackPanel>
+                            </Expander>
+                        </StackPanel>
                     </StackPanel>
-                </Button>
-                <Button Command="{Binding SaveCommand}" Classes="Accent">
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <fi:FluentIcon Icon="Save" IconVariant="Regular" />
-                        <TextBlock Text="保存更改" />
-                    </StackPanel>
-                </Button>
-            </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+        <Border Grid.Row="2" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Padding="32,14">
+            <Grid MaxWidth="1080" ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <TextBlock Text="{Binding SaveStatus}" Classes="Hint" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                    <Button Content="撤销更改" Command="{Binding CancelCommand}" IsEnabled="{Binding HasChanges}"/>
+                    <Button Content="保存更改" Command="{Binding SaveCommand}" Classes="Accent" IsEnabled="{Binding HasChanges}"/>
+                </StackPanel>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

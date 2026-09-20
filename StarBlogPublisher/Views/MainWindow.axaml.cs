@@ -183,7 +183,7 @@ public partial class MainWindow : FAAppWindow {
         if (_checkingClose) return;
         _checkingClose = true;
         try {
-            if (await vm.Workspace.CanCloseAllAsync()) { _allowClose = true; Close(); }
+            if (await vm.SettingsPage.CanLeaveAsync() && await vm.Workspace.CanCloseAllAsync()) { _allowClose = true; Close(); }
         }
         finally { _checkingClose = false; }
     }

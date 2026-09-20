@@ -32,7 +32,34 @@ public partial class MainWindowViewModel : ViewModelBase {
     public bool IsWorkspaceActive => ActivePage == Workspace;
     public PageViewModelBase? SecondaryPage => IsWorkspaceActive ? null : ActivePage;
 
-    [ObservableProperty] private PageViewModelBase? _activePage;
+    private PageViewModelBase? _activePage;
+    private bool _checkingSettingsNavigation;
+    public PageViewModelBase? ActivePage {
+        get => _activePage;
+        set {
+            if (_activePage == value) return;
+            if (_checkingSettingsNavigation) return;
+            if ((_activePage == SettingsPage || _activePage is ModelCatalogPageViewModel)
+                && value != SettingsPage && value is not ModelCatalogPageViewModel && SettingsPage.HasChanges) {
+                _ = LeaveSettingsAsync(value);
+                return;
+            }
+            SetActivePage(value);
+        }
+    }
+
+    private void SetActivePage(PageViewModelBase? value) {
+        if (SetProperty(ref _activePage, value, nameof(ActivePage))) OnActivePageChanged(value);
+    }
+
+    private async System.Threading.Tasks.Task LeaveSettingsAsync(PageViewModelBase? destination) {
+        _checkingSettingsNavigation = true;
+        try {
+            if (await SettingsPage.CanLeaveAsync()) SetActivePage(destination);
+            else OnPropertyChanged(nameof(ActivePage));
+        }
+        finally { _checkingSettingsNavigation = false; }
+    }
     [ObservableProperty] private bool _isDarkTheme;
     [ObservableProperty] private bool _isLoggedIn;
     [ObservableProperty] private bool _hasCredentials;
@@ -74,6 +101,15 @@ public partial class MainWindowViewModel : ViewModelBase {
     /// 应用并持久化全局主题，同时同步侧栏与设置页开关。
     /// </summary>
     public void ApplyTheme(bool isDark) {
+        PreviewTheme(isDark);
+        if (AppSettings.Instance.IsDarkTheme != isDark) {
+            AppSettings.Instance.IsDarkTheme = isDark;
+            AppSettings.Instance.Save();
+        }
+        SettingsPage.SyncDarkTheme(isDark);
+    }
+
+    public void PreviewTheme(bool isDark) {
         if (Avalonia.Application.Current != null) {
             Avalonia.Application.Current.RequestedThemeVariant = isDark ? ThemeVariant.Dark : ThemeVariant.Light;
         }
@@ -82,12 +118,6 @@ public partial class MainWindowViewModel : ViewModelBase {
             IsDarkTheme = isDark;
         }
 
-        if (AppSettings.Instance.IsDarkTheme != isDark) {
-            AppSettings.Instance.IsDarkTheme = isDark;
-            AppSettings.Instance.Save();
-        }
-
-        SettingsPage.SyncDarkTheme(isDark);
         foreach (var document in Workspace.Documents) document.RefreshPreviewForThemeChange();
     }
 
@@ -131,7 +161,7 @@ public partial class MainWindowViewModel : ViewModelBase {
         TitleBarTitleMargin = new Thickness(left, 0, _titleBarRightInset, 0);
     }
 
-    partial void OnActivePageChanged(PageViewModelBase? value) {
+    private void OnActivePageChanged(PageViewModelBase? value) {
         OnPropertyChanged(nameof(IsWorkspaceActive));
         OnPropertyChanged(nameof(SecondaryPage));
         if (value is WeChatViewModel weChat) {
@@ -141,7 +171,7 @@ public partial class MainWindowViewModel : ViewModelBase {
             if (_restoreSettingsAfterModelCatalog) {
                 _restoreSettingsAfterModelCatalog = false;
             }
-            else {
+            else if (!settings.HasChanges) {
                 settings.Reload();
             }
         }
@@ -173,13 +203,18 @@ public partial class MainWindowViewModel : ViewModelBase {
     }
 
     [RelayCommand]
-    private void ToggleTheme() => ApplyTheme(!IsDarkTheme);
+    private void ToggleTheme() {
+        if (ActivePage == SettingsPage || ActivePage is ModelCatalogPageViewModel)
+            SettingsPage.IsDarkTheme = !IsDarkTheme;
+        else ApplyTheme(!IsDarkTheme);
+    }
 
     [RelayCommand]
     private async System.Threading.Tasks.Task Login() {
         if (!AuthService.HasCredentials) {
             GuiHost.ToastWarning("登录", "请先在设置中配置用户名和密码");
             ActivePage = SettingsPage;
+            SettingsPage.SelectedSection = 1;
             return;
         }
 
