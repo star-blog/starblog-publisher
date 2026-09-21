@@ -66,8 +66,6 @@ public partial class SettingsViewModel : PageViewModelBase {
     [ObservableProperty] private ObservableCollection<AIProfile> _profiles = new();
     [ObservableProperty] private AIProfile? _currentProfile;
 
-    public IReadOnlyList<WeChatTheme> WeChatThemes { get; } = WeChatFormattingService.Themes;
-
     public List<AIProviderInfo> AIProviders { get; } = AIProviderInfo.GetProviders();
 
     public bool IsCustomProvider => AIProvider == "custom";

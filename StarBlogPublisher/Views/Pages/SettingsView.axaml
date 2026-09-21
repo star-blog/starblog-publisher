@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:StarBlogPublisher.ViewModels" xmlns:converters="clr-namespace:StarBlogPublisher.Converters" xmlns:ui="using:FluentAvalonia.UI.Controls" x:Class="StarBlogPublisher.Views.SettingsView" x:DataType="vm:SettingsViewModel">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:StarBlogPublisher.ViewModels" xmlns:converters="clr-namespace:StarBlogPublisher.Converters" xmlns:ui="using:FluentAvalonia.UI.Controls" xmlns:controls="using:StarBlogPublisher.Views.Controls" x:Class="StarBlogPublisher.Views.SettingsView" x:DataType="vm:SettingsViewModel">
     <UserControl.Styles>
         <Style Selector="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap"/>
@@ -154,12 +154,8 @@
                         </StackPanel>
                         <StackPanel Classes="Field">
                             <TextBlock Text="默认排版主题 · 所有账号"/>
-                            <ComboBox x:Name="WeChatThemeSelector"
-                                      ItemsSource="{Binding WeChatThemes}"
-                                      SelectedValue="{Binding WeChatDefaultTheme}"
-                                      SelectedValueBinding="{ReflectionBinding Id}"
-                                      DisplayMemberBinding="{Binding DisplayName}"
-                                      MaxDropDownHeight="420"/>
+                            <controls:WeChatThemePicker x:Name="WeChatThemeSelector"
+                                                        SelectedThemeId="{Binding WeChatDefaultTheme}" />
                         </StackPanel>
                         <Expander Header="高级连接设置" x:Name="WeChatAdvanced" IsExpanded="{Binding IsWeChatAdvancedExpanded}">
                             <StackPanel Classes="Form" Margin="0,12">

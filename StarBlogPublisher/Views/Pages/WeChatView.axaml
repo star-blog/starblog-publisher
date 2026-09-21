@@ -5,6 +5,7 @@
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:i="https://github.com/projektanker/icons.avalonia"
              xmlns:fi="using:FluentIcons.Avalonia.Fluent"
+             xmlns:controls="using:StarBlogPublisher.Views.Controls"
              mc:Ignorable="d"
              x:Class="StarBlogPublisher.Views.WeChatView"
              x:DataType="vm:WeChatViewModel">
@@ -86,9 +87,7 @@
                                         <TextBlock Text="排版" FontSize="12" FontWeight="SemiBold"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                         <TextBlock Text="主题" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                        <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}"
-                                                  DisplayMemberBinding="{Binding DisplayName}" HorizontalAlignment="Stretch"
-                                                  VerticalContentAlignment="Center" MaxDropDownHeight="420" />
+                                        <controls:WeChatThemePicker SelectedTheme="{Binding SelectedTheme}" />
                                         <TextBlock Text="{Binding SelectedTheme.Description}" FontSize="11" TextWrapping="Wrap"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                         <TextBlock Text="切换后会自动刷新预览。" FontSize="11"
