@@ -1,0 +1,67 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:StarBlogPublisher.Views.Controls"
+             xmlns:converters="clr-namespace:StarBlogPublisher.Converters"
+             x:Class="StarBlogPublisher.Views.Controls.WeChatThemePicker"
+             x:Name="Root">
+    <UserControl.Resources>
+        <converters:HexToBrushConverter x:Key="HexToBrush" />
+        <DataTemplate x:Key="ThemeRowTemplate" DataType="local:WeChatThemeOption">
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="8,2,0,2">
+                <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                    <Border Width="12" Height="12" CornerRadius="2"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            Background="{Binding Theme.PrimaryColor, Converter={StaticResource HexToBrush}}" />
+                    <Border Width="12" Height="12" CornerRadius="2"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            Background="{Binding Theme.AccentColor, Converter={StaticResource HexToBrush}}" />
+                    <Border Width="12" Height="12" CornerRadius="2"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            Background="{Binding Theme.BackgroundColor, Converter={StaticResource HexToBrush}}" />
+                </StackPanel>
+                <TextBlock Text="{Binding Theme.Name}" VerticalAlignment="Center" />
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="ThemeClosedTemplate" DataType="local:WeChatThemeOption">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                    <Border Width="11" Height="11" CornerRadius="2"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            Background="{Binding Theme.PrimaryColor, Converter={StaticResource HexToBrush}}" />
+                    <Border Width="11" Height="11" CornerRadius="2"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            Background="{Binding Theme.AccentColor, Converter={StaticResource HexToBrush}}" />
+                    <Border Width="11" Height="11" CornerRadius="2"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            Background="{Binding Theme.BackgroundColor, Converter={StaticResource HexToBrush}}" />
+                </StackPanel>
+                <TextBlock Text="{Binding Theme.Name}" VerticalAlignment="Center" />
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
+    <ComboBox x:Name="ThemeCombo"
+              HorizontalAlignment="Stretch"
+              MaxDropDownHeight="420"
+              VerticalContentAlignment="Center"
+              SelectionBoxItemTemplate="{StaticResource ThemeClosedTemplate}">
+        <ComboBox.DataTemplates>
+            <DataTemplate DataType="local:WeChatThemeGroupHeader">
+                <TextBlock Text="{Binding Title}"
+                           FontWeight="SemiBold"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           Margin="0,6,0,2" />
+            </DataTemplate>
+            <DataTemplate DataType="local:WeChatThemeOption">
+                <ContentControl Content="{Binding}"
+                                ContentTemplate="{StaticResource ThemeRowTemplate}" />
+            </DataTemplate>
+        </ComboBox.DataTemplates>
+    </ComboBox>
+</UserControl>
