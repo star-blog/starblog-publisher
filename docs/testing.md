@@ -39,7 +39,7 @@ dotnet run --project StarBlogPublisher.DesktopTests -c Release -- --list
 | focus-and-palette | 编辑器与摘要输入框的命令焦点、替换及撤销、命令面板筛选与执行、大纲源码导航 |
 | preview-navigation | 源码滚动后切换分栏/预览、重复点击大纲、分栏导航保持模式 |
 | settings-layout | 设置首次打开无意外更改、五类导航、展开宽度稳定、800 DIP 窄窗口、主题预览、草稿保存与撤销、离页确认、写入失败保护 |
-| theme-and-close | 深浅主题截图、800 DIP 窄窗口菜单、未保存时取消/丢弃/保存、重新打开 |
+| theme-and-close | 强制深浅主题截图、跟随系统（`PreferSystemTheme` / `ActualThemeVariant`）、800 DIP 窄窗口菜单、未保存时取消/丢弃/保存、重新打开 |
 
 这些阶段是有依赖的端到端工作流，不是彼此独立的单元测试。前一阶段失败后，后续阶段标记为 skipped，避免连锁报错。页面加载和对话框出现采用有超时的条件等待；部分布局、截图和原生焦点仍留有短暂稳定时间。每阶段超时 40 秒，整个进程有 180 秒看门狗。
 
