@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using StarBlogPublisher.Models;
@@ -13,6 +14,11 @@ public static class AppSettingsPortableTransfer {
     public const string FormatId = "starblog-publisher-settings";
     public const int CurrentVersion = 1;
 
+    private static readonly JsonSerializerOptions ExportJsonOptions = new(PortableAppSettingsJsonContext.Default.Options) {
+        WriteIndented = true,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
+
     public static string ExportJson(AppSettings settings) {
         var document = new PortableAppSettingsDocument {
             Format = FormatId,
@@ -20,10 +26,7 @@ public static class AppSettingsPortableTransfer {
             ExportedAt = DateTimeOffset.Now.ToString("O", CultureInfo.InvariantCulture),
             Settings = CreatePayload(settings)
         };
-        return JsonSerializer.Serialize(
-            document, 
-            PortableAppSettingsJsonContext.Default.PortableAppSettingsDocument
-        );
+        return JsonSerializer.Serialize(document, ExportJsonOptions);
     }
 
     public static bool TryParse(string json, out PortableAppSettingsDocument? document, out string? error) {
