@@ -33,7 +33,7 @@ public partial class WeChatViewModel : PageViewModelBase {
         _publishService = new WeChatDraftPublishApplicationService(httpClientFactory);
         _coverImageService = new WeChatCoverImageService(httpClientFactory);
         Themes = new ObservableCollection<WeChatTheme>(WeChatFormattingService.Themes);
-        SelectedTheme = Themes.FirstOrDefault(theme => theme.Id == AppSettings.Instance.WeChatDefaultTheme) ?? Themes[0];
+        SelectedTheme = WeChatThemeCatalog.Resolve(AppSettings.Instance.WeChatDefaultTheme);
         LoadWeChatAccounts();
         SelectedCoverSource = CoverSources[0];
         SelectedCoverSize = CoverSizes[0];

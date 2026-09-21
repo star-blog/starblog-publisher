@@ -9,6 +9,7 @@ using CommunityToolkit.Mvvm.Input;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.AI;
+using StarBlogPublisher.Services.Application;
 using FluentIcons.Common;
 
 namespace StarBlogPublisher.ViewModels;
@@ -65,6 +66,8 @@ public partial class SettingsViewModel : PageViewModelBase {
     [ObservableProperty] private ObservableCollection<AIProfile> _profiles = new();
     [ObservableProperty] private AIProfile? _currentProfile;
 
+    public IReadOnlyList<WeChatTheme> WeChatThemes { get; } = WeChatFormattingService.Themes;
+
     public List<AIProviderInfo> AIProviders { get; } = AIProviderInfo.GetProviders();
 
     public bool IsCustomProvider => AIProvider == "custom";
@@ -103,7 +106,7 @@ public partial class SettingsViewModel : PageViewModelBase {
             Password = settings.Password;
             BackendTimeout = settings.BackendTimeout;
             EnableRegexImageParsing = settings.EnableRegexImageParsing;
-            WeChatDefaultTheme = settings.WeChatDefaultTheme;
+            WeChatDefaultTheme = WeChatThemeCatalog.NormalizeId(settings.WeChatDefaultTheme);
             IsDarkTheme = settings.IsDarkTheme;
             LoadWeChatAccounts();
             LoadProfiles();

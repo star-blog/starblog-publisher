@@ -87,8 +87,10 @@
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                         <TextBlock Text="主题" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                         <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}"
-                                                  DisplayMemberBinding="{Binding Name}" HorizontalAlignment="Stretch"
-                                                  VerticalContentAlignment="Center" />
+                                                  DisplayMemberBinding="{Binding DisplayName}" HorizontalAlignment="Stretch"
+                                                  VerticalContentAlignment="Center" MaxDropDownHeight="420" />
+                                        <TextBlock Text="{Binding SelectedTheme.Description}" FontSize="11" TextWrapping="Wrap"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                         <TextBlock Text="切换后会自动刷新预览。" FontSize="11"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>

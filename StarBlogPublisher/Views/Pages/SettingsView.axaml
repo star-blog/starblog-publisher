@@ -154,12 +154,12 @@
                         </StackPanel>
                         <StackPanel Classes="Field">
                             <TextBlock Text="默认排版主题 · 所有账号"/>
-                            <ComboBox SelectedValue="{Binding WeChatDefaultTheme}" SelectedValueBinding="{ReflectionBinding Tag}">
-                                <ComboBoxItem Content="报刊风格" Tag="newspaper"/>
-                                <ComboBoxItem Content="暖色卡片" Tag="warm-card"/>
-                                <ComboBoxItem Content="海洋卡片" Tag="ocean-card"/>
-                                <ComboBoxItem Content="科技风格" Tag="tech"/>
-                            </ComboBox>
+                            <ComboBox x:Name="WeChatThemeSelector"
+                                      ItemsSource="{Binding WeChatThemes}"
+                                      SelectedValue="{Binding WeChatDefaultTheme}"
+                                      SelectedValueBinding="{ReflectionBinding Id}"
+                                      DisplayMemberBinding="{Binding DisplayName}"
+                                      MaxDropDownHeight="420"/>
                         </StackPanel>
                         <Expander Header="高级连接设置" x:Name="WeChatAdvanced" IsExpanded="{Binding IsWeChatAdvancedExpanded}">
                             <StackPanel Classes="Form" Margin="0,12">
