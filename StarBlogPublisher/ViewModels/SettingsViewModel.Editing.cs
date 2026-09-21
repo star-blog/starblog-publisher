@@ -80,7 +80,7 @@ public partial class SettingsViewModel {
     private static readonly HashSet<string> DraftProperties = [
         nameof(UseProxy), nameof(ProxyType), nameof(ProxyHost), nameof(ProxyPort), nameof(ProxyTimeout),
         nameof(UseCustomBackend), nameof(BackendUrl), nameof(Username), nameof(Password), nameof(BackendTimeout),
-        nameof(EnableRegexImageParsing), nameof(IsDarkTheme), nameof(WeChatDefaultTheme),
+        nameof(EnableRegexImageParsing), nameof(ThemeMode), nameof(WeChatDefaultTheme),
         nameof(WeChatAccountName), nameof(WeChatAppId), nameof(WeChatApiBaseUrl), nameof(WeChatApiAuthorization),
         nameof(WeChatAppSecret), nameof(WeChatAuthor), nameof(CurrentWeChatAccount),
         nameof(EnableAI), nameof(AIProvider), nameof(AIKey), nameof(AIModel), nameof(AIApiBase), nameof(CurrentProfile)
@@ -107,7 +107,7 @@ public partial class SettingsViewModel {
         var values = new List<string> {
             UseProxy.ToString(), ProxyType, ProxyHost, ProxyPort.ToString(), ProxyTimeout.ToString(),
             UseCustomBackend.ToString(), BackendUrl, Username, Password, BackendTimeout.ToString(),
-            EnableRegexImageParsing.ToString(), IsDarkTheme.ToString(), WeChatDefaultTheme,
+            EnableRegexImageParsing.ToString(), ThemeMode.ToString(), WeChatDefaultTheme,
             CurrentWeChatAccount?.Id ?? "", CurrentProfile?.Name ?? ""
         };
         foreach (var account in WeChatAccounts) values.AddRange([

@@ -4,7 +4,6 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Notifications;
 using Avalonia.Markup.Xaml;
-using Avalonia.Styling;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.ViewModels;
 using StarBlogPublisher.Views;
@@ -21,9 +20,7 @@ public partial class App : Application {
         _ = AppSettings.Instance;
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
-            RequestedThemeVariant = AppSettings.Instance.IsDarkTheme
-                ? ThemeVariant.Dark
-                : ThemeVariant.Light;
+            AppThemeService.Apply(AppSettings.Instance.ThemeMode);
 
             desktop.MainWindow = new MainWindow {
                 DataContext = new MainWindowViewModel(),

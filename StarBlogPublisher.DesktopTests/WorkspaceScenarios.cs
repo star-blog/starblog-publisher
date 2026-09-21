@@ -5,6 +5,10 @@ using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Avalonia.Styling;
+using FluentAvalonia.Styling;
+using System.Linq;
+using StarBlogPublisher.Models;
 using StarBlogPublisher.ViewModels;
 using StarBlogPublisher.Views;
 using AvaloniaEdit;
@@ -61,7 +65,7 @@ internal sealed class WorkspaceScenarios(MainWindow window, MainWindowViewModel 
         await Task.Delay(200);
         if (scroll.Extent.Width > scroll.Viewport.Width + 1 || form.Bounds.Width < 300) throw new Exception("Narrow settings layout is unusable");
         Capture(window, Path.Combine(output, "settings-narrow.png"));
-        vm.IsDarkTheme = true;
+        vm.ThemeMode = ThemeMode.Dark;
         await Task.Delay(150);
         Capture(window, Path.Combine(output, "settings-dark.png"));
         vm.CancelCommand.Execute(null);
@@ -257,14 +261,28 @@ internal sealed class WorkspaceScenarios(MainWindow window, MainWindowViewModel 
     }
 
     public async Task ThemeAndClose() {
-        shell.ApplyTheme(true);
+        shell.ApplyTheme(ThemeMode.Dark);
         await Task.Delay(300);
         Capture(window, Path.Combine(output, "workspace-dark.png"));
-        shell.ApplyTheme(false);
+        shell.ApplyTheme(ThemeMode.Light);
         window.Width = 800;
         window.Height = 650;
         await Task.Delay(300);
         Capture(window, Path.Combine(output, "workspace-narrow.png"));
+        shell.ApplyTheme(ThemeMode.System);
+        await Task.Delay(300);
+        var app = Application.Current ?? throw new Exception("No application");
+        var fluentTheme = app.Styles.OfType<FluentAvaloniaTheme>().FirstOrDefault()
+            ?? throw new Exception("FluentAvaloniaTheme not found");
+        if (!fluentTheme.PreferSystemTheme)
+            throw new Exception("System theme did not enable PreferSystemTheme");
+        if (app.ActualThemeVariant != ThemeVariant.Light && app.ActualThemeVariant != ThemeVariant.Dark)
+            throw new Exception($"System theme did not resolve to a concrete variant: {app.ActualThemeVariant}");
+        shell.ApplyTheme(ThemeMode.Light);
+        if (fluentTheme.PreferSystemTheme)
+            throw new Exception("Light theme still follows system");
+        if (app.RequestedThemeVariant != ThemeVariant.Light)
+            throw new Exception("Light theme did not request ThemeVariant.Light");
         if (mainMenu.IsVisible || !window.FindControl<Menu>("CompactMenu")!.IsVisible) throw new Exception("Menu did not collapse at 800px");
         var canceled = shell.Workspace.CloseActiveCommand.ExecuteAsync(null);
         await WaitUntilAsync(() => Task.FromResult(window.GetVisualDescendants().OfType<Button>().Any(b => b.Content as string == "取消" && b.IsEffectivelyVisible)), "Close confirmation did not open");

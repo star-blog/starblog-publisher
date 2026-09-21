@@ -6,6 +6,7 @@ using StarBlogPublisher.ViewModels;
 
 namespace StarBlogPublisher.Tests.Gui.ViewModels;
 
+[Collection("AppSettings")]
 public sealed class SettingsViewModelTests {
     private static MainWindowViewModel Shell() => new(Mock.Of<IHttpClientFactory>(), initializeSession: false,
         workspaceHistoryPath: Path.Combine(Path.GetTempPath(), "starblog-settings-tests", Guid.NewGuid() + ".json"));
@@ -71,12 +72,14 @@ public sealed class SettingsViewModelTests {
     [Fact]
     public void ThemePreview_IsNotPersisted_AndCancelRestoresIt() {
         var shell = Shell();
-        var savedTheme = AppSettings.Instance.IsDarkTheme;
-        shell.SettingsPage.IsDarkTheme = !savedTheme;
-        shell.IsDarkTheme.Should().Be(!savedTheme);
-        AppSettings.Instance.IsDarkTheme.Should().Be(savedTheme);
+        var savedMode = AppSettings.Instance.ThemeMode;
+        var next = savedMode == ThemeMode.Dark ? ThemeMode.Light : ThemeMode.Dark;
+        shell.SettingsPage.ThemeMode = next;
+        shell.ThemeMode.Should().Be(next);
+        shell.IsDarkTheme.Should().Be(next == ThemeMode.Dark);
+        AppSettings.Instance.ThemeMode.Should().Be(savedMode);
         shell.SettingsPage.CancelCommand.Execute(null);
-        shell.IsDarkTheme.Should().Be(savedTheme);
+        shell.ThemeMode.Should().Be(savedMode);
         shell.SettingsPage.HasChanges.Should().BeFalse();
     }
 

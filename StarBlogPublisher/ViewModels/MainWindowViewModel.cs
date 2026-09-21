@@ -4,13 +4,14 @@ using System.Linq;
 using FluentIcons.Common;
 using System.Net.Http;
 using Avalonia;
-using Avalonia.Styling;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
 using StarBlogPublisher.Utils;
+using AppThemeMode = StarBlogPublisher.Models.ThemeMode;
 
 namespace StarBlogPublisher.ViewModels;
 
@@ -64,6 +65,7 @@ public partial class MainWindowViewModel : ViewModelBase {
         }
         finally { _checkingSettingsNavigation = false; }
     }
+    [ObservableProperty] private AppThemeMode _themeMode;
     [ObservableProperty] private bool _isDarkTheme;
     [ObservableProperty] private bool _isLoggedIn;
     [ObservableProperty] private bool _hasCredentials;
@@ -100,18 +102,26 @@ public partial class MainWindowViewModel : ViewModelBase {
             if (AuthService.HasCredentials) _ = Login();
         }
 
-        IsDarkTheme = AppSettings.Instance.IsDarkTheme;
+        ThemeMode = AppSettings.Instance.ThemeMode;
+        IsDarkTheme = AppThemeService.ResolveEffectiveIsDark(ThemeMode);
+        if (Avalonia.Application.Current != null) {
+            Avalonia.Application.Current.ActualThemeVariantChanged += OnActualThemeVariantChanged;
+        }
         RefreshFooterNavItems();
         InitializeCommands();
     }
 
     partial void OnIsDarkThemeChanged(bool value) => RefreshFooterNavItems();
 
+    partial void OnThemeModeChanged(AppThemeMode value) => RefreshFooterNavItems();
+
     partial void OnIsLoggedInChanged(bool value) => RefreshFooterNavItems();
 
     private void RefreshFooterNavItems() {
         ThemeFooterItem.NavIcon = IsDarkTheme ? Icon.WeatherSunny : Icon.WeatherMoon;
-        ThemeFooterItem.ToolTip = IsDarkTheme ? "切换到浅色" : "切换到深色";
+        ThemeFooterItem.ToolTip = ThemeMode == AppThemeMode.System
+            ? (IsDarkTheme ? "切换到浅色（将退出跟随系统）" : "切换到深色（将退出跟随系统）")
+            : (IsDarkTheme ? "切换到浅色" : "切换到深色");
 
         AccountFooterItem.NavIcon = IsLoggedIn ? Icon.SignOut : Icon.Person;
         AccountFooterItem.Title = IsLoggedIn ? "登出" : "登录";
@@ -119,27 +129,36 @@ public partial class MainWindowViewModel : ViewModelBase {
     }
 
     /// <summary>
-    /// 应用并持久化全局主题，同时同步侧栏与设置页开关。
+    /// 应用并持久化外观偏好，同时同步侧栏与设置页。
     /// </summary>
-    public void ApplyTheme(bool isDark) {
-        PreviewTheme(isDark);
-        if (AppSettings.Instance.IsDarkTheme != isDark) {
-            AppSettings.Instance.IsDarkTheme = isDark;
-            AppSettings.Instance.Save();
+    public void ApplyTheme(AppThemeMode mode) {
+        PreviewTheme(mode);
+        var settings = AppSettings.Instance;
+        if (settings.ThemeMode != mode) {
+            settings.ThemeMode = mode;
+            settings.IsDarkTheme = ThemeModeHelper.ToLegacyIsDarkTheme(mode);
+            settings.Save();
         }
-        SettingsPage.SyncDarkTheme(isDark);
+        SettingsPage.SyncThemeMode(mode);
     }
 
-    public void PreviewTheme(bool isDark) {
-        if (Avalonia.Application.Current != null) {
-            Avalonia.Application.Current.RequestedThemeVariant = isDark ? ThemeVariant.Dark : ThemeVariant.Light;
-        }
+    public void PreviewTheme(AppThemeMode mode) {
+        ThemeMode = mode;
+        AppThemeService.Apply(mode);
+        SyncEffectiveIsDark();
+        foreach (var document in Workspace.Documents) document.RefreshPreviewForThemeChange();
+    }
 
+    private void OnActualThemeVariantChanged(object? sender, EventArgs e) {
+        SyncEffectiveIsDark();
+        foreach (var document in Workspace.Documents) document.RefreshPreviewForThemeChange();
+    }
+
+    private void SyncEffectiveIsDark() {
+        var isDark = AppThemeService.ResolveEffectiveIsDark(ThemeMode);
         if (IsDarkTheme != isDark) {
             IsDarkTheme = isDark;
         }
-
-        foreach (var document in Workspace.Documents) document.RefreshPreviewForThemeChange();
     }
 
     public void UpdateTitleBarMetrics(double height, double rightInset) {
@@ -225,9 +244,16 @@ public partial class MainWindowViewModel : ViewModelBase {
 
     [RelayCommand]
     private void ToggleTheme() {
+        var next = NextThemeMode();
         if (ActivePage == SettingsPage || ActivePage is ModelCatalogPageViewModel)
-            SettingsPage.IsDarkTheme = !IsDarkTheme;
-        else ApplyTheme(!IsDarkTheme);
+            SettingsPage.ThemeMode = next;
+        else ApplyTheme(next);
+    }
+
+    private AppThemeMode NextThemeMode() {
+        if (ThemeMode == AppThemeMode.System)
+            return IsDarkTheme ? AppThemeMode.Light : AppThemeMode.Dark;
+        return ThemeMode == AppThemeMode.Light ? AppThemeMode.Dark : AppThemeMode.Light;
     }
 
     [RelayCommand]

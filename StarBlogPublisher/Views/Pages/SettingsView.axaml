@@ -63,8 +63,12 @@
                             <TextBlock Classes="Hint" Text="让写作环境更合你的习惯。"/>
                         </StackPanel>
                         <TextBlock Classes="GroupTitle" Text="外观"/>
-                        <ToggleSwitch Content="深色主题" IsChecked="{Binding IsDarkTheme}" OnContent="已开启" OffContent="已关闭"/>
-                        <TextBlock Classes="Hint" Text="即时预览，保存后保留；撤销可恢复原主题。"/>
+                        <StackPanel Orientation="Horizontal" Spacing="20">
+                            <RadioButton GroupName="AppTheme" Content="跟随系统" IsChecked="{Binding IsThemeModeSystem, Mode=TwoWay}"/>
+                            <RadioButton GroupName="AppTheme" Content="浅色" IsChecked="{Binding IsThemeModeLight, Mode=TwoWay}"/>
+                            <RadioButton GroupName="AppTheme" Content="深色" IsChecked="{Binding IsThemeModeDark, Mode=TwoWay}"/>
+                        </StackPanel>
+                        <TextBlock Classes="Hint" Text="即时预览，保存后保留；撤销可恢复。跟随系统时随操作系统浅色/深色自动切换。"/>
                         <Border Classes="Rule"/>
                         <TextBlock Classes="GroupTitle" Text="文章处理"/>
                         <ToggleSwitch Content="兼容含空格的图片路径" IsChecked="{Binding EnableRegexImageParsing}" OnContent="已开启" OffContent="已关闭"/>

@@ -11,6 +11,7 @@ using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.AI;
 using StarBlogPublisher.Services.Application;
 using FluentIcons.Common;
+using AppThemeMode = StarBlogPublisher.Models.ThemeMode;
 
 namespace StarBlogPublisher.ViewModels;
 
@@ -49,8 +50,27 @@ public partial class SettingsViewModel : PageViewModelBase {
     [ObservableProperty] private bool _showWeChatApiAuthorization;
     [ObservableProperty] private ObservableCollection<WeChatAccountProfile> _weChatAccounts = new();
     [ObservableProperty] private WeChatAccountProfile? _currentWeChatAccount;
-    [ObservableProperty] private bool _isDarkTheme;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsThemeModeSystem))]
+    [NotifyPropertyChangedFor(nameof(IsThemeModeLight))]
+    [NotifyPropertyChangedFor(nameof(IsThemeModeDark))]
+    private AppThemeMode _themeMode = AppThemeMode.System;
     private bool _syncingTheme;
+
+    public bool IsThemeModeSystem {
+        get => ThemeMode == AppThemeMode.System;
+        set { if (value) ThemeMode = AppThemeMode.System; }
+    }
+
+    public bool IsThemeModeLight {
+        get => ThemeMode == AppThemeMode.Light;
+        set { if (value) ThemeMode = AppThemeMode.Light; }
+    }
+
+    public bool IsThemeModeDark {
+        get => ThemeMode == AppThemeMode.Dark;
+        set { if (value) ThemeMode = AppThemeMode.Dark; }
+    }
 
     [ObservableProperty] private bool _enableAI;
     [ObservableProperty] private string _AIProvider = "openai";
@@ -105,7 +125,7 @@ public partial class SettingsViewModel : PageViewModelBase {
             BackendTimeout = settings.BackendTimeout;
             EnableRegexImageParsing = settings.EnableRegexImageParsing;
             WeChatDefaultTheme = WeChatThemeCatalog.NormalizeId(settings.WeChatDefaultTheme);
-            IsDarkTheme = settings.IsDarkTheme;
+            ThemeMode = settings.ThemeMode;
             LoadWeChatAccounts();
             LoadProfiles();
         }
@@ -117,14 +137,14 @@ public partial class SettingsViewModel : PageViewModelBase {
     }
 
     /// <summary>
-    /// 从壳层同步主题开关，避免再次走持久化。
+    /// 从壳层同步外观偏好，避免再次走持久化。
     /// </summary>
-    public void SyncDarkTheme(bool isDark) {
-        if (IsDarkTheme == isDark) return;
+    public void SyncThemeMode(AppThemeMode mode) {
+        if (ThemeMode == mode) return;
         var wasDirty = HasChanges;
         _syncingTheme = true;
         try {
-            IsDarkTheme = isDark;
+            ThemeMode = mode;
         }
         finally {
             _syncingTheme = false;
@@ -301,7 +321,7 @@ public partial class SettingsViewModel : PageViewModelBase {
     [RelayCommand]
     private void ToggleAIKey() => ShowAIKey = !ShowAIKey;
 
-    partial void OnIsDarkThemeChanged(bool value) {
+    partial void OnThemeModeChanged(AppThemeMode value) {
         if (_syncingTheme) return;
         _shell.PreviewTheme(value);
     }
@@ -453,7 +473,7 @@ public partial class SettingsViewModel : PageViewModelBase {
             return;
         }
         AcceptChanges();
-        _shell.ApplyTheme(IsDarkTheme);
+        _shell.ApplyTheme(ThemeMode);
         _shell.PublishPage.NotifyAiEnabled();
         foreach (var document in _shell.Workspace.Documents) document.NotifyAiEnabled();
         GuiHost.ToastSuccess("设置", "已保存");
@@ -481,7 +501,8 @@ public partial class SettingsViewModel : PageViewModelBase {
         settings.WeChatAccounts = WeChatAccounts.Select(account => account.Clone()).ToList();
         settings.CurrentWeChatAccountId = CurrentWeChatAccount?.Id ?? settings.WeChatAccounts[0].Id;
         settings.WeChatDefaultTheme = WeChatDefaultTheme;
-        settings.IsDarkTheme = IsDarkTheme;
+        settings.ThemeMode = ThemeMode;
+        settings.IsDarkTheme = ThemeModeHelper.ToLegacyIsDarkTheme(ThemeMode);
 
         settings.EnableAI = EnableAI;
         settings.AIProvider = AIProvider;
@@ -502,7 +523,7 @@ public partial class SettingsViewModel : PageViewModelBase {
     [RelayCommand]
     private void Cancel() {
         Reload();
-        _shell.PreviewTheme(IsDarkTheme);
+        _shell.PreviewTheme(ThemeMode);
         GuiHost.ToastInfo("设置", "已还原为上次保存的配置");
     }
 }

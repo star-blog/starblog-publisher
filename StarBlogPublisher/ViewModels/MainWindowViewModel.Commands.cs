@@ -60,7 +60,7 @@ public partial class MainWindowViewModel {
         }
         Add("view.next", "查看", "下一个标签", "Ctrl+Tab", () => Run(Workspace.NextDocumentCommand), () => ActivePage == Workspace && Workspace.HasDocuments);
         Add("view.focus", "查看", "专注模式", "Ctrl+Shift+F11", () => ShowWorkspace(Workspace.ToggleFocusCommand), () => Workspace.HasDocuments, () => Workspace.IsFocusMode);
-        Add("view.theme", "查看", "深色主题", null, () => Run(ToggleThemeCommand), check: () => IsDarkTheme);
+        Add("view.theme", "查看", "切换浅色/深色", null, () => Run(ToggleThemeCommand), check: () => IsDarkTheme);
         Add("view.settings", "查看", "设置", "Ctrl+OemComma", () => Act(() => ActivePage = SettingsPage));
 
         Add("article.title", "文章", "优化标题", null, () => Run(PublishPage.RefineTitleWithAICommand), AiReady);

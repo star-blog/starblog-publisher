@@ -6,6 +6,7 @@ using StarBlogPublisher.ViewModels;
 
 namespace StarBlogPublisher.Tests.Gui.ViewModels;
 
+[Collection("AppSettings")]
 public class ArticleWorkspaceViewModelTests : IDisposable {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "starblog-workspace-tests", Guid.NewGuid().ToString("N"));
     private MainWindowViewModel CreateShell() => new(Mock.Of<IHttpClientFactory>(), initializeSession: false,
