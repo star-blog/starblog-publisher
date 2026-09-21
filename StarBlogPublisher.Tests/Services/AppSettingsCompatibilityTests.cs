@@ -76,7 +76,42 @@ public class AppSettingsCompatibilityTests {
         snapshot.CurrentWeChatAccountId.Should().Be(snapshot.WeChatAccounts[0].Id);
         snapshot.WeChatAccounts[0].ApiBaseUrl.Should().Be("https://wechat-proxy.example.com/api/");
         snapshot.WeChatAccounts[0].ApiAuthorization.Should().Be("Bearer relay-token");
+        snapshot.ThemeMode.Should().Be(ThemeMode.Dark);
         snapshot.IsDarkTheme.Should().BeTrue();
         snapshot.EnableRegexImageParsing.Should().BeTrue();
+    }
+
+    [Fact]
+    public void DeserializeSnapshot_LegacyIsDarkThemeFalse_MapsToLight() {
+        var snapshot = AppSettings.DeserializeSnapshot("""{ "IsDarkTheme": false }""");
+
+        snapshot.ThemeMode.Should().Be(ThemeMode.Light);
+        snapshot.IsDarkTheme.Should().BeFalse();
+    }
+
+    [Fact]
+    public void DeserializeSnapshot_ThemeMode_TakesPrecedenceOverLegacyFlag() {
+        var snapshot = AppSettings.DeserializeSnapshot("""
+            {
+              "ThemeMode": "System",
+              "IsDarkTheme": true
+            }
+            """);
+
+        snapshot.ThemeMode.Should().Be(ThemeMode.System);
+        snapshot.IsDarkTheme.Should().BeFalse();
+    }
+
+    [Fact]
+    public void DeserializeSnapshot_ExplicitLight_KeepsForcedLight() {
+        var snapshot = AppSettings.DeserializeSnapshot("""
+            {
+              "ThemeMode": "Light",
+              "IsDarkTheme": true
+            }
+            """);
+
+        snapshot.ThemeMode.Should().Be(ThemeMode.Light);
+        snapshot.IsDarkTheme.Should().BeFalse();
     }
 }

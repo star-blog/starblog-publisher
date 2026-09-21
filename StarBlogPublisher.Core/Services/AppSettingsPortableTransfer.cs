@@ -110,7 +110,8 @@ public static class AppSettingsPortableTransfer {
             WeChatDefaultTheme = settings.WeChatDefaultTheme,
             CurrentWeChatAccountId = settings.CurrentWeChatAccountId,
             WeChatAccounts = settings.WeChatAccounts.Select(CloneWeChatAccount).ToList(),
-            IsDarkTheme = settings.IsDarkTheme,
+            ThemeMode = settings.ThemeMode,
+            IsDarkTheme = ThemeModeHelper.ToLegacyIsDarkTheme(settings.ThemeMode),
             EnableRegexImageParsing = settings.EnableRegexImageParsing,
             EditorFontSize = settings.EditorFontSize,
             EditorWordWrap = settings.EditorWordWrap,
@@ -155,7 +156,8 @@ public static class AppSettingsPortableTransfer {
         settings.BackendTimeout = payload.BackendTimeout;
         settings.EnableRegexImageParsing = payload.EnableRegexImageParsing;
         settings.WeChatDefaultTheme = WeChatThemeCatalog.NormalizeId(payload.WeChatDefaultTheme);
-        settings.IsDarkTheme = payload.IsDarkTheme;
+        settings.ThemeMode = ThemeModeHelper.FromStorage(payload.ThemeMode, payload.IsDarkTheme);
+        settings.IsDarkTheme = ThemeModeHelper.ToLegacyIsDarkTheme(settings.ThemeMode);
         settings.EditorFontSize = payload.EditorFontSize is >= 11 and <= 22 ? payload.EditorFontSize : 14;
         settings.EditorWordWrap = payload.EditorWordWrap;
         settings.EditorShowLineNumbers = payload.EditorShowLineNumbers;
@@ -327,6 +329,7 @@ public sealed class PortableAppSettingsPayload {
     public string WeChatDefaultTheme { get; set; } = "newspaper";
     public string CurrentWeChatAccountId { get; set; } = string.Empty;
     public List<PortableWeChatAccount> WeChatAccounts { get; set; } = new();
+    public ThemeMode? ThemeMode { get; set; }
     public bool IsDarkTheme { get; set; }
     public bool EnableRegexImageParsing { get; set; }
     public double EditorFontSize { get; set; } = 14;
@@ -361,9 +364,12 @@ public sealed class PortableWeChatAccount {
 [JsonSourceGenerationOptions(
     GenerationMode = JsonSourceGenerationMode.Metadata,
     WriteIndented = true,
-    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
+    UseStringEnumConverter = true)]
 [JsonSerializable(typeof(PortableAppSettingsDocument))]
 [JsonSerializable(typeof(PortableAppSettingsPayload))]
+[JsonSerializable(typeof(ThemeMode))]
+[JsonSerializable(typeof(ThemeMode?))]
 [JsonSerializable(typeof(PortableAIProfile))]
 [JsonSerializable(typeof(List<PortableAIProfile>))]
 [JsonSerializable(typeof(PortableWeChatAccount))]
