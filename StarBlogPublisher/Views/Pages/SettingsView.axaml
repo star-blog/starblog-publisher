@@ -50,6 +50,7 @@
                 <ListBoxItem Content="{Binding WeChatNavigationLabel}" Padding="14,11"/>
                 <ListBoxItem Content="{Binding AiNavigationLabel}" Padding="14,11"/>
                 <ListBoxItem Content="{Binding ProxyNavigationLabel}" Padding="14,11"/>
+                <ListBoxItem Content="备份" Padding="14,11"/>
             </ListBox>
             <ScrollViewer x:Name="SettingsScrollViewer" Grid.Column="2" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Visible" Offset="{Binding SettingsScrollOffset, Mode=TwoWay}">
                 <StackPanel x:Name="SettingsForm" MaxWidth="720" HorizontalAlignment="Stretch" Margin="12,0,16,32" Spacing="16">
@@ -270,6 +271,20 @@
                                 </StackPanel>
                             </Expander>
                         </StackPanel>
+                    </StackPanel>
+                    <StackPanel Classes="Form" IsVisible="{Binding IsBackupSection}">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="备份" Classes="SectionTitle"/>
+                            <TextBlock Classes="Hint" Text="导出或导入本机应用设置，便于迁移与恢复。"/>
+                        </StackPanel>
+                        <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" Padding="12" CornerRadius="6">
+                            <TextBlock Text="导出文件包含账号密码、API Key、微信密钥等敏感信息，请妥善保管。"/>
+                        </Border>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="导出配置" Command="{Binding ExportSettingsCommand}"/>
+                            <Button Content="导入配置" Command="{Binding ImportSettingsCommand}"/>
+                        </StackPanel>
+                        <TextBlock Classes="Hint" Text="导入会覆盖当前全部已保存设置；登录会话与文章工作区不受影响。"/>
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>

@@ -31,6 +31,7 @@ public partial class SettingsViewModel {
     public bool IsWeChatSection => SelectedSection == 2;
     public bool IsAiSection => SelectedSection == 3;
     public bool IsProxySection => SelectedSection == 4;
+    public bool IsBackupSection => SelectedSection == 5;
     public bool HasValidationError => !string.IsNullOrEmpty(ValidationMessage);
     public string BlogNavigationLabel => NavigationLabel("博客连接", 1);
     public string WeChatNavigationLabel => NavigationLabel("微信公众号", 2);
@@ -51,6 +52,7 @@ public partial class SettingsViewModel {
         OnPropertyChanged(nameof(IsWeChatSection));
         OnPropertyChanged(nameof(IsAiSection));
         OnPropertyChanged(nameof(IsProxySection));
+        OnPropertyChanged(nameof(IsBackupSection));
         SettingsScrollOffset = default;
     }
 
