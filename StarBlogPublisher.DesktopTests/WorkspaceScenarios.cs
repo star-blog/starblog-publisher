@@ -48,7 +48,7 @@ internal sealed class WorkspaceScenarios(MainWindow window, MainWindowViewModel 
         advanced.IsExpanded = true;
         await Task.Delay(150);
         if (Math.Abs(form.Bounds.Width - originalWidth) > 1) throw new Exception("Expanding advanced settings changed form width");
-        var themeSelector = view.GetVisualDescendants().OfType<ComboBox>().First(c => c.Items.OfType<ComboBoxItem>().Any());
+        var themeSelector = view.FindControl<ComboBox>("WeChatThemeSelector")!;
         if (themeSelector.SelectedValue?.ToString() != vm.WeChatDefaultTheme) throw new Exception("Theme label/value mapping failed");
         themeSelector.SelectedIndex = 1;
         if (vm.WeChatDefaultTheme != "warm-card") throw new Exception("Theme selection did not update persisted theme ID");
