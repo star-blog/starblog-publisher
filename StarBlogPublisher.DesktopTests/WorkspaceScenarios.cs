@@ -33,7 +33,7 @@ internal sealed class WorkspaceScenarios(MainWindow window, MainWindowViewModel 
         var scroll = view.FindControl<ScrollViewer>("SettingsScrollViewer")!;
         var advanced = view.FindControl<Expander>("WeChatAdvanced")!;
         var originalWidth = form.Bounds.Width;
-        foreach (var section in Enumerable.Range(0, 5)) {
+        foreach (var section in Enumerable.Range(0, 6)) {
             navigation.SelectedIndex = section;
             await Task.Delay(100);
             if (vm.SelectedSection != section) throw new Exception("Settings navigation binding did not update");
