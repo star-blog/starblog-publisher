@@ -22,7 +22,6 @@ public partial class SettingsViewModel : PageViewModelBase {
 
     public SettingsViewModel(MainWindowViewModel shell) : base("设置", Icon.Settings) {
         _shell = shell;
-        Reload();
         Profiles.CollectionChanged += (_, _) => UpdateDirtyState();
         WeChatAccounts.CollectionChanged += (_, _) => UpdateDirtyState();
     }

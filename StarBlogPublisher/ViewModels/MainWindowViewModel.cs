@@ -25,12 +25,25 @@ public partial class MainWindowViewModel : ViewModelBase {
 
     public ArticleWorkspaceViewModel Workspace { get; }
     public PublishViewModel PublishPage => Workspace.CurrentDocument;
-    public WeChatViewModel WeChatPage { get; }
-    public SettingsViewModel SettingsPage { get; }
-    public AboutViewModel AboutPage { get; }
+
+    private WeChatViewModel? _weChatPage;
+    private SettingsViewModel? _settingsPage;
+    private AboutViewModel? _aboutPage;
+    private IHttpClientFactory? _httpClientFactory;
+    private bool _initializeSession;
+    private bool _startupLoginScheduled;
+
+    public WeChatViewModel WeChatPage => _weChatPage ??= new WeChatViewModel(HttpClientFactory);
+    public SettingsViewModel SettingsPage => _settingsPage ??= CreateSettingsPage();
+    public AboutViewModel AboutPage => _aboutPage ??= new AboutViewModel();
+
     public ModelCatalogPageViewModel? ModelCatalogPage { get; private set; }
 
-    public IReadOnlyList<PageViewModelBase> Pages { get; }
+    private readonly ShellPageNavItem _weChatNav;
+    private readonly ShellPageNavItem _settingsNav;
+    private readonly ShellPageNavItem _aboutNav;
+
+    public IReadOnlyList<INavigationMenuItem> NavigationItems { get; }
     public ShellFooterNavItem ThemeFooterItem { get; }
     public ShellFooterNavItem AccountFooterItem { get; }
     public IReadOnlyList<ShellFooterNavItem> FooterNavItems { get; }
@@ -44,8 +57,9 @@ public partial class MainWindowViewModel : ViewModelBase {
         set {
             if (_activePage == value) return;
             if (_checkingSettingsNavigation) return;
-            if ((_activePage == SettingsPage || _activePage is ModelCatalogPageViewModel)
-                && value != SettingsPage && value is not ModelCatalogPageViewModel && SettingsPage.HasChanges) {
+            if ((_activePage is SettingsViewModel || _activePage is ModelCatalogPageViewModel)
+                && value is not SettingsViewModel && value is not ModelCatalogPageViewModel
+                && SettingsPage.HasChanges) {
                 _ = LeaveSettingsAsync(value);
                 return;
             }
@@ -54,7 +68,10 @@ public partial class MainWindowViewModel : ViewModelBase {
     }
 
     private void SetActivePage(PageViewModelBase? value) {
-        if (SetProperty(ref _activePage, value, nameof(ActivePage))) OnActivePageChanged(value);
+        if (SetProperty(ref _activePage, value, nameof(ActivePage))) {
+            OnActivePageChanged(value);
+            OnPropertyChanged(nameof(SelectedNavigationItem));
+        }
     }
 
     private async System.Threading.Tasks.Task LeaveSettingsAsync(PageViewModelBase? destination) {
@@ -83,14 +100,16 @@ public partial class MainWindowViewModel : ViewModelBase {
     private const double CompactPaneLength = 48;
     private const double OpenPaneLength = 220;
 
-    public MainWindowViewModel() : this(AppHttpClients.Factory) { }
+    public MainWindowViewModel() : this(httpClientFactory: null) { }
 
-    public MainWindowViewModel(IHttpClientFactory httpClientFactory, bool initializeSession = true, string? workspaceHistoryPath = null) {
+    public MainWindowViewModel(IHttpClientFactory? httpClientFactory, bool initializeSession = true, string? workspaceHistoryPath = null) {
+        _httpClientFactory = httpClientFactory;
+        _initializeSession = initializeSession;
         Workspace = new ArticleWorkspaceViewModel(this, workspaceHistoryPath);
-        WeChatPage = new WeChatViewModel(httpClientFactory);
-        SettingsPage = new SettingsViewModel(this);
-        AboutPage = new AboutViewModel();
-        Pages = [Workspace, WeChatPage, SettingsPage, AboutPage];
+        _weChatNav = new ShellPageNavItem(ShellPageId.WeChat, "公众号排版", Icon.Mail);
+        _settingsNav = new ShellPageNavItem(ShellPageId.Settings, "设置", Icon.Settings);
+        _aboutNav = new ShellPageNavItem(ShellPageId.About, "关于", Icon.Info);
+        NavigationItems = [Workspace, _weChatNav, _settingsNav, _aboutNav];
         ThemeFooterItem = new ShellFooterNavItem { Tag = "theme", Title = "主题" };
         AccountFooterItem = new ShellFooterNavItem { Tag = "account", Title = "登录" };
         FooterNavItems = [ThemeFooterItem, AccountFooterItem];
@@ -99,7 +118,6 @@ public partial class MainWindowViewModel : ViewModelBase {
         if (initializeSession) {
             GlobalState.Instance.StateChanged += OnGlobalStateChanged;
             UpdateLoginState();
-            if (AuthService.HasCredentials) _ = Login();
         }
 
         ThemeMode = AppSettings.Instance.ThemeMode;
@@ -109,6 +127,65 @@ public partial class MainWindowViewModel : ViewModelBase {
         }
         RefreshFooterNavItems();
         InitializeCommands();
+    }
+
+    private IHttpClientFactory HttpClientFactory => _httpClientFactory ??= AppHttpClients.Factory;
+
+    public INavigationMenuItem? SelectedNavigationItem {
+        get => ActivePage switch {
+            ArticleWorkspaceViewModel => Workspace,
+            WeChatViewModel => _weChatNav,
+            SettingsViewModel => _settingsNav,
+            AboutViewModel => _aboutNav,
+            ModelCatalogPageViewModel => _settingsNav,
+            _ => Workspace,
+        };
+        set {
+            if (value == null || _checkingSettingsNavigation) {
+                return;
+            }
+
+            PageViewModelBase? target = value switch {
+                ArticleWorkspaceViewModel workspace => workspace,
+                ShellPageNavItem nav => EnsureShellPage(nav.PageId),
+                _ => null,
+            };
+            if (target != null) {
+                ActivePage = target;
+            }
+        }
+    }
+
+    public void OnMainWindowOpened() {
+        if (_startupLoginScheduled || !_initializeSession) {
+            return;
+        }
+
+        _startupLoginScheduled = true;
+        if (AuthService.HasCredentials) {
+            _ = Login();
+        }
+    }
+
+    public async System.Threading.Tasks.Task<bool> CanCloseShellAsync() {
+        if (_settingsPage is { HasChanges: true }) {
+            return await _settingsPage.CanLeaveAsync();
+        }
+
+        return true;
+    }
+
+    private PageViewModelBase EnsureShellPage(ShellPageId pageId) => pageId switch {
+        ShellPageId.WeChat => WeChatPage,
+        ShellPageId.Settings => SettingsPage,
+        ShellPageId.About => AboutPage,
+        _ => Workspace,
+    };
+
+    private SettingsViewModel CreateSettingsPage() {
+        var page = new SettingsViewModel(this);
+        page.Reload();
+        return page;
     }
 
     partial void OnIsDarkThemeChanged(bool value) => RefreshFooterNavItems();
@@ -139,7 +216,7 @@ public partial class MainWindowViewModel : ViewModelBase {
             settings.IsDarkTheme = ThemeModeHelper.ToLegacyIsDarkTheme(mode);
             settings.Save();
         }
-        SettingsPage.SyncThemeMode(mode);
+        _settingsPage?.SyncThemeMode(mode);
     }
 
     public void PreviewTheme(AppThemeMode mode) {
@@ -220,7 +297,7 @@ public partial class MainWindowViewModel : ViewModelBase {
     }
 
     public void NavigateTo(PageViewModelBase page) {
-        if (Pages.Contains(page)) {
+        if (page == Workspace || page == WeChatPage || page == SettingsPage || page == AboutPage) {
             ActivePage = page;
         }
     }

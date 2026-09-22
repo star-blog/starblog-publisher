@@ -32,9 +32,9 @@
                            OpenPaneLength="220"
                            CompactPaneLength="48"
                            IsPaneOpen="{Binding IsPaneOpen, Mode=TwoWay}"
-                           MenuItemsSource="{Binding Pages}"
+                           MenuItemsSource="{Binding NavigationItems}"
                            FooterMenuItemsSource="{Binding FooterNavItems}"
-                           SelectedItem="{Binding ActivePage, Mode=TwoWay}"
+                           SelectedItem="{Binding SelectedNavigationItem, Mode=TwoWay}"
                            ItemInvoked="OnShellNavigationItemInvoked">
             <ui:FANavigationView.MenuItemTemplate>
                 <DataTemplate x:DataType="vm:INavigationMenuItem">

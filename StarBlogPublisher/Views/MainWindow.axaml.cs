@@ -28,6 +28,9 @@ public partial class MainWindow : FAAppWindow {
         TitleBar.ExtendsContentIntoTitleBar = true;
         Opened += (_, _) => {
             StartupLog.Mark("window_opened");
+            if (DataContext is MainWindowViewModel vm) {
+                vm.OnMainWindowOpened();
+            }
             GuiHost.SetFeedbackBar(FeedbackBar);
             SyncTitleBarMetrics();
         };
@@ -200,7 +203,7 @@ public partial class MainWindow : FAAppWindow {
         if (_checkingClose) return;
         _checkingClose = true;
         try {
-            if (await vm.SettingsPage.CanLeaveAsync() && await vm.Workspace.CanCloseAllAsync()) { _allowClose = true; Close(); }
+            if (await vm.CanCloseShellAsync() && await vm.Workspace.CanCloseAllAsync()) { _allowClose = true; Close(); }
         }
         finally { _checkingClose = false; }
     }
