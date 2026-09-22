@@ -91,6 +91,14 @@ dotnet-trace collect --profile startup -- .\dist\StarBlogPublisher.exe
 2026-09-22T02:38:34.815Z  pid=29444  cold=true   phase=window_opened                    ms=1426
 ```
 
+## 阶段 1 基线（同机同包，优化后）
+
+| phase | 冷启动 median (ms) | 热启动 median (ms) | 阶段 0 → 1 |
+|---|---:|---:|---|
+| window_opened | 1131 | 1123 | ~1261 / ~1254 |
+
+改动摘要：预览 WebView 延后创建；侧栏用 `ShellPageNavItem` + 懒加载公众号/设置/关于；自动登录改到 `OnMainWindowOpened`；Release 去掉 `LogToTrace`、Windows 不再 `WithInterFont`；移除未使用的 `Avalonia.Browser`。
+
 ## 阶段 1：按日志改，默认顺序
 
 只有某一阶段的毫秒数明显偏大时才做对应项。下面是预期收益从高到低的默认顺序；若日志推翻顺序，按日志改。
