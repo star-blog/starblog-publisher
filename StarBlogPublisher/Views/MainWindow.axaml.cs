@@ -27,6 +27,7 @@ public partial class MainWindow : FAAppWindow {
         InitializeComponent();
         TitleBar.ExtendsContentIntoTitleBar = true;
         Opened += (_, _) => {
+            StartupLog.Mark("window_opened");
             GuiHost.SetFeedbackBar(FeedbackBar);
             SyncTitleBarMetrics();
         };

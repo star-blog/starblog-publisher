@@ -11,6 +11,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using AvaloniaEdit.Search;
 using StarBlogPublisher.Editor;
+using StarBlogPublisher.Services;
 using StarBlogPublisher.ViewModels;
 
 namespace StarBlogPublisher.Views.Controls;
@@ -27,7 +28,10 @@ public partial class MarkdownEditorView : UserControl {
 
     public MarkdownEditorView() {
         InitializeComponent();
-        PreviewBrowser.NavigationCompleted += async (_, _) => await ScrollPreviewToPendingHeading();
+        PreviewBrowser.NavigationCompleted += async (_, _) => {
+            StartupLog.MarkFirstWebViewNavigationCompleted();
+            await ScrollPreviewToPendingHeading();
+        };
         DataContextChanged += OnDataContextChanged;
         ActualThemeVariantChanged += OnActualThemeVariantChanged;
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);

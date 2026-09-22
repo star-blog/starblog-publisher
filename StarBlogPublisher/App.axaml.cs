@@ -13,6 +13,7 @@ namespace StarBlogPublisher;
 public partial class App : Application {
     public override void Initialize() {
         AvaloniaXamlLoader.Load(this);
+        StartupLog.Mark("xaml_loaded");
     }
 
     public override void OnFrameworkInitializationCompleted() {
@@ -22,9 +23,11 @@ public partial class App : Application {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
             AppThemeService.Apply(AppSettings.Instance.ThemeMode);
 
+            StartupLog.Mark("before_shell");
             desktop.MainWindow = new MainWindow {
                 DataContext = new MainWindowViewModel(),
             };
+            StartupLog.Mark("after_shell");
 
             if (AppSettings.HasLoadError) {
                 _ = ShowSettingsLoadErrorAsync();

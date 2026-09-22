@@ -3,6 +3,7 @@ using Avalonia.Media;
 using System;
 using Optris.Icons.Avalonia;
 using Optris.Icons.Avalonia.FontAwesome;
+using StarBlogPublisher.Services;
 
 namespace StarBlogPublisher;
 
@@ -11,8 +12,11 @@ sealed class Program {
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
     // yet and stuff might break.
     [STAThread]
-    public static void Main(string[] args) => BuildAvaloniaApp()
-        .StartWithClassicDesktopLifetime(args);
+    public static void Main(string[] args) {
+        StartupLog.Mark("main_enter");
+        BuildAvaloniaApp()
+            .StartWithClassicDesktopLifetime(args);
+    }
 
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp() {
@@ -32,6 +36,7 @@ sealed class Program {
             });
         }
 
+        StartupLog.Mark("avalonia_builder_ready");
         return appBuilder;
     }
 }

@@ -38,6 +38,8 @@
 
 `cold=true` 表示本次进程启动时 `%TEMP%\.net\` 下还没有本应用的解压目录（目录名以程序集名匹配，写代码时先确认实际文件夹）。第一次标记前判断，不要在中途再判断。
 
+实现说明：单文件宿主可能在 `Main` 之前就把 native 库解压到 `%TEMP%\.net\StarBlogPublisher\<hash>\`，因此不能只看根目录是否存在。`StartupLog` 用「是否存在创建时间不早于进程启动 2 秒内的 hash 子目录」近似冷启动（刚删缓存后的首次解压）；否则为热启动。
+
 必须打的点：
 
 | phase | 位置 |
@@ -61,6 +63,33 @@ dotnet-trace collect --profile startup -- .\dist\StarBlogPublisher.exe
 ```
 
 在 trace 里搜 `AvaloniaXamlLoader`、`Skia`、`WebView`、`SettingsViewModel`、`JsonConvert`。原生解压和 WebView2 进程不在托管栈里，以阶段日志为准。
+
+## 阶段 0 基线（2026-09-22，本机 win-x64 framework-dependent 单文件）
+
+发布物：`dist/extract/StarBlogPublisher.exe`（与 zip 内 exe 相同）。每档 4 次、丢弃每档第 1 次，冷启动前删除 `%TEMP%\.net\StarBlogPublisher`。
+
+| phase | 冷启动 median (ms) | 热启动 median (ms) |
+|---|---:|---:|
+| main_enter | 11 | 10 |
+| avalonia_builder_ready | 38 | 39 |
+| xaml_loaded | 348 | 342 |
+| before_shell | 424 | 412 |
+| after_shell | 968 | 957 |
+| window_opened | 1261 | 1254 |
+| webview_navigation_completed | （无） | （无） |
+
+默认空工作区 + 源码模式时 `PreviewUri` 为空，预览 WebView 不会发生首次导航，故无 `webview_navigation_completed`。打开本地 Markdown 或切到分栏/预览模式后才会出现该 phase。
+
+冷启动样例（`cold=true`）：
+
+```text
+2026-09-22T02:38:33.399Z  pid=29444  cold=true   phase=main_enter                       ms=11
+2026-09-22T02:38:33.427Z  pid=29444  cold=true   phase=avalonia_builder_ready           ms=38
+2026-09-22T02:38:33.863Z  pid=29444  cold=true   phase=xaml_loaded                      ms=474
+2026-09-22T02:38:33.937Z  pid=29444  cold=true   phase=before_shell                     ms=548
+2026-09-22T02:38:34.544Z  pid=29444  cold=true   phase=after_shell                      ms=1156
+2026-09-22T02:38:34.815Z  pid=29444  cold=true   phase=window_opened                    ms=1426
+```
 
 ## 阶段 1：按日志改，默认顺序
 
