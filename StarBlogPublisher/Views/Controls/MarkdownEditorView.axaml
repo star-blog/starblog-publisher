@@ -26,8 +26,12 @@
                       ResizeDirection="Columns"
                       IsVisible="{Binding IsSplitMode}" />
 
-        <NativeWebView x:Name="PreviewBrowser" Grid.Column="2"
-                       Source="{Binding PreviewUri}"
-                       IsVisible="{Binding IsPreviewPaneVisible}" />
+        <Panel x:Name="PreviewHost" Grid.Column="2" IsVisible="{Binding IsPreviewPaneVisible}">
+            <TextBlock x:Name="PreviewPlaceholder"
+                       Text="预览加载中…"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Opacity="0.55" />
+        </Panel>
     </Grid>
 </UserControl>

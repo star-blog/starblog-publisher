@@ -216,8 +216,7 @@ internal sealed class WorkspaceScenarios(MainWindow window, MainWindowViewModel 
 
     public async Task PreviewNavigation() {
         first.EditorMode = MarkdownEditorMode.Preview;
-        await Task.Delay(600);
-        var browser = window.GetVisualDescendants().OfType<NativeWebView>().First(b => b.Name == "PreviewBrowser");
+        var browser = await WaitForPreviewBrowserAsync();
         await WaitUntilAsync(async () => {
             try { return await browser.InvokeScript("!!document.querySelector('[data-outline-line]')") == "true"; }
             catch (InvalidOperationException) { return false; }
@@ -307,6 +306,29 @@ internal sealed class WorkspaceScenarios(MainWindow window, MainWindowViewModel 
         shell.PublishPage.IsSplitMode = true;
         await Task.Delay(200);
         shell.PublishPage.IsSourceMode = true;
+    }
+
+    private async Task<NativeWebView> WaitForPreviewBrowserAsync() {
+        var browser = await WaitUntilAsync(
+            () => Task.FromResult(window.GetVisualDescendants().OfType<NativeWebView>()
+                .FirstOrDefault(b => b.Name == "PreviewBrowser")),
+            "Preview WebView was not created after showing preview",
+            15000);
+        return browser!;
+    }
+
+    private static async Task<T?> WaitUntilAsync<T>(Func<Task<T?>> supplier, string message, int timeoutMs = 5000) where T : class {
+        var elapsed = System.Diagnostics.Stopwatch.StartNew();
+        while (elapsed.ElapsedMilliseconds < timeoutMs) {
+            var value = await supplier();
+            if (value != null) {
+                return value;
+            }
+
+            await Task.Delay(50);
+        }
+
+        throw new TimeoutException(message);
     }
 
     private static async Task WaitUntilAsync(Func<Task<bool>> condition, string message, int timeoutMs = 5000) {

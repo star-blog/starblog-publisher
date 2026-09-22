@@ -4,6 +4,7 @@ using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
@@ -20,25 +21,35 @@ public partial class MarkdownEditorView : UserControl {
     private PublishViewModel? _viewModel;
     private SearchPanel? _searchPanel;
     private MarkdownSyntaxColorizer? _colorizer;
+    private NativeWebView? _previewBrowser;
     private bool _syncingText;
     private bool _editorConfigured;
+    private bool _hostWindowOpened;
+    private bool _windowOpenHooked;
     private int? _pendingPreviewLine;
     private double? _pendingPreviewSourceLine;
     private double? _sourceLineBeforeModeChange;
 
     public MarkdownEditorView() {
         InitializeComponent();
-        PreviewBrowser.NavigationCompleted += async (_, _) => {
-            StartupLog.MarkFirstWebViewNavigationCompleted();
-            await ScrollPreviewToPendingHeading();
-        };
         DataContextChanged += OnDataContextChanged;
         ActualThemeVariantChanged += OnActualThemeVariantChanged;
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
     }
 
+    private NativeWebView PreviewBrowser {
+        get {
+            if (_previewBrowser == null) {
+                throw new InvalidOperationException("Preview WebView is not initialized yet.");
+            }
+
+            return _previewBrowser;
+        }
+    }
+
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e) {
         base.OnAttachedToVisualTree(e);
+        HookMainWindowOpened();
         ConfigureEditor();
         if (_viewModel != null) {
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
@@ -53,6 +64,82 @@ public partial class MarkdownEditorView : UserControl {
         ApplyEditorChrome();
         SyncTextFromViewModel();
         ScheduleRestoreEditorPosition();
+        SchedulePreviewBrowserCreation();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) {
+        if (TopLevel.GetTopLevel(this) is Window window && _windowOpenHooked) {
+            window.Opened -= OnHostWindowOpened;
+            _windowOpenHooked = false;
+        }
+
+        SaveEditorPosition();
+        if (_viewModel != null) _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        if (_viewModel != null) _viewModel.PropertyChanging -= OnViewModelPropertyChanging;
+        if (_viewModel != null) _viewModel.NavigateToLineRequested -= NavigateToLine;
+        if (_viewModel != null) _viewModel.NavigatePreviewToLineRequested -= NavigatePreviewToLine;
+        _pendingPreviewLine = null;
+        _pendingPreviewSourceLine = null;
+        _sourceLineBeforeModeChange = null;
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    private void HookMainWindowOpened() {
+        if (_windowOpenHooked || TopLevel.GetTopLevel(this) is not Window window) {
+            return;
+        }
+
+        _windowOpenHooked = true;
+        if (window.IsVisible) {
+            _hostWindowOpened = true;
+            SchedulePreviewBrowserCreation();
+        }
+        else {
+            window.Opened += OnHostWindowOpened;
+        }
+    }
+
+    private void OnHostWindowOpened(object? sender, EventArgs e) {
+        if (sender is Window window) {
+            window.Opened -= OnHostWindowOpened;
+            _windowOpenHooked = false;
+        }
+
+        _hostWindowOpened = true;
+        SchedulePreviewBrowserCreation();
+    }
+
+    private void SchedulePreviewBrowserCreation() {
+        Dispatcher.UIThread.Post(TryCreatePreviewBrowser, DispatcherPriority.Loaded);
+    }
+
+    private void TryCreatePreviewBrowser() {
+        if (_previewBrowser != null || !ShouldCreatePreviewBrowser()) {
+            return;
+        }
+
+        _previewBrowser = new NativeWebView {
+            Name = "PreviewBrowser",
+        };
+        _previewBrowser.Bind(NativeWebView.SourceProperty, new Binding(nameof(PublishViewModel.PreviewUri)));
+        _previewBrowser.NavigationCompleted += async (_, _) => {
+            StartupLog.MarkFirstWebViewNavigationCompleted();
+            PreviewPlaceholder.IsVisible = false;
+            await ScrollPreviewToPendingHeading();
+        };
+        PreviewHost.Children.Add(_previewBrowser);
+    }
+
+    private bool ShouldCreatePreviewBrowser() {
+        if (_previewBrowser != null) {
+            return false;
+        }
+
+        if (!_hostWindowOpened) {
+            return false;
+        }
+
+        return _viewModel is { IsPreviewPaneVisible: true, PreviewUri: not null };
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e) {
@@ -78,19 +165,8 @@ public partial class MarkdownEditorView : UserControl {
             _viewModel.NavigatePreviewToLineRequested += NavigatePreviewToLine;
             SyncTextFromViewModel();
             ScheduleRestoreEditorPosition();
+            SchedulePreviewBrowserCreation();
         }
-    }
-
-    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) {
-        SaveEditorPosition();
-        if (_viewModel != null) _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
-        if (_viewModel != null) _viewModel.PropertyChanging -= OnViewModelPropertyChanging;
-        if (_viewModel != null) _viewModel.NavigateToLineRequested -= NavigateToLine;
-        if (_viewModel != null) _viewModel.NavigatePreviewToLineRequested -= NavigatePreviewToLine;
-        _pendingPreviewLine = null;
-        _pendingPreviewSourceLine = null;
-        _sourceLineBeforeModeChange = null;
-        base.OnDetachedFromVisualTree(e);
     }
 
     private void SaveEditorPosition() {
@@ -160,6 +236,12 @@ public partial class MarkdownEditorView : UserControl {
     }
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) {
+        if (e.PropertyName is nameof(PublishViewModel.IsPreviewPaneVisible)
+            or nameof(PublishViewModel.PreviewUri)
+            or nameof(PublishViewModel.EditorMode)) {
+            SchedulePreviewBrowserCreation();
+        }
+
         if (e.PropertyName == nameof(PublishViewModel.EditorMode)
             && _viewModel is { IsPreviewPaneVisible: true } document
             && _sourceLineBeforeModeChange is { } sourceLine) {
@@ -251,7 +333,11 @@ public partial class MarkdownEditorView : UserControl {
 
     private async System.Threading.Tasks.Task ScrollPreviewToPendingHeading() {
         if ((_pendingPreviewLine == null && _pendingPreviewSourceLine == null)
-            || _viewModel is not { IsPreviewPaneVisible: true } document) return;
+            || _viewModel is not { IsPreviewPaneVisible: true } document
+            || _previewBrowser == null) {
+            return;
+        }
+
         try {
             // Only scroll the current document; a tab switch may still be loading its WebView page.
             var expectedUrl = System.Text.Json.JsonSerializer.Serialize(document.PreviewUri?.AbsoluteUri);
