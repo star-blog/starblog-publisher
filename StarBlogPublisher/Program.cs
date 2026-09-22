@@ -23,17 +23,17 @@ sealed class Program {
         IconProvider.Current.Register<FontAwesomeIconProvider>();
 
         var appBuilder = AppBuilder.Configure<App>()
-            .UsePlatformDetect()
-            .WithInterFont()
-            .LogToTrace();
+            .UsePlatformDetect();
 
-        // FluentAvalonia's Windows controls are calibrated for Segoe UI / Segoe UI
-        // Variable Text. Keep that native typography on Windows; only use the bundled
-        // Inter font as a safe fallback for platforms whose system font lookup is unreliable.
+#if DEBUG
+        appBuilder = appBuilder.LogToTrace();
+#endif
+
         if (!OperatingSystem.IsWindows()) {
-            appBuilder = appBuilder.With(new FontManagerOptions {
-                DefaultFamilyName = "fonts:Inter#Inter"
-            });
+            appBuilder = appBuilder.WithInterFont()
+                .With(new FontManagerOptions {
+                    DefaultFamilyName = "fonts:Inter#Inter"
+                });
         }
 
         StartupLog.Mark("avalonia_builder_ready");
