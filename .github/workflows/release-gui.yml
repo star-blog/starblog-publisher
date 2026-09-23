@@ -4,7 +4,9 @@ run-name: ${{ github.actor }} 正在发布 GUI 🖥️
 on:
   push:
     tags:
-      - "v*.*.*"
+      # SemVer 稳定版 vX.Y.Z 与预发布 vX.Y.Z-beta.N 等（GHA 支持 [0-9]+ / * 通配，v*.*.* 无法匹配带 - 的 tag）
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-*"
 
 permissions:
   contents: write
@@ -44,7 +46,13 @@ jobs:
       - name: 提取版本号
         id: get_version
         shell: bash
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.+-]+)?$ ]]; then
+            echo "Unsupported release tag: $TAG" >&2
+            exit 1
+          fi
+          echo "VERSION=${TAG#v}" >> "$GITHUB_OUTPUT"
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -117,7 +125,13 @@ jobs:
       - name: 提取版本号
         id: get_version
         shell: bash
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.+-]+)?$ ]]; then
+            echo "Unsupported release tag: $TAG" >&2
+            exit 1
+          fi
+          echo "VERSION=${TAG#v}" >> "$GITHUB_OUTPUT"
 
       - name: 下载所有构建产物
         uses: actions/download-artifact@v4
@@ -139,7 +153,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
+          tag_name: ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
           files: |
             ./artifacts/**/*
             ./SHA256SUMS
