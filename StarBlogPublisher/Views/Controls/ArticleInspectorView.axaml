@@ -87,9 +87,16 @@
                           AutomationProperties.Name="发布" />
             <StackPanel Spacing="6" Margin="12,8,12,10"
                         IsVisible="{Binding IsPublishSectionExpanded}">
-                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Classes="InspectorAction" Command="{Binding ShowPublishResultCommand}"
-                        Content="已发布 · 查看结果" IsVisible="{Binding HasPublishResult}" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" IsVisible="{Binding HasPublishResult}">
+                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                        <fi:FluentIcon Icon="CheckmarkCircle" IconVariant="Filled" FontSize="14"
+                                       Foreground="{DynamicResource AccentFillColorDefaultBrush}" />
+                        <TextBlock Text="已发布" FontSize="12" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="InspectorAction" Command="{Binding ShowPublishResultCommand}"
+                            Content="查看结果" ToolTip.Tip="查看当前文章的发布结果" />
+                </Grid>
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
                     <TextBlock Text="发布目标" Classes="InspectorLabel" />
                     <ComboBox Grid.Column="1" Classes="InspectorInput" SelectedIndex="{Binding PublishTargetIndex, Mode=TwoWay}" HorizontalAlignment="Stretch">
