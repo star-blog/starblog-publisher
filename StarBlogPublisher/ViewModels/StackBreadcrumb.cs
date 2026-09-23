@@ -4,4 +4,6 @@ namespace StarBlogPublisher.ViewModels;
 public sealed class StackBreadcrumb {
     public required string Title { get; init; }
     public object? Target { get; init; }
+
+    public override string ToString() => Title;
 }

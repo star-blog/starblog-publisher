@@ -3,58 +3,94 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:StarBlogPublisher.ViewModels"
-             xmlns:i="https://github.com/projektanker/icons.avalonia"
-             xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:fi="using:FluentIcons.Avalonia.Fluent"
-             mc:Ignorable="d"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
              x:Class="StarBlogPublisher.Views.PublishResultView"
              x:DataType="vm:PublishResultViewModel">
-    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="8">
-        <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,0,16">
-            <fi:FluentIcon Icon="CheckmarkCircle" IconVariant="Filled" FontSize="24" />
-            <TextBlock Text="文章发布成功" FontSize="22" FontWeight="Bold" />
+    <UserControl.Styles>
+        <Style Selector="TextBlock.ResultLabel">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        </Style>
+        <Style Selector="Button.ResultAction">
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="16" Margin="24,16,24,20">
+        <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+            <fi:FluentIcon Icon="CheckmarkCircle" IconVariant="Filled" FontSize="28"
+                           Foreground="{DynamicResource AccentFillColorDefaultBrush}" VerticalAlignment="Center" />
+            <StackPanel Spacing="2">
+                <TextBlock Text="文章发布成功" FontSize="22" FontWeight="SemiBold" />
+                <TextBlock Text="文章已发布，可以复制链接或查看发布后的内容。"
+                           Classes="ResultLabel" />
+            </StackPanel>
         </StackPanel>
 
-        <Grid Grid.Row="1" ColumnDefinitions="Auto,*" Margin="0,0,0,10">
-            <TextBlock Grid.Column="0" Text="标题：" FontWeight="SemiBold" VerticalAlignment="Center" />
-            <TextBlock Grid.Column="1" Text="{Binding ArticleTitle}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-        </Grid>
-
-        <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,12">
-            <TextBlock Grid.Column="0" Text="URL：" FontWeight="SemiBold" VerticalAlignment="Center" />
-            <TextBox Grid.Column="1" Text="{Binding ArticleUrl}" IsReadOnly="True" />
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" Margin="8,0,0,0">
-                <Button Command="{Binding CopyUrlCommand}" ToolTip.Tip="复制 URL">
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <fi:FluentIcon Icon="Copy" IconVariant="Regular" />
-                        <TextBlock Text="复制 URL" />
+        <Border Grid.Row="1" Classes="Card" Padding="18,14">
+            <Grid RowDefinitions="Auto,Auto" RowSpacing="14">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="文章标题" Classes="ResultLabel" />
+                        <TextBlock Text="{Binding ArticleTitle}" FontSize="16" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding ArticleTitle}" />
                     </StackPanel>
-                </Button>
-                <Button Command="{Binding OpenArticleCommand}" ToolTip.Tip="在浏览器中打开文章">
-                    <fi:FluentIcon Icon="Link" IconVariant="Regular" />
-                </Button>
-            </StackPanel>
-        </Grid>
+                    <Button Grid.Column="1" Classes="ResultAction" VerticalAlignment="Center"
+                            Command="{Binding CopyTitleCommand}" ToolTip.Tip="复制文章标题">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <fi:FluentIcon Icon="Copy" IconVariant="Regular" FontSize="14" />
+                            <TextBlock Text="复制标题" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
 
-        <Grid Grid.Row="3" RowDefinitions="Auto,*">
-            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,6">
-                <TextBlock Grid.Column="0" Text="发布后的 Markdown" FontWeight="SemiBold" VerticalAlignment="Center" />
-                <Button Grid.Column="2" Command="{Binding CopyMarkdownCommand}">
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <fi:FluentIcon Icon="Copy" IconVariant="Regular" />
+                <Grid Grid.Row="1" RowDefinitions="Auto,Auto" RowSpacing="5">
+                    <TextBlock Text="文章链接" Classes="ResultLabel" />
+                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                        <TextBox Text="{Binding ArticleUrl}" IsReadOnly="True"
+                                 VerticalContentAlignment="Center" ToolTip.Tip="{Binding ArticleUrl}" />
+                        <Button Grid.Column="1" Classes="ResultAction" Command="{Binding CopyUrlCommand}"
+                                ToolTip.Tip="复制文章链接">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <fi:FluentIcon Icon="Copy" IconVariant="Regular" FontSize="14" />
+                                <TextBlock Text="复制链接" />
+                            </StackPanel>
+                        </Button>
+                        <Button Grid.Column="2" Classes="ResultAction" Command="{Binding OpenArticleCommand}"
+                                ToolTip.Tip="在浏览器中打开文章" AutomationProperties.Name="在浏览器中打开文章">
+                            <fi:FluentIcon Icon="Open" IconVariant="Regular" FontSize="16" />
+                        </Button>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="2" RowDefinitions="Auto,*" RowSpacing="8" MinHeight="180">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <StackPanel Spacing="2" VerticalAlignment="Center">
+                    <TextBlock Text="发布后的 Markdown" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="可用于分享或继续编辑" Classes="ResultLabel" />
+                </StackPanel>
+                <Button Grid.Column="1" Classes="ResultAction" VerticalAlignment="Center"
+                        Command="{Binding CopyMarkdownCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <fi:FluentIcon Icon="Copy" IconVariant="Regular" FontSize="14" />
                         <TextBlock Text="复制 Markdown" />
                     </StackPanel>
                 </Button>
             </Grid>
-            <TextBox Grid.Row="1" Text="{Binding MarkdownContent}" IsReadOnly="True"
-                     AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Consolas, Menlo, Monospace" />
+            <Border Grid.Row="1" Classes="Card" Padding="0" ClipToBounds="True">
+                <TextBox Text="{Binding MarkdownContent}" IsReadOnly="True"
+                         AcceptsReturn="True" TextWrapping="Wrap"
+                         FontFamily="Consolas, Menlo, Monospace"
+                         Background="Transparent" BorderThickness="0" Padding="16,12" />
+            </Border>
         </Grid>
 
-        <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="0,16,0,0">
-            <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Command="{Binding CopyTitleCommand}">
-                <TextBlock Text="复制标题" />
-            </Button>
-        </Grid>
+        <TextBlock Grid.Row="3" Text="{Binding StatusMessage}" Classes="ResultLabel"
+                   AutomationProperties.LiveSetting="Polite" />
     </Grid>
 </UserControl>

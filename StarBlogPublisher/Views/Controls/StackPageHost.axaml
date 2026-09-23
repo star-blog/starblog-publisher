@@ -2,7 +2,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:local="using:StarBlogPublisher.Views.Controls"
-             xmlns:vm="using:StarBlogPublisher.ViewModels"
              x:Class="StarBlogPublisher.Views.Controls.StackPageHost">
     <DockPanel>
         <ui:FABreadcrumbBar DockPanel.Dock="Top"
@@ -10,11 +9,6 @@
                           ItemsSource="{Binding Breadcrumbs, RelativeSource={RelativeSource AncestorType=local:StackPageHost}}"
                           IsVisible="{Binding IsNavigating, RelativeSource={RelativeSource AncestorType=local:StackPageHost}}"
                           ItemClicked="OnBreadcrumbItemClicked">
-            <ui:FABreadcrumbBar.ItemTemplate>
-                <DataTemplate x:DataType="vm:StackBreadcrumb">
-                    <TextBlock Text="{Binding Title}" />
-                </DataTemplate>
-            </ui:FABreadcrumbBar.ItemTemplate>
         </ui:FABreadcrumbBar>
 
         <Panel>
