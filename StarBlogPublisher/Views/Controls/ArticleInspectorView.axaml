@@ -7,49 +7,115 @@
              x:Name="InspectorRoot"
              x:Class="StarBlogPublisher.Views.Controls.ArticleInspectorView"
              x:DataType="vm:PublishViewModel">
+    <UserControl.Styles>
+        <Style Selector="TextBlock.InspectorLabel">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.InspectorTool">
+            <Setter Property="MinWidth" Value="22" />
+            <Setter Property="MinHeight" Value="22" />
+            <Setter Property="Width" Value="22" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+        <Style Selector="TextBox.InspectorInput">
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="ComboBox.InspectorInput">
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Padding" Value="8,3" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="Button.InspectorAction">
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Padding" Value="8,3" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="Border.InspectorChip">
+            <Setter Property="Padding" Value="6,2" />
+            <Setter Property="Margin" Value="0,0,4,4" />
+        </Style>
+        <Style Selector="Button.InspectorChipRemove">
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+        <Style Selector="Button.InspectorHeaderTool">
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Template"><ControlTemplate>
+                <Border Name="HeaderActionSurface" Background="Transparent" CornerRadius="3">
+                    <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+            </ControlTemplate></Setter>
+        </Style>
+        <Style Selector="Button.InspectorHeaderTool:pointerover /template/ Border#HeaderActionSurface"><Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" /></Style>
+        <Style Selector="Button.InspectorHeaderTool:focus-visible /template/ Border#HeaderActionSurface"><Setter Property="BorderThickness" Value="1" /><Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" /></Style>
+        <Style Selector="Button.InspectorCategory">
+            <Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+    </UserControl.Styles>
     <DockPanel>
-        <Border DockPanel.Dock="Top" Padding="12,5" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
-            <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Text="文章属性" FontSize="12" VerticalAlignment="Center" />
-                <Button Grid.Column="1" Content="×" Command="{Binding ToggleInspectorCommand}" Classes="Transparent" Padding="6,0" MinHeight="24" ToolTip.Tip="收起文章属性" />
+        <Border DockPanel.Dock="Top" Height="40" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+            <Grid ColumnDefinitions="*,Auto" Margin="16,0,8,0">
+                <TextBlock Text="文章属性" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Command="{Binding ToggleInspectorCommand}" Classes="InspectorHeaderTool" ToolTip.Tip="收起文章属性" AutomationProperties.Name="收起文章属性">
+                    <fi:FluentIcon Icon="Dismiss" IconVariant="Regular" FontSize="14" />
+                </Button>
             </Grid>
         </Border>
-        <Border DockPanel.Dock="Bottom" Padding="12" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
-            <StackPanel Spacing="8">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                    <TextBlock Text="发布目标" FontSize="12" VerticalAlignment="Center" />
-                    <ComboBox Grid.Column="1" SelectedIndex="{Binding PublishTargetIndex, Mode=TwoWay}" HorizontalAlignment="Stretch" MinHeight="28" Padding="8,4">
+        <StackPanel DockPanel.Dock="Bottom">
+            <ToggleButton Classes="SectionHeader" Content="发布"
+                          IsChecked="{Binding IsPublishSectionExpanded, Mode=TwoWay}"
+                          AutomationProperties.Name="发布" />
+            <StackPanel Spacing="6" Margin="12,8,12,10"
+                        IsVisible="{Binding IsPublishSectionExpanded}">
+                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                        Classes="InspectorAction" Command="{Binding ShowPublishResultCommand}"
+                        Content="已发布 · 查看结果" IsVisible="{Binding HasPublishResult}" />
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                    <TextBlock Text="发布目标" Classes="InspectorLabel" />
+                    <ComboBox Grid.Column="1" Classes="InspectorInput" SelectedIndex="{Binding PublishTargetIndex, Mode=TwoWay}" HorizontalAlignment="Stretch">
                         <ComboBoxItem Content="StarBlog" />
                         <ComboBoxItem Content="微信公众号" />
                     </ComboBox>
                 </Grid>
-                <TextBlock Text="{Binding TargetReadinessText}" TextWrapping="Wrap" FontSize="11" Opacity="0.7" />
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                    <Button Content="登录" IsVisible="{Binding NeedsBlogLogin}" Command="{Binding RequestLoginCommand}" Padding="10,5" />
-                    <Button Grid.Column="1" Content="{Binding PrimaryPublishLabel}" Command="{Binding PublishToTargetCommand}" IsEnabled="{Binding CanPublishToTarget}" Classes="Accent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="10,5" />
+                <TextBlock Text="{Binding TargetReadinessText}" TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                    <Button Content="登录" IsVisible="{Binding NeedsBlogLogin}" Command="{Binding RequestLoginCommand}" Classes="InspectorAction" />
+                    <Button Grid.Column="1" Content="{Binding PrimaryPublishLabel}" Command="{Binding PublishToTargetCommand}" IsEnabled="{Binding CanPublishToTarget}" Classes="Accent InspectorAction" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
                 </Grid>
             </StackPanel>
-        </Border>
-        <ScrollViewer>
-            <StackPanel Margin="14,12" Spacing="12">
-                <StackPanel Spacing="6" IsVisible="{Binding HasPublishResult}">
-                    <TextBlock Text="已发布"
-                               FontSize="13"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    <Button HorizontalAlignment="Left"
-                            Classes="Compact"
-                            Command="{Binding ShowPublishResultCommand}">
-                        <TextBlock Text="查看发布结果" />
-                    </Button>
-                </StackPanel>
+        </StackPanel>
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+            <ToggleButton Classes="SectionHeader" Content="基本属性"
+                          IsChecked="{Binding IsBasicPropertiesExpanded, Mode=TwoWay}"
+                          AutomationProperties.Name="基本属性" />
+            <StackPanel Margin="12,8,12,12" Spacing="10"
+                        IsVisible="{Binding IsBasicPropertiesExpanded}">
 
-                <StackPanel Spacing="6">
+                <StackPanel Spacing="4">
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="标题" FontSize="12" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Text="标题" Classes="InspectorLabel" />
                         <Button Grid.Column="1"
-                                Classes="Icon"
+                                Classes="Transparent InspectorTool"
                                 IsVisible="{Binding IsAIEnabled}"
                                 IsEnabled="{Binding !IsRefiningTitle}"
                                 ToolTip.Tip="优化标题">
@@ -70,40 +136,29 @@
                             </Button.Flyout>
                         </Button>
                     </Grid>
-                    <TextBox Text="{Binding ArticleTitle}" PlaceholderText="文章标题" />
+                    <TextBox Classes="InspectorInput" Text="{Binding ArticleTitle}" PlaceholderText="文章标题" />
                 </StackPanel>
 
-                <StackPanel Spacing="6">
+                <StackPanel Spacing="4">
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="分类" FontSize="12" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Text="分类" Classes="InspectorLabel" />
                         <Button Grid.Column="1"
-                                Classes="Icon"
+                                Classes="Transparent InspectorTool"
                                 IsVisible="{Binding HasSelectedCategory}"
                                 Command="{Binding ClearCategoryCommand}"
                                 ToolTip.Tip="清除已选分类">
                             <fi:FluentIcon Icon="Dismiss" IconVariant="Regular" FontSize="14" />
                         </Button>
                     </Grid>
-                    <Button Classes="CategorySelector"
+                    <Button Classes="InspectorCategory"
                             IsVisible="{Binding IsLoggedIn}"
                             HorizontalAlignment="Stretch"
                             ToolTip.Tip="{Binding CategorySelectionHint}">
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                            <Border Classes="CategorySelectorIcon">
-                                <fi:FluentIcon Icon="Tag" IconVariant="Regular" FontSize="16"
-                                               Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
-                            </Border>
-                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding CategorySelectionText}"
-                                           FontWeight="SemiBold"
-                                           TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{Binding CategorySelectionHint}"
-                                           FontSize="11"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            </StackPanel>
-                            <fi:FluentIcon Grid.Column="2" Icon="ChevronDown" IconVariant="Regular"
-                                           FontSize="16" VerticalAlignment="Center"
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <TextBlock Text="{Binding CategorySelectionText}" FontSize="12"
+                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            <fi:FluentIcon Grid.Column="1" Icon="ChevronDown" IconVariant="Regular"
+                                           FontSize="14" VerticalAlignment="Center"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                         </Grid>
                         <Button.Flyout>
@@ -112,40 +167,44 @@
                             </Flyout>
                         </Button.Flyout>
                     </Button>
-                    <TextBlock Text="登录后可选择文章分类"
-                               IsVisible="{Binding !IsLoggedIn}"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <Button Content="登录后选择文章分类"
+                            IsVisible="{Binding !IsLoggedIn}"
+                            Command="{Binding RequestLoginCommand}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            Classes="InspectorCategory" />
                 </StackPanel>
 
-                <StackPanel Spacing="6">
+                <StackPanel Spacing="4">
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="摘要" FontSize="12" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Text="摘要" Classes="InspectorLabel" />
                         <Button Grid.Column="1"
-                                Classes="Icon"
+                                Classes="Transparent InspectorTool"
                                 Command="{Binding RegenerateDescriptionCommand}"
                                 IsVisible="{Binding IsAIEnabled}"
                                 ToolTip.Tip="生成摘要">
                             <fi:FluentIcon Icon="Sparkle" IconVariant="Regular" FontSize="16" />
                         </Button>
                     </Grid>
-                    <TextBox Text="{Binding ArticleDescription}"
+                    <TextBox Classes="InspectorInput" Text="{Binding ArticleDescription}"
                              AcceptsReturn="True"
                              TextWrapping="Wrap"
-                             MinHeight="52"
+                             MinHeight="56"
                              MaxHeight="88"
                              PlaceholderText="文章摘要" />
                 </StackPanel>
 
-                <Expander Header="更多属性" HorizontalAlignment="Stretch">
-                <StackPanel Spacing="12">
-                <StackPanel Spacing="6">
+            </StackPanel>
+            <ToggleButton Classes="SectionHeader" Content="高级属性"
+                          IsChecked="{Binding IsAdvancedPropertiesExpanded, Mode=TwoWay}"
+                          AutomationProperties.Name="高级属性" />
+            <StackPanel Spacing="10" Margin="12,8,12,12"
+                        IsVisible="{Binding IsAdvancedPropertiesExpanded}">
+                <StackPanel Spacing="4">
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="关键词" FontSize="12" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Text="关键词" Classes="InspectorLabel" />
                         <Button Grid.Column="1"
-                                Classes="Icon"
+                                Classes="Transparent InspectorTool"
                                 Command="{Binding GenerateKeywordsCommand}"
                                 IsVisible="{Binding IsAIEnabled}"
                                 ToolTip.Tip="生成关键词">
@@ -160,11 +219,10 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="sys:String">
-                                <Border Classes="Chip">
+                                <Border Classes="Chip InspectorChip">
                                     <StackPanel Orientation="Horizontal" Spacing="4">
-                                        <TextBlock Text="{Binding}" VerticalAlignment="Center" />
-                                        <Button Classes="Transparent"
-                                                Padding="2"
+                                        <TextBlock Text="{Binding}" FontSize="11" VerticalAlignment="Center" />
+                                        <Button Classes="Transparent InspectorChipRemove"
                                                 Command="{Binding #InspectorRoot.((vm:PublishViewModel)DataContext).RemoveKeywordCommand}"
                                                 CommandParameter="{Binding}">
                                             <fi:FluentIcon Icon="Dismiss" IconVariant="Regular" FontSize="12" />
@@ -174,7 +232,7 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <TextBox PlaceholderText="添加关键词，按 Enter"
+                    <TextBox Classes="InspectorInput" PlaceholderText="添加关键词，按 Enter"
                              Text="{Binding NewKeywordText}">
                         <TextBox.KeyBindings>
                             <KeyBinding Gesture="Enter" Command="{Binding AddKeywordCommand}" />
@@ -182,22 +240,20 @@
                     </TextBox>
                 </StackPanel>
 
-                <StackPanel Spacing="6">
+                <StackPanel Spacing="4">
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="Slug" FontSize="12" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Text="Slug" Classes="InspectorLabel" />
                         <Button Grid.Column="1"
-                                Classes="Icon"
+                                Classes="Transparent InspectorTool"
                                 Command="{Binding GenerateSlugCommand}"
                                 IsVisible="{Binding IsAIEnabled}"
                                 ToolTip.Tip="生成 Slug">
                             <fi:FluentIcon Icon="Sparkle" IconVariant="Regular" FontSize="16" />
                         </Button>
                     </Grid>
-                    <TextBox Text="{Binding ArticleSlug}" PlaceholderText="url-slug" />
+                    <TextBox Classes="InspectorInput" Text="{Binding ArticleSlug}" PlaceholderText="url-slug" />
                 </StackPanel>
-                </StackPanel>
-                </Expander>
+            </StackPanel>
             </StackPanel>
         </ScrollViewer>
     </DockPanel>

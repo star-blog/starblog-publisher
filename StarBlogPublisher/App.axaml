@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="StarBlogPublisher.App"
              xmlns:local="using:StarBlogPublisher"
+             xmlns:fi="using:FluentIcons.Avalonia.Fluent"
              xmlns:sty="using:FluentAvalonia.Styling"
              RequestedThemeVariant="Light">
 
@@ -31,6 +32,27 @@
         <Style Selector="Button.Compact">
             <Setter Property="Padding" Value="8,4" />
         </Style>
+        <Style Selector="ToggleButton.SectionHeader">
+            <Setter Property="Height" Value="28" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Template"><ControlTemplate>
+                <Border Name="HeaderSurface" Background="Transparent" Padding="{TemplateBinding Padding}" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+                    <Grid ColumnDefinitions="16,*,Auto">
+                        <fi:SymbolIcon Name="Chevron" FontSize="12" Width="12" Height="12"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <ContentPresenter Grid.Column="1" Content="{TemplateBinding Content}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{TemplateBinding Tag}" Opacity="0.5" VerticalAlignment="Center" FontSize="11" />
+                    </Grid>
+                </Border>
+            </ControlTemplate></Setter>
+        </Style>
+        <Style Selector="ToggleButton.SectionHeader /template/ fi|SymbolIcon#Chevron"><Setter Property="Symbol" Value="ChevronRight" /></Style>
+        <Style Selector="ToggleButton.SectionHeader:checked /template/ fi|SymbolIcon#Chevron"><Setter Property="Symbol" Value="ChevronDown" /></Style>
+        <Style Selector="ToggleButton.SectionHeader:pointerover /template/ Border#HeaderSurface"><Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" /></Style>
+        <Style Selector="ToggleButton.SectionHeader:focus-visible /template/ Border#HeaderSurface"><Setter Property="BorderThickness" Value="1" /><Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" /></Style>
         <Style Selector="Button.Icon, ToggleButton.Icon">
             <Setter Property="MinWidth" Value="32" />
             <Setter Property="MinHeight" Value="32" />

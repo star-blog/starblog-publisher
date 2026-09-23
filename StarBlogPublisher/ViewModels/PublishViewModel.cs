@@ -75,6 +75,9 @@ public partial class PublishViewModel : PageViewModelBase {
     [ObservableProperty] private bool _isLoggedIn;
     [ObservableProperty] private MarkdownEditorMode _editorMode = MarkdownEditorMode.Source;
     [ObservableProperty] private bool _isInspectorOpen = true;
+    [ObservableProperty] private bool _isBasicPropertiesExpanded = true;
+    [ObservableProperty] private bool _isAdvancedPropertiesExpanded;
+    [ObservableProperty] private bool _isPublishSectionExpanded = true;
     [ObservableProperty] private double _editorFontSize = 14;
     [ObservableProperty] private bool _editorWordWrap = true;
     [ObservableProperty] private bool _editorShowLineNumbers;

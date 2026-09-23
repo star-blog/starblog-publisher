@@ -9,27 +9,6 @@
              DragDrop.AllowDrop="True">
     <UserControl.Styles>
         <Style Selector="Button.FileRow"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Padding" Value="6,4" /><Setter Property="MinHeight" Value="28" /></Style>
-        <Style Selector="ToggleButton.SectionHeader">
-            <Setter Property="Height" Value="28" />
-            <Setter Property="HorizontalAlignment" Value="Stretch" />
-            <Setter Property="Padding" Value="8,0" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Template"><ControlTemplate>
-                <Border Name="HeaderSurface" Background="Transparent" Padding="{TemplateBinding Padding}" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
-                    <Grid ColumnDefinitions="16,*,Auto">
-                        <fi:SymbolIcon Name="Chevron" FontSize="12" Width="12" Height="12"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        <ContentPresenter Grid.Column="1" Content="{TemplateBinding Content}" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="2" Text="{TemplateBinding Tag}" Opacity="0.5" VerticalAlignment="Center" FontSize="11" />
-                    </Grid>
-                </Border>
-            </ControlTemplate></Setter>
-        </Style>
-        <Style Selector="ToggleButton.SectionHeader /template/ fi|SymbolIcon#Chevron"><Setter Property="Symbol" Value="ChevronRight" /></Style>
-        <Style Selector="ToggleButton.SectionHeader:checked /template/ fi|SymbolIcon#Chevron"><Setter Property="Symbol" Value="ChevronDown" /></Style>
-        <Style Selector="ToggleButton.SectionHeader:pointerover /template/ Border#HeaderSurface"><Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" /></Style>
-        <Style Selector="ToggleButton.SectionHeader:focus-visible /template/ Border#HeaderSurface"><Setter Property="BorderThickness" Value="1" /><Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" /></Style>
         <Style Selector="ListBox.SidebarFiles ListBoxItem">
             <Setter Property="Padding" Value="8,0" />
             <Setter Property="MinHeight" Value="28" />
