@@ -113,7 +113,9 @@ public sealed class WeChatFormattingService {
         var headerStyle = StyleOf(theme, "code_header", string.Empty);
         var headerHtml = string.IsNullOrWhiteSpace(headerStyle)
             ? string.Empty
-            : $"<section style=\"{headerStyle}\"><span style=\"display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:8px;background:#FF5F56\"></span><span style=\"display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:8px;background:#FFBD2E\"></span><span style=\"display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:8px;background:#27C93F\"></span></section>";
+            // Empty decoration spans can disappear when WeChat imports draft HTML.
+            // Visible glyphs do not depend on CSS backgrounds for their presence.
+            : $"<section style=\"{headerStyle}\"><span style=\"color:#FF5F56;font-size:18px;line-height:1;margin-right:6px\">●</span><span style=\"color:#FFBD2E;font-size:18px;line-height:1;margin-right:6px\">●</span><span style=\"color:#27C93F;font-size:18px;line-height:1;margin-right:6px\">●</span></section>";
 
         // Markdown.ColorCode emits a div around its pre element. Collapse that wrapper into
         // our existing WeChat container so the formatter's default background and padding
@@ -128,8 +130,24 @@ public sealed class WeChatFormattingService {
             var content = match.Groups["content"].Success
                 ? match.Groups["content"].Value
                 : match.Groups["fallbackContent"].Value;
-            return $"<section style=\"{containerStyle}\">{headerHtml}<pre{MergeStyle(attributes, preStyle)}>{content}</pre></section>";
+            // The WeChat editor normalizes text nodes in <pre> as ordinary HTML whitespace.
+            // Explicit breaks and nonbreaking spaces survive that normalization, while the
+            // same fragment still renders correctly in the local preview.
+            var codeStyle = $"{preStyle.TrimEnd(';')};white-space:normal";
+            return $"<section style=\"{containerStyle}\">{headerHtml}<pre{MergeStyle(attributes, codeStyle)}>{PreserveCodeWhitespace(content)}</pre></section>";
         }, RegexOptions.Singleline | RegexOptions.IgnoreCase);
+    }
+
+    private static string PreserveCodeWhitespace(string content) {
+        // ColorCode can place syntax spans across lines. Transform only text nodes so
+        // highlighted markup and escaped code characters remain intact.
+        var normalized = content.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').TrimEnd('\n');
+        return Regex.Replace(normalized, @"<[^>]*>|[^<]+", match => {
+            if (match.Value[0] == '<') return match.Value;
+            return match.Value.Replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;", StringComparison.Ordinal)
+                .Replace(" ", "&nbsp;", StringComparison.Ordinal)
+                .Replace("\n", "<br/>", StringComparison.Ordinal);
+        });
     }
 
     private static string StyleInlineCode(string html, WeChatTheme theme) {

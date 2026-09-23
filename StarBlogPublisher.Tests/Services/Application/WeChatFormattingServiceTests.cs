@@ -52,9 +52,9 @@ public class WeChatFormattingServiceTests {
 
         result.Html.Should().Contain("<code style=\"");
         result.Html.Should().Contain("font-family:'SF Mono', Consolas, monospace");
-        result.Html.Should().Contain("value = ");
+        result.Html.Should().Contain("value&nbsp;=&nbsp;");
         result.Html.Should().NotContain("<pre style=\"font-family:Consolas,Menlo,monospace;font-size:0.9em;background:#F1F5F9");
-        System.Text.RegularExpressions.Regex.Matches(result.Html, "background:#FF5F56").Count.Should().Be(1);
+        System.Text.RegularExpressions.Regex.Matches(result.Html, "color:#FF5F56").Count.Should().Be(1);
     }
 
     [Fact]
@@ -78,7 +78,42 @@ public class WeChatFormattingServiceTests {
 
         result.Html.Should().Contain("<pre");
         result.Html.Should().Contain("你好World");
-        result.Html.Should().NotContain("<span style=\"color:");
+        var pre = System.Text.RegularExpressions.Regex.Match(result.Html, @"<pre\b[\s\S]*?</pre>").Value;
+        pre.Should().NotContain("<span style=\"color:");
+    }
+
+    [Theory]
+    [InlineData("text")]
+    [InlineData("csharp")]
+    public void Format_EncodesCodeLinesAndAlignmentForWeChatEditor(string language) {
+        var service = new WeChatFormattingService();
+        var markdown = $"```{language}\nUsage:\n  --help    Show help\n\n  --version Show version\n```";
+
+        var html = service.Format(markdown, "Code sample").Html;
+        var pre = System.Text.RegularExpressions.Regex.Match(html, @"<pre\b[\s\S]*?</pre>").Value;
+
+        pre.Should().Contain("white-space:normal");
+        pre.Should().Contain("<br/>");
+        pre.Should().Contain("&nbsp;&nbsp;--help");
+        pre.Should().Contain("&nbsp;&nbsp;&nbsp;&nbsp;Show");
+        pre.Should().Contain("<br/><br/>");
+        pre.Should().NotContain("--help    Show");
+
+        var uploaded = WeChatDraftPublishApplicationService.MinifyHtmlForWeChatDraft(html);
+        uploaded.Should().Contain("&nbsp;&nbsp;--help");
+        uploaded.Should().Contain("<br/><br/>");
+    }
+
+    [Fact]
+    public void Format_UsesVisibleWindowControlsThatSurviveDraftHtmlMinification() {
+        var service = new WeChatFormattingService();
+        var html = service.Format("```text\ncommand\n```", "Code sample").Html;
+        var uploaded = WeChatDraftPublishApplicationService.MinifyHtmlForWeChatDraft(html);
+
+        uploaded.Should().Contain("color:#FF5F56;font-size:18px;line-height:1;margin-right:6px\">●</span>");
+        uploaded.Should().Contain("color:#FFBD2E;font-size:18px;line-height:1;margin-right:6px\">●</span>");
+        uploaded.Should().Contain("color:#27C93F;font-size:18px;line-height:1;margin-right:6px\">●</span>");
+        uploaded.Should().NotContain("></span>");
     }
 
     [Fact]
