@@ -182,7 +182,7 @@
                                             <Button Grid.Column="1" Content="显示 / 隐藏" Command="{Binding ToggleWeChatApiAuthorizationCommand}"/>
                                         </Grid>
                                     </StackPanel>
-                                    <TextBlock Classes="Hint" Text="填写完整的 Authorization 值，如 Bearer relay-token，加密保存在本机。"/>
+                                    <TextBlock Classes="Hint" Text="填写完整的 Authorization 值；Nginx Basic Auth 填 Basic 加 Base64(用户名:密码)，加密保存在本机。"/>
                                 </StackPanel>
                             </StackPanel>
                         </Expander>

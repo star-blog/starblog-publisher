@@ -147,7 +147,7 @@ public partial class SettingsViewModel {
             string? error = string.IsNullOrWhiteSpace(account.Name) ? "请填写账号名称。"
                 : WeChatAccounts.Count(a => a.Name.Trim() == account.Name.Trim()) > 1 ? "账号名称不能重复。"
                 : !WeChatHttpClientRegistration.TryGetApiBaseAddress(account.ApiBaseUrl, out _) ? "请输入完整的 HTTP 或 HTTPS 中转地址。"
-                : !WeChatHttpClientRegistration.IsValidApiAuthorization(account.ApiAuthorization) ? "请填写完整的认证值，例如 Bearer relay-token。" : null;
+                : !WeChatHttpClientRegistration.IsValidApiAuthorization(account.ApiAuthorization) ? "请填写完整的 Authorization 值，例如 Basic base64(用户名:密码)。" : null;
             if (error == null) continue;
             CurrentWeChatAccount = account;
             IsWeChatAdvancedExpanded = true;

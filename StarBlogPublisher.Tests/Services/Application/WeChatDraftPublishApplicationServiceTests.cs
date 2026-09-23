@@ -191,6 +191,29 @@ public class WeChatDraftPublishApplicationServiceTests {
         result.ErrorMessage.Should().Contain("封面");
     }
 
+    [Fact]
+    public async Task PublishAsync_ReportsRelayAuthenticationFailureForHtml401() {
+        var coverPath = Path.Combine(Path.GetTempPath(), $"starblog-cover-{Guid.NewGuid():N}.jpg");
+        await File.WriteAllBytesAsync(coverPath, [0xFF, 0xD8, 0xFF, 0xD9]);
+        try {
+            var handler = new SequencingHandler([
+                (HttpMethod.Get, "cgi-bin/token", "<html>401 Authorization Required</html>")
+            ], HttpStatusCode.Unauthorized);
+            var service = CreateService(handler, out var settings);
+            settings.WeChatAppId = $"app-auth-{Guid.NewGuid():N}";
+            settings.WeChatAppSecret = "secret";
+
+            var result = await service.PublishAsync(FormatResult("<p>x</p>"), Path.GetTempPath(), "summary", coverPath);
+
+            result.Success.Should().BeFalse();
+            result.ErrorMessage.Should().Contain("中转服务认证失败（HTTP 401）");
+            result.ErrorMessage.Should().Contain("Basic");
+        }
+        finally {
+            File.Delete(coverPath);
+        }
+    }
+
     private static WeChatFormatResult FormatResult(string html, string title = "Hello") => new() {
         Title = title,
         Html = html,
@@ -219,10 +242,13 @@ public class WeChatDraftPublishApplicationServiceTests {
 
     private sealed class SequencingHandler : HttpMessageHandler {
         private readonly Queue<(HttpMethod Method, string PathContains, string ResponseJson)> _responses;
+        private readonly HttpStatusCode _responseStatus;
         public List<CapturedRequest> Requests { get; } = [];
 
-        public SequencingHandler(IEnumerable<(HttpMethod Method, string PathContains, string ResponseJson)> responses) {
+        public SequencingHandler(IEnumerable<(HttpMethod Method, string PathContains, string ResponseJson)> responses,
+            HttpStatusCode responseStatus = HttpStatusCode.OK) {
             _responses = new Queue<(HttpMethod Method, string PathContains, string ResponseJson)>(responses);
+            _responseStatus = responseStatus;
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(
@@ -245,8 +271,9 @@ public class WeChatDraftPublishApplicationServiceTests {
                     $"Expected {expected.Method} containing '{expected.PathContains}', got {request.Method} {request.RequestUri}");
             }
 
-            return new HttpResponseMessage(HttpStatusCode.OK) {
-                Content = new StringContent(expected.ResponseJson, Encoding.UTF8, "application/json")
+            return new HttpResponseMessage(_responseStatus) {
+                Content = new StringContent(expected.ResponseJson, Encoding.UTF8,
+                    _responseStatus == HttpStatusCode.OK ? "application/json" : "text/html")
             };
         }
     }

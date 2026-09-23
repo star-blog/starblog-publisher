@@ -387,6 +387,9 @@ public sealed class WeChatDraftPublishApplicationService {
             return JsonDocument.Parse(text);
         }
         catch (JsonException) {
+            if (response.StatusCode == HttpStatusCode.Unauthorized) {
+                throw new InvalidOperationException("中转服务认证失败（HTTP 401）。请检查中转认证是否与服务器配置一致；Nginx auth_basic 需要填写 Basic 加 Base64(username:password)。");
+            }
             throw new InvalidOperationException($"微信公众号接口返回了无效响应（HTTP {(int)response.StatusCode}）");
         }
     }
