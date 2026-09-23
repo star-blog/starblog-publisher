@@ -27,8 +27,9 @@
         </Style>
         <Style Selector="ComboBox.InspectorInput">
             <Setter Property="MinHeight" Value="28" />
-            <Setter Property="Padding" Value="8,3" />
+            <Setter Property="Padding" Value="8,0" />
             <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
         <Style Selector="Button.InspectorAction">
             <Setter Property="MinHeight" Value="28" />
