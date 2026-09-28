@@ -36,7 +36,6 @@ public partial class SettingsViewModel : PageViewModelBase {
     [ObservableProperty] private string _username = string.Empty;
     [ObservableProperty] private string _password = string.Empty;
     [ObservableProperty] private int _backendTimeout;
-    [ObservableProperty] private bool _showPassword;
     [ObservableProperty] private bool _enableRegexImageParsing;
     [ObservableProperty] private string _weChatAccountName = string.Empty;
     [ObservableProperty] private string _weChatAppId = string.Empty;
@@ -45,8 +44,6 @@ public partial class SettingsViewModel : PageViewModelBase {
     [ObservableProperty] private string _weChatAppSecret = string.Empty;
     [ObservableProperty] private string _weChatAuthor = string.Empty;
     [ObservableProperty] private string _weChatDefaultTheme = "newspaper";
-    [ObservableProperty] private bool _showWeChatAppSecret;
-    [ObservableProperty] private bool _showWeChatApiAuthorization;
     [ObservableProperty] private ObservableCollection<WeChatAccountProfile> _weChatAccounts = new();
     [ObservableProperty] private WeChatAccountProfile? _currentWeChatAccount;
     [ObservableProperty]
@@ -76,7 +73,6 @@ public partial class SettingsViewModel : PageViewModelBase {
     [ObservableProperty] private string _AIKey = string.Empty;
     [ObservableProperty] private string _AIModel = string.Empty;
     [ObservableProperty] private string _AIApiBase = string.Empty;
-    [ObservableProperty] private bool _showAIKey;
     [ObservableProperty] private bool _isLoadingModels;
     [ObservableProperty] private Vector _settingsScrollOffset;
     [ObservableProperty] private ObservableCollection<AIModelDescriptor> _availableModels = new();
@@ -278,15 +274,6 @@ public partial class SettingsViewModel : PageViewModelBase {
     }
 
     [RelayCommand]
-    private void TogglePassword() => ShowPassword = !ShowPassword;
-
-    [RelayCommand]
-    private void ToggleWeChatAppSecret() => ShowWeChatAppSecret = !ShowWeChatAppSecret;
-
-    [RelayCommand]
-    private void ToggleWeChatApiAuthorization() => ShowWeChatApiAuthorization = !ShowWeChatApiAuthorization;
-
-    [RelayCommand]
     private async Task AddWeChatAccount() {
         var name = await GuiHost.PromptAsync("添加公众号账号", "新公众号", "请输入用于区分此公众号的名称");
         if (string.IsNullOrWhiteSpace(name)) return;
@@ -316,9 +303,6 @@ public partial class SettingsViewModel : PageViewModelBase {
         WeChatAccounts.Remove(CurrentWeChatAccount);
         CurrentWeChatAccount = WeChatAccounts[Math.Min(index, WeChatAccounts.Count - 1)];
     }
-
-    [RelayCommand]
-    private void ToggleAIKey() => ShowAIKey = !ShowAIKey;
 
     partial void OnThemeModeChanged(AppThemeMode value) {
         if (_syncingTheme) return;

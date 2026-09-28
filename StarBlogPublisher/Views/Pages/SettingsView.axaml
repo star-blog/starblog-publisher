@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:StarBlogPublisher.ViewModels" xmlns:converters="clr-namespace:StarBlogPublisher.Converters" xmlns:ui="using:FluentAvalonia.UI.Controls" xmlns:controls="using:StarBlogPublisher.Views.Controls" x:Class="StarBlogPublisher.Views.SettingsView" x:DataType="vm:SettingsViewModel">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:StarBlogPublisher.ViewModels" xmlns:fi="using:FluentIcons.Avalonia.Fluent" xmlns:ui="using:FluentAvalonia.UI.Controls" xmlns:controls="using:StarBlogPublisher.Views.Controls" x:Class="StarBlogPublisher.Views.SettingsView" x:DataType="vm:SettingsViewModel">
     <UserControl.Styles>
         <Style Selector="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap"/>
@@ -27,6 +27,54 @@
         </Style>
         <Style Selector="TextBox">
             <Setter Property="MinWidth" Value="0"/>
+        </Style>
+        <Style Selector="ToggleButton.SecretReveal">
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="MinWidth" Value="28"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Margin" Value="0,0,4,0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="ToolTip.Tip" Value="显示"/>
+            <Setter Property="AutomationProperties.Name" Value="显示"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="RevealSurface" Background="Transparent" CornerRadius="4">
+                        <fi:SymbolIcon Name="RevealGlyph" FontSize="16"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       AutomationProperties.AccessibilityView="Raw"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="ToggleButton.SecretReveal /template/ fi|SymbolIcon#RevealGlyph">
+            <Setter Property="Symbol" Value="Eye"/>
+        </Style>
+        <Style Selector="ToggleButton.SecretReveal:checked">
+            <Setter Property="ToolTip.Tip" Value="隐藏"/>
+            <Setter Property="AutomationProperties.Name" Value="隐藏"/>
+        </Style>
+        <Style Selector="ToggleButton.SecretReveal:checked /template/ fi|SymbolIcon#RevealGlyph">
+            <Setter Property="Symbol" Value="EyeOff"/>
+        </Style>
+        <Style Selector="ToggleButton.SecretReveal:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+        <Style Selector="ToggleButton.SecretReveal:pointerover /template/ Border#RevealSurface">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}"/>
+        </Style>
+        <Style Selector="ToggleButton.SecretReveal:pressed /template/ Border#RevealSurface">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}"/>
+        </Style>
+        <Style Selector="TextBox:empty ToggleButton.SecretReveal">
+            <Setter Property="IsVisible" Value="False"/>
         </Style>
         <Style Selector="Expander">
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
@@ -101,10 +149,11 @@
                         </StackPanel>
                         <StackPanel Classes="Field">
                             <TextBlock Text="密码"/>
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                <TextBox Text="{Binding Password}" PasswordChar="{Binding ShowPassword, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"/>
-                                <Button Grid.Column="1" Content="显示 / 隐藏" Command="{Binding TogglePasswordCommand}"/>
-                            </Grid>
+                            <TextBox Text="{Binding Password}" PasswordChar="*">
+                                <TextBox.InnerRightContent>
+                                    <ToggleButton Classes="SecretReveal" IsChecked="{Binding $parent[TextBox].RevealPassword, Mode=TwoWay}"/>
+                                </TextBox.InnerRightContent>
+                            </TextBox>
                         </StackPanel>
                         <Expander Header="高级连接设置">
                             <StackPanel Classes="Form" Margin="0,12">
@@ -145,10 +194,11 @@
                         </StackPanel>
                         <StackPanel Classes="Field">
                             <TextBlock Text="AppSecret"/>
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                <TextBox Text="{Binding WeChatAppSecret}" PasswordChar="{Binding ShowWeChatAppSecret, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"/>
-                                <Button Grid.Column="1" Content="显示 / 隐藏" Command="{Binding ToggleWeChatAppSecretCommand}"/>
-                            </Grid>
+                            <TextBox Text="{Binding WeChatAppSecret}" PasswordChar="*">
+                                <TextBox.InnerRightContent>
+                                    <ToggleButton Classes="SecretReveal" IsChecked="{Binding $parent[TextBox].RevealPassword, Mode=TwoWay}"/>
+                                </TextBox.InnerRightContent>
+                            </TextBox>
                         </StackPanel>
                         <TextBlock Classes="Hint" Text="密钥加密保存在本机。"/>
                         <Border Classes="Rule"/>
@@ -177,10 +227,11 @@
                                     <TextBlock Classes="Hint" Text="使用固定 IP 的中转服务，需转发 /cgi-bin 路径。"/>
                                     <StackPanel Classes="Field">
                                         <TextBlock Text="中转认证（可选）"/>
-                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                            <TextBox Text="{Binding WeChatApiAuthorization}" DataValidationErrors.Errors="{Binding RelayAuthErrors}" PasswordChar="{Binding ShowWeChatApiAuthorization, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"/>
-                                            <Button Grid.Column="1" Content="显示 / 隐藏" Command="{Binding ToggleWeChatApiAuthorizationCommand}"/>
-                                        </Grid>
+                                        <TextBox Text="{Binding WeChatApiAuthorization}" DataValidationErrors.Errors="{Binding RelayAuthErrors}" PasswordChar="*">
+                                            <TextBox.InnerRightContent>
+                                                <ToggleButton Classes="SecretReveal" IsChecked="{Binding $parent[TextBox].RevealPassword, Mode=TwoWay}"/>
+                                            </TextBox.InnerRightContent>
+                                        </TextBox>
                                     </StackPanel>
                                     <TextBlock Classes="Hint" Text="填写完整的 Authorization 值；Nginx Basic Auth 填 Basic 加 Base64(用户名:密码)，加密保存在本机。"/>
                                 </StackPanel>
@@ -222,10 +273,11 @@
                         </StackPanel>
                         <StackPanel Classes="Field">
                             <TextBlock Text="API Key"/>
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                <TextBox Text="{Binding AIKey}" PasswordChar="{Binding ShowAIKey, Converter={x:Static converters:BooleanToCharConverter.Instance}, ConverterParameter=*}"/>
-                                <Button Grid.Column="1" Content="显示 / 隐藏" Command="{Binding ToggleAIKeyCommand}"/>
-                            </Grid>
+                            <TextBox Text="{Binding AIKey}" PasswordChar="*">
+                                <TextBox.InnerRightContent>
+                                    <ToggleButton Classes="SecretReveal" IsChecked="{Binding $parent[TextBox].RevealPassword, Mode=TwoWay}"/>
+                                </TextBox.InnerRightContent>
+                            </TextBox>
                         </StackPanel>
                         <Button Content="获取模型" Command="{Binding RefreshModelsCommand}"/>
                         <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoadingModels}" Height="3"/>
