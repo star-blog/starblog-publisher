@@ -124,6 +124,15 @@ public class AIProviderInfo
             DefaultModels = ["MiniMax-M2.7", "MiniMax-M2.7-highspeed", "MiniMax-M2.5", "MiniMax-M2.5-highspeed", "MiniMax-M2.1", "MiniMax-M2"]
         },
 
+        // https://mimo.mi.com/docs/zh-CN/quick-start/summary/first-api-call
+        // https://mimo.mi.com/docs/zh-CN/quick-start/summary/model
+        new AIProviderInfo {
+            Name = "mimo", DisplayName = "小米 MiMo",
+            Description = "小米 MiMo 系列，原生全模态模型，适合中文写作、推理和长上下文任务",
+            DefaultApiBase = "https://api.xiaomimimo.com/v1", DefaultModel = "mimo-v2.6-flash",
+            DefaultModels = ["mimo-v2.6-pro", "mimo-v2.6-flash", "mimo-v2.6-pro-ultraspeed"]
+        },
+
         // https://cloud.tencent.com/document/product/1729/111007
         new AIProviderInfo {
             Name = "hunyuan", DisplayName = "腾讯混元",
