@@ -1,5 +1,7 @@
+using System.Reflection;
 using FluentAssertions;
 using Moq;
+using StarBlogPublisher.Services;
 using StarBlogPublisher.ViewModels;
 
 namespace StarBlogPublisher.Tests.Gui.ViewModels;
@@ -56,6 +58,50 @@ public class WeChatViewModelTests {
 
         viewModel.IsInspectorOpen.Should().BeTrue();
         viewModel.InspectorPaneWidth.Should().Be(320);
+    }
+
+    [Fact]
+    public void SectionExpansion_UsesCompactSidebarDefaults() {
+        var viewModel = CreateViewModel();
+
+        viewModel.IsThemeSectionExpanded.Should().BeTrue();
+        viewModel.IsBasicSectionExpanded.Should().BeTrue();
+        viewModel.IsCoverSectionExpanded.Should().BeTrue();
+        viewModel.IsSourceSectionExpanded.Should().BeFalse();
+        viewModel.IsHtmlSectionExpanded.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ArticleTitle_IsClampedToWeChatLimit() {
+        var viewModel = CreateViewModel();
+
+        viewModel.ArticleTitle = new string('题', 80);
+
+        viewModel.ArticleTitle.Should().HaveLength(64);
+        viewModel.TitleCounterText.Should().Be("64/64");
+    }
+
+    [Fact]
+    public void GenerateFormat_PreservesAnEditedTitle() {
+        var viewModel = CreateViewModel();
+        var previousTheme = AppSettings.Instance.WeChatDefaultTheme;
+        try {
+            viewModel.GetType().GetField("_markdown", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(viewModel, "# 原文标题\n\n正文内容");
+            viewModel.HasArticle = true;
+
+            viewModel.GenerateFormatCommand.Execute(null);
+            viewModel.ArticleTitle.Should().Be("原文标题");
+
+            viewModel.ArticleTitle = "自定义标题";
+            viewModel.GenerateFormatCommand.Execute(null);
+
+            viewModel.ArticleTitle.Should().Be("自定义标题");
+            viewModel.FormattedHtml.Should().NotBeNullOrWhiteSpace();
+        }
+        finally {
+            AppSettings.Instance.WeChatDefaultTheme = previousTheme;
+        }
     }
 
     [Fact]

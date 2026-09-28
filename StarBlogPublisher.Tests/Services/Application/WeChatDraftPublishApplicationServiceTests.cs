@@ -39,6 +39,16 @@ public class WeChatDraftPublishApplicationServiceTests {
     }
 
     [Fact]
+    public void TruncateTitle_CapsAt64Characters() {
+        var longTitle = new string('题', 80);
+
+        var truncated = WeChatDraftPublishApplicationService.TruncateTitle(longTitle);
+
+        truncated.Should().HaveLength(WeChatDraftPublishApplicationService.MaxTitleLength);
+        truncated.Should().Be(new string('题', 64));
+    }
+
+    [Fact]
     public void TruncateDigest_CapsAt120Characters() {
         var longDigest = new string('摘', 150);
 
