@@ -21,6 +21,8 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
     private readonly Action<PreparedWeChatCover> _applyToWeChat;
     private readonly object _gate = new();
     private CancellationTokenSource? _renderCts;
+    private CancellationTokenSource? _randomCts;
+    private int _randomRequest;
     private byte[]? _background;
     private string? _unappliedPath;
     private string? _previewFile;
@@ -52,8 +54,7 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
     [ObservableProperty] private RandomCoverProvider? _selectedRandomCoverProvider;
     [ObservableProperty] private string _backgroundDescription = "尚未选择背景，将使用深色底";
     [ObservableProperty] private string _statusMessage = "选择背景并确认标题";
-    [ObservableProperty] private string _busyMessage = "正在准备封面…";
-    [ObservableProperty] private bool _isLoadingBackground;
+    [ObservableProperty] private bool _isFetchingRandomBackground;
     [ObservableProperty] private string _outputPath = "";
     [ObservableProperty] private int _effectiveFontSize;
     [ObservableProperty] private Bitmap? _preview;
@@ -91,13 +92,14 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
         if (_started) return;
         _started = true;
         _ready = true;
+        _ = RenderNowAsync();
         _ = PickRandomBackground();
     }
 
     [RelayCommand]
     private async Task SelectLocalBackground() {
         var storage = GuiHost.GetTopLevel()?.StorageProvider;
-        if (storage == null || IsLoadingBackground) return;
+        if (storage == null) return;
 
         var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions {
             Title = "选择封面背景",
@@ -108,8 +110,6 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
         });
         if (files.Count == 0) return;
 
-        IsLoadingBackground = true;
-        BusyMessage = "正在读取本地图片…";
         string? failure = null;
         try {
             await using var stream = await files[0].OpenReadAsync();
@@ -119,6 +119,7 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
                 throw new InvalidOperationException("本地图片不能超过 10 MB");
             }
 
+            CancelRandomFetch();
             _background = buffer.ToArray();
             BackgroundDescription = $"本地图片 · {files[0].Name}";
         }
@@ -127,46 +128,53 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
             GuiHost.ToastError("读取图片失败", ex.Message);
         }
 
-        try {
-            if (failure == null || string.IsNullOrWhiteSpace(OutputPath)) await RenderNowAsync();
-        }
-        finally {
-            IsLoadingBackground = false;
-        }
-
+        if (failure == null || string.IsNullOrWhiteSpace(OutputPath)) await RenderNowAsync();
         if (failure != null) StatusMessage = failure;
     }
 
     [RelayCommand]
     private async Task PickRandomBackground() {
-        if (IsLoadingBackground) return;
         var provider = SelectedRandomCoverProvider;
-        if (provider == null) return;
+        if (provider == null || _disposed == 1) return;
 
-        IsLoadingBackground = true;
-        BusyMessage = "正在获取随机背景…";
-        string? failure = null;
+        int request;
+        CancellationToken token;
+        lock (_gate) {
+            request = Interlocked.Increment(ref _randomRequest);
+            _randomCts?.Cancel();
+            _randomCts?.Dispose();
+            _randomCts = new CancellationTokenSource();
+            token = _randomCts.Token;
+        }
+
+        IsFetchingRandomBackground = true;
+        StatusMessage = "正在获取随机背景…";
         try {
             var uri = provider.CreateUri(
                 CoverSafeZone.CanvasWidth,
                 CoverSafeZone.CanvasHeight,
                 DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-            _background = await DownloadAsync(uri);
-            BackgroundDescription = $"随机图片 · {provider.Name}";
+            var bytes = await DownloadAsync(uri, token);
+            lock (_gate) {
+                if (request != _randomRequest || _disposed == 1) return;
+                _background = bytes;
+                BackgroundDescription = $"随机图片 · {provider.Name}";
+            }
+
+            await RenderNowAsync();
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) {
         }
         catch (Exception ex) {
-            failure = $"获取随机背景失败: {ex.Message}";
+            if (!IsCurrentRandomRequest(request)) return;
+            if (string.IsNullOrWhiteSpace(OutputPath)) await RenderNowAsync();
+            if (!IsCurrentRandomRequest(request)) return;
+            StatusMessage = $"获取随机背景失败: {ex.Message}";
             GuiHost.ToastError("获取随机背景失败", ex.Message);
         }
-
-        try {
-            if (failure == null || string.IsNullOrWhiteSpace(OutputPath)) await RenderNowAsync();
-        }
         finally {
-            IsLoadingBackground = false;
+            if (IsCurrentRandomRequest(request)) IsFetchingRandomBackground = false;
         }
-
-        if (failure != null) StatusMessage = failure;
     }
 
     [RelayCommand]
@@ -238,6 +246,7 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
 
     public void Dispose() {
         if (Interlocked.Exchange(ref _disposed, 1) == 1) return;
+        CancelRandomFetch();
         _renderCts?.Cancel();
         _renderCts?.Dispose();
         _renderCts = null;
@@ -413,20 +422,34 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
         Scrim = ShowScrim
     };
 
-    private async Task<byte[]> DownloadAsync(Uri uri) {
+    private bool IsCurrentRandomRequest(int request) =>
+        request == Volatile.Read(ref _randomRequest) && Volatile.Read(ref _disposed) == 0;
+
+    private void CancelRandomFetch() {
+        lock (_gate) {
+            Interlocked.Increment(ref _randomRequest);
+            _randomCts?.Cancel();
+            _randomCts?.Dispose();
+            _randomCts = null;
+        }
+
+        IsFetchingRandomBackground = false;
+    }
+
+    private async Task<byte[]> DownloadAsync(Uri uri, CancellationToken cancellationToken) {
         using var client = _httpClientFactory.CreateClient(WeChatHttpClientRegistration.ImageDownloadClientName);
-        using var response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+        using var response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
         if (response.Content.Headers.ContentLength is > MaxImageBytes) {
             throw new InvalidOperationException("在线图片不能超过 10 MB");
         }
 
-        await using var input = await response.Content.ReadAsStreamAsync();
+        await using var input = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var bounded = new MemoryStream();
         var buffer = new byte[81920];
         var total = 0;
         int read;
-        while ((read = await input.ReadAsync(buffer)) > 0) {
+        while ((read = await input.ReadAsync(buffer, cancellationToken)) > 0) {
             total += read;
             if (total > MaxImageBytes) throw new InvalidOperationException("在线图片不能超过 10 MB");
             bounded.Write(buffer, 0, read);

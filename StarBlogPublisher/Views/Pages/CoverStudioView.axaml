@@ -4,7 +4,6 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:fi="using:FluentIcons.Avalonia.Fluent"
-             xmlns:controls="using:StarBlogPublisher.Views.Controls"
              mc:Ignorable="d" d:DesignWidth="980" d:DesignHeight="680"
              x:Class="StarBlogPublisher.Views.CoverStudioView"
              x:DataType="vm:CoverStudioViewModel">
@@ -60,6 +59,11 @@
                             <fi:FluentIcon Icon="Image" IconVariant="Regular" FontSize="28" HorizontalAlignment="Center" />
                             <TextBlock Text="封面预览会出现在这里" FontSize="12" HorizontalAlignment="Center" />
                         </StackPanel>
+                        <Border IsVisible="{Binding IsFetchingRandomBackground}"
+                                HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                                Margin="0,0,0,12" Padding="10,4" CornerRadius="4" Background="#CC000000">
+                            <TextBlock Text="正在获取随机背景…" FontSize="12" Foreground="White" />
+                        </Border>
                     </Panel>
                 </Border>
             </Grid>
@@ -72,8 +76,7 @@
                 <StackPanel Spacing="14">
                     <StackPanel Spacing="8">
                         <TextBlock Text="背景" FontWeight="SemiBold" />
-                        <Button Command="{Binding SelectLocalBackgroundCommand}"
-                                IsEnabled="{Binding !IsLoadingBackground}" HorizontalAlignment="Stretch">
+                        <Button Command="{Binding SelectLocalBackgroundCommand}" HorizontalAlignment="Stretch">
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
                                 <fi:FluentIcon Icon="FolderOpen" IconVariant="Regular" FontSize="16" />
                                 <TextBlock Text="选择本地图片" />
@@ -83,9 +86,9 @@
                             <ComboBox Classes="InspectorInput" ItemsSource="{Binding RandomCoverProviders}"
                                       SelectedItem="{Binding SelectedRandomCoverProvider}"
                                       DisplayMemberBinding="{Binding Name}"
-                                      IsEnabled="{Binding !IsLoadingBackground}" HorizontalAlignment="Stretch" />
+                                      HorizontalAlignment="Stretch" />
                             <Button Grid.Column="1" Command="{Binding PickRandomBackgroundCommand}"
-                                    IsEnabled="{Binding !IsLoadingBackground}" Classes="Compact" MinHeight="32">
+                                    Classes="Compact" MinHeight="32">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5">
                                     <fi:FluentIcon Icon="ArrowShuffle" IconVariant="Regular" FontSize="15" />
                                     <TextBlock Text="换一张" />
@@ -203,6 +206,5 @@
             </ScrollViewer>
             </Border>
         </Grid>
-        <controls:BusyOverlay IsBusy="{Binding IsLoadingBackground}" Message="{Binding BusyMessage}" ZIndex="2" />
     </Panel>
 </UserControl>
