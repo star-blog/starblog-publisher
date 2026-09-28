@@ -28,6 +28,8 @@ public partial class WeChatViewModel : PageViewModelBase {
     private string _markdown = string.Empty;
     private string _sourceFilePath = string.Empty;
     private string _previewPath = string.Empty;
+    private bool _suppressTitleCustomization;
+    private bool _titleCustomized;
 
     public WeChatViewModel(IHttpClientFactory httpClientFactory) : base("公众号排版", Icon.Mail) {
         _publishService = new WeChatDraftPublishApplicationService(httpClientFactory);
@@ -79,11 +81,18 @@ public partial class WeChatViewModel : PageViewModelBase {
     [ObservableProperty] private int _wordCount;
     [ObservableProperty] private bool _hasArticle;
     [ObservableProperty] private bool _isInspectorOpen = true;
+    [ObservableProperty] private bool _isThemeSectionExpanded = true;
+    [ObservableProperty] private bool _isBasicSectionExpanded = true;
+    [ObservableProperty] private bool _isCoverSectionExpanded = true;
+    [ObservableProperty] private bool _isSourceSectionExpanded;
+    [ObservableProperty] private bool _isHtmlSectionExpanded;
 
     public bool HasDraftMediaId => !string.IsNullOrWhiteSpace(DraftMediaId);
     public bool HasWeChatAccounts => WeChatAccounts.Count > 0;
     public bool HasFormattedHtml => !string.IsNullOrWhiteSpace(FormattedHtml);
     public bool HasCover => !string.IsNullOrWhiteSpace(CoverPath);
+    public int TitleMaxLength => WeChatDraftPublishApplicationService.MaxTitleLength;
+    public string TitleCounterText => $"{ArticleTitle?.Length ?? 0}/{TitleMaxLength}";
     public int DigestMaxLength => WeChatDraftPublishApplicationService.MaxDigestLength;
     public int DigestRemainingLength => Math.Max(0, DigestMaxLength - (Digest?.Length ?? 0));
     public string DigestCounterText => $"{Digest?.Length ?? 0}/{DigestMaxLength}";
@@ -116,7 +125,8 @@ public partial class WeChatViewModel : PageViewModelBase {
         _markdown = usesPublishedMarkdown ? publishedMarkdown! : publish.ArticleContent;
         _sourceFilePath = publish.CurrentFilePath;
         Digest = WeChatDraftPublishApplicationService.TruncateDigest(publish.ArticleDescription);
-        ArticleTitle = publish.ArticleTitle;
+        _titleCustomized = false;
+        ApplySyncedTitle(publish.ArticleTitle);
         MarkdownSourceMessage = usesPublishedMarkdown
             ? "当前使用 StarBlog 发布后返回的 Markdown；其中的图片链接已替换为博客 URL，上传草稿时会再转存到微信 CDN。"
             : "当前使用本地 Markdown；文章尚未在 StarBlog 发布，正文图片会在上传草稿时直接转存到微信 CDN。";
@@ -134,6 +144,16 @@ public partial class WeChatViewModel : PageViewModelBase {
         if (settings.CurrentWeChatAccountId == value.Id) return;
         settings.CurrentWeChatAccountId = value.Id;
         settings.Save();
+    }
+
+    partial void OnArticleTitleChanged(string value) {
+        if (value.Length > TitleMaxLength) {
+            ArticleTitle = WeChatDraftPublishApplicationService.TruncateTitle(value);
+            return;
+        }
+
+        if (!_suppressTitleCustomization) _titleCustomized = true;
+        OnPropertyChanged(nameof(TitleCounterText));
     }
 
     partial void OnDigestChanged(string value) {
@@ -209,7 +229,7 @@ public partial class WeChatViewModel : PageViewModelBase {
 
         try {
             var result = _formattingService.Format(_markdown, ArticleTitle, SelectedTheme.Id);
-            ArticleTitle = result.Title;
+            if (!_titleCustomized) ApplySyncedTitle(result.Title);
             WordCount = result.WordCount;
             FormattedHtml = result.Html;
             RefreshPreview();
@@ -325,6 +345,11 @@ public partial class WeChatViewModel : PageViewModelBase {
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(ArticleTitle)) {
+            StatusMessage = "请填写公众号标题";
+            return;
+        }
+
         var currentTheme = SelectedTheme;
         if (currentTheme == null) return;
         var account = SelectedWeChatAccount;
@@ -382,6 +407,12 @@ public partial class WeChatViewModel : PageViewModelBase {
         await clipboard.SetTextAsync(content);
         StatusMessage = successMessage;
         GuiHost.ToastSuccess("已复制", successMessage);
+    }
+
+    private void ApplySyncedTitle(string title) {
+        _suppressTitleCustomization = true;
+        ArticleTitle = title;
+        _suppressTitleCustomization = false;
     }
 
     private int CoverWidth => SelectedCoverSize?.Width ?? 900;

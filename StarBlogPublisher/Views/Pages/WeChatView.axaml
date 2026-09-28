@@ -9,6 +9,29 @@
              mc:Ignorable="d"
              x:Class="StarBlogPublisher.Views.WeChatView"
              x:DataType="vm:WeChatViewModel">
+    <UserControl.Styles>
+        <Style Selector="TextBlock.InspectorLabel">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="TextBox.InspectorInput">
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="ComboBox.InspectorInput">
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="controls|WeChatThemePicker ComboBox">
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+    </UserControl.Styles>
     <Panel>
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10"
                     IsVisible="{Binding !HasArticle}">
@@ -64,13 +87,14 @@
                                 </Grid>
                             </Border>
 
-                            <Border DockPanel.Dock="Bottom" Classes="InspectorActions">
+                            <Border DockPanel.Dock="Bottom" Classes="InspectorActions" BorderThickness="0,1,0,0">
                                 <StackPanel Spacing="6">
-                                    <ComboBox ItemsSource="{Binding WeChatAccounts}"
+                                    <ComboBox Classes="InspectorInput" ItemsSource="{Binding WeChatAccounts}"
                                               SelectedItem="{Binding SelectedWeChatAccount}"
                                               DisplayMemberBinding="{Binding DisplayName}"
                                               IsEnabled="{Binding HasWeChatAccounts}"
-                                              PlaceholderText="选择公众号账号" />
+                                              PlaceholderText="选择公众号账号"
+                                              HorizontalAlignment="Stretch" />
                                     <Button Command="{Binding UploadDraftCommand}" IsEnabled="{Binding !IsPublishing}" Classes="Accent"
                                             HorizontalAlignment="Stretch">
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
@@ -82,11 +106,12 @@
                             </Border>
 
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-                                <StackPanel Margin="16,12" Spacing="14">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="排版" FontSize="12" FontWeight="SemiBold"
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                        <TextBlock Text="主题" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                <StackPanel>
+                                    <ToggleButton Classes="SectionHeader" Content="排版"
+                                                  IsChecked="{Binding IsThemeSectionExpanded, Mode=TwoWay}"
+                                                  AutomationProperties.Name="排版" />
+                                    <StackPanel Margin="12,8,12,12" Spacing="8"
+                                                IsVisible="{Binding IsThemeSectionExpanded}">
                                         <controls:WeChatThemePicker SelectedTheme="{Binding SelectedTheme}" />
                                         <TextBlock Text="{Binding SelectedTheme.Description}" FontSize="11" TextWrapping="Wrap"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
@@ -94,28 +119,48 @@
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
 
-                                    <StackPanel Spacing="6">
-                                        <Grid ColumnDefinitions="*,Auto">
-                                            <TextBlock Text="摘要" FontSize="12" FontWeight="SemiBold"
+                                    <ToggleButton Classes="SectionHeader" Content="基本属性"
+                                                  IsChecked="{Binding IsBasicSectionExpanded, Mode=TwoWay}"
+                                                  AutomationProperties.Name="基本属性" />
+                                    <StackPanel Margin="12,8,12,12" Spacing="10"
+                                                IsVisible="{Binding IsBasicSectionExpanded}">
+                                        <StackPanel Spacing="4">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Text="标题" Classes="InspectorLabel" />
+                                                <TextBlock Grid.Column="1" Text="{Binding TitleCounterText}" FontSize="11"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                            </Grid>
+                                            <TextBox Classes="InspectorInput" Text="{Binding ArticleTitle}"
+                                                     PlaceholderText="公众号标题"
+                                                     MaxLength="{Binding TitleMaxLength}" />
+                                            <TextBlock Text="用于公众号草稿标题，最多 64 字。同步时优先采用 Markdown 的 title 或一级标题。"
+                                                       FontSize="11" TextWrapping="Wrap"
                                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                            <TextBlock Grid.Column="1" Text="{Binding DigestCounterText}" FontSize="11"
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Text="摘要" Classes="InspectorLabel" />
+                                                <TextBlock Grid.Column="1" Text="{Binding DigestCounterText}" FontSize="11"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                            </Grid>
+                                            <TextBox Classes="InspectorInput" Text="{Binding Digest}"
+                                                     PlaceholderText="用于公众号草稿摘要，最多 120 字"
+                                                     AcceptsReturn="True"
+                                                     TextWrapping="Wrap"
+                                                     MaxLength="{Binding DigestMaxLength}"
+                                                     MinHeight="72"
+                                                     MaxHeight="120" />
+                                            <TextBlock Text="独立于 StarBlog 文章摘要；从发布页同步时会自动带入并截断到 120 字。"
+                                                       FontSize="11" TextWrapping="Wrap"
                                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                        </Grid>
-                                        <TextBox Text="{Binding Digest}"
-                                                 PlaceholderText="用于公众号草稿 digest，最多 120 字"
-                                                 AcceptsReturn="True"
-                                                 TextWrapping="Wrap"
-                                                 MaxLength="{Binding DigestMaxLength}"
-                                                 MinHeight="72"
-                                                 MaxHeight="120" />
-                                        <TextBlock Text="独立于 StarBlog 文章摘要；从发布页同步时会自动带入并截断到 120 字。"
-                                                   FontSize="11" TextWrapping="Wrap"
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
                                     </StackPanel>
 
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="封面" FontSize="12" FontWeight="SemiBold"
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    <ToggleButton Classes="SectionHeader" Content="封面"
+                                                  IsChecked="{Binding IsCoverSectionExpanded, Mode=TwoWay}"
+                                                  AutomationProperties.Name="封面" />
+                                    <StackPanel Margin="12,8,12,12" Spacing="10"
+                                                IsVisible="{Binding IsCoverSectionExpanded}">
                                         <Border Height="{Binding CoverPreviewHeight}" CornerRadius="6" ClipToBounds="True"
                                                 Background="{DynamicResource ControlFillColorDefaultBrush}">
                                             <Grid>
@@ -155,7 +200,7 @@
                                             </ToggleButton>
                                         </Grid>
 
-                                        <TextBlock Text="封面规格" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="封面规格" Classes="InspectorLabel" />
                                         <Grid ColumnDefinitions="*,*" ColumnSpacing="4" IsEnabled="{Binding !IsPreparingCover}">
                                             <ToggleButton Classes="EditorMode" HorizontalAlignment="Stretch"
                                                           IsChecked="{Binding IsHeadlineCoverSize, Mode=OneWay}"
@@ -184,7 +229,7 @@
                                         </Button>
 
                                         <Grid IsVisible="{Binding IsUrlCoverSource}" ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                                            <TextBox Text="{Binding CoverUrl}" PlaceholderText="https://example.com/cover.jpg"
+                                            <TextBox Classes="InspectorInput" Text="{Binding CoverUrl}" PlaceholderText="https://example.com/cover.jpg"
                                                      IsEnabled="{Binding !IsPreparingCover}" />
                                             <Button Grid.Column="1" Command="{Binding UseCoverUrlCommand}"
                                                     IsEnabled="{Binding !IsPreparingCover}" Classes="Compact">
@@ -194,9 +239,9 @@
 
                                         <StackPanel IsVisible="{Binding IsRandomCoverSource}" Spacing="6">
                                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                                                <ComboBox ItemsSource="{Binding RandomCoverProviders}" SelectedItem="{Binding SelectedRandomCoverProvider}"
+                                                <ComboBox Classes="InspectorInput" ItemsSource="{Binding RandomCoverProviders}" SelectedItem="{Binding SelectedRandomCoverProvider}"
                                                           DisplayMemberBinding="{Binding Name}" IsEnabled="{Binding !IsPreparingCover}"
-                                                          HorizontalAlignment="Stretch" VerticalContentAlignment="Center" />
+                                                          HorizontalAlignment="Stretch" />
                                                 <Button Grid.Column="1" Command="{Binding PickRandomCoverCommand}"
                                                         IsEnabled="{Binding !IsPreparingCover}" Classes="Compact" MinHeight="32">
                                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5">
@@ -211,16 +256,22 @@
                                                    TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
 
-                                    <Expander Header="来源信息">
+                                    <ToggleButton Classes="SectionHeader" Content="来源信息"
+                                                  IsChecked="{Binding IsSourceSectionExpanded, Mode=TwoWay}"
+                                                  AutomationProperties.Name="来源信息" />
+                                    <StackPanel Margin="12,8,12,12" IsVisible="{Binding IsSourceSectionExpanded}">
                                         <TextBlock Text="{Binding MarkdownSourceMessage}" TextWrapping="Wrap" FontSize="11"
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,8,0,0" />
-                                    </Expander>
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
 
-                                    <Expander Header="HTML 源码">
-                                        <TextBox Margin="0,8,0,0" Text="{Binding FormattedHtml}" IsReadOnly="True" AcceptsReturn="True"
+                                    <ToggleButton Classes="SectionHeader" Content="HTML 源码"
+                                                  IsChecked="{Binding IsHtmlSectionExpanded, Mode=TwoWay}"
+                                                  AutomationProperties.Name="HTML 源码" />
+                                    <StackPanel Margin="12,8,12,12" IsVisible="{Binding IsHtmlSectionExpanded}">
+                                        <TextBox Text="{Binding FormattedHtml}" IsReadOnly="True" AcceptsReturn="True"
                                                  TextWrapping="Wrap" Height="160" FontSize="11"
                                                  FontFamily="Cascadia Code, Consolas, Menlo, Monospace" />
-                                    </Expander>
+                                    </StackPanel>
                                 </StackPanel>
                             </ScrollViewer>
                         </DockPanel>

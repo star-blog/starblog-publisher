@@ -20,6 +20,8 @@ namespace StarBlogPublisher.Services.Application;
 public sealed class WeChatDraftPublishApplicationService {
     private const int MaxContentImageBytes = 1024 * 1024;
     private const int MaxCoverImageBytes = 2 * 1024 * 1024;
+    /// <summary>WeChat draft title hard limit.</summary>
+    public const int MaxTitleLength = 64;
     /// <summary>WeChat draft digest (description) hard limit.</summary>
     public const int MaxDigestLength = 120;
     private static readonly SemaphoreSlim TokenLock = new(1, 1);
@@ -249,6 +251,12 @@ public sealed class WeChatDraftPublishApplicationService {
         return normalized is ".png" or ".jpg" or ".jpeg" ? (normalized == ".jpeg" ? ".jpg" : normalized) : ".jpg";
     }
 
+    /// <summary>Truncates a draft title to WeChat's 64-character limit.</summary>
+    public static string TruncateTitle(string? title) {
+        if (string.IsNullOrEmpty(title)) return string.Empty;
+        return title.Length <= MaxTitleLength ? title : title[..MaxTitleLength];
+    }
+
     /// <summary>Truncates digest to WeChat's 120-character limit.</summary>
     public static string TruncateDigest(string? summary) {
         if (string.IsNullOrEmpty(summary)) return string.Empty;
@@ -296,7 +304,7 @@ public sealed class WeChatDraftPublishApplicationService {
         var payload = new {
             articles = new[] {
                 new {
-                    title,
+                    title = TruncateTitle(title),
                     author,
                     digest = TruncateDigest(summary),
                     content = MinifyHtmlForWeChatDraft(html),
