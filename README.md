@@ -8,67 +8,50 @@
 
 ![StarBlog Client Horizontal Logo](./docs/images/horizontal-logo.webp)
 
-StarBlog Publisher 是一款专为 [StarBlog博客系统](https://github.com/Deali-Axy/StarBlog) 设计的专业文章发布工具。支持三种使用方式：**桌面 GUI**、**命令行 CLI** 和 **MCP Server**（供 AI Agent 调用）。
+StarBlog Publisher 是专为 [StarBlog](https://github.com/Deali-Axy/StarBlog) 设计的文章发布工具。3.0 以**多文档文章工作区**为桌面主界面，同时提供 **CLI** 和 **MCP Server**，三端共用 `StarBlogPublisher.Core` 里的同一套发布与 AI 逻辑。
 
-核心亮点：
+可以这样用它：
 
-* **三端共享架构**：GUI / CLI / MCP 共享同一套业务逻辑（Core 类库），行为一致
-* **Fluent 桌面体验**：基于 Avalonia 与 FluentAvalonia，提供单壳侧栏导航、系统化反馈与可访问的设置页
-* **Markdown 文章即写即发**：编辑、预览和发布一气呵成
-* **CLI 命令行工具**：支持脚本化、自动化的博客发布流程
-* **MCP Server**：让 Claude、Cursor、Copilot 等 AI Agent 直接操作你的博客
-* **AI 智能创作助手**：内置 16 个 AI 服务商，并支持自定义 OpenAI 兼容接口
-* **微信公众号排版与草稿箱**：一键生成微信兼容 HTML、预览和复制富文本，并上传到公众号草稿箱
-* **发布结果中心**：发布后可立即获取文章 URL 和处理后的 Markdown，方便分享与二次分发
-* **全平台兼容**：基于 .NET 10.0，支持 Windows、macOS 和 Linux
+* 在桌面里同时打开多篇 Markdown，编辑、分栏预览，再发布到 StarBlog 或送进微信公众号草稿箱
+* 用命令行把发布、分类和 AI 辅助接到脚本里
+* 让 Claude、Cursor、Codex 等 Agent 通过 MCP 或 Skill 操作博客
 
+## 3.0 里能做什么
+
+* **文章工作区**：多标签编辑，源码 / 分栏 / 预览，大纲跳转，最近文件与上次会话恢复，命令面板和专注模式
+* **发布到 StarBlog**：上传正文里的本地图片，发布后给出文章 URL 和处理后的 Markdown
+* **微信公众号**：33 套排版主题，浏览器预览，复制富文本，转存正文图片并创建草稿
+* **封面工作室**：在 1200×900 画布上排标题，并按公众号头条（2.35:1）和次条（1:1）的安全区预览
+* **AI 辅助**：补全标题、摘要、关键词和 Slug；发布前审校；生成封面提示词。建议结果需要你确认后才会写回文章
+* **全平台**：基于 .NET 10，支持 Windows、macOS 和 Linux
+
+快捷键、保存规则和面板布局见 [文章工作区](docs/article-workspace.md)。
 
 ## 项目结构
 
 ```
-StarBlogPublisher.Core/       # 共享核心库（无 UI 依赖）
-├── Models/                   # 数据模型
-├── Services/                 # 基础设施服务（API、AI、配置等）
-├── Services/Application/     # 应用服务（业务编排层）
-└── Utils/                    # PromptBuilder、PromptTemplates 等
+StarBlogPublisher.Core/          # 共享核心库（无 UI 依赖）
+├── Models/                      # 文章、分类、AI 方案、公众号账号等
+├── Services/                    # API、配置、Markdown、图片处理
+├── Services/AI/                 # 模型目录、元数据草稿、发布前审校
+├── Services/Application/        # 登录、发布、分类、公众号、封面
+└── Utils/                       # Prompt 模板
 
-StarBlogPublisher/            # GUI 项目（Avalonia 桌面应用）
-├── ViewModels/               # ViewModel 层（调用 Application 服务）
-├── Views/                    # 视图层 (.axaml)
-└── Models/                   # GUI 专属模型（如 AvaloniaImageInfo）
+StarBlogPublisher/               # Avalonia 桌面应用
+├── ViewModels/                  # 工作区、设置、公众号、封面
+└── Views/                       # 页面与控件
 
-StarBlogPublisher.Cli/        # CLI + MCP Server
-├── Program.cs                # 入口路由（CLI 模式 / MCP 模式）
-├── McpServer.cs              # MCP Server（stdio 传输）
-├── Commands/                 # CLI 命令
-└── Tools/                    # MCP Tools
+StarBlogPublisher.Cli/           # CLI 与 MCP Server
+├── Commands/                    # auth、category、post、ai、install
+└── Tools/                       # MCP Tools
 
-StarBlogPublisher.Tests/      # 单元测试（xunit + Moq）
+StarBlogPublisher.Tests/         # xUnit 测试
+StarBlogPublisher.DesktopTests/  # 需要真实窗口的桌面回归
 ```
 
-## 界面预览
+## 安装
 
-### 主界面
-
-| 主界面（浅色模式）                                  | 主界面（深色模式）                                  |
-| --------------------------------------------------- | --------------------------------------------------- |
-| ![主界面-浅色模式](docs/images/主界面-浅色模式.jpg) | ![主界面-深色模式](docs/images/主界面-深色模式.jpg) |
-
-### 设置界面
-
-| 主设置                                | AI设置                              |
-| ------------------------------------- | ----------------------------------- |
-| ![设置界面](docs/images/设置界面.jpg) | ![设置界面](docs/images/AI设置.jpg) |
-
-### 其他功能
-
-| 分类词云                              | 关于                              |
-| ------------------------------------- | --------------------------------- |
-| ![分类词云](docs/images/分类词云.jpg) | ![分类词云](docs/images/关于.jpg) |
-
-## 安装与使用
-
-### GUI 安装
+### 桌面应用
 
 **Scoop（Windows）：**
 
@@ -84,45 +67,21 @@ brew tap iugamlabs/tap
 brew install starblog-publisher
 ```
 
-默认包为 Native AOT 版本。若需要其他运行时模式，请把包名替换为
-`starblog-publisher-framework-dependent` 或
-`starblog-publisher-self-contained`。framework-dependent 版本需要 .NET 10
-Runtime；Homebrew 会自动安装 `dotnet@10` 依赖。
+默认包是 Native AOT。需要其他运行时模式时，把包名换成 `starblog-publisher-framework-dependent` 或 `starblog-publisher-self-contained`。framework-dependent 需要本机安装 .NET 10 Runtime；Homebrew 会带上 `dotnet@10`。
 
-**手动安装：**
+**从 Release 安装：**
 
-从 [Releases](https://github.com/star-blog/starblog-publisher/releases) 页面下载所需平台和运行时模式的最新包（`StarBlogPublisher-<platform>-<mode>-<version>`），解压后运行。
+在 [Releases](https://github.com/star-blog/starblog-publisher/releases) 下载 `StarBlogPublisher-<平台>-<模式>-<版本>`。平台为 `windows`、`linux`、`macOS`、`macOS-arm64`，模式为 `aot`、`framework-dependent`、`self-contained`。
 
 ```bash
-# 或从源码运行
 dotnet run --project StarBlogPublisher
 ```
 
-首次运行点击设置按钮配置博客后端 API 地址；如需 AI 功能，请配置 AI 提供商和 API 密钥。
+首次打开后进入「设置」，填写博客后端地址并登录。要用 AI、公众号或代理，在对应分区里配置。
 
-### 微信公众号排版与草稿箱
+### 命令行
 
-GUI 支持把当前 Markdown 转换为适合微信公众号的**内联样式 HTML**。加载文章后，点击底部工具栏的“公众号排版与草稿箱”即可使用。
-
-1. 在“设置 → 微信公众号配置”中填写公众号 `AppId`、`AppSecret`，并可选填默认作者和排版主题。`AppSecret` 会加密保存在本机。
-2. 在排版窗口选择主题，查看生成的 HTML，或在浏览器中预览；可直接复制富文本并粘贴到公众号编辑器。
-3. 如需上传草稿箱，选择有效的 JPG/PNG 封面图后点击“上传草稿箱”。正文图片会自动转存到微信 CDN，完成后可复制草稿 ID。
-
-内置四套排版主题：**报刊**、**暖色卡片**、**海洋卡片**和**科技简报**；代码块会保留语法高亮。
-
-> 上传操作只会创建公众号草稿，**不会直接群发**。内容图片最大 1 MB，封面图最大 2 MB。
-
-### 发布后的分享与复用
-
-文章成功发布后会自动显示发布结果窗口，提供文章标题、URL 和发布后处理的 Markdown。你可以复制标题、URL 或 Markdown，也可以一键在浏览器中打开文章。后续打开公众号排版窗口时，应用会优先使用这份已发布的 Markdown，确保图片链接可被正确转存。
-
-### 检查更新
-
-在 GUI 的“关于”窗口中可点击“检查更新”。应用会查询 GitHub Releases；发现新版本时，可直接跳转到发布页面下载。该功能仅检查和引导下载，不会自动下载或安装更新。
-
-### CLI 安装
-
-CLI 工具支持多种安装方式，命令名为 `starblog`。
+命令名是 `starblog`。
 
 **Homebrew（macOS / Linux）：**
 
@@ -138,121 +97,135 @@ scoop bucket add starblog https://github.com/star-blog/scoop-bucket.git
 scoop install starblog
 ```
 
-**.NET Global Tool（需要 .NET 10.0 运行时）：**
+**.NET Global Tool（需要 .NET 10 运行时）：**
 
 ```bash
 dotnet tool install --global StarBlogPublisher.Cli
 ```
 
-**手动安装：**
+也可以从 [Releases](https://github.com/star-blog/starblog-publisher/releases) 下载 `StarBlogCli-*`，解压后把可执行文件加入 PATH。
 
-从 [Releases](https://github.com/star-blog/starblog-publisher/releases) 页面下载对应平台的 CLI 二进制文件（`StarBlogCli-*.zip` / `StarBlogCli-*.tar.gz`），解压后将可执行文件加入 PATH。
-
-### 发布与打包
-
-本项目的正式发布版本会采用自包含打包，CLI 还会使用 AOT 发布来提升启动速度和运行时稳定性。
-
-- **GUI**：AOT + 自包含发布，适合直接下载安装到本地使用。
-- **CLI**：AOT + 自包含单文件发布，适合命令行工具分发和自动化场景。
-
-如需构建 GUI 发布包，请在仓库根目录运行内置的 .NET 10 单文件构建脚本：
+正式发布包是自包含的。GUI 默认提供 AOT 包；CLI 使用 AOT 单文件。仓库根目录的 `build.cs` 用来在本机打 GUI 包：
 
 ```bash
-# 发布当前操作系统支持的 GUI AOT 包，并输出到 dist/
 dotnet build.cs
-
-# 仅显示将执行的发布命令，不清空 dist/，也不构建
 dotnet build.cs --dry-run
+dotnet run --file .\build.cs -- --help
 ```
 
-脚本会从最新 Git tag 读取版本号、清理发布目录中的符号文件，并重新创建 `dist/`。它使用 .NET 10 原生的单文件应用功能，不需要安装 Python 或第三方 `dotnet-script` 工具。Windows 上构建 Native AOT 还需要安装 Visual Studio 的“使用 C++ 的桌面开发”工作负载。
+脚本从最新 Git tag 读取版本号，并重建 `dist/`。Windows 上编译 Native AOT 需要 Visual Studio 的「使用 C++ 的桌面开发」工作负载。可选档案为 `aot`（默认，仅当前主机 RID）、`framework-dependent` 和 `self-contained`。
 
-构建脚本支持多种发布档案：`aot`（默认，仅当前主机 RID）、`framework-dependent`（单文件，需目标计算机安装 .NET）和 `self-contained`（Windows、Linux、macOS 的单文件包）。使用 `dotnet run --file .\build.cs -- --help` 查看全部选项；可通过 `--profile`、`--rid` 选择档案与目标平台，`--compress` 可压缩自包含单文件包。
+## 桌面应用
 
-如需分别为 GUI 或 CLI 执行自定义发布，可参考下面的命令：
+侧栏有四项：**文章**、**公众号排版**、**设置**、**关于**。底部可以切换浅色 / 深色，以及登录或退出。
+
+### 文章工作区
+
+标题栏合并了文件、编辑、查看、文章、发布和帮助菜单。中间可以搜索已打开的文章或命令。
+
+* `Ctrl+N` / `Ctrl+O`：新建或打开 Markdown，也可以把 `.md` 拖进窗口
+* `Ctrl+S`：保存正文和文章属性。正文写回原文件；标题、摘要、关键词、Slug 和分类写到同目录的 `文章.md.starblog.json`
+* `Ctrl+P`：快速打开；`Ctrl+Shift+P`：命令面板
+* `Ctrl+B` / `Ctrl+Alt+B` / `Ctrl+J`：文件侧栏、文章属性、任务面板
+* `Ctrl+Shift+F11`：专注模式
+
+左侧是已打开、最近打开和大纲。右侧是发布属性，底部是当前文章的任务和发布结果。关闭未保存的文章时会询问。有发布、保存或 AI 任务在跑时，需要等任务结束再关。
+
+发布目标可以选 StarBlog 或微信公众号。选公众号时，主按钮进入排版和草稿流程，不会直接群发。
+
+### 发布到博客
+
+登录后选择分类，再发布或存为草稿。成功后可以复制标题、URL 和服务器处理后的 Markdown，或在浏览器中打开文章。之后做公众号排版时，会优先用这份已发布正文，方便转存图片。
+
+文章菜单里还可以：
+
+* 分别优化标题、摘要、关键词、Slug，或一次「补全文章属性」
+* 发布前审校，查看问题、严重程度和建议
+* 分析文中图片
+* 生成封面提示词，或打开封面工作室
+* 查看分类词云
+
+### 微信公众号
+
+在「设置 → 微信公众号」填写 AppId、AppSecret，可选默认作者和排版主题。AppSecret 在本机加密保存，支持多个公众号账号。
+
+排版窗口可以切换主题、查看 HTML、在浏览器中预览，或复制富文本到公众号编辑器。上传草稿前选择 JPG/PNG 封面；正文图片会转到微信 CDN，完成后可以复制草稿 ID。上传只创建草稿。内容图片最大 1 MB，封面图最大 2 MB。
+
+33 套主题按卡片、深度长文、科技产品、文艺随笔、活力动态和模板布局分组，代码块保留语法高亮。
+
+封面工作室用本地图片或随机图做背景，调整字号、颜色、对齐和位置。标题画在头条和次条都会保留的区域里，确认后可交给公众号草稿。
+
+### 设置
+
+设置分六区，修改保存在草稿里，保存成功后才写入本机配置。离开未保存的设置页时会询问。
+
+| 分区 | 内容 |
+| --- | --- |
+| 常规 | 跟随系统 / 浅色 / 深色，以及编辑器字号、换行、行号 |
+| 博客 | 后端地址、账号、超时 |
+| 微信公众号 | 多账号、AppSecret、默认作者和主题 |
+| AI | 多套方案、服务商、模型和在线模型目录 |
+| 代理 | HTTP 代理 |
+| 备份 | 导出、导入可移植 JSON |
+
+导出的 JSON 含博客密码、AI Key 和公众号 AppSecret 的明文，请单独保管。本机 `settings.json` 里这些字段是加密的。
+
+内置 17 个 AI 服务商，并支持自定义 OpenAI 兼容接口：OpenAI、Claude、Grok、Gemini、DeepSeek、通义千问、豆包、Kimi、智谱、MiniMax、小米 MiMo、混元、千帆、硅基流动、Mistral、GroqCloud、OpenRouter。OpenRouter 还可以查看上下文窗口和价格。
+
+关于页可以检查 GitHub Releases。发现新版本后会打开下载页，不会自动安装。
+
+## 命令行
 
 ```bash
-# GUI AOT 发布
-dotnet publish ./StarBlogPublisher/StarBlogPublisher.csproj -c Release -r osx-arm64 --self-contained true /p:PublishAot=true /p:TrimMode=full
-
-# CLI AOT 发布
-dotnet publish ./StarBlogPublisher.Cli/StarBlogPublisher.Cli.csproj -c Release -r osx-arm64 --self-contained true /p:PublishAot=true /p:TrimMode=full
-```
-
-### CLI 使用
-
-```bash
-# 认证
-starblog auth login                          # 复用已保存凭据；未配置时进入交互输入
-starblog auth login --username admin --password 123456
+starblog auth login
 starblog auth login --username admin --password 123456 --no-prompt
 starblog auth status
-starblog auth logout
 starblog auth logout --clear-credentials
 
-# 分类管理
 starblog category list
 starblog category create --name "技术笔记"
 
-# 文章发布
 starblog post publish ./hello.md --category 1
 starblog post publish ./hello.md --category 1 --draft
-starblog post publish ./hello.md --category 1 --auto       # AI 自动生成标题/摘要/Slug，交互确认后发布
-starblog post publish ./hello.md --category 1 --auto -y    # 自动挡 + 跳过确认直接发布
+starblog post publish ./hello.md --category 1 --auto
+starblog post publish ./hello.md --category 1 --auto -y
 starblog post get <article-id>
 
-# AI 辅助
 starblog ai generate-summary ./hello.md
 starblog ai optimize-title "原始标题"
 starblog ai suggest-tags ./hello.md
 starblog ai generate-slug "文章标题"
+```
 
-# 安装到 AI Agent（不传 --agent 时会交互选择）
-starblog install skills
+`--auto` 会生成标题、摘要和 Slug，并在终端里确认。脚本里加上 `-y` 可以跳过确认。
+
+`starblog install` 把 Skill 或 MCP 配置写到常见 Agent 的用户目录。不传 `--agent` 时进入交互选择。
+
+```bash
 starblog install skills --agent claude-code
 starblog install skills --agent codex
 starblog install skills --agent openclaw
 
-starblog install mcp
 starblog install mcp --agent claude-code
 starblog install mcp --agent codex
-starblog install mcp --agent claude-code --command starblog --args mcp
+starblog install mcp --command starblog --args mcp
 ```
 
-### AI Agent 安装
+| 目标 | 默认位置 |
+| --- | --- |
+| Claude Code Skill | `~/.claude/skills/starblog-publisher/SKILL.md` |
+| Codex Skill | `~/.agents/skills/starblog-publisher/SKILL.md` |
+| OpenClaw Skill | `~/.openclaw/skills/starblog-publisher/SKILL.md` |
+| Claude Code MCP | `~/.claude.json` |
+| Codex MCP | `~/.codex/config.toml` |
 
-`starblog install` 用于把 StarBlog Publisher 的 skill 或 MCP 配置安装到常见 AI Agent 的用户目录，默认会进入交互式选择。
+MCP 默认注册为 `starblog mcp`。自定义可执行路径时用 `--command` 和 `--args`。OpenClaw 目前只安装 Skill。
 
-当前支持：
-
-- `skills`：Claude Code、Codex、OpenClaw
-- `mcp`：Claude Code、Codex
-
-默认安装位置：
-
-- Claude Code skill：`~/.claude/skills/starblog-publisher/SKILL.md`
-- Codex skill：`~/.agents/skills/starblog-publisher/SKILL.md`
-- OpenClaw skill：`~/.openclaw/skills/starblog-publisher/SKILL.md`
-- Claude Code MCP：`~/.claude.json`
-- Codex MCP：`~/.codex/config.toml`
-
-说明：
-
-- `mcp` 默认注册命令为 `starblog mcp`，适用于已把 CLI 加入 PATH 的安装方式
-- 如果你使用的是自定义可执行路径，可通过 `--command` 和 `--args` 覆盖
-- OpenClaw 当前仅集成了 skill 安装，因为其公开文档没有提供稳定的通用 MCP 客户端配置契约
-
-### MCP Server
-
-MCP Server 模式让 AI Agent（Claude Desktop、Cursor 等）可以直接操作你的博客。
-
-**启动 MCP Server：**
+## MCP Server
 
 ```bash
 starblog mcp
 ```
-
-**在 Claude Desktop / Cursor 中配置：**
 
 ```json
 {
@@ -265,164 +238,75 @@ starblog mcp
 }
 ```
 
-> 如果使用 `dotnet tool install` 安装，MCP 配置中 command 改为 `"dotnet"`，args 改为 `["tool", "run", "starblog", "mcp"]`。
+用 `dotnet tool` 安装时，把 command 改为 `dotnet`，args 改为 `["tool", "run", "starblog", "mcp"]`。
 
-**可用的 MCP Tools：**
+| Tool | 作用 |
+| --- | --- |
+| `auth_login` / `auth_status` / `auth_logout` | 登录、查看状态、登出 |
+| `category_list` / `category_create` | 列出或创建分类 |
+| `post_publish` / `post_get` | 发布 Markdown 或读取文章 |
+| `ai_optimize_title` / `ai_generate_summary` / `ai_suggest_tags` / `ai_generate_slug` | 标题、摘要、标签、Slug |
+| `ai_generate_cover_prompt` | 封面图提示词 |
 
-| Tool | 描述 |
-|------|------|
-| `auth_login` | 登录到 StarBlog 后端 |
-| `auth_status` | 查看登录状态 |
-| `auth_logout` | 登出 |
-| `category_list` | 列出所有分类 |
-| `category_create` | 创建新分类 |
-| `post_publish` | 发布 Markdown 文件为文章 |
-| `post_get` | 获取文章详情 |
-| `ai_optimize_title` | AI 优化标题 |
-| `ai_generate_summary` | AI 生成摘要 |
-| `ai_suggest_tags` | AI 推荐标签 |
-| `ai_generate_slug` | AI 生成 URL slug |
-| `ai_generate_cover_prompt` | AI 生成封面图提示词 |
-
-## 功能特点
-
-- **Markdown 支持**：完整支持 Markdown 格式，包括图片、链接、代码块等
-- **图片上传**：自动处理 Markdown 中的本地图片，上传至 StarBlog 服务实例
-- **文章预览**：实时预览 Markdown 渲染效果
-- **文章管理**：支持文章的创建、编辑、发布和删除
-- **分类管理**：支持按树状图显示文章分类，并支持添加分类
-- **AI 辅助**：预置 OpenAI、Claude、Grok、Gemini、DeepSeek、通义千问、豆包、Kimi、智谱、MiniMax、混元、千帆、硅基流动、Mistral、GroqCloud、OpenRouter 等服务商，并支持自定义 OpenAI 兼容接口；提供标题润色、内容总结、关键词提取、Slug 自动生成
-- **AI 自动挡发布**：`--auto` 模式一键生成标题/摘要/Slug，交互确认后发布，支持 `-y` 跳过确认
-- **微信公众号排版**：将 Markdown 转为微信兼容的内联样式 HTML，提供四套主题、浏览器预览、富文本复制和代码块语法高亮
-- **公众号草稿箱**：自动转存正文图片并创建草稿，可配置默认作者、封面和排版主题；不会直接群发
-- **发布结果**：成功发布后显示文章 URL 与处理后的 Markdown，支持复制和在浏览器中打开
-- **更新检查**：关于窗口可检查 GitHub Releases 并跳转下载最新版本
-- **词云生成**：可视化展示博客内容关键词
-- **主题切换**：支持跟随系统 / 浅色 / 深色，可随操作系统自动切换
-- **代理设置**：支持配置 HTTP 代理
-- **CLI 自动化**：命令行工具支持脚本化发布流程
-- **MCP 集成**：AI Agent 可通过 MCP 协议直接操作博客
+Agent 侧的使用顺序和边界写在 [SKILLS.md](docs/SKILLS.md)，CLI 安装 Skill 时会嵌入这份说明。
 
 ## 技术栈
 
-- **框架**：.NET 10.0
-- **GUI**：Avalonia 12.1.2 + FluentAvaloniaUI 3.1.0 + CommunityToolkit.Mvvm 8.4.2
-- **CLI**：System.CommandLine 2.0.11
-- **MCP**：ModelContextProtocol 2.2.0
-- **HTTP**：Refit 15.2.0
-- **AI**：Microsoft.Extensions.AI.OpenAI 10.9.0
-- **Markdown**：Markdig 1.3.2 + Markdown.ColorCode 3.0.1
-- **图片处理**：SixLabors.ImageSharp 3.1.12
-- **JSON**：Newtonsoft.Json 13.0.4
-- **加密**：System.Security.Cryptography.ProtectedData 10.0.1
-- **测试**：xunit + Moq + FluentAssertions
+* **运行时**：.NET 10.0
+* **桌面**：Avalonia 12.1.2、AvaloniaEdit 12.0.0、FluentAvaloniaUI 3.1.0、WebView 12.1.0、CommunityToolkit.Mvvm 8.4.2
+* **CLI / MCP**：System.CommandLine 2.0.11、ModelContextProtocol 2.2.0
+* **HTTP / Markdown**：Refit 15.2.0、Markdig 1.3.2、Markdown.ColorCode 3.0.1
+* **AI**：Microsoft.Extensions.AI.OpenAI 10.9.0、Microsoft.Agents.AI.Workflows 1.21.0
+* **图像**：SixLabors.ImageSharp 3.1.12
+* **本机机密**：System.Security.Cryptography.ProtectedData 10.0.11
+* **测试**：xUnit、Moq、FluentAssertions
 
-## 开发指南
+## 开发
 
-### 环境准备
-
-- .NET 10.0 SDK
-- Visual Studio 2022 / Rider / VS Code
-
-### 构建
+需要 .NET 10 SDK。Windows 上打 AOT 包还需要 C++ 桌面开发工作负载。
 
 ```bash
-# 构建整个解决方案
 dotnet build StarBlogPublisher.sln
-
-# 运行测试
 dotnet test StarBlogPublisher.Tests/StarBlogPublisher.Tests.csproj
-
-# 运行 GUI
 dotnet run --project StarBlogPublisher
-
-# 运行 CLI
 dotnet run --project StarBlogPublisher.Cli -- --help
-
-# 运行 MCP Server
 dotnet run --project StarBlogPublisher.Cli -- mcp
-
-# 构建 GUI 发布包（在仓库根目录运行）
-dotnet build.cs
 ```
 
-## 贡献指南
+`dotnet test` 覆盖 Core、CLI 和 ViewModel，不打开窗口。真实窗口回归在 `StarBlogPublisher.DesktopTests`，需要可交互桌面，说明见 [测试指南](docs/testing.md)。发布流水线和仓库密钥见 [CI/CD 指南](docs/cicd-guide.md)。
 
-欢迎贡献代码、报告问题或提出新功能建议！
+## 贡献
 
 1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add some amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 打开 Pull Request
+2. 创建分支（`git checkout -b feature/amazing-feature`）
+3. 提交更改
+4. 推送分支并打开 Pull Request
 
 ## 许可证
 
-本项目采用 Apache License 2.0 - 详情请参阅 [LICENSE](LICENSE) 文件
+[Apache License 2.0](LICENSE)
 
-## 联系方式
+## 联系
 
-- 项目作者：[Deali-Axy](https://github.com/Deali-Axy)
-- 电子邮件：dealiaxy@gmail.com
-- 项目主页：[StarBlog Publisher](https://github.com/star-blog/starblog-publisher)
-- 配套博客系统：[StarBlog](https://github.com/Deali-Axy/StarBlog)
+* 作者：[Deali-Axy](https://github.com/Deali-Axy)
+* 邮箱：dealiaxy@gmail.com
+* 本仓库：[star-blog/starblog-publisher](https://github.com/star-blog/starblog-publisher)
+* 博客系统：[StarBlog](https://github.com/Deali-Axy/StarBlog)
 
-## 更新记录
+## 版本
 
-### Unreleased
+### 3.0
 
-* **检查更新**：关于窗口可查询 GitHub Releases，显示检查状态，并在发现新版本后跳转至下载页面
+桌面端改为文章工作区：多文档、命令面板、大纲、会话恢复，以及和发布分开的本地保存。公众号排版扩展到 33 套主题，并加入封面工作室。AI 增加需确认的属性草稿、发布前审校和在线模型目录。设置拆成常规、博客、公众号、AI、代理和备份；外观可跟随系统。
 
-### 2.3.0
+### 2.3
 
-* **微信公众号排版与草稿箱**：支持将 Markdown 转为微信兼容的内联样式 HTML，提供四套主题、浏览器预览和富文本复制；可自动转存图片并创建公众号草稿
-* **代码块高亮**：微信公众号排版中的 fenced code block 支持内联样式语法高亮
-* **发布结果窗口**：文章发布后展示可分享 URL 和处理后的 Markdown，支持复制及在浏览器中打开
-* **AI 服务商扩展**：新增通义千问、豆包、Kimi、MiniMax、混元、千帆、硅基流动、Mistral、GroqCloud、OpenRouter 等预置服务商，并刷新默认模型目录
-* **构建打包增强**：构建脚本迁移到 .NET 10，支持可选发布档案、按 RID 构建和自包含单文件压缩
-* **版本信息**：应用各处统一显示由构建版本生成的版本号
+公众号草稿箱、发布结果、更多 AI 服务商，以及 .NET 10 构建脚本和多种发布档案。
 
 ### 2.0
 
-* **重大重构**：提取 Core 共享库，三端（GUI / CLI / MCP）共享同一套业务逻辑
-* **新增 CLI 命令行工具**：支持 auth、category、post、ai 等命令，可脚本化发布流程
-* **新增 MCP Server**：让 AI Agent（Claude Desktop、Cursor 等）直接操作博客
-* **架构优化**：从 ViewModel 中提取 Application 服务层，业务逻辑与 UI 解耦
-* **新增单元测试**：71 个测试用例，覆盖核心业务逻辑
-* 升级至 .NET 10.0
+抽出 Core 库，GUI、CLI、MCP 共用业务逻辑，并补上单元测试。目标框架升级到 .NET 10。
 
-### 1.5
+### 1.x
 
-* 新增 AI 设置窗口，支持 AI 服务的初始化与配置
-* 新增文章 Slug 生成功能
-* 支持显示和切换多种 AI 服务模型
-
-### 1.4
-
-- 重构词云生成逻辑并添加加载指示器
-- 添加 GitHub Actions 发布工作流和构建脚本
-
-### 1.3
-
-- 添加分类功能，可直接在发布工具里快速添加分类
-
-### 1.2
-
-- 更新 Avalonia 到 11.2.6 版本
-- 预览窗口引入双栏布局
-
-### 1.1
-
-- 优化对 AOT 的支持
-
-### 1.0
-
-- 第一个发布的版本
-
-> 早期开发日志请参阅 [Development Log](docs/archived/development-log.md)。
-
----
-
-**StarBlog Publisher** - 为 StarBlog 打造的专业发布工具，让博客发布变得简单高效！
-
-测试命令与真实窗口回归说明见 [测试指南](docs/testing.md)。
+1.0 为首个发布版。随后加入分类、词云、AI 设置、Slug，以及 AOT 和 GitHub Actions 发布。

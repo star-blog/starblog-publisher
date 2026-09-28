@@ -2,7 +2,7 @@
 
 ## 发布架构
 
-发布流程由三个工作流协作完成，均由 `v*.*.*` 标签触发：
+发布流程由三个工作流协作完成。标签需匹配 `vX.Y.Z` 或 `vX.Y.Z-beta.N` 这类预发布形式：
 
 | 工作流 | 文件 | 职责 |
 |--------|------|------|
@@ -104,27 +104,23 @@ CLI 分发依赖两个外部仓库，已在 `star-blog` 组织下创建：
 
 ### 正式发布
 
+版本号来自 Git tag，不在项目文件里写死。带 `-` 的 tag 会标成 GitHub Pre-release。
+
 ```bash
-# 1. 确保版本号与代码一致（build.py 等处）
-# 2. 打标签并推送
-git tag v2.1.0
-git push origin v2.1.0
+git tag v3.0.0
+git push origin v3.0.0
 ```
 
 推送后三个工作流自动运行：
 
 1. `release-entry.yml` 创建 Release 并生成 Release Notes
-2. `release-gui.yml` 构建 GUI AOT 产物并上传
+2. `release-gui.yml` 为 Windows、Linux、macOS Intel 和 macOS ARM 构建 `aot`、`framework-dependent`、`self-contained` 三套 GUI 包并上传
 3. `release-cli.yml` 依次完成：
    - `dotnet pack` + `dotnet nuget push` 发布到 NuGet.org
    - 构建 4 个平台的 CLI 自包含二进制（win-x64, linux-x64, osx-x64, osx-arm64）
    - 上传 CLI 二进制到 Release
    - 更新 `scoop-bucket` 的 `bucket/starblog.json`
    - 更新 `homebrew-tap` 的 `Formula/starblog.rb`
-
-### 手动验证
-
-可在 Actions 页面手动触发 `workflow_dispatch` 进行验证（需在工作流文件中添加该触发器）。
 
 ## 分发渠道速查
 
@@ -135,13 +131,4 @@ git push origin v2.1.0
 | NuGet | `dotnet tool install --global StarBlogPublisher.Cli` | 是 |
 | Homebrew | `brew tap star-blog/tap && brew install starblog` | 否 |
 | Scoop | `scoop bucket add starblog https://github.com/star-blog/scoop-bucket.git && scoop install starblog` | 否 |
-| GitHub Release | 直接下载 | 否 |
-
-## 旧工作流处理
-
-原有的 `release.yml` 职责已被 `release-gui.yml` 取代。确认新流程稳定后可删除：
-
-```bash
-git rm .github/workflows/release.yml
-git commit -m "chore: remove legacy release.yml, replaced by release-gui.yml"
-```
+| GitHub Release | 直接下载 GUI 或 CLI 包 | CLI 自包含包不需要；GUI 的 framework-dependent 包需要 .NET 10 |
