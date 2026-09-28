@@ -129,7 +129,7 @@ public partial class MainWindowViewModel : ViewModelBase {
         InitializeCommands();
     }
 
-    private IHttpClientFactory HttpClientFactory => _httpClientFactory ??= AppHttpClients.Factory;
+    internal IHttpClientFactory HttpClientFactory => _httpClientFactory ??= AppHttpClients.Factory;
 
     public INavigationMenuItem? SelectedNavigationItem {
         get => ActivePage switch {

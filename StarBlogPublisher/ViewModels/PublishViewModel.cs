@@ -274,6 +274,7 @@ public partial class PublishViewModel : PageViewModelBase {
     }
 
     public void OpenStackPage(object page, string title) {
+        DisposeStackPage();
         ActiveStackPage = page;
         IsStackNavigating = true;
         Breadcrumbs.Clear();
@@ -287,6 +288,7 @@ public partial class PublishViewModel : PageViewModelBase {
         }
 
         if (index == 0) {
+            DisposeStackPage();
             ActiveStackPage = null;
             IsStackNavigating = false;
             Breadcrumbs.Clear();
@@ -304,6 +306,12 @@ public partial class PublishViewModel : PageViewModelBase {
         ActiveStackPage = Breadcrumbs[index].Target;
         IsStackNavigating = ActiveStackPage != null;
     }
+
+    private static void DisposeStackPage(object? page) {
+        if (page is IDisposable disposable) disposable.Dispose();
+    }
+
+    private void DisposeStackPage() => DisposeStackPage(ActiveStackPage);
 
     private void InitializeTitleOptimizationTemplates() {
         TitleOptimizationTemplates.Clear();
@@ -652,6 +660,22 @@ public partial class PublishViewModel : PageViewModelBase {
             ArticleContent = ArticleContent,
             ArticleDescription = ArticleDescription
         };
+        OpenStackPage(page, page.Title);
+    }
+
+    [RelayCommand]
+    private void ShowCoverStudio() {
+        if (string.IsNullOrWhiteSpace(ArticleContent)) {
+            StatusMessage = "请先选择并加载 Markdown 文件";
+            GuiHost.ToastWarning("制作封面", "请先加载文章");
+            return;
+        }
+
+        var page = new CoverStudioViewModel(_shell.HttpClientFactory, ArticleTitle, cover => {
+            NavigateBreadcrumbAt(0);
+            _shell.NavigateToWeChat();
+            _shell.WeChatPage.UsePreparedCover(cover, $"制作封面 · {cover.Width} × {cover.Height}");
+        });
         OpenStackPage(page, page.Title);
     }
 

@@ -70,6 +70,7 @@ public partial class MainWindowViewModel {
         Add("article.metadata", "文章", "补全文章属性", null, () => Run(PublishPage.FillMetadataCommand), AiReady);
         Add("article.images", "文章", "分析文章图片", null, () => Run(PublishPage.AnalyzeImagesCommand), DocumentReady);
         Add("article.cover", "文章", "生成封面", null, () => Run(PublishPage.ShowCoverPromptCommand), DocumentReady);
+        Add("article.coverStudio", "文章", "制作封面", null, () => Run(PublishPage.ShowCoverStudioCommand), DocumentReady);
         Add("article.review", "文章", "发布前审校", null, () => Run(PublishPage.ReviewBeforePublishCommand), AiReady);
         Add("article.reload", "文章", "从磁盘重新加载", null, () => Run(PublishPage.ReloadDocumentCommand), () => DocumentReady() && PublishPage.CurrentFilePath != null);
 

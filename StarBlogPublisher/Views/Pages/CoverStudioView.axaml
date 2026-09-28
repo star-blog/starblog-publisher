@@ -1,0 +1,208 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:StarBlogPublisher.ViewModels"
+             xmlns:fi="using:FluentIcons.Avalonia.Fluent"
+             xmlns:controls="using:StarBlogPublisher.Views.Controls"
+             mc:Ignorable="d" d:DesignWidth="980" d:DesignHeight="680"
+             x:Class="StarBlogPublisher.Views.CoverStudioView"
+             x:DataType="vm:CoverStudioViewModel">
+    <UserControl.Styles>
+        <Style Selector="TextBlock.InspectorLabel">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        </Style>
+        <Style Selector="TextBox.InspectorInput">
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="ComboBox.InspectorInput">
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+    </UserControl.Styles>
+    <Panel Margin="16">
+        <Grid ColumnDefinitions="*,320">
+            <Grid RowDefinitions="Auto,*">
+                <StackPanel Spacing="8" Margin="0,0,0,12">
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+                        <ToggleButton Classes="EditorMode" HorizontalAlignment="Stretch"
+                                      IsChecked="{Binding IsFullPreview, Mode=OneWay}"
+                                      Command="{Binding SetPreviewModeCommand}" CommandParameter="full">
+                            <TextBlock Text="完整" />
+                        </ToggleButton>
+                        <ToggleButton Grid.Column="1" Classes="EditorMode" HorizontalAlignment="Stretch"
+                                      IsChecked="{Binding IsHeadlinePreview, Mode=OneWay}"
+                                      Command="{Binding SetPreviewModeCommand}" CommandParameter="headline">
+                            <TextBlock Text="头条 2.35:1" />
+                        </ToggleButton>
+                        <ToggleButton Grid.Column="2" Classes="EditorMode" HorizontalAlignment="Stretch"
+                                      IsChecked="{Binding IsSecondaryPreview, Mode=OneWay}"
+                                      Command="{Binding SetPreviewModeCommand}" CommandParameter="secondary">
+                            <TextBlock Text="次条 1:1" />
+                        </ToggleButton>
+                    </Grid>
+                    <TextBlock Text="{Binding PreviewCaption}" FontSize="12" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+
+                <Border Grid.Row="1" CornerRadius="8" ClipToBounds="True"
+                        Background="{DynamicResource ControlFillColorDefaultBrush}">
+                    <Panel>
+                        <Image Source="{Binding Preview}" Stretch="Uniform"
+                               IsVisible="{Binding HasPreview}" />
+                        <StackPanel IsVisible="{Binding !HasPreview}" HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" Spacing="6" Opacity="0.7">
+                            <fi:FluentIcon Icon="Image" IconVariant="Regular" FontSize="28" HorizontalAlignment="Center" />
+                            <TextBlock Text="封面预览会出现在这里" FontSize="12" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Panel>
+                </Border>
+            </Grid>
+
+            <Border Grid.Column="1"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1,0,0,0"
+                    Padding="16,0,0,0">
+            <ScrollViewer>
+                <StackPanel Spacing="14">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="背景" FontWeight="SemiBold" />
+                        <Button Command="{Binding SelectLocalBackgroundCommand}"
+                                IsEnabled="{Binding !IsLoadingBackground}" HorizontalAlignment="Stretch">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
+                                <fi:FluentIcon Icon="FolderOpen" IconVariant="Regular" FontSize="16" />
+                                <TextBlock Text="选择本地图片" />
+                            </StackPanel>
+                        </Button>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                            <ComboBox Classes="InspectorInput" ItemsSource="{Binding RandomCoverProviders}"
+                                      SelectedItem="{Binding SelectedRandomCoverProvider}"
+                                      DisplayMemberBinding="{Binding Name}"
+                                      IsEnabled="{Binding !IsLoadingBackground}" HorizontalAlignment="Stretch" />
+                            <Button Grid.Column="1" Command="{Binding PickRandomBackgroundCommand}"
+                                    IsEnabled="{Binding !IsLoadingBackground}" Classes="Compact" MinHeight="32">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5">
+                                    <fi:FluentIcon Icon="ArrowShuffle" IconVariant="Regular" FontSize="15" />
+                                    <TextBlock Text="换一张" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                        <TextBlock Text="{Binding BackgroundDescription}" FontSize="11" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="标题" FontWeight="SemiBold" />
+                        <TextBox Classes="InspectorInput" Text="{Binding CoverTitle}" AcceptsReturn="True"
+                                 TextWrapping="Wrap" MinLines="2" MaxLines="4" PlaceholderText="封面标题" />
+                        <TextBlock Text="打开时使用文章标题，可以改成封面里要显示的字。" FontSize="11" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="样式" FontWeight="SemiBold" />
+                        <TextBlock Text="字号" Classes="InspectorLabel" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <Slider Minimum="28" Maximum="96" TickFrequency="2" IsSnapToTickEnabled="True"
+                                    Value="{Binding FontSize}" />
+                            <TextBlock Grid.Column="1" Width="28" VerticalAlignment="Center"
+                                       Text="{Binding FontSize, StringFormat={}{0:0}}" />
+                        </Grid>
+                        <TextBlock Text="{Binding FontSizeHint}" FontSize="11"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+                        <TextBlock Text="颜色" Classes="InspectorLabel" />
+                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+                            <ToggleButton Classes="EditorMode" HorizontalAlignment="Stretch"
+                                          IsChecked="{Binding IsWhiteColor, Mode=OneWay}"
+                                          Command="{Binding SetTextColorCommand}" CommandParameter="white">
+                                <TextBlock Text="白色" />
+                            </ToggleButton>
+                            <ToggleButton Grid.Column="1" Classes="EditorMode" HorizontalAlignment="Stretch"
+                                          IsChecked="{Binding IsBlackColor, Mode=OneWay}"
+                                          Command="{Binding SetTextColorCommand}" CommandParameter="black">
+                                <TextBlock Text="黑色" />
+                            </ToggleButton>
+                            <ToggleButton Grid.Column="2" Classes="EditorMode" HorizontalAlignment="Stretch"
+                                          IsChecked="{Binding IsCustomColor, Mode=OneWay}"
+                                          Command="{Binding SetTextColorCommand}" CommandParameter="custom">
+                                <TextBlock Text="自定义" />
+                            </ToggleButton>
+                        </Grid>
+                        <TextBox Classes="InspectorInput" Text="{Binding CustomColorHex}"
+                                 IsVisible="{Binding IsCustomColor}" PlaceholderText="#FFFFFF" />
+
+                        <TextBlock Text="粗细" Classes="InspectorLabel" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+                            <ToggleButton Classes="EditorMode" HorizontalAlignment="Stretch"
+                                          IsChecked="{Binding IsRegularWeight, Mode=OneWay}"
+                                          Command="{Binding SetBoldCommand}" CommandParameter="false">
+                                <TextBlock Text="常规" />
+                            </ToggleButton>
+                            <ToggleButton Grid.Column="1" Classes="EditorMode" HorizontalAlignment="Stretch"
+                                          IsChecked="{Binding IsBold, Mode=OneWay}"
+                                          Command="{Binding SetBoldCommand}" CommandParameter="true">
+                                <TextBlock Text="加粗" />
+                            </ToggleButton>
+                        </Grid>
+
+                        <TextBlock Text="对齐" Classes="InspectorLabel" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+                            <ToggleButton Classes="EditorMode" HorizontalAlignment="Stretch"
+                                          IsChecked="{Binding IsLeftAlign, Mode=OneWay}"
+                                          Command="{Binding SetTextAlignCommand}" CommandParameter="left">
+                                <TextBlock Text="左对齐" />
+                            </ToggleButton>
+                            <ToggleButton Grid.Column="1" Classes="EditorMode" HorizontalAlignment="Stretch"
+                                          IsChecked="{Binding IsCenterAlign, Mode=OneWay}"
+                                          Command="{Binding SetTextAlignCommand}" CommandParameter="center">
+                                <TextBlock Text="居中" />
+                            </ToggleButton>
+                        </Grid>
+
+                        <TextBlock Text="位置" Classes="InspectorLabel" />
+                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+                            <ToggleButton Classes="EditorMode" HorizontalAlignment="Stretch"
+                                          IsChecked="{Binding IsTopPlacement, Mode=OneWay}"
+                                          Command="{Binding SetTextPlacementCommand}" CommandParameter="top">
+                                <TextBlock Text="靠上" />
+                            </ToggleButton>
+                            <ToggleButton Grid.Column="1" Classes="EditorMode" HorizontalAlignment="Stretch"
+                                          IsChecked="{Binding IsCenterPlacement, Mode=OneWay}"
+                                          Command="{Binding SetTextPlacementCommand}" CommandParameter="center">
+                                <TextBlock Text="居中" />
+                            </ToggleButton>
+                            <ToggleButton Grid.Column="2" Classes="EditorMode" HorizontalAlignment="Stretch"
+                                          IsChecked="{Binding IsBottomPlacement, Mode=OneWay}"
+                                          Command="{Binding SetTextPlacementCommand}" CommandParameter="bottom">
+                                <TextBlock Text="靠下" />
+                            </ToggleButton>
+                        </Grid>
+
+                        <CheckBox Content="渐变遮罩" IsChecked="{Binding ShowScrim}" />
+                        <TextBlock Text="压暗标题背后的背景，让字在照片上更清楚。" FontSize="11" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="8">
+                        <Button Command="{Binding SaveImageCommand}" HorizontalAlignment="Stretch">
+                            <TextBlock Text="保存图片" HorizontalAlignment="Center" />
+                        </Button>
+                        <Button Classes="Accent" Command="{Binding ApplyToWeChatCommand}" HorizontalAlignment="Stretch">
+                            <TextBlock Text="用作公众号封面" HorizontalAlignment="Center" />
+                        </Button>
+                        <TextBlock Text="{Binding StatusMessage}" FontSize="11" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+            </Border>
+        </Grid>
+        <controls:BusyOverlay IsBusy="{Binding IsLoadingBackground}" Message="{Binding BusyMessage}" ZIndex="2" />
+    </Panel>
+</UserControl>

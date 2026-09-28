@@ -2,6 +2,7 @@ using System.Reflection;
 using FluentAssertions;
 using Moq;
 using StarBlogPublisher.Services;
+using StarBlogPublisher.Services.Application;
 using StarBlogPublisher.ViewModels;
 
 namespace StarBlogPublisher.Tests.Gui.ViewModels;
@@ -13,10 +14,11 @@ public class WeChatViewModelTests {
 
         viewModel.Themes.Should().NotBeEmpty();
         viewModel.SelectedTheme.Should().NotBeNull();
-        viewModel.SelectedCoverSource!.Id.Should().Be("local");
+        viewModel.SelectedCoverSource!.Id.Should().Be("random");
         viewModel.SelectedCoverSize!.Id.Should().Be("headline");
         viewModel.SelectedRandomCoverProvider.Should().NotBeNull();
-        viewModel.IsLocalCoverSource.Should().BeTrue();
+        viewModel.IsRandomCoverSource.Should().BeTrue();
+        viewModel.IsLocalCoverSource.Should().BeFalse();
         viewModel.IsHeadlineCoverSize.Should().BeTrue();
         viewModel.CoverPreviewHeight.Should().BeApproximately(122.56, 0.01);
     }
@@ -157,6 +159,50 @@ public class WeChatViewModelTests {
         var uri = provider.CreateUri(900, 383, 12345);
 
         uri.ToString().Should().Be("https://images.example/900/383?random=12345");
+    }
+
+    [Fact]
+    public void ShowCoverStudio_OpensComposerWithTheArticleTitle() {
+        var viewModel = CreateViewModel();
+        viewModel.ArticleTitle = "封面标题";
+
+        viewModel.ShowCoverStudioCommand.Execute(null);
+
+        viewModel.IsStackNavigating.Should().BeTrue();
+        viewModel.Breadcrumbs.Select(item => item.Title).Should().Equal("公众号排版", "制作封面");
+        var studio = viewModel.ActiveStackPage.Should().BeOfType<CoverStudioViewModel>().Subject;
+        studio.CoverTitle.Should().Be("封面标题");
+        studio.ShowScrim.Should().BeTrue();
+        studio.IsBold.Should().BeTrue();
+        studio.IsBottomPlacement.Should().BeTrue();
+        studio.IsCenterAlign.Should().BeTrue();
+
+        viewModel.NavigateBreadcrumbAt(0);
+
+        viewModel.IsStackNavigating.Should().BeFalse();
+        viewModel.ActiveStackPage.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UsePreparedCover_InstallsTheComposedImage() {
+        var viewModel = CreateViewModel();
+        var composed = await new CoverComposer().ComposeAsync(null, new CoverComposition { Title = "" });
+        try {
+            viewModel.UsePreparedCover(
+                new PreparedWeChatCover(composed.Path, composed.Width, composed.Height),
+                "制作封面 · 1200 × 900");
+
+            viewModel.CoverPath.Should().Be(composed.Path);
+            viewModel.CoverPixelWidth.Should().Be(1200);
+            viewModel.CoverPixelHeight.Should().Be(900);
+            viewModel.HasCover.Should().BeTrue();
+            viewModel.CoverSourceDescription.Should().Be("制作封面 · 1200 × 900");
+            viewModel.StatusMessage.Should().Contain("制作的封面");
+        }
+        finally {
+            viewModel.CoverPreview?.Dispose();
+            File.Delete(composed.Path);
+        }
     }
 
     private static WeChatViewModel CreateViewModel() =>

@@ -84,6 +84,7 @@
                 <Button.Flyout>
                     <MenuFlyout Placement="LeftEdgeAlignedTop">
                         <MenuItem Header="复制 Markdown" Command="{Binding CopyContentCommand}" />
+                        <MenuItem Header="制作封面" Command="{Binding ShowCoverStudioCommand}" />
                         <MenuItem Header="重新加载" Command="{Binding ReloadDocumentCommand}" />
                         <MenuItem Header="发布并打开网页" Command="{Binding PublishAndOpenCommand}" />
                         <MenuItem Header="复制发布链接" Command="{Binding CopyPublishLinkCommand}" />

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
@@ -22,6 +23,7 @@ using StarBlogPublisher.Services.Application;
 namespace StarBlogPublisher.ViewModels;
 
 public partial class WeChatViewModel : PageViewModelBase {
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly WeChatFormattingService _formattingService = new();
     private readonly WeChatDraftPublishApplicationService _publishService;
     private readonly WeChatCoverImageService _coverImageService;
@@ -32,12 +34,13 @@ public partial class WeChatViewModel : PageViewModelBase {
     private bool _titleCustomized;
 
     public WeChatViewModel(IHttpClientFactory httpClientFactory) : base("公众号排版", Icon.Mail) {
+        _httpClientFactory = httpClientFactory;
         _publishService = new WeChatDraftPublishApplicationService(httpClientFactory);
         _coverImageService = new WeChatCoverImageService(httpClientFactory);
         Themes = new ObservableCollection<WeChatTheme>(WeChatFormattingService.Themes);
         SelectedTheme = WeChatThemeCatalog.Resolve(AppSettings.Instance.WeChatDefaultTheme);
         LoadWeChatAccounts();
-        SelectedCoverSource = CoverSources[0];
+        SelectedCoverSource = CoverSources.First(source => source.Id == "random");
         SelectedCoverSize = CoverSizes[0];
         SelectedRandomCoverProvider = RandomCoverProviders[0];
     }
@@ -53,11 +56,8 @@ public partial class WeChatViewModel : PageViewModelBase {
         new("headline", "头条封面", 900, 383, "900 × 383 · 2.35:1"),
         new("secondary", "次条封面", 500, 500, "500 × 500 · 1:1")
     ];
-    public ObservableCollection<RandomCoverProvider> RandomCoverProviders { get; } = [
-        new("StarBlog PicLib", "https://blog.sblt.deali.cn:9000/Api/PicLib/Random/{0}/{1}?random={2}"),
-        new("Lorem Picsum", "https://picsum.photos/{0}/{1}.jpg?random={2}"),
-        new("LoremFlickr", "https://loremflickr.com/{0}/{1}?random={2}")
-    ];
+    public ObservableCollection<StackBreadcrumb> Breadcrumbs { get; } = new();
+    public ObservableCollection<RandomCoverProvider> RandomCoverProviders { get; } = new(RandomCoverCatalog.All);
 
     [ObservableProperty] private WeChatTheme? _selectedTheme;
     [ObservableProperty] private WeChatAccountProfile? _selectedWeChatAccount;
@@ -92,6 +92,8 @@ public partial class WeChatViewModel : PageViewModelBase {
     [ObservableProperty] private bool _isCoverSectionExpanded = true;
     [ObservableProperty] private bool _isSourceSectionExpanded;
     [ObservableProperty] private bool _isHtmlSectionExpanded;
+    [ObservableProperty] private object? _activeStackPage;
+    [ObservableProperty] private bool _isStackNavigating;
 
     public bool HasDraftMediaId => !string.IsNullOrWhiteSpace(DraftMediaId);
     public bool HasWeChatAccounts => WeChatAccounts.Count > 0;
@@ -248,6 +250,57 @@ public partial class WeChatViewModel : PageViewModelBase {
 
     [RelayCommand]
     private void ToggleInspector() => IsInspectorOpen = !IsInspectorOpen;
+
+    [RelayCommand]
+    private void ShowCoverStudio() {
+        var page = new CoverStudioViewModel(_httpClientFactory, ArticleTitle, cover => {
+            UsePreparedCover(cover, $"制作封面 · {cover.Width} × {cover.Height}");
+            NavigateBreadcrumbAt(0);
+        });
+        OpenStackPage(page, page.Title);
+    }
+
+    public void OpenStackPage(object page, string title) {
+        DisposeStackPage();
+        ActiveStackPage = page;
+        IsStackNavigating = true;
+        Breadcrumbs.Clear();
+        Breadcrumbs.Add(new StackBreadcrumb { Title = Title, Target = null });
+        Breadcrumbs.Add(new StackBreadcrumb { Title = title, Target = page });
+    }
+
+    public void NavigateBreadcrumbAt(int index) {
+        if (index < 0 || Breadcrumbs.Count == 0) return;
+
+        if (index == 0) {
+            DisposeStackPage();
+            ActiveStackPage = null;
+            IsStackNavigating = false;
+            Breadcrumbs.Clear();
+            return;
+        }
+
+        if (index >= Breadcrumbs.Count) return;
+
+        while (Breadcrumbs.Count > index + 1) {
+            Breadcrumbs.RemoveAt(Breadcrumbs.Count - 1);
+        }
+
+        ActiveStackPage = Breadcrumbs[index].Target;
+        IsStackNavigating = ActiveStackPage != null;
+    }
+
+    public void UsePreparedCover(PreparedWeChatCover prepared, string sourceDescription) {
+        CoverPath = prepared.Path;
+        CoverPixelWidth = prepared.Width;
+        CoverPixelHeight = prepared.Height;
+        CoverSourceDescription = sourceDescription;
+        StatusMessage = "已使用制作的封面，将按头条和次条居中裁剪上传";
+    }
+
+    private void DisposeStackPage() {
+        if (ActiveStackPage is IDisposable disposable) disposable.Dispose();
+    }
 
     [RelayCommand]
     private void SetCoverSource(string sourceId) {
@@ -593,4 +646,12 @@ public sealed record CoverSizePreset(string Id, string Name, int Width, int Heig
 public sealed record RandomCoverProvider(string Name, string UrlTemplate) {
     public Uri CreateUri(int width, int height, long nonce) =>
         new(string.Format(UrlTemplate, width, height, nonce));
+}
+
+public static class RandomCoverCatalog {
+    public static IReadOnlyList<RandomCoverProvider> All { get; } = [
+        new("StarBlog PicLib", "https://blog.sblt.deali.cn:9000/Api/PicLib/Random/{0}/{1}?random={2}"),
+        new("Lorem Picsum", "https://picsum.photos/{0}/{1}.jpg?random={2}"),
+        new("LoremFlickr", "https://loremflickr.com/{0}/{1}?random={2}")
+    ];
 }

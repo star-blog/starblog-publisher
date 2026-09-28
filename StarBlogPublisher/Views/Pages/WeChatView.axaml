@@ -36,6 +36,11 @@
             <Setter Property="MinHeight" Value="28" />
         </Style>
     </UserControl.Styles>
+    <controls:StackPageHost Breadcrumbs="{Binding Breadcrumbs}"
+                            IsNavigating="{Binding IsStackNavigating}"
+                            StackContent="{Binding ActiveStackPage}"
+                            BreadcrumbClicked="OnBreadcrumbClicked">
+        <controls:StackPageHost.RootContent>
     <Panel>
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10"
                     IsVisible="{Binding !HasArticle}">
@@ -254,13 +259,22 @@
                                             </ToggleButton>
                                         </Grid>
 
-                                        <Button IsVisible="{Binding IsLocalCoverSource}" Command="{Binding SelectCoverCommand}"
-                                                IsEnabled="{Binding !IsPreparingCover}" HorizontalAlignment="Stretch">
-                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
-                                                <fi:FluentIcon Icon="FolderOpen" IconVariant="Regular" FontSize="16" />
-                                                <TextBlock Text="选择本地图片" />
-                                            </StackPanel>
-                                        </Button>
+                                        <Grid IsVisible="{Binding IsLocalCoverSource}" ColumnDefinitions="*,*" ColumnSpacing="4">
+                                            <Button Command="{Binding SelectCoverCommand}"
+                                                    IsEnabled="{Binding !IsPreparingCover}" HorizontalAlignment="Stretch">
+                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
+                                                    <fi:FluentIcon Icon="FolderOpen" IconVariant="Regular" FontSize="16" />
+                                                    <TextBlock Text="选择图片" />
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Grid.Column="1" Command="{Binding ShowCoverStudioCommand}"
+                                                    IsEnabled="{Binding !IsPublishing}" HorizontalAlignment="Stretch">
+                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
+                                                    <fi:FluentIcon Icon="Image" IconVariant="Regular" FontSize="16" />
+                                                    <TextBlock Text="制作封面" />
+                                                </StackPanel>
+                                            </Button>
+                                        </Grid>
 
                                         <Grid IsVisible="{Binding IsUrlCoverSource}" ColumnDefinitions="*,Auto" ColumnSpacing="6">
                                             <TextBox Classes="InspectorInput" Text="{Binding CoverUrl}" PlaceholderText="https://example.com/cover.jpg"
@@ -285,6 +299,14 @@
                                                 </Button>
                                             </Grid>
                                         </StackPanel>
+
+                                        <Button IsVisible="{Binding !IsLocalCoverSource}" Command="{Binding ShowCoverStudioCommand}"
+                                                HorizontalAlignment="Stretch" IsEnabled="{Binding !IsPublishing}">
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
+                                                <fi:FluentIcon Icon="Image" IconVariant="Regular" FontSize="16" />
+                                                <TextBlock Text="制作封面" />
+                                            </StackPanel>
+                                        </Button>
 
                                         <TextBlock Text="{Binding CoverCropDetail}" FontSize="11"
                                                    TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
@@ -337,4 +359,6 @@
             </Grid>
         </DockPanel>
     </Panel>
+        </controls:StackPageHost.RootContent>
+    </controls:StackPageHost>
 </UserControl>
