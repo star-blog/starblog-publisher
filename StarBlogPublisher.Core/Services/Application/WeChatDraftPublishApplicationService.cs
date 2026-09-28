@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,15 +22,22 @@ public sealed class WeChatDraftPublishApplicationService {
     private const int MaxContentImageBytes = 1024 * 1024;
     private const int MaxCoverImageBytes = 2 * 1024 * 1024;
     /// <summary>WeChat draft title hard limit.</summary>
-    public const int MaxTitleLength = 64;
+    public const int MaxTitleLength = 32;
+    /// <summary>WeChat draft author hard limit.</summary>
+    public const int MaxAuthorLength = 16;
     /// <summary>WeChat draft digest (description) hard limit.</summary>
     public const int MaxDigestLength = 120;
+    /// <summary>WeChat draft content_source_url hard limit.</summary>
+    public const int MaxContentSourceUrlBytes = 1024;
     private static readonly SemaphoreSlim TokenLock = new(1, 1);
     private static readonly ConcurrentDictionary<string, WeChatAccessToken> TokenCache = new(StringComparer.Ordinal);
     // WeChat draft/add expects raw UTF-8 Chinese in JSON. Default System.Text.Json escapes
     // non-ASCII as \uXXXX, which WeChat then stores/displays literally.
     private static readonly JsonSerializerOptions WeChatJsonOptions = new() {
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
+    private static readonly JsonSerializerOptions DraftJsonOptions = new(WeChatJsonOptions) {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
     private readonly AppSettings? _legacySettings;
     private readonly IHttpClientFactory _httpClientFactory;
@@ -47,11 +55,12 @@ public sealed class WeChatDraftPublishApplicationService {
         string sourceDirectory,
         string summary,
         string? coverPath,
-        Action<int, string>? onProgress = null) {
+        Action<int, string>? onProgress = null,
+        WeChatDraftMetadata? metadata = null) {
         if (_legacySettings == null) {
             throw new InvalidOperationException("A WeChat account must be selected before publishing.");
         }
-        return PublishAsync(_legacySettings.CurrentWeChatAccount, formatResult, sourceDirectory, summary, coverPath, onProgress);
+        return PublishAsync(_legacySettings.CurrentWeChatAccount, formatResult, sourceDirectory, summary, coverPath, onProgress, metadata);
     }
 
     public async Task<WeChatDraftPublishResult> PublishAsync(
@@ -60,10 +69,15 @@ public sealed class WeChatDraftPublishApplicationService {
         string sourceDirectory,
         string summary,
         string? coverPath,
-        Action<int, string>? onProgress = null) {
+        Action<int, string>? onProgress = null,
+        WeChatDraftMetadata? metadata = null) {
         try {
             if (string.IsNullOrWhiteSpace(account.AppId) || string.IsNullOrWhiteSpace(account.AppSecret)) {
                 return WeChatDraftPublishResult.Fail("请先在设置中配置微信公众号 AppId 和 AppSecret");
+            }
+
+            if (!TryNormalizeContentSourceUrl(metadata?.ContentSourceUrl, out var contentSourceUrl, out var sourceUrlError)) {
+                return WeChatDraftPublishResult.Fail(sourceUrlError!);
             }
 
             if (string.IsNullOrWhiteSpace(coverPath) || !File.Exists(coverPath)) {
@@ -80,14 +94,20 @@ public sealed class WeChatDraftPublishApplicationService {
             var thumbMediaId = await UploadCoverAsync(account, coverPath, token);
 
             onProgress?.Invoke(88, "正在创建公众号草稿...");
+            var openComment = metadata?.OpenComment ?? true;
             var draftMediaId = await CreateDraftAsync(
                 account,
                 token,
                 formatResult.Title,
                 html,
                 thumbMediaId,
-                account.Author,
-                summary);
+                metadata?.Author ?? account.Author,
+                summary,
+                contentSourceUrl,
+                openComment,
+                openComment && (metadata?.FansOnlyComment ?? false),
+                metadata?.CoverWidth ?? 0,
+                metadata?.CoverHeight ?? 0);
 
             onProgress?.Invoke(96, "正在校验公众号草稿...");
             await VerifyDraftAsync(account, token, draftMediaId);
@@ -251,10 +271,45 @@ public sealed class WeChatDraftPublishApplicationService {
         return normalized is ".png" or ".jpg" or ".jpeg" ? (normalized == ".jpeg" ? ".jpg" : normalized) : ".jpg";
     }
 
-    /// <summary>Truncates a draft title to WeChat's 64-character limit.</summary>
+    /// <summary>Truncates a draft title to WeChat's 32-character limit.</summary>
     public static string TruncateTitle(string? title) {
         if (string.IsNullOrEmpty(title)) return string.Empty;
         return title.Length <= MaxTitleLength ? title : title[..MaxTitleLength];
+    }
+
+    /// <summary>Truncates a draft author to WeChat's 16-character limit.</summary>
+    public static string TruncateAuthor(string? author) {
+        if (string.IsNullOrEmpty(author)) return string.Empty;
+        return author.Length <= MaxAuthorLength ? author : author[..MaxAuthorLength];
+    }
+
+    /// <summary>StarBlog post URL used as the WeChat "read original" link after a successful publish.</summary>
+    public static string? PublishedContentSourceUrl(PublishResult? result) {
+        if (result is not { Success: true } || string.IsNullOrWhiteSpace(result.PostUrl)) return null;
+        return result.PostUrl.Trim();
+    }
+
+    /// <summary>Accepts an empty link, or an absolute HTTP(S) URL of at most 1 KB.</summary>
+    public static bool TryNormalizeContentSourceUrl(string? value, out string? normalized, out string? error) {
+        normalized = null;
+        error = null;
+        if (string.IsNullOrWhiteSpace(value)) return true;
+
+        var trimmed = value.Trim();
+        if (Encoding.UTF8.GetByteCount(trimmed) > MaxContentSourceUrlBytes) {
+            error = "阅读原文链接不能超过 1 KB";
+            return false;
+        }
+
+        if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri) ||
+            (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) &&
+             !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))) {
+            error = "阅读原文需要是 HTTP 或 HTTPS 链接";
+            return false;
+        }
+
+        normalized = trimmed;
+        return true;
     }
 
     /// <summary>Truncates digest to WeChat's 120-character limit.</summary>
@@ -299,23 +354,32 @@ public sealed class WeChatDraftPublishApplicationService {
         string html,
         string thumbMediaId,
         string author,
-        string summary) {
+        string summary,
+        string? contentSourceUrl,
+        bool openComment,
+        bool fansOnlyComment,
+        int coverWidth,
+        int coverHeight) {
         using var client = CreateApiClient(account);
-        var payload = new {
-            articles = new[] {
-                new {
-                    title = TruncateTitle(title),
-                    author,
-                    digest = TruncateDigest(summary),
+        var normalizedAuthor = TruncateAuthor(author).Trim();
+        var digest = TruncateDigest(summary);
+        var crops = WeChatCoverCrops.Center(coverWidth, coverHeight);
+        var payload = new DraftAddBody {
+            articles = [
+                new DraftArticleBody {
+                    title = TruncateTitle(title.Trim()),
+                    author = normalizedAuthor.Length == 0 ? null : normalizedAuthor,
+                    digest = digest.Length == 0 ? null : digest,
                     content = MinifyHtmlForWeChatDraft(html),
+                    content_source_url = contentSourceUrl,
                     thumb_media_id = thumbMediaId,
-                    show_cover_pic = 0,
-                    need_open_comment = 1,
-                    only_fans_can_comment = 0
+                    need_open_comment = openComment ? 1 : 0,
+                    only_fans_can_comment = fansOnlyComment ? 1 : 0,
+                    cover_info = crops.Length == 0 ? null : new DraftCoverBody { crop_percent_list = crops }
                 }
-            }
+            ]
         };
-        using var content = new StringContent(SerializeWeChatJson(payload), Encoding.UTF8, "application/json");
+        using var content = new StringContent(JsonSerializer.Serialize(payload, DraftJsonOptions), Encoding.UTF8, "application/json");
         using var response = await client.PostAsync($"cgi-bin/draft/add?access_token={Uri.EscapeDataString(token)}", content);
         var document = await ReadResponseAsync(response);
         ThrowIfWeChatError(response, document, "创建公众号草稿");
@@ -420,6 +484,27 @@ public sealed class WeChatDraftPublishApplicationService {
     }
 
     private sealed record WeChatAccessToken(string Key, string Token, DateTimeOffset ExpiresAt);
+
+    private sealed class DraftAddBody {
+        public DraftArticleBody[] articles { get; init; } = [];
+    }
+
+    private sealed class DraftArticleBody {
+        public string article_type { get; init; } = "news";
+        public required string title { get; init; }
+        public string? author { get; init; }
+        public string? digest { get; init; }
+        public required string content { get; init; }
+        public string? content_source_url { get; init; }
+        public required string thumb_media_id { get; init; }
+        public int need_open_comment { get; init; }
+        public int only_fans_can_comment { get; init; }
+        public DraftCoverBody? cover_info { get; init; }
+    }
+
+    private sealed class DraftCoverBody {
+        public required WeChatCoverCrop[] crop_percent_list { get; init; }
+    }
 }
 
 /// <summary>

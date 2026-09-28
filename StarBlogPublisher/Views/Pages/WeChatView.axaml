@@ -31,6 +31,10 @@
             <Setter Property="FontSize" Value="12" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
+        <Style Selector="CheckBox">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="MinHeight" Value="28" />
+        </Style>
     </UserControl.Styles>
     <Panel>
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10"
@@ -133,7 +137,20 @@
                                             <TextBox Classes="InspectorInput" Text="{Binding ArticleTitle}"
                                                      PlaceholderText="公众号标题"
                                                      MaxLength="{Binding TitleMaxLength}" />
-                                            <TextBlock Text="用于公众号草稿标题，最多 64 字。同步时优先采用 Markdown 的 title 或一级标题。"
+                                            <TextBlock Text="用于公众号草稿标题，最多 32 字。同步时优先采用 Markdown 的 title 或一级标题。"
+                                                       FontSize="11" TextWrapping="Wrap"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Text="作者" Classes="InspectorLabel" />
+                                                <TextBlock Grid.Column="1" Text="{Binding AuthorCounterText}" FontSize="11"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                            </Grid>
+                                            <TextBox Classes="InspectorInput" Text="{Binding Author}"
+                                                     PlaceholderText="作者"
+                                                     MaxLength="{Binding AuthorMaxLength}" />
+                                            <TextBlock Text="最多 16 字。切换公众号时会带入该账号的默认作者。"
                                                        FontSize="11" TextWrapping="Wrap"
                                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                         </StackPanel>
@@ -151,6 +168,23 @@
                                                      MinHeight="72"
                                                      MaxHeight="120" />
                                             <TextBlock Text="独立于 StarBlog 文章摘要；从发布页同步时会自动带入并截断到 120 字。"
+                                                       FontSize="11" TextWrapping="Wrap"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="阅读原文" Classes="InspectorLabel" />
+                                            <TextBox Classes="InspectorInput" Text="{Binding ContentSourceUrl}"
+                                                     PlaceholderText="https://example.com/p/article"
+                                                     MaxLength="{Binding ContentSourceUrlMaxLength}" />
+                                            <TextBlock Text="文章在 StarBlog 发布成功后，会自动填入文章地址。"
+                                                       FontSize="11" TextWrapping="Wrap"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <StackPanel Spacing="2">
+                                            <CheckBox Content="打开评论" IsChecked="{Binding OpenComment}" />
+                                            <CheckBox Content="仅粉丝可评论" IsChecked="{Binding FansOnlyComment}"
+                                                      IsEnabled="{Binding OpenComment}" />
+                                            <TextBlock Text="默认打开评论，所有人都可以评论。"
                                                        FontSize="11" TextWrapping="Wrap"
                                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                         </StackPanel>
@@ -200,14 +234,14 @@
                                             </ToggleButton>
                                         </Grid>
 
-                                        <TextBlock Text="封面规格" Classes="InspectorLabel" />
+                                        <TextBlock Text="预览裁剪" Classes="InspectorLabel" />
                                         <Grid ColumnDefinitions="*,*" ColumnSpacing="4" IsEnabled="{Binding !IsPreparingCover}">
                                             <ToggleButton Classes="EditorMode" HorizontalAlignment="Stretch"
                                                           IsChecked="{Binding IsHeadlineCoverSize, Mode=OneWay}"
                                                           Command="{Binding SetCoverSizeCommand}" CommandParameter="headline">
                                                 <StackPanel Spacing="1">
                                                     <TextBlock Text="头条" FontSize="11" HorizontalAlignment="Center" />
-                                                    <TextBlock Text="900 × 383" FontSize="10" Opacity="0.7" HorizontalAlignment="Center" />
+                                                    <TextBlock Text="2.35:1" FontSize="10" Opacity="0.7" HorizontalAlignment="Center" />
                                                 </StackPanel>
                                             </ToggleButton>
                                             <ToggleButton Grid.Column="1" Classes="EditorMode" HorizontalAlignment="Stretch"
@@ -215,7 +249,7 @@
                                                           Command="{Binding SetCoverSizeCommand}" CommandParameter="secondary">
                                                 <StackPanel Spacing="1">
                                                     <TextBlock Text="次条" FontSize="11" HorizontalAlignment="Center" />
-                                                    <TextBlock Text="500 × 500" FontSize="10" Opacity="0.7" HorizontalAlignment="Center" />
+                                                    <TextBlock Text="1:1" FontSize="10" Opacity="0.7" HorizontalAlignment="Center" />
                                                 </StackPanel>
                                             </ToggleButton>
                                         </Grid>
@@ -252,7 +286,7 @@
                                             </Grid>
                                         </StackPanel>
 
-                                        <TextBlock Text="获取后会按此规格居中裁切，并转换为可上传的 JPEG。" FontSize="11"
+                                        <TextBlock Text="{Binding CoverCropDetail}" FontSize="11"
                                                    TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
 

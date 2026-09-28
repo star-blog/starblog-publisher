@@ -39,13 +39,44 @@ public class WeChatDraftPublishApplicationServiceTests {
     }
 
     [Fact]
-    public void TruncateTitle_CapsAt64Characters() {
+    public void TruncateTitle_CapsAt32Characters() {
         var longTitle = new string('题', 80);
 
         var truncated = WeChatDraftPublishApplicationService.TruncateTitle(longTitle);
 
         truncated.Should().HaveLength(WeChatDraftPublishApplicationService.MaxTitleLength);
-        truncated.Should().Be(new string('题', 64));
+        truncated.Should().Be(new string('题', 32));
+    }
+
+    [Fact]
+    public void TruncateAuthor_CapsAt16Characters() {
+        var truncated = WeChatDraftPublishApplicationService.TruncateAuthor(new string('作', 20));
+
+        truncated.Should().HaveLength(WeChatDraftPublishApplicationService.MaxAuthorLength);
+        truncated.Should().Be(new string('作', 16));
+    }
+
+    [Fact]
+    public void PublishedContentSourceUrl_UsesTheStarBlogPostUrlAfterSuccess() {
+        var published = PublishResult.Ok(new BlogPost { Title = "标题" }, "https://blog.example/p/post");
+        var failed = PublishResult.Fail("发布失败");
+
+        WeChatDraftPublishApplicationService.PublishedContentSourceUrl(published).Should().Be("https://blog.example/p/post");
+        WeChatDraftPublishApplicationService.PublishedContentSourceUrl(failed).Should().BeNull();
+        WeChatDraftPublishApplicationService.PublishedContentSourceUrl(null).Should().BeNull();
+    }
+
+    [Fact]
+    public void TryNormalizeContentSourceUrl_RejectsNonHttpLinks() {
+        var ok = WeChatDraftPublishApplicationService.TryNormalizeContentSourceUrl(" https://blog.example/p/post ", out var normalized, out var error);
+
+        ok.Should().BeTrue();
+        normalized.Should().Be("https://blog.example/p/post");
+        error.Should().BeNull();
+
+        WeChatDraftPublishApplicationService.TryNormalizeContentSourceUrl("ftp://blog.example/p/post", out _, out var rejected)
+            .Should().BeFalse();
+        rejected.Should().Contain("HTTP");
     }
 
     [Fact]
@@ -133,6 +164,11 @@ public class WeChatDraftPublishApplicationServiceTests {
             draft.BodyText.Should().NotContain(new string('摘', 121));
             draft.BodyText.Should().Contain("<ul><li>one</li><li>two</li></ul>");
             draft.BodyText.Should().NotContain("<ul>\\n<li>");
+            draft.BodyText.Should().Contain("\"need_open_comment\":1");
+            draft.BodyText.Should().Contain("\"only_fans_can_comment\":0");
+            draft.BodyText.Should().NotContain("show_cover_pic");
+            draft.BodyText.Should().NotContain("content_source_url");
+            draft.BodyText.Should().NotContain("cover_info");
             // Returned HTML for preview/copy keeps original formatting with newlines.
             result.FormattedHtml.Should().Contain("<ul>\n<li>one</li>");
         }
@@ -183,6 +219,71 @@ public class WeChatDraftPublishApplicationServiceTests {
             File.Delete(coverPath);
             Directory.Delete(imageDir, recursive: true);
         }
+    }
+
+    [Fact]
+    public async Task PublishAsync_SendsDraftMetadataAndCenterCrops() {
+        var coverPath = Path.Combine(Path.GetTempPath(), $"starblog-cover-{Guid.NewGuid():N}.jpg");
+        await File.WriteAllBytesAsync(coverPath, [0xFF, 0xD8, 0xFF, 0xD9]);
+        try {
+            var handler = new SequencingHandler([
+                (HttpMethod.Get, "cgi-bin/token", """{"access_token":"tok","expires_in":7200}"""),
+                (HttpMethod.Post, "cgi-bin/material/add_material", """{"media_id":"cover-media-1"}"""),
+                (HttpMethod.Post, "cgi-bin/draft/add", """{"media_id":"draft-1"}"""),
+                (HttpMethod.Post, "cgi-bin/draft/get", """{"news_item":[{"title":"Hello"}]}""")
+            ]);
+            var service = CreateService(handler, out var settings);
+            settings.WeChatAppId = $"app-meta-{Guid.NewGuid():N}";
+            settings.WeChatAppSecret = "secret";
+            settings.WeChatAuthor = "账号作者";
+
+            var result = await service.PublishAsync(
+                FormatResult("<p>正文</p>", "标题"),
+                Path.GetTempPath(),
+                "摘要",
+                coverPath,
+                metadata: new WeChatDraftMetadata {
+                    Author = "文章作者",
+                    ContentSourceUrl = "https://blog.example/p/post",
+                    OpenComment = true,
+                    FansOnlyComment = false,
+                    CoverWidth = 1400,
+                    CoverHeight = 700
+                });
+
+            result.Success.Should().BeTrue(result.ErrorMessage);
+            var draft = handler.Requests.Should().ContainSingle(r =>
+                r.Uri.AbsoluteUri.Contains("cgi-bin/draft/add", StringComparison.Ordinal)).Subject;
+            draft.BodyText.Should().Contain("\"author\":\"文章作者\"");
+            draft.BodyText.Should().NotContain("账号作者");
+            draft.BodyText.Should().Contain("\"content_source_url\":\"https://blog.example/p/post\"");
+            draft.BodyText.Should().Contain("\"need_open_comment\":1");
+            draft.BodyText.Should().Contain("\"only_fans_can_comment\":0");
+            draft.BodyText.Should().Contain("\"ratio\":\"2.35_1\"");
+            draft.BodyText.Should().Contain("\"ratio\":\"1_1\"");
+            draft.BodyText.Should().Contain("\"x1\":\"0.2500\"");
+            draft.BodyText.Should().NotContain("show_cover_pic");
+        }
+        finally {
+            File.Delete(coverPath);
+        }
+    }
+
+    [Fact]
+    public async Task PublishAsync_RejectsInvalidContentSourceUrlBeforeCallingWeChat() {
+        var service = CreateService(new SequencingHandler([]), out var settings);
+        settings.WeChatAppId = "app";
+        settings.WeChatAppSecret = "secret";
+
+        var result = await service.PublishAsync(
+            FormatResult("<p>x</p>"),
+            Path.GetTempPath(),
+            "summary",
+            coverPath: "missing.jpg",
+            metadata: new WeChatDraftMetadata { ContentSourceUrl = "not a url" });
+
+        result.Success.Should().BeFalse();
+        result.ErrorMessage.Should().Contain("阅读原文");
     }
 
     [Fact]

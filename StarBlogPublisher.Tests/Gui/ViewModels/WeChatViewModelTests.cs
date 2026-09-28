@@ -77,8 +77,31 @@ public class WeChatViewModelTests {
 
         viewModel.ArticleTitle = new string('题', 80);
 
-        viewModel.ArticleTitle.Should().HaveLength(64);
-        viewModel.TitleCounterText.Should().Be("64/64");
+        viewModel.ArticleTitle.Should().HaveLength(32);
+        viewModel.TitleCounterText.Should().Be("32/32");
+    }
+
+    [Fact]
+    public void Author_IsClampedToWeChatLimit() {
+        var viewModel = CreateViewModel();
+
+        viewModel.Author = new string('作', 20);
+
+        viewModel.Author.Should().HaveLength(16);
+        viewModel.AuthorCounterText.Should().Be("16/16");
+    }
+
+    [Fact]
+    public void Comments_DefaultToEveryoneAndClearFansOnlyWhenClosed() {
+        var viewModel = CreateViewModel();
+
+        viewModel.OpenComment.Should().BeTrue();
+        viewModel.FansOnlyComment.Should().BeFalse();
+
+        viewModel.FansOnlyComment = true;
+        viewModel.OpenComment = false;
+
+        viewModel.FansOnlyComment.Should().BeFalse();
     }
 
     [Fact]
