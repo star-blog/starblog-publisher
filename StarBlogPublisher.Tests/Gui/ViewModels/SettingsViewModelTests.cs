@@ -21,7 +21,6 @@ public sealed class SettingsViewModelTests {
         vm.Username = original;
         vm.SelectedSection = 2;
         vm.IsWeChatAdvancedExpanded = true;
-        vm.ShowPassword = true;
         vm.HasChanges.Should().BeFalse();
     }
 
