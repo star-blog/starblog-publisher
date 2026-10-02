@@ -22,3 +22,18 @@ internal sealed record PostDetailsDto(
     string? Summary,
     DateTime CreationTime,
     DateTime LastUpdateTime);
+
+internal sealed record PostListItemDto(
+    string Id,
+    string Title,
+    string? Slug,
+    string Status,
+    string? Category,
+    DateTime LastUpdateTime);
+
+internal sealed record PostListPageDto(
+    int Page,
+    int PageSize,
+    int TotalCount,
+    int TotalPages,
+    List<PostListItemDto> Items);

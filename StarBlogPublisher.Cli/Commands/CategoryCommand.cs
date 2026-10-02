@@ -64,7 +64,56 @@ public static class CategoryCommand {
 
         command.Subcommands.Add(listCmd);
         command.Subcommands.Add(createCmd);
+        command.Subcommands.Add(BuildUpdateCommand());
+        command.Subcommands.Add(BuildDeleteCommand());
         return command;
+    }
+
+    private static CategoryApplicationService CreateService() =>
+        new(ApiService.Instance, new AuthApplicationService(
+            AppSettings.Instance, GlobalState.Instance, ApiService.Instance));
+
+    private static Command BuildUpdateCommand() {
+        var idOpt = new Option<int>("--id") { Description = "分类 ID", Required = true };
+        var nameOpt = new Option<string>("--name") { Description = "分类名称", Required = true };
+        var parentIdOpt = new Option<int>("--parent-id") { Description = "父分类 ID", DefaultValueFactory = _ => 0 };
+        var visibleOpt = new Option<bool>("--visible") { Description = "是否前台可见", DefaultValueFactory = _ => true };
+        var updateCmd = new Command("update", "更新分类") { idOpt, nameOpt, parentIdOpt, visibleOpt };
+        updateCmd.SetAction(parseResult => {
+            Task.Run(async () => {
+                var result = await CreateService().UpdateCategoryAsync(
+                    parseResult.GetValue(idOpt),
+                    parseResult.GetValue(nameOpt)!,
+                    parseResult.GetValue(parentIdOpt),
+                    parseResult.GetValue(visibleOpt));
+                if (!result.Success) {
+                    Console.Error.WriteLine(result.ErrorMessage);
+                    Environment.ExitCode = 1;
+                    return;
+                }
+                Console.WriteLine(result.Message ?? "分类已更新");
+            }).Wait();
+            return Environment.ExitCode;
+        });
+        return updateCmd;
+    }
+
+    private static Command BuildDeleteCommand() {
+        var idOpt = new Option<int>("--id") { Description = "分类 ID", Required = true };
+        var deleteCmd = new Command("delete", "删除分类") { idOpt };
+        deleteCmd.SetAction(parseResult => {
+            Task.Run(async () => {
+                var result = await CreateService().DeleteCategoryAsync(parseResult.GetValue(idOpt));
+                if (!result.Success) {
+                    Console.Error.WriteLine(result.ErrorMessage);
+                    Environment.ExitCode = 1;
+                    return;
+                }
+                Console.WriteLine(result.Message ?? "分类已删除");
+            }).Wait();
+            return Environment.ExitCode;
+        });
+        return deleteCmd;
     }
 
     private static void PrintCategory(Category cat, int indent) {

@@ -8,4 +8,7 @@ namespace StarBlogPublisher.Cli.Models;
 [JsonSerializable(typeof(List<CategorySummaryDto>))]
 [JsonSerializable(typeof(PublishedPostDto))]
 [JsonSerializable(typeof(PostDetailsDto))]
+[JsonSerializable(typeof(PostListItemDto))]
+[JsonSerializable(typeof(List<PostListItemDto>))]
+[JsonSerializable(typeof(PostListPageDto))]
 internal partial class CliJsonContext : JsonSerializerContext;

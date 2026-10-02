@@ -38,4 +38,25 @@ public static class CategoryTools {
 
         return result.Success ? $"分类创建成功: {name}" : $"错误: {result.ErrorMessage}";
     }
+
+    [McpServerTool, Description("更新分类名称、父级和可见性")]
+    public static async Task<string> CategoryUpdate(
+        [Description("分类 ID")] int id,
+        [Description("分类名称")] string name,
+        [Description("父分类 ID，0 为顶级")] int parentId = 0,
+        [Description("是否在前台可见")] bool visible = true) {
+
+        var result = await CreateService().UpdateCategoryAsync(id, name, parentId, visible);
+        return result.Success ? result.Message ?? "分类已更新" : $"错误: {result.ErrorMessage}";
+    }
+
+    [McpServerTool, Description("删除分类。分类下仍有文章时会失败")]
+    public static async Task<string> CategoryDelete([Description("分类 ID")] int id) {
+        var result = await CreateService().DeleteCategoryAsync(id);
+        return result.Success ? result.Message ?? $"已删除分类 {id}" : $"错误: {result.ErrorMessage}";
+    }
+
+    private static CategoryApplicationService CreateService() =>
+        new(ApiService.Instance, new AuthApplicationService(
+            AppSettings.Instance, GlobalState.Instance, ApiService.Instance));
 }
