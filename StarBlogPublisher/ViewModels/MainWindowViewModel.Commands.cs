@@ -62,6 +62,7 @@ public partial class MainWindowViewModel {
         Add("view.focus", "查看", "专注模式", "Ctrl+Shift+F11", () => ShowWorkspace(Workspace.ToggleFocusCommand), () => Workspace.HasDocuments, () => Workspace.IsFocusMode);
         Add("view.theme", "查看", "切换浅色/深色", null, () => Run(ToggleThemeCommand), check: () => IsDarkTheme);
         Add("view.settings", "查看", "设置", "Ctrl+OemComma", () => Act(() => ActivePage = SettingsPage));
+        Add("view.sitePosts", "查看", "站点文章", null, () => Act(() => ActivePage = SitePostsPage));
 
         Add("article.title", "文章", "优化标题", null, () => Run(PublishPage.RefineTitleWithAICommand), AiReady);
         Add("article.summary", "文章", "生成摘要", null, () => Run(PublishPage.RegenerateDescriptionCommand), AiReady);

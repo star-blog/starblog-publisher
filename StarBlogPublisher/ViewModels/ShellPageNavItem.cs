@@ -4,6 +4,7 @@ namespace StarBlogPublisher.ViewModels;
 
 public enum ShellPageId {
     WeChat,
+    SitePosts,
     Settings,
     About,
 }

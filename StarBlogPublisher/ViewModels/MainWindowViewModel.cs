@@ -27,6 +27,7 @@ public partial class MainWindowViewModel : ViewModelBase {
     public PublishViewModel PublishPage => Workspace.CurrentDocument;
 
     private WeChatViewModel? _weChatPage;
+    private SitePostsViewModel? _sitePostsPage;
     private SettingsViewModel? _settingsPage;
     private AboutViewModel? _aboutPage;
     private IHttpClientFactory? _httpClientFactory;
@@ -34,12 +35,14 @@ public partial class MainWindowViewModel : ViewModelBase {
     private bool _startupLoginScheduled;
 
     public WeChatViewModel WeChatPage => _weChatPage ??= new WeChatViewModel(HttpClientFactory);
+    public SitePostsViewModel SitePostsPage => _sitePostsPage ??= new SitePostsViewModel(this);
     public SettingsViewModel SettingsPage => _settingsPage ??= CreateSettingsPage();
     public AboutViewModel AboutPage => _aboutPage ??= new AboutViewModel();
 
     public ModelCatalogPageViewModel? ModelCatalogPage { get; private set; }
 
     private readonly ShellPageNavItem _weChatNav;
+    private readonly ShellPageNavItem _sitePostsNav;
     private readonly ShellPageNavItem _settingsNav;
     private readonly ShellPageNavItem _aboutNav;
 
@@ -106,10 +109,11 @@ public partial class MainWindowViewModel : ViewModelBase {
         _httpClientFactory = httpClientFactory;
         _initializeSession = initializeSession;
         Workspace = new ArticleWorkspaceViewModel(this, workspaceHistoryPath);
+        _sitePostsNav = new ShellPageNavItem(ShellPageId.SitePosts, "站点文章", Icon.News);
         _weChatNav = new ShellPageNavItem(ShellPageId.WeChat, "公众号排版", Icon.Mail);
         _settingsNav = new ShellPageNavItem(ShellPageId.Settings, "设置", Icon.Settings);
         _aboutNav = new ShellPageNavItem(ShellPageId.About, "关于", Icon.Info);
-        NavigationItems = [Workspace, _weChatNav, _settingsNav, _aboutNav];
+        NavigationItems = [Workspace, _sitePostsNav, _weChatNav, _settingsNav, _aboutNav];
         ThemeFooterItem = new ShellFooterNavItem { Tag = "theme", Title = "主题" };
         AccountFooterItem = new ShellFooterNavItem { Tag = "account", Title = "登录" };
         FooterNavItems = [ThemeFooterItem, AccountFooterItem];
@@ -134,6 +138,7 @@ public partial class MainWindowViewModel : ViewModelBase {
     public INavigationMenuItem? SelectedNavigationItem {
         get => ActivePage switch {
             ArticleWorkspaceViewModel => Workspace,
+            SitePostsViewModel => _sitePostsNav,
             WeChatViewModel => _weChatNav,
             SettingsViewModel => _settingsNav,
             AboutViewModel => _aboutNav,
@@ -176,6 +181,7 @@ public partial class MainWindowViewModel : ViewModelBase {
     }
 
     private PageViewModelBase EnsureShellPage(ShellPageId pageId) => pageId switch {
+        ShellPageId.SitePosts => SitePostsPage,
         ShellPageId.WeChat => WeChatPage,
         ShellPageId.Settings => SettingsPage,
         ShellPageId.About => AboutPage,
@@ -281,7 +287,10 @@ public partial class MainWindowViewModel : ViewModelBase {
     private void OnActivePageChanged(PageViewModelBase? value) {
         OnPropertyChanged(nameof(IsWorkspaceActive));
         OnPropertyChanged(nameof(SecondaryPage));
-        if (value is WeChatViewModel weChat) {
+        if (value is SitePostsViewModel sitePosts) {
+            _ = sitePosts.EnsureLoadedAsync();
+        }
+        else if (value is WeChatViewModel weChat) {
             weChat.SyncFrom(PublishPage);
         }
         else if (value is SettingsViewModel settings) {
@@ -297,7 +306,7 @@ public partial class MainWindowViewModel : ViewModelBase {
     }
 
     public void NavigateTo(PageViewModelBase page) {
-        if (page == Workspace || page == WeChatPage || page == SettingsPage || page == AboutPage) {
+        if (page == Workspace || page == SitePostsPage || page == WeChatPage || page == SettingsPage || page == AboutPage) {
             ActivePage = page;
         }
     }
@@ -379,6 +388,10 @@ public partial class MainWindowViewModel : ViewModelBase {
         if (IsLoggedIn && !wasLoggedIn) {
             Workspace.EmptyDocument.RefreshCategoriesCommand.Execute(null);
             foreach (var document in Workspace.Documents) document.RefreshCategoriesCommand.Execute(null);
+            _sitePostsPage?.ReloadAfterLogin();
+        }
+        else if (!IsLoggedIn && wasLoggedIn) {
+            _sitePostsPage?.ReloadAfterLogin();
         }
     }
 }

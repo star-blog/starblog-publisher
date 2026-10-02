@@ -1,0 +1,85 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:StarBlogPublisher.ViewModels"
+             xmlns:models="using:StarBlogPublisher.Models"
+             xmlns:fi="using:FluentIcons.Avalonia.Fluent"
+             xmlns:controls="using:StarBlogPublisher.Views.Controls"
+             x:Class="StarBlogPublisher.Views.SitePostEditorView"
+             x:DataType="vm:SitePostEditorViewModel">
+    <Panel>
+        <Grid RowDefinitions="Auto,*,Auto" Margin="32,8,32,24" RowSpacing="16">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis" MaxWidth="640" />
+                        <Border Classes="Chip" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding StatusText}" FontSize="12" />
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Text="{Binding PostUrl}" FontSize="12" Opacity="0.7" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+                    <Button Command="{Binding OpenInBrowserCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <fi:FluentIcon Icon="Globe" IconVariant="Regular" />
+                            <TextBlock Text="浏览器" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding DownloadCommand}" IsEnabled="{Binding !IsBusy}">
+                        <TextBlock Text="下载到本地" />
+                    </Button>
+                    <Button Command="{Binding OpenInWorkspaceCommand}" IsEnabled="{Binding !IsBusy}">
+                        <TextBlock Text="在工作区打开" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <Grid Grid.Row="1" ColumnDefinitions="2*,*" ColumnSpacing="16" MinHeight="360">
+                <Border Classes="Card" Padding="16">
+                    <Grid RowDefinitions="Auto,*" RowSpacing="8">
+                        <TextBlock Text="正文" FontWeight="SemiBold" />
+                        <TextBox Grid.Row="1" Text="{Binding Content}" AcceptsReturn="True"
+                                 TextWrapping="Wrap" FontFamily="Consolas" FontSize="13" />
+                    </Grid>
+                </Border>
+                <Border Grid.Column="1" Classes="Card" Padding="16">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="文章属性" FontWeight="SemiBold" FontSize="16" />
+                        <TextBlock Text="标题" Opacity="0.75" FontSize="12" />
+                        <TextBox Text="{Binding Title}" />
+                        <TextBlock Text="摘要" Opacity="0.75" FontSize="12" />
+                        <TextBox Text="{Binding Summary}" AcceptsReturn="True" MinHeight="80" TextWrapping="Wrap" />
+                        <TextBlock Text="Slug" Opacity="0.75" FontSize="12" />
+                        <TextBox Text="{Binding Slug}" FontFamily="Consolas" />
+                        <TextBlock Text="分类" Opacity="0.75" FontSize="12" />
+                        <ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}"
+                                  HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="models:Category">
+                                    <TextBlock Text="{Binding DisplayName}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <TextBlock Text="{Binding StatusMessage}" Opacity="0.75" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                    <Button Command="{Binding DeleteCommand}" IsEnabled="{Binding !IsBusy}">
+                        <TextBlock Text="删除" />
+                    </Button>
+                    <Button Command="{Binding SaveDraftCommand}" IsEnabled="{Binding CanSave}">
+                        <TextBlock Text="存为草稿" />
+                    </Button>
+                    <Button Command="{Binding PublishCommand}" Classes="Accent" IsEnabled="{Binding CanSave}">
+                        <TextBlock Text="发布" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Grid>
+        <controls:BusyOverlay IsBusy="{Binding IsBusy}" Message="{Binding StatusMessage}" />
+    </Panel>
+</UserControl>
