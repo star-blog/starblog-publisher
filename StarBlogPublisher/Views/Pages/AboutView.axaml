@@ -5,94 +5,240 @@
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:fi="using:FluentIcons.Avalonia.Fluent"
-             mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="700"
+             mc:Ignorable="d" d:DesignWidth="1080" d:DesignHeight="900"
              x:Class="StarBlogPublisher.Views.AboutView"
              x:DataType="vm:AboutViewModel">
-    <ScrollViewer>
-        <StackPanel Margin="24" Spacing="16" MaxWidth="640" HorizontalAlignment="Center">
-            <StackPanel Spacing="12" HorizontalAlignment="Center">
-                <Image Source="/Assets/logo.webp" Width="160" Height="160" />
-                <TextBlock Text="{Binding AppName}" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" />
-                <TextBlock Text="{Binding AppVersion}" HorizontalAlignment="Center"
-                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-            </StackPanel>
+    <UserControl.Styles>
+        <Style Selector="TextBlock.Hint">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style Selector="TextBlock.SectionTitle">
+            <Setter Property="FontSize" Value="22" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="TextBlock.GroupTitle">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="TextBlock.MetaLabel">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Margin" Value="0,2,12,0" />
+        </Style>
+        <Style Selector="Border.FeatureCard">
+            <Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="14" />
+            <Setter Property="Margin" Value="6" />
+        </Style>
+        <Style Selector="Border.FeatureIcon">
+            <Setter Property="Width" Value="36" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+        </Style>
+        <Style Selector="Border.Rule">
+            <Setter Property="Height" Value="1" />
+            <Setter Property="Background" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="Margin" Value="0,10" />
+        </Style>
+        <Style Selector="Button.LinkRow">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.LinkRow:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+        </Style>
+    </UserControl.Styles>
 
-            <Border Classes="Card">
-                <StackPanel Spacing="10" Margin="8">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <fi:FluentIcon Icon="Info" IconVariant="Regular" />
-                        <TextBlock Text="基本信息" FontWeight="Bold" FontSize="16" />
-                    </StackPanel>
-                    <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
-                    <TextBlock Text="{Binding Copyright}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                </StackPanel>
-            </Border>
+    <Grid RowDefinitions="Auto,*">
+        <Grid Margin="32,24,32,16" MaxWidth="1080" ColumnDefinitions="176,*">
+            <TextBlock Text="关于" FontSize="26" FontWeight="SemiBold" />
+            <TextBlock Grid.Column="1" Text="{Binding Tagline}" Classes="Hint" VerticalAlignment="Center" />
+        </Grid>
 
-            <Border Classes="Card">
-                <StackPanel Spacing="10" Margin="8">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <fi:FluentIcon Icon="ArrowClockwise" IconVariant="Regular" />
-                        <TextBlock Text="软件更新" FontWeight="Bold" FontSize="16" />
-                    </StackPanel>
-                    <TextBlock Text="检查 GitHub Releases 中是否有新版。" TextWrapping="Wrap" />
-                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                        <Button Command="{Binding CheckForUpdateCommand}" Classes="Accent">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <fi:FluentIcon Icon="ArrowClockwise" IconVariant="Regular" />
-                                <TextBlock Text="检查更新" />
-                            </StackPanel>
-                        </Button>
-                        <TextBlock Text="{Binding UpdateStatus}" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    </StackPanel>
-                </StackPanel>
-            </Border>
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="32,0,32,32" MaxWidth="1080" Spacing="20">
+                <Border Classes="Card" Padding="20">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
+                        <Border Width="72" Height="72" CornerRadius="16" ClipToBounds="True"
+                                Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1" Padding="8" VerticalAlignment="Top">
+                            <Image Source="/Assets/logo.webp" Stretch="Uniform"
+                                   AutomationProperties.Name="StarBlog Publisher 图标" />
+                        </Border>
 
-            <Border Classes="Card">
-                <StackPanel Spacing="10" Margin="8">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <fi:FluentIcon Icon="Library" IconVariant="Regular" />
-                        <TextBlock Text="技术栈" FontWeight="Bold" FontSize="16" />
-                    </StackPanel>
-                    <ItemsControl ItemsSource="{Binding TechStack}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:TechStackItem">
-                                <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                    <fi:FluentIcon Icon="Checkmark" IconVariant="Regular" Margin="0,0,5,0" />
-                                    <TextBlock TextWrapping="Wrap">
-                                        <Run Text="基于 " />
-                                        <Run Text="{Binding Name}" FontWeight="SemiBold" />
-                                        <Run Text=" " />
-                                        <Run Text="{Binding Description}" />
-                                    </TextBlock>
+                        <StackPanel Grid.Column="1" Spacing="10">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="{Binding AppName}" FontSize="22" FontWeight="SemiBold" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Border Classes="Chip" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding VersionLabel}" FontSize="12" />
+                                    </Border>
+                                    <Border Classes="Chip" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding License}" FontSize="12" />
+                                    </Border>
+                                    <Button Classes="Icon" Command="{Binding CopyVersionCommand}"
+                                            ToolTip.Tip="复制版本号"
+                                            AutomationProperties.Name="复制版本号"
+                                            VerticalAlignment="Center">
+                                        <fi:SymbolIcon Symbol="Copy" FontSize="14" />
+                                    </Button>
                                 </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </Border>
+                            </StackPanel>
 
-            <Border Classes="Card">
-                <StackPanel Spacing="10" Margin="8">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <fi:FluentIcon Icon="Link" IconVariant="Regular" />
-                        <TextBlock Text="相关链接" FontWeight="Bold" FontSize="16" />
-                    </StackPanel>
-                    <ItemsControl ItemsSource="{Binding Links}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:LinkItem">
-                                <Button Command="{Binding OpenLinkCommand}" CommandParameter="{Binding Url}"
-                                        HorizontalAlignment="Left" Padding="8" Margin="0,4,0,0">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fi:FluentIcon Icon="Link" IconVariant="Regular" Margin="0,0,5,0" />
-                                        <TextBlock Text="{Binding Text}" />
+                            <TextBlock Text="{Binding Description}" Classes="Hint" FontSize="13" />
+
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Command="{Binding CheckForUpdateCommand}" Classes="Accent"
+                                        AutomationProperties.Name="检查更新">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <fi:SymbolIcon Symbol="ArrowSync" FontSize="16"
+                                                       IsVisible="{Binding !IsCheckingForUpdate}" />
+                                        <TextBlock Text="检查更新" IsVisible="{Binding !IsCheckingForUpdate}" />
+                                        <TextBlock Text="正在检查…" IsVisible="{Binding IsCheckingForUpdate}" />
                                     </StackPanel>
                                 </Button>
+                                <Button Command="{Binding OpenProjectCommand}"
+                                        AutomationProperties.Name="打开项目主页">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <fi:SymbolIcon Symbol="Open" FontSize="16" />
+                                        <TextBlock Text="项目主页" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <ui:FAInfoBar Title="{Binding UpdateTitle}"
+                              Message="{Binding UpdateStatus}"
+                              Severity="{Binding UpdateSeverity}"
+                              IsOpen="{Binding HasUpdateStatus, Mode=TwoWay}"
+                              IsClosable="True"
+                              AutomationProperties.LiveSetting="Polite">
+                    <ui:FAInfoBar.ActionButton>
+                        <Button Content="前往下载"
+                                Command="{Binding OpenReleasesCommand}"
+                                IsVisible="{Binding IsUpdateAvailable}"
+                                AutomationProperties.Name="前往下载新版本" />
+                    </ui:FAInfoBar.ActionButton>
+                </ui:FAInfoBar>
+
+                <StackPanel Spacing="8">
+                    <TextBlock Text="能做什么" Classes="SectionTitle" />
+                    <TextBlock Classes="Hint" Text="3.0 以文章工作区为主界面，发布、公众号和 AI 都从这里出发。" />
+                    <ItemsControl x:Name="FeatureList" ItemsSource="{Binding Features}" Margin="-6,4,-6,0">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="3" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AboutFeatureItem">
+                                <Border Classes="FeatureCard">
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                        <Border Classes="FeatureIcon" VerticalAlignment="Top">
+                                            <fi:SymbolIcon Symbol="{Binding Symbol}" FontSize="18"
+                                                           Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Spacing="4">
+                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding Description}" Classes="Hint" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
-            </Border>
-        </StackPanel>
-    </ScrollViewer>
+
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                    <Border Classes="Card" Padding="16,14">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="软件信息" Classes="GroupTitle" />
+                            <Grid ColumnDefinitions="88,*">
+                                <TextBlock Text="版本" Classes="MetaLabel" />
+                                <TextBlock Grid.Column="1" Text="{Binding AppVersion}" TextWrapping="Wrap" />
+                            </Grid>
+                            <Border Classes="Rule" />
+                            <Grid ColumnDefinitions="88,*">
+                                <TextBlock Text="许可证" Classes="MetaLabel" />
+                                <TextBlock Grid.Column="1" Text="{Binding License}" TextWrapping="Wrap" />
+                            </Grid>
+                            <Border Classes="Rule" />
+                            <Grid ColumnDefinitions="88,*">
+                                <TextBlock Text="运行时" Classes="MetaLabel" />
+                                <TextBlock Grid.Column="1" Text="{Binding RuntimeName}" TextWrapping="Wrap" />
+                            </Grid>
+                            <Border Classes="Rule" />
+                            <Grid ColumnDefinitions="88,*">
+                                <TextBlock Text="操作系统" Classes="MetaLabel" />
+                                <TextBlock Grid.Column="1" Text="{Binding OperatingSystem}" TextWrapping="Wrap" />
+                            </Grid>
+                            <Border Classes="Rule" />
+                            <TextBlock Text="{Binding Copyright}" Classes="Hint" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="Card" Padding="10,14">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="相关链接" Classes="GroupTitle" Margin="6,0,6,6" />
+                            <ItemsControl ItemsSource="{Binding Links}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:AboutLinkItem">
+                                        <Button Classes="LinkRow" Command="{Binding OpenCommand}"
+                                                AutomationProperties.Name="{Binding Text}">
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                                <fi:SymbolIcon Symbol="{Binding Symbol}" FontSize="16"
+                                                               Foreground="{DynamicResource AccentFillColorDefaultBrush}"
+                                                               VerticalAlignment="Center" />
+                                                <StackPanel Grid.Column="1" Spacing="2">
+                                                    <TextBlock Text="{Binding Text}" FontWeight="SemiBold" />
+                                                    <TextBlock Text="{Binding Description}" Classes="Hint" />
+                                                </StackPanel>
+                                                <fi:SymbolIcon Grid.Column="2" Symbol="ChevronRight" FontSize="14"
+                                                               Opacity="0.45" VerticalAlignment="Center" />
+                                            </Grid>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <StackPanel Spacing="8">
+                    <TextBlock Text="技术栈" Classes="SectionTitle" />
+                    <TextBlock Classes="Hint" Text="桌面、CLI 和 MCP 共用 StarBlogPublisher.Core。" />
+                    <ItemsControl ItemsSource="{Binding TechStack}" Margin="0,4,0,0">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AboutTechItem">
+                                <Border Classes="Chip" ToolTip.Tip="{Binding Description}">
+                                    <TextBlock Text="{Binding Name}" FontSize="12" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
 </UserControl>
