@@ -27,6 +27,7 @@ StarBlogPublisher.Core/       # 共享核心库（无 UI 依赖）
 │   ├── AuthApplicationService.cs
 │   ├── CategoryApplicationService.cs
 │   ├── ArticlePublishApplicationService.cs
+│   ├── ArticleLibraryApplicationService.cs
 │   └── AiApplicationService.cs
 └── Utils/                    # PromptBuilder, PromptTemplates 等
 
@@ -41,8 +42,8 @@ StarBlogPublisher.Cli/        # CLI + MCP Server
 ├── McpServer.cs              # MCP Server 入口（stdio 传输）
 ├── Commands/                 # System.CommandLine 命令
 │   ├── AuthCommand.cs        # auth login/status/logout
-│   ├── CategoryCommand.cs    # category list/create
-│   ├── PostCommand.cs        # post publish/get
+│   ├── CategoryCommand.cs    # category list/create/update/delete
+│   ├── PostCommand.cs        # post publish/get/list/update/delete/pull
 │   └── AiCommand.cs          # ai generate-summary/optimize-title/suggest-tags/generate-slug
 └── Tools/                    # MCP Tools
     ├── AuthTools.cs
@@ -101,8 +102,14 @@ dotnet run --project StarBlogPublisher.Cli -- mcp
 | `auth_logout` | 登出 |
 | `category_list` | 列出所有分类 |
 | `category_create` | 创建新分类 |
+| `category_update` | 更新分类 |
+| `category_delete` | 删除分类 |
 | `post_publish` | 发布 Markdown 文件为文章 |
 | `post_get` | 获取文章详情 |
+| `post_list` | 列出站点文章 |
+| `post_update` | 更新已有文章 |
+| `post_delete` | 删除文章 |
+| `post_pull` | 下载文章为本地 Markdown |
 | `ai_optimize_title` | AI 优化标题 |
 | `ai_generate_summary` | AI 生成摘要 |
 | `ai_suggest_tags` | AI 推荐标签 |

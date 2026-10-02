@@ -117,7 +117,7 @@ dotnet run --file .\build.cs -- --help
 
 ## 桌面应用
 
-侧栏有四项：**文章**、**公众号排版**、**设置**、**关于**。底部可以切换浅色 / 深色，以及登录或退出。
+侧栏有五项：**文章**、**站点文章**、**公众号排版**、**设置**、**关于**。底部可以切换浅色 / 深色，以及登录或退出。
 
 ### 文章工作区
 
@@ -132,6 +132,10 @@ dotnet run --file .\build.cs -- --help
 左侧是已打开、最近打开和大纲。右侧是发布属性，底部是当前文章的任务和发布结果。关闭未保存的文章时会询问。有发布、保存或 AI 任务在跑时，需要等任务结束再关。
 
 发布目标可以选 StarBlog 或微信公众号。选公众号时，主按钮进入排版和草稿流程，不会直接群发。
+
+### 站点文章
+
+登录后可在「站点文章」查看线上稿件：按标题搜索、按分类和已发布 / 草稿筛选，分页浏览。打开一篇后可以改标题、摘要、Slug、分类和正文，存为草稿、发布或删除。也可以下载为本地 Markdown（同时写入 `.starblog.json` 里的 `postId`），或保存后在文章工作区打开。分类管理是该页的二级页面，支持新建、改名、显隐和删除。现有文章工作区的发布按钮保持不变，仍用于从本地 Markdown 首次发布。
 
 ### 发布到博客
 
@@ -184,12 +188,18 @@ starblog auth logout --clear-credentials
 
 starblog category list
 starblog category create --name "技术笔记"
+starblog category update --id 2 --name "新名称"
+starblog category delete --id 2
 
 starblog post publish ./hello.md --category 1
 starblog post publish ./hello.md --category 1 --draft
 starblog post publish ./hello.md --category 1 --auto
 starblog post publish ./hello.md --category 1 --auto -y
 starblog post get <article-id>
+starblog post list --search hello --published false
+starblog post update ./hello.md --id <article-id>
+starblog post pull <article-id> --out ./hello.md
+starblog post delete <article-id>
 
 starblog ai generate-summary ./hello.md
 starblog ai optimize-title "原始标题"
@@ -243,8 +253,8 @@ starblog mcp
 | Tool | 作用 |
 | --- | --- |
 | `auth_login` / `auth_status` / `auth_logout` | 登录、查看状态、登出 |
-| `category_list` / `category_create` | 列出或创建分类 |
-| `post_publish` / `post_get` | 发布 Markdown 或读取文章 |
+| `category_list` / `category_create` / `category_update` / `category_delete` | 列出、创建、更新或删除分类 |
+| `post_publish` / `post_get` / `post_list` / `post_update` / `post_delete` / `post_pull` | 发布、读取、列出、更新、删除或下载文章 |
 | `ai_optimize_title` / `ai_generate_summary` / `ai_suggest_tags` / `ai_generate_slug` | 标题、摘要、标签、Slug |
 | `ai_generate_cover_prompt` | 封面图提示词 |
 

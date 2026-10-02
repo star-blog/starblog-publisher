@@ -37,8 +37,14 @@
 - `auth_logout`
 - `category_list`
 - `category_create`
+- `category_update`
+- `category_delete`
 - `post_publish`
 - `post_get`
+- `post_list`
+- `post_update`
+- `post_delete`
+- `post_pull`
 - `ai_optimize_title`
 - `ai_generate_summary`
 - `ai_suggest_tags`
@@ -52,8 +58,14 @@
 - `starblog auth logout`
 - `starblog category list`
 - `starblog category create`
+- `starblog category update`
+- `starblog category delete`
 - `starblog post publish`
 - `starblog post get`
+- `starblog post list`
+- `starblog post update`
+- `starblog post pull`
+- `starblog post delete`
 - `starblog ai generate-summary`
 - `starblog ai optimize-title`
 - `starblog ai suggest-tags`
