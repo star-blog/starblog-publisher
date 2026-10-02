@@ -26,7 +26,9 @@ public static class RefitTypeRegistration {
             typeof(ApiResponse<>),
             typeof(ApiResponse<List<Category>>),
             typeof(ApiResponse<List<WordCloud>>),
-            // 添加其他API响应类型
+            typeof(ApiResponsePaged<BlogPost>),
+            typeof(ApiResponse<object>),
+            typeof(PaginationMetadata),
             typeof(List<Category>),
             typeof(Category),
             typeof(WordCloud),

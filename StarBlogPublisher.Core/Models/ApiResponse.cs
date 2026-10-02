@@ -23,6 +23,8 @@ public class ApiResponse<T>
 
     public T? Data { get; set; }
 
+    public bool IsOk => Successful && StatusCode is >= 200 and < 300;
+
     public static implicit operator ApiResponse<T>(T data) => new()
     {
         StatusCode = 200,

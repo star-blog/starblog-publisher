@@ -8,6 +8,12 @@ namespace StarBlogPublisher.Services.StarBlogApi;
 
 public interface IBlogPost {
     /// <summary>
+    /// 文章分页列表
+    /// </summary>
+    [Get("/Api/BlogPost")]
+    Task<ApiResponsePaged<BlogPost>> GetList([Query] PostListQuery query);
+
+    /// <summary>
     /// 发表文章
     /// </summary>
     [Post("/Api/BlogPost")]
@@ -24,6 +30,12 @@ public interface IBlogPost {
     /// </summary>
     [Put("/Api/BlogPost/{id}")]
     Task<StarBlogPublisher.Models.ApiResponse<BlogPost>> Update(string id, PostUpdateDto dto);
+
+    /// <summary>
+    /// 删除文章
+    /// </summary>
+    [Delete("/Api/BlogPost/{id}")]
+    Task<StarBlogPublisher.Models.ApiResponse<object>> Delete(string id);
 
     /// <summary>
     /// 上传图片
