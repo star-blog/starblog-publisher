@@ -113,6 +113,21 @@ internal sealed class WorkspaceScenarios(MainWindow window, MainWindowViewModel 
         vm.Username = "";
         vm.SaveCommand.Execute(null);
         window.Width = 1280;
+        shell.ActivePage = shell.AboutPage;
+        await Task.Delay(200);
+        var about = window.GetVisualDescendants().OfType<AboutView>().First();
+        var aboutScroll = about.GetVisualDescendants().OfType<ScrollViewer>().First();
+        if (!about.GetVisualDescendants().OfType<TextBlock>().Any(block => block.Text == "能做什么"))
+            throw new Exception("About page did not render the redesigned sections");
+        if (aboutScroll.Extent.Width > aboutScroll.Viewport.Width + 1)
+            throw new Exception("About page overflows horizontally");
+        Capture(window, Path.Combine(output, "about.png"));
+        window.Width = 800;
+        await Task.Delay(200);
+        if (aboutScroll.Extent.Width > aboutScroll.Viewport.Width + 1)
+            throw new Exception("Narrow about page overflows horizontally");
+        Capture(window, Path.Combine(output, "about-narrow.png"));
+        window.Width = 1280;
         shell.ActivePage = shell.Workspace;
         await Task.Delay(150);
     }
