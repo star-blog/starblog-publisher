@@ -1,4 +1,7 @@
 using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia;
+using Avalonia.Media.Imaging;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
 using AvaloniaEdit;
@@ -7,6 +10,7 @@ using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
 using StarBlogPublisher.ViewModels;
 using StarBlogPublisher.Views;
+using StarBlogPublisher.Views.Controls;
 
 namespace StarBlogPublisher.DesktopTests;
 
@@ -35,6 +39,16 @@ internal sealed partial class WorkspaceScenarios {
         if (listView.FindControl<StackPanel>("EmptyState")!.IsVisible)
             throw new Exception("Empty state overlays populated rows");
         await CheckSiteLayout("site-posts-list");
+        var childCategory = new Category { Id = 2, Text = "工程实践" };
+        var category = new Category { Id = 1, Text = "开发笔记", Nodes = [childCategory] };
+        library.HasLoaded = false; // Exercise selection bindings without requesting the real site.
+        library.CategoryFilters.Add(category);
+        await CheckCategoryPicker(listView.FindControl<Button>("CategoryFilterButton")!, category, childCategory,
+            chosen => {
+                if (!ReferenceEquals(library.SelectedCategoryFilter, chosen)) throw new Exception("Category tree did not update list filter");
+            }, "site-posts-category-filter");
+        library.SelectedCategoryFilter = SitePostsViewModel.AllCategoriesSentinel;
+        library.HasLoaded = true;
 
         var api = ApiService.Instance;
         var auth = new AuthApplicationService(AppSettings.Instance, GlobalState.Instance, api);
@@ -43,9 +57,8 @@ internal sealed partial class WorkspaceScenarios {
             Title = "团队 Web 开发规范", Content = "# 团队 Web 开发规范\n\n## 一、总体约定\n\n统一代码风格，保持前后端接口一致。\n\n```csharp\nvar title = \"StarBlog\";\n```\n\n" + string.Join("\n\n", Enumerable.Range(1, 30).Select(i => $"### {i}. 开发约定\n\n提交前检查代码与文章内容。")),
             Summary = "团队开发与发布约定。", Slug = "team-web-guide", PostUrl = "https://example.com/p/team-web-guide", IsPublish = true
         };
-        var category = new Category { Id = 1, Text = "开发笔记" };
         editorVm.Categories.Add(category);
-        editorVm.SelectedCategory = category;
+        editorVm.SelectedCategory = childCategory;
         editorVm.IsLoaded = true;
         editorVm.StatusMessage = "已加载线上文章";
         library.OpenStackPage(editorVm, "编辑文章");
@@ -53,6 +66,10 @@ internal sealed partial class WorkspaceScenarios {
         var editorView = window.GetVisualDescendants().OfType<SitePostEditorView>().First();
         var source = editorView.FindControl<TextEditor>("OnlineEditor")!;
         if (source.Text != editorVm.Content) throw new Exception("Remote content did not reach Markdown editor");
+        await CheckCategoryPicker(editorView.FindControl<Button>("EditorCategoryButton")!, category, childCategory,
+            chosen => {
+                if (!ReferenceEquals(editorVm.SelectedCategory, chosen)) throw new Exception("Category tree did not update online article");
+            }, "site-posts-editor-category");
         source.Document.Insert(0, "编辑测试\n");
         if (editorVm.Content != source.Text || !editorVm.IsDirty || !editorVm.CanSave)
             throw new Exception("Markdown editor changes did not reach save state");
@@ -73,6 +90,41 @@ internal sealed partial class WorkspaceScenarios {
         library.IsStackNavigating = false;
         library.Posts.Clear();
         shell.ActivePage = shell.Workspace;
+        var localPath = Path.Combine(output, "category-picker.md");
+        await File.WriteAllTextAsync(localPath, "# 分类选择验证\n\n共享分类树。");
+        await shell.Workspace.OpenPathAsync(localPath);
+        shell.PublishPage.Categories = new System.Collections.ObjectModel.ObservableCollection<Category> { category };
+        shell.PublishPage.IsLoggedIn = true;
+        await Task.Delay(150);
+        var inspector = window.GetVisualDescendants().OfType<ArticleInspectorView>().First();
+        await CheckCategoryPicker(inspector.FindControl<Button>("WorkspaceCategoryButton")!, category, childCategory,
+            chosen => {
+                if (!ReferenceEquals(shell.PublishPage.SelectedCategory, chosen)) throw new Exception("Shared tree broke workspace category selection");
+            }, "workspace-category", showManagementActions: true);
+        shell.PublishPage.IsLoggedIn = false;
+    }
+
+    private async Task CheckCategoryPicker(Button button, Category parent, Category child, Action<Category> check, string name, bool showManagementActions = false) {
+        var flyout = (Flyout)button.Flyout!;
+        flyout.ShowAt(button);
+        await Task.Delay(150);
+        var picker = (CategoryPicker)flyout.Content!;
+        if (picker.ShowManagementActions != showManagementActions) throw new Exception("Picker management actions have the wrong visibility");
+        picker.FindControl<TextBox>("CategorySearch")!.Text = child.DisplayName;
+        await Task.Delay(150);
+        var tree = picker.FindControl<TreeView>("CategoryTree")!;
+        var buttons = tree.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("CategoryPickerItem")).ToArray();
+        var parentButton = buttons.First(b => b.DataContext is Category c && c.Id == parent.Id);
+        if (ReferenceEquals(parentButton.DataContext, parent)) throw new Exception("Search did not retain filtered ancestor branch");
+        parentButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        check(parent); // Searching creates ancestor copies; selection must resolve the original model.
+        buttons.First(b => b.DataContext is Category c && c.Id == child.Id).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        check(child);
+        using var bitmap = new RenderTargetBitmap(new PixelSize((int)picker.Bounds.Width, (int)picker.Bounds.Height));
+        bitmap.Render(picker);
+        bitmap.Save(Path.Combine(output, name + ".png"), PngBitmapEncoderOptions.Default);
+        flyout.Hide();
+        await Task.Delay(100);
     }
 
     private async Task CheckSiteLayout(string name) {

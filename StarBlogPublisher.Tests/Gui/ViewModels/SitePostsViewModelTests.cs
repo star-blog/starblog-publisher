@@ -118,12 +118,31 @@ public class SitePostsViewModelTests {
         finally { GlobalState.Instance.Logout(); }
     }
 
-    private static SitePostsViewModel LoggedInLibrary(Mock<IBlogPost> posts) {
+    [Fact]
+    public async Task LoadFilters_PreservesTreeAndRestoresNestedSelection() {
+        var child = new Category { Id = 2, Text = "Child" };
+        var root = new Category { Id = 1, Text = "Root", Nodes = [child] };
+        var categories = new Mock<ICategory>();
+        categories.Setup(x => x.GetNodes()).ReturnsAsync(new ApiResponse<List<Category>> { Data = [root] });
+        var vm = LoggedInLibrary(new Mock<IBlogPost>(), categories);
+        try {
+            vm.SelectedCategoryFilter = new Category { Id = 2, Text = "Old child" };
+            await vm.LoadFiltersAsync();
+            vm.CategoryFilters.Should().HaveCount(2); // All-categories entry plus one tree root.
+            vm.CategoryFilters[1].Nodes.Should().ContainSingle().Which.Should().BeSameAs(child);
+            vm.SelectedCategoryFilter.Should().BeSameAs(child);
+            vm.CategorySelectionText.Should().Be("Child");
+            vm.IsLoadingCategories.Should().BeFalse();
+        }
+        finally { GlobalState.Instance.Logout(); }
+    }
+
+    private static SitePostsViewModel LoggedInLibrary(Mock<IBlogPost> posts, Mock<ICategory>? categories = null) {
         var shell = Shell();
         GlobalState.Instance.SetLoggedIn("test-token");
         var state = new GlobalState();
         state.SetLoggedIn("test-token");
-        var api = new ApiService(Mock.Of<IAuth>(), posts.Object, Mock.Of<ICategory>());
+        var api = new ApiService(Mock.Of<IAuth>(), posts.Object, categories?.Object ?? Mock.Of<ICategory>());
         var auth = new AuthApplicationService(new AppSettings(), state, api);
         return new SitePostsViewModel(shell, new ArticleLibraryApplicationService(api, auth), new CategoryApplicationService(api, auth));
     }
