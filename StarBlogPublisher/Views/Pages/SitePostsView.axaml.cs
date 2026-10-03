@@ -10,8 +10,8 @@ public partial class SitePostsView : UserControl {
         InitializeComponent();
     }
 
-    private void OnBreadcrumbClicked(object? sender, int index) {
-        if (DataContext is SitePostsViewModel vm) vm.NavigateBreadcrumbAt(index);
+    private async void OnBreadcrumbClicked(object? sender, int index) {
+        if (DataContext is SitePostsViewModel vm) await vm.NavigateBreadcrumbAsync(index);
     }
 
     private void OnSearchKeyDown(object? sender, KeyEventArgs e) {

@@ -48,10 +48,14 @@ public partial class SitePostEditorViewModel : ViewModelBase {
     [ObservableProperty] private string _statusMessage = "正在加载文章…";
     [ObservableProperty] private string? _postUrl;
     [ObservableProperty] private DateTime _lastUpdateTime;
+    [ObservableProperty] private bool _isLoaded;
 
     public string StatusText => IsPublish ? "已发布" : "草稿";
-    public bool IsDirty => Snapshot() != _loadedSnapshot;
-    public bool CanSave => !IsBusy && !string.IsNullOrWhiteSpace(Title) && !string.IsNullOrWhiteSpace(Content) && SelectedCategory != null;
+    public bool IsDirty => IsLoaded && Snapshot() != _loadedSnapshot;
+    public bool CanEdit => IsLoaded && !IsBusy;
+    public bool CanSave => CanEdit && !string.IsNullOrWhiteSpace(Title) && !string.IsNullOrWhiteSpace(Content) && SelectedCategory is { Id: > 0 };
+    public string SaveStateText => !IsLoaded ? "尚未加载文章" : IsDirty ? "有未保存的修改" : "已与站点同步";
+    public string PublishLabel => IsPublish ? "更新文章" : "发布文章";
 
     partial void OnTitleChanged(string value) => NotifyEditorState();
     partial void OnSummaryChanged(string value) => NotifyEditorState();
@@ -60,9 +64,11 @@ public partial class SitePostEditorViewModel : ViewModelBase {
     partial void OnSelectedCategoryChanged(Category? value) => NotifyEditorState();
     partial void OnIsPublishChanged(bool value) {
         OnPropertyChanged(nameof(StatusText));
+        OnPropertyChanged(nameof(PublishLabel));
         NotifyEditorState();
     }
-    partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(CanSave));
+    partial void OnIsBusyChanged(bool value) => NotifyEditorState();
+    partial void OnIsLoadedChanged(bool value) => NotifyEditorState();
 
     public async Task LoadAsync() {
         IsBusy = true;
@@ -91,6 +97,7 @@ public partial class SitePostEditorViewModel : ViewModelBase {
 
     [RelayCommand]
     private async Task Delete() {
+        if (!CanEdit) return;
         if (!await GuiHost.ConfirmAsync("删除文章", $"确定删除「{Title}」？此操作不能撤销。")) return;
         IsBusy = true;
         try {
@@ -229,6 +236,7 @@ public partial class SitePostEditorViewModel : ViewModelBase {
             ?? post.Category
             ?? SelectedCategory;
         _loadedSnapshot = Snapshot();
+        IsLoaded = true;
         NotifyEditorState();
     }
 
@@ -237,6 +245,8 @@ public partial class SitePostEditorViewModel : ViewModelBase {
     private void NotifyEditorState() {
         OnPropertyChanged(nameof(IsDirty));
         OnPropertyChanged(nameof(CanSave));
+        OnPropertyChanged(nameof(CanEdit));
+        OnPropertyChanged(nameof(SaveStateText));
         OnPropertyChanged(nameof(StatusText));
     }
 

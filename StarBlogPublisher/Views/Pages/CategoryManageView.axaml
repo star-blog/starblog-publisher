@@ -5,68 +5,71 @@
              xmlns:controls="using:StarBlogPublisher.Views.Controls"
              x:Class="StarBlogPublisher.Views.CategoryManageView"
              x:DataType="vm:CategoryManageViewModel">
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/Controls/SiteWorkspaceStyles.axaml" />
+    </UserControl.Styles>
     <Panel>
-        <Grid RowDefinitions="Auto,*,Auto" Margin="32,8,32,24" RowSpacing="16">
-            <Grid ColumnDefinitions="*,Auto">
-                <StackPanel Spacing="4">
-                    <TextBlock Text="分类管理" FontSize="22" FontWeight="SemiBold" />
-                    <TextBlock Text="改名、隐藏或删除站点分类。分类下仍有文章时不能删除。"
-                               Opacity="0.75" TextWrapping="Wrap" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <Button Command="{Binding CreateCommand}" IsEnabled="{Binding !IsBusy}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <fi:FluentIcon Icon="Add" IconVariant="Regular" />
-                            <TextBlock Text="新建" />
-                        </StackPanel>
-                    </Button>
-                    <Button Command="{Binding RefreshCommand}" IsEnabled="{Binding !IsBusy}">
-                        <TextBlock Text="刷新" />
-                    </Button>
-                </StackPanel>
-            </Grid>
-
-            <Grid Grid.Row="1" ColumnDefinitions="*,280" ColumnSpacing="16" MinHeight="320">
-                <Border Classes="Card" Padding="8">
-                    <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}">
-                        <ListBox.Styles>
-                            <Style Selector="ListBoxItem">
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                            </Style>
-                        </ListBox.Styles>
-                        <ListBox.ItemTemplate>
-                            <DataTemplate x:DataType="vm:CategoryManageItem">
-                                <Grid ColumnDefinitions="*,Auto" Margin="4,6">
-                                    <TextBlock Text="{Binding IndentedName}" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Grid.Column="1" Text="{Binding VisibilityText}" FontSize="12" Opacity="0.7" />
-                                </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
+        <DockPanel>
+            <Border DockPanel.Dock="Bottom" Classes="StatusBar">
+                <TextBlock Text="{Binding StatusMessage}" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            </Border>
+            <Grid ColumnDefinitions="*,280">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Classes="SiteHeader">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="分类管理" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Command="{Binding RefreshCommand}" IsEnabled="{Binding !IsBusy}"
+                                    Classes="SiteTool" ToolTip.Tip="刷新分类" AutomationProperties.Name="刷新分类">
+                                <fi:FluentIcon Icon="ArrowSync" IconVariant="Regular" FontSize="14" />
+                            </Button>
+                        </Grid>
+                    </Border>
+                    <Border DockPanel.Dock="Top" Padding="12,8" BorderThickness="0,0,0,1"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+                        <TextBlock Text="管理分类名称与前台可见性。添加分类请使用「文章」工作区的分类选择器。"
+                                   Classes="SiteLabel" FontSize="11" TextWrapping="Wrap" />
+                    </Border>
+                    <ListBox x:Name="CategoryList" Classes="SiteRows" ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}"
+                             IsEnabled="{Binding !IsBusy}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="站点分类列表">
+                        <ListBox.ItemTemplate><DataTemplate x:DataType="vm:CategoryManageItem">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <TextBlock Text="{Binding IndentedName}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Column="1" Text="{Binding VisibilityText}" Classes="SiteLabel" FontSize="11" />
+                            </Grid>
+                        </DataTemplate></ListBox.ItemTemplate>
                     </ListBox>
-                </Border>
-                <Border Grid.Column="1" Classes="Card" Padding="16">
-                    <StackPanel Spacing="12">
-                        <TextBlock Text="选中分类" FontWeight="SemiBold" />
-                        <TextBlock Text="名称" Opacity="0.75" FontSize="12" />
-                        <TextBox Text="{Binding EditName}" IsEnabled="{Binding HasSelection}" />
-                        <CheckBox IsChecked="{Binding EditVisible}" Content="前台可见" IsEnabled="{Binding HasSelection}" />
-                        <Button Command="{Binding SaveCommand}" HorizontalAlignment="Stretch" IsEnabled="{Binding CanSave}">
-                            <TextBlock Text="保存名称与可见性" HorizontalAlignment="Center" />
-                        </Button>
-                        <Button Command="{Binding ToggleVisibleCommand}" HorizontalAlignment="Stretch"
-                                IsEnabled="{Binding HasSelection}">
-                            <TextBlock Text="切换显隐" HorizontalAlignment="Center" />
-                        </Button>
-                        <Button Command="{Binding DeleteCommand}" HorizontalAlignment="Stretch"
-                                IsEnabled="{Binding HasSelection}">
-                            <TextBlock Text="删除" HorizontalAlignment="Center" />
-                        </Button>
-                    </StackPanel>
+                </DockPanel>
+                <Border Grid.Column="1" Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1,0,0,0">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Classes="SiteHeader">
+                            <TextBlock Text="分类属性" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel DockPanel.Dock="Bottom" Margin="12,10" Spacing="8" IsVisible="{Binding HasSelection}">
+                            <Button Command="{Binding SaveCommand}" Content="保存修改" Classes="Accent SiteAction" IsEnabled="{Binding CanSave}"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+                            <Button Command="{Binding DeleteCommand}" Content="删除分类…" Classes="SiteAction" IsEnabled="{Binding CanEdit}"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+                            <TextBlock Text="分类下仍有文章时无法删除。" Classes="SiteLabel" FontSize="11" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Margin="12" Spacing="10">
+                                <TextBlock Text="选择左侧分类以编辑属性。" Classes="SiteLabel" IsVisible="{Binding !HasSelection}" TextWrapping="Wrap" />
+                                <StackPanel Spacing="10" IsVisible="{Binding HasSelection}" IsEnabled="{Binding CanEdit}">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="名称" Classes="SiteLabel" />
+                                        <TextBox Text="{Binding EditName}" Classes="SiteInput" AutomationProperties.Name="分类名称" />
+                                    </StackPanel>
+                                    <CheckBox IsChecked="{Binding EditVisible}" Content="前台可见" FontSize="12" />
+                                    <TextBlock Text="隐藏分类不会删除其中的文章。" Classes="SiteLabel" FontSize="11" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </DockPanel>
                 </Border>
             </Grid>
-
-            <TextBlock Grid.Row="2" Text="{Binding StatusMessage}" Opacity="0.75" />
-        </Grid>
+        </DockPanel>
         <controls:BusyOverlay IsBusy="{Binding IsBusy}" Message="{Binding StatusMessage}" />
     </Panel>
 </UserControl>

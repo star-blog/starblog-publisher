@@ -3,83 +3,124 @@
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:models="using:StarBlogPublisher.Models"
              xmlns:fi="using:FluentIcons.Avalonia.Fluent"
+             xmlns:ae="https://github.com/avaloniaui/avaloniaedit"
              xmlns:controls="using:StarBlogPublisher.Views.Controls"
              x:Class="StarBlogPublisher.Views.SitePostEditorView"
              x:DataType="vm:SitePostEditorViewModel">
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/Controls/SiteWorkspaceStyles.axaml" />
+    </UserControl.Styles>
     <Panel>
-        <Grid RowDefinitions="Auto,*,Auto" Margin="32,8,32,24" RowSpacing="16">
-            <Grid ColumnDefinitions="*,Auto">
-                <StackPanel Spacing="6">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold"
-                                   TextTrimming="CharacterEllipsis" MaxWidth="640" />
-                        <Border Classes="Chip" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding StatusText}" FontSize="12" />
+        <DockPanel>
+            <Border DockPanel.Dock="Bottom" Classes="StatusBar">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+                    <TextBlock Text="{Binding SaveStateText}" FontSize="11" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Grid.Column="1" Text="{Binding StatusMessage}" FontSize="11" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                </Grid>
+            </Border>
+            <Grid ColumnDefinitions="*,4,280">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Classes="SiteHeader">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <TextBlock Text="{Binding Title}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="Markdown" Classes="SiteLabel" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <Button Classes="SiteTool" ToolTip.Tip="自动换行与行号" AutomationProperties.Name="编辑器选项">
+                                    <fi:FluentIcon Icon="TextFont" FontSize="14" />
+                                    <Button.Flyout><Flyout>
+                                        <StackPanel Spacing="8">
+                                            <CheckBox Content="自动换行" IsChecked="{Binding #OnlineEditor.WordWrap}" />
+                                            <CheckBox Content="显示行号" IsChecked="{Binding #OnlineEditor.ShowLineNumbers}" />
+                                        </StackPanel>
+                                    </Flyout></Button.Flyout>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <ae:TextEditor x:Name="OnlineEditor" IsEnabled="{Binding CanEdit}"
+                                   ShowLineNumbers="True" WordWrap="True" Padding="20,12" FontSize="14"
+                                   FontFamily="Cascadia Code, Consolas, Menlo, monospace"
+                                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                                   AutomationProperties.Name="线上文章 Markdown 正文" />
+                </DockPanel>
+                <GridSplitter Grid.Column="1" Width="4" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
+                <Border Grid.Column="2" Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1,0,0,0" MinWidth="240" MaxWidth="420">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Classes="SiteHeader">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="文章属性" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <Button Grid.Column="1" Classes="SiteTool" IsEnabled="{Binding CanEdit}" Content="⋯"
+                                        ToolTip.Tip="线上文章操作" AutomationProperties.Name="线上文章操作">
+                                    <Button.Flyout><MenuFlyout>
+                                        <MenuItem Header="在浏览器打开" Command="{Binding OpenInBrowserCommand}" />
+                                        <MenuItem Header="下载到本地…" Command="{Binding DownloadCommand}" />
+                                        <MenuItem Header="下载并在工作区打开…" Command="{Binding OpenInWorkspaceCommand}" />
+                                        <Separator />
+                                        <MenuItem Header="删除文章…" Command="{Binding DeleteCommand}" />
+                                    </MenuFlyout></Button.Flyout>
+                                </Button>
+                            </Grid>
                         </Border>
-                    </StackPanel>
-                    <TextBlock Text="{Binding PostUrl}" FontSize="12" Opacity="0.7" TextTrimming="CharacterEllipsis" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
-                    <Button Command="{Binding OpenInBrowserCommand}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <fi:FluentIcon Icon="Globe" IconVariant="Regular" />
-                            <TextBlock Text="浏览器" />
-                        </StackPanel>
-                    </Button>
-                    <Button Command="{Binding DownloadCommand}" IsEnabled="{Binding !IsBusy}">
-                        <TextBlock Text="下载到本地" />
-                    </Button>
-                    <Button Command="{Binding OpenInWorkspaceCommand}" IsEnabled="{Binding !IsBusy}">
-                        <TextBlock Text="在工作区打开" />
-                    </Button>
-                </StackPanel>
-            </Grid>
-
-            <Grid Grid.Row="1" ColumnDefinitions="2*,*" ColumnSpacing="16" MinHeight="360">
-                <Border Classes="Card" Padding="16">
-                    <Grid RowDefinitions="Auto,*" RowSpacing="8">
-                        <TextBlock Text="正文" FontWeight="SemiBold" />
-                        <TextBox Grid.Row="1" Text="{Binding Content}" AcceptsReturn="True"
-                                 TextWrapping="Wrap" FontFamily="Consolas" FontSize="13" />
-                    </Grid>
+                        <Border DockPanel.Dock="Bottom" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Padding="12,10">
+                            <StackPanel Spacing="8">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="站点发布" FontSize="12" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="1" Text="{Binding StatusText}" Classes="SiteLabel" />
+                                </Grid>
+                                <TextBlock Text="保存草稿会将文章设为未发布。" Classes="SiteLabel" FontSize="11" TextWrapping="Wrap" />
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                                    <Button Content="存为草稿" Classes="SiteAction" Command="{Binding SaveDraftCommand}" IsEnabled="{Binding CanSave}" />
+                                    <Button Grid.Column="1" Content="{Binding PublishLabel}" Classes="Accent SiteAction" Command="{Binding PublishCommand}"
+                                            IsEnabled="{Binding CanSave}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel>
+                                <Border Classes="SiteHeader" Height="28">
+                                    <TextBlock Text="基本属性" FontSize="12" VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel Margin="12,8,12,12" Spacing="10" IsEnabled="{Binding CanEdit}">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="标题" Classes="SiteLabel" />
+                                        <TextBox Text="{Binding Title}" Classes="SiteInput" PlaceholderText="文章标题" AutomationProperties.Name="线上文章标题" />
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="分类" Classes="SiteLabel" />
+                                        <ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" Classes="SiteInput" AutomationProperties.Name="线上文章分类">
+                                            <ComboBox.ItemTemplate><DataTemplate x:DataType="models:Category">
+                                                <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                                            </DataTemplate></ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="摘要" Classes="SiteLabel" />
+                                        <TextBox Text="{Binding Summary}" Classes="SiteInput" AcceptsReturn="True" MinHeight="56" MaxHeight="88"
+                                                 TextWrapping="Wrap" PlaceholderText="文章摘要" AutomationProperties.Name="线上文章摘要" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <Border Classes="SiteHeader" Height="28" BorderThickness="0,1,0,1">
+                                    <TextBlock Text="高级属性" FontSize="12" VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel Margin="12,8,12,12" Spacing="10" IsEnabled="{Binding CanEdit}">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Slug" Classes="SiteLabel" />
+                                        <TextBox Text="{Binding Slug}" Classes="SiteInput" PlaceholderText="url-slug" AutomationProperties.Name="线上文章 Slug" />
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="站点地址" Classes="SiteLabel" />
+                                        <TextBlock Text="{Binding PostUrl}" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </DockPanel>
                 </Border>
-                <Border Grid.Column="1" Classes="Card" Padding="16">
-                    <StackPanel Spacing="12">
-                        <TextBlock Text="文章属性" FontWeight="SemiBold" FontSize="16" />
-                        <TextBlock Text="标题" Opacity="0.75" FontSize="12" />
-                        <TextBox Text="{Binding Title}" />
-                        <TextBlock Text="摘要" Opacity="0.75" FontSize="12" />
-                        <TextBox Text="{Binding Summary}" AcceptsReturn="True" MinHeight="80" TextWrapping="Wrap" />
-                        <TextBlock Text="Slug" Opacity="0.75" FontSize="12" />
-                        <TextBox Text="{Binding Slug}" FontFamily="Consolas" />
-                        <TextBlock Text="分类" Opacity="0.75" FontSize="12" />
-                        <ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}"
-                                  HorizontalAlignment="Stretch">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate x:DataType="models:Category">
-                                    <TextBlock Text="{Binding DisplayName}" />
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                    </StackPanel>
-                </Border>
             </Grid>
-
-            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                <TextBlock Text="{Binding StatusMessage}" Opacity="0.75" VerticalAlignment="Center" />
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                    <Button Command="{Binding DeleteCommand}" IsEnabled="{Binding !IsBusy}">
-                        <TextBlock Text="删除" />
-                    </Button>
-                    <Button Command="{Binding SaveDraftCommand}" IsEnabled="{Binding CanSave}">
-                        <TextBlock Text="存为草稿" />
-                    </Button>
-                    <Button Command="{Binding PublishCommand}" Classes="Accent" IsEnabled="{Binding CanSave}">
-                        <TextBlock Text="发布" />
-                    </Button>
-                </StackPanel>
-            </Grid>
-        </Grid>
+        </DockPanel>
         <controls:BusyOverlay IsBusy="{Binding IsBusy}" Message="{Binding StatusMessage}" />
     </Panel>
 </UserControl>

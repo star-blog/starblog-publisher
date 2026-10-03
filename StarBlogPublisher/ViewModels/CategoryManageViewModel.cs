@@ -29,17 +29,22 @@ public partial class CategoryManageViewModel : ViewModelBase {
     [ObservableProperty] private string _statusMessage = "加载分类…";
 
     public bool HasSelection => SelectedItem != null;
+    public bool CanEdit => HasSelection && !IsBusy;
     public bool CanSave => HasSelection && !IsBusy && !string.IsNullOrWhiteSpace(EditName);
 
     partial void OnSelectedItemChanged(CategoryManageItem? value) {
         EditName = value?.Name ?? string.Empty;
         EditVisible = value?.Visible ?? true;
         OnPropertyChanged(nameof(HasSelection));
+        OnPropertyChanged(nameof(CanEdit));
         OnPropertyChanged(nameof(CanSave));
     }
 
     partial void OnEditNameChanged(string value) => OnPropertyChanged(nameof(CanSave));
-    partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(CanSave));
+    partial void OnIsBusyChanged(bool value) {
+        OnPropertyChanged(nameof(CanSave));
+        OnPropertyChanged(nameof(CanEdit));
+    }
 
     public async Task LoadAsync() {
         IsBusy = true;
@@ -69,28 +74,6 @@ public partial class CategoryManageViewModel : ViewModelBase {
     private Task Refresh() => LoadAsync();
 
     [RelayCommand]
-    private async Task Create() {
-        var name = await GuiHost.PromptAsync("新建分类", watermark: "分类名称");
-        if (string.IsNullOrWhiteSpace(name)) return;
-        IsBusy = true;
-        try {
-            var parentId = SelectedItem?.Id ?? 0;
-            var result = await _categories.CreateCategoryAsync(name.Trim(), parentId);
-            if (!result.Success) {
-                GuiHost.ToastError("创建失败", result.ErrorMessage ?? "创建失败");
-                return;
-            }
-
-            _onChanged?.Invoke();
-            GuiHost.ToastSuccess("已创建", name.Trim());
-            await LoadAsync();
-        }
-        finally {
-            IsBusy = false;
-        }
-    }
-
-    [RelayCommand]
     private async Task Save() {
         if (SelectedItem == null || !CanSave) return;
         IsBusy = true;
@@ -113,29 +96,8 @@ public partial class CategoryManageViewModel : ViewModelBase {
     }
 
     [RelayCommand]
-    private async Task ToggleVisible() {
-        if (SelectedItem == null) return;
-        IsBusy = true;
-        try {
-            var next = !SelectedItem.Visible;
-            var result = await _categories.SetVisibilityAsync(SelectedItem.Id, next);
-            if (!result.Success) {
-                GuiHost.ToastError("更新失败", result.ErrorMessage ?? "更新失败");
-                return;
-            }
-
-            _onChanged?.Invoke();
-            GuiHost.ToastSuccess(next ? "已设为可见" : "已隐藏", SelectedItem.Name);
-            await LoadAsync();
-        }
-        finally {
-            IsBusy = false;
-        }
-    }
-
-    [RelayCommand]
     private async Task Delete() {
-        if (SelectedItem == null) return;
+        if (!CanEdit || SelectedItem == null) return;
         if (!await GuiHost.ConfirmAsync("删除分类", $"确定删除「{SelectedItem.Name}」？分类下有文章时无法删除。")) return;
         IsBusy = true;
         try {

@@ -6,108 +6,129 @@
              xmlns:controls="using:StarBlogPublisher.Views.Controls"
              x:Class="StarBlogPublisher.Views.SitePostsView"
              x:DataType="vm:SitePostsViewModel">
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/Controls/SiteWorkspaceStyles.axaml" />
+    </UserControl.Styles>
     <controls:StackPageHost Breadcrumbs="{Binding Breadcrumbs}"
                             IsNavigating="{Binding IsStackNavigating}"
                             StackContent="{Binding ActiveStackPage}"
                             BreadcrumbClicked="OnBreadcrumbClicked">
         <controls:StackPageHost.RootContent>
-            <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="32,24" RowSpacing="16">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="站点文章" FontSize="26" FontWeight="SemiBold" />
-                        <TextBlock Text="查看、更新和删除已经发布到 StarBlog 的文章。本地写作仍在「文章」工作区。"
-                                   Opacity="0.75" TextWrapping="Wrap" />
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Button Command="{Binding OpenCategoriesCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <fi:FluentIcon Icon="Folder" IconVariant="Regular" />
-                                <TextBlock Text="分类管理" />
-                            </StackPanel>
-                        </Button>
-                        <Button Command="{Binding RefreshCommand}" IsEnabled="{Binding !IsBusy}">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <fi:FluentIcon Icon="ArrowSync" IconVariant="Regular" />
-                                <TextBlock Text="刷新" />
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-                </Grid>
-
-                <Grid Grid.Row="1" ColumnDefinitions="2*,Auto,Auto,Auto" ColumnSpacing="8">
-                    <TextBox Text="{Binding SearchText}"
-                             PlaceholderText="搜索标题"
-                             KeyDown="OnSearchKeyDown" />
-                    <ComboBox Grid.Column="1" MinWidth="140"
-                              ItemsSource="{Binding StatusFilters}"
-                              SelectedItem="{Binding SelectedStatusFilter}">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate x:DataType="vm:SitePostStatusFilter">
-                                <TextBlock Text="{Binding Label}" />
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                    <ComboBox Grid.Column="2" MinWidth="180"
-                              ItemsSource="{Binding CategoryFilters}"
-                              SelectedItem="{Binding SelectedCategoryFilter}">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate x:DataType="models:Category">
-                                <TextBlock Text="{Binding DisplayName}" />
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                    <Button Grid.Column="3" Command="{Binding SearchCommand}" Classes="Accent" IsEnabled="{Binding !IsBusy}">
-                        <TextBlock Text="筛选" />
-                    </Button>
-                </Grid>
-
-                <Panel Grid.Row="2" MinHeight="280">
-                    <ListBox ItemsSource="{Binding Posts}"
-                             SelectedItem="{Binding SelectedPost}"
-                             DoubleTapped="OnPostDoubleTapped">
-                        <ListBox.Styles>
-                            <Style Selector="ListBoxItem">
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                            </Style>
-                        </ListBox.Styles>
-                        <ListBox.ItemTemplate>
-                            <DataTemplate x:DataType="vm:SitePostListItem">
-                                <Border Padding="12,10" Margin="0,2" CornerRadius="6">
-                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="16">
+            <DockPanel>
+                <Border DockPanel.Dock="Bottom" Classes="StatusBar">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBlock Text="{Binding StatusMessage}" FontSize="11" VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Grid.Column="1" Text="StarBlog" FontSize="11" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </Grid>
+                </Border>
+                <Grid ColumnDefinitions="220,*">
+                    <Border Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,0,1,0">
+                        <DockPanel>
+                            <Border DockPanel.Dock="Top" Classes="SiteHeader">
+                                <TextBlock Text="站点文章" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </Border>
+                            <Border DockPanel.Dock="Bottom" Padding="12" BorderThickness="0,1,0,0"
+                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+                                <StackPanel Spacing="8">
+                                    <Button Content="分类管理" Classes="SiteAction" Command="{Binding OpenCategoriesCommand}"
+                                            IsEnabled="{Binding !NeedsLogin}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                                    <TextBlock Text="新建文章和添加分类请前往「文章」工作区。" Classes="SiteLabel" FontSize="11" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel Margin="12" Spacing="12">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Text="搜索" Classes="SiteLabel" />
+                                        <TextBox x:Name="PostSearch" Text="{Binding SearchText}" Classes="SiteInput"
+                                                 PlaceholderText="搜索站点文章" KeyDown="OnSearchKeyDown" AutomationProperties.Name="搜索站点文章" />
+                                        <Button Content="搜索" Command="{Binding SearchCommand}" Classes="SiteAction" HorizontalAlignment="Stretch" />
+                                    </StackPanel>
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Text="发布状态" Classes="SiteLabel" />
+                                        <ListBox x:Name="StatusFilters" Classes="SiteRows" ItemsSource="{Binding StatusFilters}"
+                                                 SelectedItem="{Binding SelectedStatusFilter}" AutomationProperties.Name="发布状态">
+                                            <ListBox.ItemTemplate><DataTemplate x:DataType="vm:SitePostStatusFilter">
+                                                <TextBlock Text="{Binding Label}" FontSize="12" />
+                                            </DataTemplate></ListBox.ItemTemplate>
+                                        </ListBox>
+                                    </StackPanel>
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Text="分类" Classes="SiteLabel" />
+                                        <ComboBox Classes="SiteInput" ItemsSource="{Binding CategoryFilters}"
+                                                  SelectedItem="{Binding SelectedCategoryFilter}" AutomationProperties.Name="筛选文章分类">
+                                            <ComboBox.ItemTemplate><DataTemplate x:DataType="models:Category">
+                                                <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                                            </DataTemplate></ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <Button Content="清除筛选" Command="{Binding ClearFiltersCommand}" Classes="SiteAction"
+                                            IsVisible="{Binding HasActiveFilters}" HorizontalAlignment="Stretch" />
+                                </StackPanel>
+                            </ScrollViewer>
+                        </DockPanel>
+                    </Border>
+                    <DockPanel Grid.Column="1">
+                        <Border DockPanel.Dock="Top" Classes="SiteHeader">
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                                <TextBlock Text="线上文章库" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <Button Grid.Column="1" Command="{Binding OpenSelectedCommand}" IsEnabled="{Binding HasSelectedPost}"
+                                        Content="编辑文章" Classes="SiteAction" />
+                                <Button Grid.Column="2" Command="{Binding RefreshCommand}" IsEnabled="{Binding !IsBusy}"
+                                        Classes="SiteTool" ToolTip.Tip="刷新文章" AutomationProperties.Name="刷新文章">
+                                    <fi:FluentIcon Icon="ArrowSync" IconVariant="Regular" FontSize="14" />
+                                </Button>
+                            </Grid>
+                        </Border>
+                        <Border DockPanel.Dock="Bottom" Padding="12,6" BorderThickness="0,1,0,0"
+                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                                <TextBlock Text="{Binding PageSummary}" Classes="SiteLabel" VerticalAlignment="Center" />
+                                <Button Grid.Column="1" Content="上一页" Classes="SiteAction" Command="{Binding GoPreviousCommand}" IsEnabled="{Binding CanGoPrevious}" />
+                                <Button Grid.Column="2" Content="下一页" Classes="SiteAction" Command="{Binding GoNextCommand}" IsEnabled="{Binding CanGoNext}" />
+                            </Grid>
+                        </Border>
+                        <Border DockPanel.Dock="Top" Padding="12,7" BorderThickness="0,0,0,1"
+                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+                            <Grid ColumnDefinitions="*,64,120" ColumnSpacing="8">
+                                <TextBlock Text="文章 / 分类" Classes="SiteLabel" FontSize="11" />
+                                <TextBlock Grid.Column="1" Text="状态" Classes="SiteLabel" FontSize="11" />
+                                <TextBlock Grid.Column="2" Text="最近更新" Classes="SiteLabel" FontSize="11" />
+                            </Grid>
+                        </Border>
+                        <Panel>
+                            <ListBox x:Name="PostList" Classes="SiteRows" ItemsSource="{Binding Posts}" SelectedItem="{Binding SelectedPost}"
+                                     DoubleTapped="OnPostDoubleTapped" IsVisible="{Binding HasPosts}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="站点文章列表">
+                                <ListBox.KeyBindings><KeyBinding Gesture="Enter" Command="{Binding OpenSelectedCommand}" /></ListBox.KeyBindings>
+                                <ListBox.ItemTemplate><DataTemplate x:DataType="vm:SitePostListItem">
+                                    <Grid ColumnDefinitions="*,64,120" ColumnSpacing="8">
                                         <StackPanel Spacing="4">
-                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                                <TextBlock Text="{Binding CategoryName}" FontSize="12" Opacity="0.7" />
-                                                <TextBlock Text="{Binding Slug}" FontSize="12" Opacity="0.55" FontFamily="Consolas" />
-                                            </StackPanel>
+                                            <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
+                                            <TextBlock Text="{Binding CategoryName}" Classes="SiteLabel" FontSize="11" TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
-                                        <Border Grid.Column="1" Classes="Chip" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding StatusText}" FontSize="12" />
-                                        </Border>
-                                        <TextBlock Grid.Column="2" Text="{Binding UpdatedAt}" FontSize="12"
-                                                   Opacity="0.7" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="1" Text="{Binding StatusText}" Classes="SiteLabel" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="2" Text="{Binding UpdatedAt}" Classes="SiteLabel" FontSize="11" VerticalAlignment="Center" />
                                     </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                    <controls:BusyOverlay IsBusy="{Binding IsBusy}" Message="{Binding StatusMessage}" />
-                </Panel>
-
-                <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
-                    <TextBlock Text="{Binding PageSummary}" Opacity="0.75" VerticalAlignment="Center" />
-                    <Button Grid.Column="1" Command="{Binding OpenSelectedCommand}"
-                            IsEnabled="{Binding HasSelectedPost}">
-                        <TextBlock Text="打开" />
-                    </Button>
-                    <Button Grid.Column="2" Command="{Binding GoPreviousCommand}" IsEnabled="{Binding CanGoPrevious}">
-                        <TextBlock Text="上一页" />
-                    </Button>
-                    <Button Grid.Column="3" Command="{Binding GoNextCommand}" IsEnabled="{Binding CanGoNext}">
-                        <TextBlock Text="下一页" />
-                    </Button>
+                                </DataTemplate></ListBox.ItemTemplate>
+                            </ListBox>
+                            <StackPanel x:Name="EmptyState" IsVisible="{Binding ShowEmptyState}" HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" MaxWidth="320" Margin="24" Spacing="12">
+                                <fi:FluentIcon Icon="News" IconVariant="Regular" FontSize="36" Opacity="0.5" HorizontalAlignment="Center" />
+                                <TextBlock Text="{Binding EmptyTitle}" FontSize="16" TextAlignment="Center" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding EmptyDescription}" Classes="SiteLabel" TextAlignment="Center" TextWrapping="Wrap" />
+                                <Button Content="登录 StarBlog" Classes="Accent SiteAction" Command="{Binding LoginCommand}"
+                                        IsVisible="{Binding NeedsLogin}" HorizontalAlignment="Center" />
+                                <Button Content="重新加载" Classes="SiteAction" Command="{Binding RefreshCommand}"
+                                        IsVisible="{Binding HasLoadError}" HorizontalAlignment="Center" />
+                            </StackPanel>
+                            <controls:BusyOverlay IsBusy="{Binding IsBusy}" Message="{Binding StatusMessage}" />
+                        </Panel>
+                    </DockPanel>
                 </Grid>
-            </Grid>
+            </DockPanel>
         </controls:StackPageHost.RootContent>
     </controls:StackPageHost>
 </UserControl>
