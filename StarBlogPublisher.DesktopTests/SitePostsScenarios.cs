@@ -64,7 +64,7 @@ internal sealed partial class WorkspaceScenarios {
         library.OpenStackPage(editorVm, "编辑文章");
         await Task.Delay(200);
         var editorView = window.GetVisualDescendants().OfType<SitePostEditorView>().First();
-        var source = editorView.FindControl<TextEditor>("OnlineEditor")!;
+        var source = editorView.FindControl<MarkdownEditorView>("OnlineEditor")!.FindControl<TextEditor>("Editor")!;
         if (source.Text != editorVm.Content) throw new Exception("Remote content did not reach Markdown editor");
         await CheckCategoryPicker(editorView.FindControl<Button>("EditorCategoryButton")!, category, childCategory,
             chosen => {
@@ -102,6 +102,63 @@ internal sealed partial class WorkspaceScenarios {
                 if (!ReferenceEquals(shell.PublishPage.SelectedCategory, chosen)) throw new Exception("Shared tree broke workspace category selection");
             }, "workspace-category", showManagementActions: true);
         shell.PublishPage.IsLoggedIn = false;
+    }
+
+    public async Task SitePostsPreview() {
+        var api = ApiService.Instance;
+        var auth = new AuthApplicationService(AppSettings.Instance, GlobalState.Instance, api);
+        var document = new SitePostEditorViewModel(shell, new ArticleLibraryApplicationService(api, auth),
+            new CategoryApplicationService(api, auth), "preview", _ => { }) {
+            Title = "站点文章预览", Content = "# 站点文章预览\n\n实时预览正文。\n\n| 项目 | 状态 |\n| --- | --- |\n| 共享编辑器 | 已启用 |\n\n```csharp\nvar mode = \"Split\";\n```\n\n" + string.Join("\n\n", Enumerable.Range(1, 35).Select(i => $"## 章节 {i}\n\n第 {i} 段正文。")),
+            IsLoaded = true, PostUrl = "https://example.com/p/preview"
+        };
+        shell.ActivePage = shell.SitePostsPage;
+        shell.SitePostsPage.OpenStackPage(document, "编辑文章");
+        await Task.Delay(150);
+        var view = window.GetVisualDescendants().OfType<SitePostEditorView>().First();
+        var source = view.FindControl<MarkdownEditorView>("OnlineEditor")!.FindControl<TextEditor>("Editor")!;
+        var toolbar = view.GetVisualDescendants().OfType<MarkdownEditorToolbar>().First();
+        void Mode(string name) {
+            var button = toolbar.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>()
+                .First(b => b.CommandParameter as string == name);
+            if (button.Command == null) throw new Exception("Shared editor toolbar command did not bind");
+            button.Command.Execute(button.CommandParameter);
+        }
+        Mode("Split");
+        var browser = (await WaitUntilAsync(() => Task.FromResult(view.GetVisualDescendants().OfType<NativeWebView>()
+            .FirstOrDefault(b => b.Name == "PreviewBrowser")), "Site preview WebView was not created", 15000))!;
+        await WaitUntilAsync(async () => {
+            try { return await browser.InvokeScript("!!document.querySelector('table') && !!document.querySelector('pre code')") == "true"; }
+            catch (InvalidOperationException) { return false; }
+        }, "Site article preview did not render tables and code", 15000);
+        if (!document.IsSplitMode || !source.IsVisible || document.InspectorColumnWidth.Value != 0)
+            throw new Exception("Split mode did not allocate space to source and preview");
+        source.Document.Insert(0, "# 实时编辑验证\n\n");
+        await WaitUntilAsync(async () => {
+            try { return await browser.InvokeScript("document.querySelector('h1')?.textContent === '实时编辑验证'") == "true"; }
+            catch (InvalidOperationException) { return false; }
+        }, "Site preview did not update after editing", 10000);
+        Mode("Preview");
+        if (!document.IsPreviewMode || document.IsSourcePaneVisible) throw new Exception("Preview toolbar button did not change mode");
+        shell.PreviewTheme(ThemeMode.Dark);
+        await WaitUntilAsync(async () => {
+            try { return await browser.InvokeScript("document.body.classList.contains('preview-dark')") == "true"; }
+            catch (InvalidOperationException) { return false; }
+        }, "Site preview did not follow dark theme", 10000);
+        Mode("Source");
+        if (!document.IsSourceMode || source.Text != document.Content || document.InspectorColumnWidth.Value < 240)
+            throw new Exception("Returning to source mode lost content or inspector");
+        shell.PreviewTheme(ThemeMode.Light);
+        shell.SitePostsPage.ActiveStackPage = null;
+        shell.SitePostsPage.IsStackNavigating = false;
+        shell.ActivePage = shell.Workspace;
+        shell.PublishPage.EditorMode = MarkdownEditorMode.Split;
+        var localBrowser = await WaitForPreviewBrowserAsync();
+        await WaitUntilAsync(async () => {
+            try { return await localBrowser.InvokeScript("document.querySelector('h1')?.textContent === '分类选择验证'") == "true"; }
+            catch (InvalidOperationException) { return false; }
+        }, "Shared preview regressed the local article editor", 10000);
+        shell.PublishPage.EditorMode = MarkdownEditorMode.Source;
     }
 
     private async Task CheckCategoryPicker(Button button, Category parent, Category child, Action<Category> check, string name, bool showManagementActions = false) {

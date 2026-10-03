@@ -11,7 +11,7 @@ using StarBlogPublisher.Views;
 namespace StarBlogPublisher.DesktopTests;
 
 internal static class Program {
-    private static readonly string[] Names = ["workspace-state", "sidebar-and-menus", "focus-and-palette", "preview-navigation", "settings-layout", "site-posts-layout", "theme-and-close"];
+    private static readonly string[] Names = ["workspace-state", "sidebar-and-menus", "focus-and-palette", "preview-navigation", "settings-layout", "site-posts-layout", "site-posts-preview", "theme-and-close"];
     private sealed record Result(string Name, string Status, long DurationMs, string? Error = null);
 
     [STAThread]
@@ -44,11 +44,11 @@ internal static class Program {
             window.Width = 1280; window.Height = 800;
             window.Show();
             var scenarios = new WorkspaceScenarios(window, shell, output);
-            Func<Task>[] actions = [scenarios.WorkspaceState, scenarios.SidebarAndMenus, scenarios.FocusAndPalette, scenarios.PreviewNavigation, scenarios.SettingsLayout, scenarios.SitePostsLayout, scenarios.ThemeAndClose];
+            Func<Task>[] actions = [scenarios.WorkspaceState, scenarios.SidebarAndMenus, scenarios.FocusAndPalette, scenarios.PreviewNavigation, scenarios.SettingsLayout, scenarios.SitePostsLayout, scenarios.SitePostsPreview, scenarios.ThemeAndClose];
             Dispatcher.UIThread.Post(async () => {
                 var failed = false;
                 for (var i = 0; i < Names.Length; i++) {
-                    if (args.Contains("--site-posts") && Names[i] != "site-posts-layout") {
+                    if (args.Contains("--site-posts") && !Names[i].StartsWith("site-posts-")) {
                         results.Add(new(Names[i], "skipped", 0, "Site-posts-only run"));
                         Report();
                         continue;
@@ -58,7 +58,7 @@ internal static class Program {
                         Report();
                         continue;
                     }
-                    if (failed || (Names[i] == "preview-navigation" && !args.Contains("--webview"))) {
+                    if (failed || (Names[i] is "preview-navigation" or "site-posts-preview" && !args.Contains("--webview"))) {
                         results.Add(new(Names[i], "skipped", 0, failed ? "Earlier workflow stage failed" : "Requires --webview"));
                         Report();
                         continue;
