@@ -26,6 +26,7 @@ public partial class SitePostsViewModel : PageViewModelBase {
         var auth = shell.AuthService;
         _library = library ?? new ArticleLibraryApplicationService(ApiService.Instance, auth);
         _categories = categories ?? new CategoryApplicationService(ApiService.Instance, auth);
+        Posts.CollectionChanged += (_, _) => NotifyListState();
         StatusFilters = [
             new SitePostStatusFilter("all", "全部", null),
             new SitePostStatusFilter("published", "已发布", true),
@@ -56,25 +57,52 @@ public partial class SitePostsViewModel : PageViewModelBase {
     [ObservableProperty] private object? _activeStackPage;
     [ObservableProperty] private bool _isStackNavigating;
     [ObservableProperty] private bool _hasLoaded;
+    [ObservableProperty] private bool _hasLoadError;
+    private bool _refreshPending;
+    private bool _loadingFilters;
 
     public bool CanGoPrevious => Page > 1 && !IsBusy;
     public bool CanGoNext => Page < Math.Max(TotalPages, 1) && !IsBusy;
-    public bool HasSelectedPost => SelectedPost != null;
+    public bool HasSelectedPost => SelectedPost != null && !IsBusy;
+    public bool NeedsLogin => !_shell.IsUserLoggedIn;
+    public bool HasPosts => Posts.Count > 0;
+    public bool ShowEmptyState => !IsBusy && !HasPosts;
+    public bool HasActiveFilters => !string.IsNullOrWhiteSpace(SearchText)
+        || SelectedCategoryFilter?.Id > 0 || SelectedStatusFilter?.IsPublish != null;
+    public string EmptyTitle => NeedsLogin ? "登录后查看站点文章"
+        : HasLoadError ? "暂时无法加载文章"
+        : HasActiveFilters ? "没有符合条件的文章" : "站点上还没有文章";
+    public string EmptyDescription => NeedsLogin ? "连接 StarBlog 账号，管理线上文章和草稿。"
+        : HasLoadError ? StatusMessage
+        : HasActiveFilters ? "试试其他关键词，或清除筛选条件。" : "在「文章」工作区完成首次发布后，可在这里更新文章。";
     public string PageSummary => TotalCount == 0
         ? "没有文章"
         : $"第 {Page} / {Math.Max(TotalPages, 1)} 页，共 {TotalCount} 篇";
 
-    partial void OnSearchTextChanged(string value) => NotifyPaging();
+    partial void OnSearchTextChanged(string value) => NotifyListState();
     partial void OnSelectedPostChanged(SitePostListItem? value) => OnPropertyChanged(nameof(HasSelectedPost));
     partial void OnPageChanged(int value) => NotifyPaging();
     partial void OnTotalCountChanged(int value) => NotifyPaging();
     partial void OnTotalPagesChanged(int value) => NotifyPaging();
-    partial void OnIsBusyChanged(bool value) => NotifyPaging();
+    partial void OnIsBusyChanged(bool value) { NotifyPaging(); NotifyListState(); }
+    partial void OnHasLoadErrorChanged(bool value) => NotifyListState();
     partial void OnSelectedStatusFilterChanged(SitePostStatusFilter? value) {
+        NotifyListState();
         if (HasLoaded) _ = SearchFromFirstPage();
     }
     partial void OnSelectedCategoryFilterChanged(Category? value) {
-        if (HasLoaded) _ = SearchFromFirstPage();
+        NotifyListState();
+        if (HasLoaded && !_loadingFilters) _ = SearchFromFirstPage();
+    }
+
+    private void NotifyListState() {
+        OnPropertyChanged(nameof(HasPosts));
+        OnPropertyChanged(nameof(ShowEmptyState));
+        OnPropertyChanged(nameof(NeedsLogin));
+        OnPropertyChanged(nameof(HasActiveFilters));
+        OnPropertyChanged(nameof(EmptyTitle));
+        OnPropertyChanged(nameof(EmptyDescription));
+        OnPropertyChanged(nameof(HasSelectedPost));
     }
 
     private void NotifyPaging() {
@@ -102,6 +130,21 @@ public partial class SitePostsViewModel : PageViewModelBase {
     private Task Search() => SearchFromFirstPage();
 
     [RelayCommand]
+    private async Task ClearFilters() {
+        // Reset as one query, rather than loading each intermediate combination.
+        var loaded = HasLoaded;
+        HasLoaded = false;
+        SearchText = string.Empty;
+        SelectedStatusFilter = StatusFilters[0];
+        SelectedCategoryFilter = AllCategoriesSentinel;
+        HasLoaded = loaded;
+        await SearchFromFirstPage();
+    }
+
+    [RelayCommand]
+    private Task Login() => _shell.EnsureLoggedInAsync();
+
+    [RelayCommand]
     private async Task GoPrevious() {
         if (!CanGoPrevious) return;
         Page--;
@@ -117,7 +160,7 @@ public partial class SitePostsViewModel : PageViewModelBase {
 
     [RelayCommand]
     private void OpenSelected() {
-        if (SelectedPost != null) OpenEditor(SelectedPost.Id);
+        if (HasSelectedPost) OpenEditor(SelectedPost!.Id);
     }
 
     [RelayCommand]
@@ -128,6 +171,7 @@ public partial class SitePostsViewModel : PageViewModelBase {
     }
 
     public void OpenEditor(string postId) {
+        if (IsBusy) return;
         var page = new SitePostEditorViewModel(_shell, _library, _categories, postId, OnEditorClosed);
         OpenStackPage(page, "编辑文章");
         _ = page.LoadAsync();
@@ -158,7 +202,14 @@ public partial class SitePostsViewModel : PageViewModelBase {
 
     private void OnEditorClosed(bool changed) {
         NavigateBreadcrumbAt(0);
-        if (changed) _ = RefreshAsync();
+    }
+
+    public async Task NavigateBreadcrumbAsync(int index) {
+        if (index <= 0 && ActiveStackPage is SitePostEditorViewModel editor) {
+            if (editor.IsBusy) return;
+            if (editor.IsDirty && !await GuiHost.ConfirmAsync("放弃修改", "文章有未保存的修改，确定返回文章列表？")) return;
+        }
+        NavigateBreadcrumbAt(index);
     }
 
     private async Task SearchFromFirstPage() {
@@ -170,6 +221,7 @@ public partial class SitePostsViewModel : PageViewModelBase {
         var result = await _categories.GetCategoriesAsync();
         if (!result.Success || result.Categories == null) return;
 
+        _loadingFilters = true;
         var selectedId = SelectedCategoryFilter?.Id ?? 0;
         CategoryFilters.Clear();
         CategoryFilters.Add(AllCategoriesSentinel);
@@ -178,44 +230,68 @@ public partial class SitePostsViewModel : PageViewModelBase {
         }
 
         SelectedCategoryFilter = CategoryFilters.FirstOrDefault(c => c.Id == selectedId) ?? AllCategoriesSentinel;
+        _loadingFilters = false;
     }
 
     public async Task RefreshAsync() {
-        if (IsBusy) return;
+        if (IsBusy) { _refreshPending = true; return; }
         if (!_shell.IsUserLoggedIn) {
             Posts.Clear();
+            SelectedPost = null;
             TotalCount = 0;
             TotalPages = 0;
             StatusMessage = "登录后可查看站点上的文章。";
+            HasLoadError = false;
+            NotifyListState();
             return;
         }
 
         IsBusy = true;
         StatusMessage = "正在加载文章…";
         try {
-            var query = new PostListQuery {
-                Page = Math.Max(Page, 1),
-                PageSize = PageSize,
-                Search = string.IsNullOrWhiteSpace(SearchText) ? null : SearchText.Trim(),
-                CategoryId = SelectedCategoryFilter?.Id ?? 0,
-                IsPublish = SelectedStatusFilter?.IsPublish
-            };
-            var result = await _library.ListAsync(query);
-            Posts.Clear();
-            if (!result.Success) {
-                TotalCount = 0;
-                TotalPages = 0;
-                StatusMessage = result.ErrorMessage ?? "加载失败";
-                return;
-            }
+            do {
+                _refreshPending = false;
+                var query = new PostListQuery {
+                    Page = Math.Max(Page, 1),
+                    PageSize = PageSize,
+                    Search = string.IsNullOrWhiteSpace(SearchText) ? null : SearchText.Trim(),
+                    CategoryId = SelectedCategoryFilter?.Id ?? 0,
+                    IsPublish = SelectedStatusFilter?.IsPublish
+                };
+                var result = await _library.ListAsync(query);
+                // A filter change during a request must not be dropped or render stale rows.
+                if (_refreshPending) continue;
+                if (!_shell.IsUserLoggedIn) {
+                    Posts.Clear();
+                    SelectedPost = null;
+                    TotalCount = TotalPages = 0;
+                    StatusMessage = "登录后可查看站点上的文章。";
+                    HasLoadError = false;
+                    break;
+                }
+                var selectedId = SelectedPost?.Id;
+                Posts.Clear();
+                SelectedPost = null;
+                HasLoadError = !result.Success;
+                if (!result.Success) {
+                    TotalCount = 0;
+                    TotalPages = 0;
+                    StatusMessage = result.ErrorMessage ?? "加载失败";
+                    return;
+                }
 
-            foreach (var post in result.Posts) Posts.Add(new SitePostListItem(post));
-            TotalCount = result.Pagination.TotalItemCount;
-            TotalPages = Math.Max(result.Pagination.TotalPages, TotalCount == 0 ? 0 : 1);
-            if (Page > TotalPages && TotalPages > 0) {
-                Page = TotalPages;
-            }
-            StatusMessage = PageSummary;
+                TotalCount = result.Pagination.TotalItemCount;
+                TotalPages = Math.Max(result.Pagination.TotalPages, TotalCount == 0 ? 0 : 1);
+                if (TotalCount == 0) Page = 1;
+                if (Page > TotalPages && TotalPages > 0) {
+                    Page = TotalPages;
+                    _refreshPending = true;
+                    continue;
+                }
+                foreach (var post in result.Posts) Posts.Add(new SitePostListItem(post));
+                SelectedPost = Posts.FirstOrDefault(p => p.Id == selectedId);
+                StatusMessage = PageSummary;
+            } while (_refreshPending);
         }
         finally {
             IsBusy = false;
