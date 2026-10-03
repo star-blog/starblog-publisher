@@ -49,6 +49,7 @@ public partial class SitePostEditorViewModel : ViewModelBase {
     [ObservableProperty] private string? _postUrl;
     [ObservableProperty] private DateTime _lastUpdateTime;
     [ObservableProperty] private bool _isLoaded;
+    [ObservableProperty] private bool _isRefreshingCategories;
 
     public string StatusText => IsPublish ? "已发布" : "草稿";
     public bool IsDirty => IsLoaded && Snapshot() != _loadedSnapshot;
@@ -56,12 +57,16 @@ public partial class SitePostEditorViewModel : ViewModelBase {
     public bool CanSave => CanEdit && !string.IsNullOrWhiteSpace(Title) && !string.IsNullOrWhiteSpace(Content) && SelectedCategory is { Id: > 0 };
     public string SaveStateText => !IsLoaded ? "尚未加载文章" : IsDirty ? "有未保存的修改" : "已与站点同步";
     public string PublishLabel => IsPublish ? "更新文章" : "发布文章";
+    public string CategorySelectionText => SelectedCategory?.DisplayName ?? "选择文章分类";
 
     partial void OnTitleChanged(string value) => NotifyEditorState();
     partial void OnSummaryChanged(string value) => NotifyEditorState();
     partial void OnSlugChanged(string value) => NotifyEditorState();
     partial void OnContentChanged(string value) => NotifyEditorState();
-    partial void OnSelectedCategoryChanged(Category? value) => NotifyEditorState();
+    partial void OnSelectedCategoryChanged(Category? value) {
+        OnPropertyChanged(nameof(CategorySelectionText));
+        NotifyEditorState();
+    }
     partial void OnIsPublishChanged(bool value) {
         OnPropertyChanged(nameof(StatusText));
         OnPropertyChanged(nameof(PublishLabel));
@@ -215,13 +220,24 @@ public partial class SitePostEditorViewModel : ViewModelBase {
         }
     }
 
+    [RelayCommand]
     private async Task LoadCategoriesAsync() {
-        var result = await _categories.GetCategoriesAsync();
-        Categories.Clear();
-        if (!result.Success || result.Categories == null) return;
-        foreach (var category in CategoryApplicationService.Flatten(result.Categories)) {
-            Categories.Add(category);
+        if (IsRefreshingCategories) return;
+        IsRefreshingCategories = true;
+        try {
+            var result = await _categories.GetCategoriesAsync();
+            if (!result.Success || result.Categories == null) {
+                StatusMessage = result.ErrorMessage ?? "分类加载失败";
+                return;
+            }
+            var selectedId = SelectedCategory?.Id;
+            Categories.Clear();
+            foreach (var category in result.Categories) {
+                Categories.Add(category);
+            }
+            if (selectedId is int id) SelectedCategory = CategoryApplicationService.Flatten(Categories).FirstOrDefault(c => c.Id == id);
         }
+        finally { IsRefreshingCategories = false; }
     }
 
     private void ApplyPost(BlogPost post, string? url) {
@@ -232,7 +248,7 @@ public partial class SitePostEditorViewModel : ViewModelBase {
         IsPublish = post.IsPublish;
         LastUpdateTime = post.LastUpdateTime;
         PostUrl = url ?? _library.BuildPostUrl(post);
-        SelectedCategory = Categories.FirstOrDefault(c => c.Id == post.CategoryId)
+        SelectedCategory = CategoryApplicationService.Flatten(Categories).FirstOrDefault(c => c.Id == post.CategoryId)
             ?? post.Category
             ?? SelectedCategory;
         _loadedSnapshot = Snapshot();

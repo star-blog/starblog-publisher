@@ -61,16 +61,6 @@
         </Style>
         <Style Selector="Button.InspectorHeaderTool:pointerover /template/ Border#HeaderActionSurface"><Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" /></Style>
         <Style Selector="Button.InspectorHeaderTool:focus-visible /template/ Border#HeaderActionSurface"><Setter Property="BorderThickness" Value="1" /><Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" /></Style>
-        <Style Selector="Button.InspectorCategory">
-            <Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Padding" Value="8,4" />
-            <Setter Property="MinHeight" Value="28" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-        </Style>
     </UserControl.Styles>
     <DockPanel>
         <Border DockPanel.Dock="Top" Height="40" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
@@ -158,7 +148,7 @@
                             <fi:FluentIcon Icon="Dismiss" IconVariant="Regular" FontSize="14" />
                         </Button>
                     </Grid>
-                    <Button Classes="InspectorCategory"
+                    <Button x:Name="WorkspaceCategoryButton" Classes="InspectorCategory"
                             IsVisible="{Binding IsLoggedIn}"
                             HorizontalAlignment="Stretch"
                             ToolTip.Tip="{Binding CategorySelectionHint}">
@@ -171,7 +161,14 @@
                         </Grid>
                         <Button.Flyout>
                             <Flyout Placement="BottomEdgeAlignedLeft">
-                                <controls:CategoryPicker />
+                                <controls:CategoryPicker Categories="{Binding Categories}"
+                                                         SelectedCategory="{Binding SelectedCategory, Mode=TwoWay}"
+                                                         CategorySearchText="{Binding CategorySearchText, Mode=TwoWay}"
+                                                         RefreshCommand="{Binding RefreshCategoriesCommand}"
+                                                         IsRefreshing="{Binding IsRefreshingCategories}"
+                                                         ShowAddCategoryCommand="{Binding ShowAddCategoryCommand}"
+                                                         ShowWordCloudCommand="{Binding ShowWordCloudCommand}"
+                                                         CanManageCategories="{Binding IsLoggedIn}" />
                             </Flyout>
                         </Button.Flyout>
                     </Button>

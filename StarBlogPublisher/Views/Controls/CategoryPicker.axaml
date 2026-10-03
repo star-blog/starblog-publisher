@@ -1,12 +1,11 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:StarBlogPublisher.ViewModels"
+             xmlns:controls="using:StarBlogPublisher.Views.Controls"
              xmlns:models="using:StarBlogPublisher.Models"
              xmlns:fi="using:FluentIcons.Avalonia.Fluent"
-             x:Name="PickerRoot"
-             Width="320"
+             x:Name="PickerRoot" Width="320"
              x:Class="StarBlogPublisher.Views.Controls.CategoryPicker"
-             x:DataType="vm:PublishViewModel">
+             x:DataType="controls:CategoryPicker">
     <UserControl.Styles>
         <Style Selector="Button.CategoryPickerItem">
             <Setter Property="Background" Value="Transparent" />
@@ -22,54 +21,38 @@
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                 <StackPanel Spacing="2">
                     <TextBlock Text="选择分类" FontWeight="SemiBold" />
-                    <TextBlock Text="选择后会保留在当前文章中"
-                               FontSize="11"
+                    <TextBlock Text="{Binding #PickerRoot.SelectionDescription}" FontSize="11"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
-                <Button Grid.Column="1"
-                        Classes="Icon"
-                        Command="{Binding RefreshCategoriesCommand}"
-                        IsEnabled="{Binding !IsRefreshingCategories}"
-                        ToolTip.Tip="刷新分类">
+                <Button Grid.Column="1" Classes="Icon" Command="{Binding #PickerRoot.RefreshCommand}"
+                        IsEnabled="{Binding !#PickerRoot.IsRefreshing}" ToolTip.Tip="刷新分类" AutomationProperties.Name="刷新分类">
                     <fi:FluentIcon Icon="ArrowClockwise" IconVariant="Regular" FontSize="14" />
                 </Button>
             </Grid>
-
-            <TextBox Grid.Row="1"
-                     PlaceholderText="搜索分类"
-                     Text="{Binding CategorySearchText, Mode=TwoWay}" />
-
-            <TreeView x:Name="CategoryTree"
-                      Grid.Row="2"
-                      ItemsSource="{Binding FilteredCategories}"
-                      SelectedItem="{Binding SelectedCategory, Mode=OneWay}"
-                      MinHeight="180"
-                      MaxHeight="280">
+            <TextBox x:Name="CategorySearch" Grid.Row="1" PlaceholderText="搜索分类"
+                     Text="{Binding #PickerRoot.CategorySearchText, Mode=TwoWay}" AutomationProperties.Name="搜索分类" />
+            <TreeView x:Name="CategoryTree" Grid.Row="2"
+                      ItemsSource="{Binding #PickerRoot.FilteredCategories}"
+                      SelectedItem="{Binding #PickerRoot.SelectedCategory, Mode=OneWay}"
+                      MinHeight="180" MaxHeight="280" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                 <TreeView.ItemTemplate>
                     <TreeDataTemplate DataType="models:Category" ItemsSource="{Binding Nodes}">
-                        <Button Classes="CategoryPickerItem"
-                                Command="{Binding #PickerRoot.((vm:PublishViewModel)DataContext).SelectCategoryCommand}"
-                                CommandParameter="{Binding}">
-                            <TextBlock Text="{Binding Text}" TextTrimming="CharacterEllipsis" />
+                        <Button Classes="CategoryPickerItem" Click="OnCategoryClicked">
+                            <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
                         </Button>
                     </TreeDataTemplate>
                 </TreeView.ItemTemplate>
             </TreeView>
-
-            <Grid Grid.Row="3" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                <Button HorizontalAlignment="Stretch"
-                        Command="{Binding ShowAddCategoryCommand}"
-                        IsEnabled="{Binding IsLoggedIn}">
+            <Grid Grid.Row="3" ColumnDefinitions="*,Auto" ColumnSpacing="8" IsVisible="{Binding #PickerRoot.ShowManagementActions}">
+                <Button HorizontalAlignment="Stretch" Command="{Binding #PickerRoot.ShowAddCategoryCommand}"
+                        IsEnabled="{Binding #PickerRoot.CanManageCategories}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <fi:FluentIcon Icon="Add" IconVariant="Regular" FontSize="14" />
                         <TextBlock Text="新建分类" />
                     </StackPanel>
                 </Button>
-                <Button Grid.Column="1"
-                        Classes="Icon"
-                        Command="{Binding ShowWordCloudCommand}"
-                        IsEnabled="{Binding IsLoggedIn}"
-                        ToolTip.Tip="查看词云">
+                <Button Grid.Column="1" Classes="Icon" Command="{Binding #PickerRoot.ShowWordCloudCommand}"
+                        IsEnabled="{Binding #PickerRoot.CanManageCategories}" ToolTip.Tip="查看词云">
                     <fi:FluentIcon Icon="Cloud" IconVariant="Regular" FontSize="14" />
                 </Button>
             </Grid>

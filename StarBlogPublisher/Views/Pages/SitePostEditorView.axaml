@@ -90,11 +90,18 @@
                                     </StackPanel>
                                     <StackPanel Spacing="4">
                                         <TextBlock Text="分类" Classes="SiteLabel" />
-                                        <ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" Classes="SiteInput" AutomationProperties.Name="线上文章分类">
-                                            <ComboBox.ItemTemplate><DataTemplate x:DataType="models:Category">
-                                                <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
-                                            </DataTemplate></ComboBox.ItemTemplate>
-                                        </ComboBox>
+                                        <Button x:Name="EditorCategoryButton" Classes="InspectorCategory" HorizontalAlignment="Stretch" AutomationProperties.Name="线上文章分类">
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                                <TextBlock Text="{Binding CategorySelectionText}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                <fi:FluentIcon Grid.Column="1" Icon="ChevronDown" IconVariant="Regular" FontSize="14" VerticalAlignment="Center"
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                            </Grid>
+                                            <Button.Flyout><Flyout Placement="BottomEdgeAlignedLeft">
+                                                <controls:CategoryPicker Categories="{Binding Categories}" SelectedCategory="{Binding SelectedCategory, Mode=TwoWay}"
+                                                                         RefreshCommand="{Binding LoadCategoriesCommand}" IsRefreshing="{Binding IsRefreshingCategories}"
+                                                                         ShowManagementActions="False" />
+                                            </Flyout></Button.Flyout>
+                                        </Button>
                                     </StackPanel>
                                     <StackPanel Spacing="4">
                                         <TextBlock Text="摘要" Classes="SiteLabel" />

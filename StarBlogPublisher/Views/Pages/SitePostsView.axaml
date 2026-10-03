@@ -57,12 +57,19 @@
                                     </StackPanel>
                                     <StackPanel Spacing="6">
                                         <TextBlock Text="分类" Classes="SiteLabel" />
-                                        <ComboBox Classes="SiteInput" ItemsSource="{Binding CategoryFilters}"
-                                                  SelectedItem="{Binding SelectedCategoryFilter}" AutomationProperties.Name="筛选文章分类">
-                                            <ComboBox.ItemTemplate><DataTemplate x:DataType="models:Category">
-                                                <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
-                                            </DataTemplate></ComboBox.ItemTemplate>
-                                        </ComboBox>
+                                        <Button x:Name="CategoryFilterButton" Classes="InspectorCategory"
+                                                HorizontalAlignment="Stretch" AutomationProperties.Name="筛选文章分类">
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                                <TextBlock Text="{Binding CategorySelectionText}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                <fi:FluentIcon Grid.Column="1" Icon="ChevronDown" IconVariant="Regular" FontSize="14" VerticalAlignment="Center"
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                            </Grid>
+                                            <Button.Flyout><Flyout Placement="BottomEdgeAlignedLeft">
+                                                <controls:CategoryPicker Categories="{Binding CategoryFilters}" SelectedCategory="{Binding SelectedCategoryFilter, Mode=TwoWay}"
+                                                                         RefreshCommand="{Binding LoadFiltersCommand}" IsRefreshing="{Binding IsLoadingCategories}"
+                                                                         ShowManagementActions="False" SelectionDescription="选择分类以筛选站点文章" />
+                                            </Flyout></Button.Flyout>
+                                        </Button>
                                     </StackPanel>
                                     <Button Content="清除筛选" Command="{Binding ClearFiltersCommand}" Classes="SiteAction"
                                             IsVisible="{Binding HasActiveFilters}" HorizontalAlignment="Stretch" />

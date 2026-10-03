@@ -58,6 +58,7 @@ public partial class SitePostsViewModel : PageViewModelBase {
     [ObservableProperty] private bool _isStackNavigating;
     [ObservableProperty] private bool _hasLoaded;
     [ObservableProperty] private bool _hasLoadError;
+    [ObservableProperty] private bool _isLoadingCategories;
     private bool _refreshPending;
     private bool _loadingFilters;
 
@@ -66,6 +67,7 @@ public partial class SitePostsViewModel : PageViewModelBase {
     public bool HasSelectedPost => SelectedPost != null && !IsBusy;
     public bool NeedsLogin => !_shell.IsUserLoggedIn;
     public bool HasPosts => Posts.Count > 0;
+    public string CategorySelectionText => SelectedCategoryFilter?.DisplayName ?? "全部分类";
     public bool ShowEmptyState => !IsBusy && !HasPosts;
     public bool HasActiveFilters => !string.IsNullOrWhiteSpace(SearchText)
         || SelectedCategoryFilter?.Id > 0 || SelectedStatusFilter?.IsPublish != null;
@@ -91,6 +93,7 @@ public partial class SitePostsViewModel : PageViewModelBase {
         if (HasLoaded) _ = SearchFromFirstPage();
     }
     partial void OnSelectedCategoryFilterChanged(Category? value) {
+        OnPropertyChanged(nameof(CategorySelectionText));
         NotifyListState();
         if (HasLoaded && !_loadingFilters) _ = SearchFromFirstPage();
     }
@@ -217,20 +220,25 @@ public partial class SitePostsViewModel : PageViewModelBase {
         await RefreshAsync();
     }
 
+    [RelayCommand]
     public async Task LoadFiltersAsync() {
-        var result = await _categories.GetCategoriesAsync();
-        if (!result.Success || result.Categories == null) return;
-
-        _loadingFilters = true;
-        var selectedId = SelectedCategoryFilter?.Id ?? 0;
-        CategoryFilters.Clear();
-        CategoryFilters.Add(AllCategoriesSentinel);
-        foreach (var category in CategoryApplicationService.Flatten(result.Categories)) {
-            CategoryFilters.Add(category);
+        if (IsLoadingCategories) return;
+        IsLoadingCategories = true;
+        try {
+            var result = await _categories.GetCategoriesAsync();
+            if (!result.Success || result.Categories == null) return;
+            _loadingFilters = true;
+            var selectedId = SelectedCategoryFilter?.Id ?? 0;
+            CategoryFilters.Clear();
+            CategoryFilters.Add(AllCategoriesSentinel);
+            foreach (var category in result.Categories) CategoryFilters.Add(category);
+            SelectedCategoryFilter = CategoryApplicationService.Flatten(CategoryFilters)
+                .FirstOrDefault(c => c.Id == selectedId) ?? AllCategoriesSentinel;
         }
-
-        SelectedCategoryFilter = CategoryFilters.FirstOrDefault(c => c.Id == selectedId) ?? AllCategoriesSentinel;
-        _loadingFilters = false;
+        finally {
+            _loadingFilters = false;
+            IsLoadingCategories = false;
+        }
     }
 
     public async Task RefreshAsync() {

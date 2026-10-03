@@ -744,7 +744,7 @@ public partial class PublishViewModel : PageViewModelBase {
             Categories = new ObservableCollection<Category>(result.Categories);
             // 分类树刷新会创建新的模型实例；按 ID 重新关联，避免当前选择变成过期引用。
             SelectedCategory = selectedCategoryId is int id
-                ? FindCategoryById(Categories, id)
+                ? CategoryTreeHelper.FindById(Categories, id)
                 : null;
             StatusMessage = "分类刷新成功";
         }
@@ -1072,62 +1072,14 @@ public partial class PublishViewModel : PageViewModelBase {
         }
 
         FilteredCategories = new ObservableCollection<Category>(
-            FilterCategoryTree(Categories, CategorySearchText.Trim()));
-    }
-
-    private static List<Category> FilterCategoryTree(IEnumerable<Category>? categories, string query) {
-        var result = new List<Category>();
-        if (categories == null) {
-            return result;
-        }
-
-        foreach (var category in categories) {
-            var selfMatch = category.Text?.Contains(query, StringComparison.OrdinalIgnoreCase) == true;
-            var filteredChildren = category.Nodes is { Count: > 0 }
-                ? FilterCategoryTree(category.Nodes, query)
-                : [];
-
-            if (selfMatch) {
-                result.Add(category);
-            }
-            else if (filteredChildren.Count > 0) {
-                result.Add(new Category {
-                    Id = category.Id,
-                    Text = category.Text,
-                    Href = category.Href,
-                    Tags = category.Tags,
-                    Nodes = filteredChildren
-                });
-            }
-        }
-
-        return result;
-    }
-
-    private static Category? FindCategoryById(IEnumerable<Category>? categories, int id) {
-        if (categories == null) {
-            return null;
-        }
-
-        foreach (var category in categories) {
-            if (category.Id == id) {
-                return category;
-            }
-
-            var child = FindCategoryById(category.Nodes, id);
-            if (child != null) {
-                return child;
-            }
-        }
-
-        return null;
+            CategoryTreeHelper.Filter(Categories, CategorySearchText.Trim()));
     }
 
     private bool _syncingCategory;
 
     partial void OnSelectedCategoryChanged(Category? value) {
         if (!_syncingCategory && value != null) {
-            var original = FindCategoryById(Categories, value.Id);
+            var original = CategoryTreeHelper.FindById(Categories, value.Id);
             if (original != null && !ReferenceEquals(original, value)) {
                 _syncingCategory = true;
                 SelectedCategory = original;
