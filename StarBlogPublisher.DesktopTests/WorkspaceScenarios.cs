@@ -18,7 +18,7 @@ using StarBlogPublisher.Views.Controls;
 namespace StarBlogPublisher.DesktopTests;
 
 // Ordered stages of one real-window workflow; the runner skips later stages after failure.
-internal sealed class WorkspaceScenarios(MainWindow window, MainWindowViewModel shell, string output) {
+internal sealed partial class WorkspaceScenarios(MainWindow window, MainWindowViewModel shell, string output) {
     private string one = "", two = "";
     private PublishViewModel first = null!;
     private TextEditor editor = null!;

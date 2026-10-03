@@ -11,17 +11,17 @@ using StarBlogPublisher.Views;
 namespace StarBlogPublisher.DesktopTests;
 
 internal static class Program {
-    private static readonly string[] Names = ["workspace-state", "sidebar-and-menus", "focus-and-palette", "preview-navigation", "settings-layout", "theme-and-close"];
+    private static readonly string[] Names = ["workspace-state", "sidebar-and-menus", "focus-and-palette", "preview-navigation", "settings-layout", "site-posts-layout", "theme-and-close"];
     private sealed record Result(string Name, string Status, long DurationMs, string? Error = null);
 
     [STAThread]
     public static int Main(string[] args) {
         if (args.Contains("--help")) {
-            Console.WriteLine("DesktopTests [--webview] [--settings] [--list]. Windows desktop required. Reports: output/desktop-tests/<run>/report.json");
+            Console.WriteLine("DesktopTests [--webview] [--settings] [--site-posts] [--list]. Windows desktop required. Reports: output/desktop-tests/<run>/report.json");
             return 0;
         }
         if (args.Contains("--list")) { foreach (var name in Names) Console.WriteLine(name); return 0; }
-        if (args.Any(a => a != "--webview" && a != "--settings")) { Console.Error.WriteLine("Unknown argument; use --help."); return 2; }
+        if (args.Any(a => a != "--webview" && a != "--settings" && a != "--site-posts")) { Console.Error.WriteLine("Unknown argument; use --help."); return 2; }
         if (!OperatingSystem.IsWindows()) { Console.Error.WriteLine("Desktop tests currently require Windows."); return 2; }
         var output = Path.GetFullPath(Path.Combine("output", "desktop-tests", $"{DateTime.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}"));
         Directory.CreateDirectory(output);
@@ -44,10 +44,15 @@ internal static class Program {
             window.Width = 1280; window.Height = 800;
             window.Show();
             var scenarios = new WorkspaceScenarios(window, shell, output);
-            Func<Task>[] actions = [scenarios.WorkspaceState, scenarios.SidebarAndMenus, scenarios.FocusAndPalette, scenarios.PreviewNavigation, scenarios.SettingsLayout, scenarios.ThemeAndClose];
+            Func<Task>[] actions = [scenarios.WorkspaceState, scenarios.SidebarAndMenus, scenarios.FocusAndPalette, scenarios.PreviewNavigation, scenarios.SettingsLayout, scenarios.SitePostsLayout, scenarios.ThemeAndClose];
             Dispatcher.UIThread.Post(async () => {
                 var failed = false;
                 for (var i = 0; i < Names.Length; i++) {
+                    if (args.Contains("--site-posts") && Names[i] != "site-posts-layout") {
+                        results.Add(new(Names[i], "skipped", 0, "Site-posts-only run"));
+                        Report();
+                        continue;
+                    }
                     if (args.Contains("--settings") && Names[i] != "settings-layout") {
                         results.Add(new(Names[i], "skipped", 0, "Settings-only run"));
                         Report();
