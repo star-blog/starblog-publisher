@@ -207,6 +207,10 @@ public partial class SitePostsViewModel : PageViewModelBase {
         NavigateBreadcrumbAt(0);
     }
 
+    public void RefreshEditorPreviewForThemeChange() {
+        if (ActiveStackPage is SitePostEditorViewModel editor) editor.RefreshPreviewForThemeChange();
+    }
+
     public async Task NavigateBreadcrumbAsync(int index) {
         if (index <= 0 && ActiveStackPage is SitePostEditorViewModel editor) {
             if (editor.IsBusy) return;

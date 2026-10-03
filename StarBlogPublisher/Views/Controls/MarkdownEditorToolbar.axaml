@@ -1,0 +1,17 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:StarBlogPublisher.ViewModels"
+             xmlns:fi="using:FluentIcons.Avalonia.Fluent"
+             xmlns:controls="using:StarBlogPublisher.Views.Controls"
+             x:Class="StarBlogPublisher.Views.Controls.MarkdownEditorToolbar"
+             x:DataType="vm:IMarkdownEditorContext">
+    <StackPanel Orientation="Horizontal" Spacing="2">
+        <ToggleButton Content="源码" Padding="6,2" MinHeight="25" FontSize="11" IsChecked="{Binding IsSourceMode, Mode=OneWay}" Command="{Binding SetEditorModeCommand}" CommandParameter="Source" />
+        <ToggleButton Content="分栏" Padding="6,2" MinHeight="25" FontSize="11" IsEnabled="{Binding CanPreview}" IsChecked="{Binding IsSplitMode, Mode=OneWay}" Command="{Binding SetEditorModeCommand}" CommandParameter="Split" />
+        <ToggleButton Content="预览" Padding="6,2" MinHeight="25" FontSize="11" IsEnabled="{Binding CanPreview}" IsChecked="{Binding IsPreviewMode, Mode=OneWay}" Command="{Binding SetEditorModeCommand}" CommandParameter="Preview" />
+        <Button Padding="6,2" MinHeight="25" ToolTip.Tip="字体、换行与行号">
+            <fi:FluentIcon Icon="TextFont" FontSize="14" />
+            <Button.Flyout><Flyout><controls:EditorOptionsPanel /></Flyout></Button.Flyout>
+        </Button>
+    </StackPanel>
+</UserControl>

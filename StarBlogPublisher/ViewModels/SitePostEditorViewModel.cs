@@ -33,6 +33,7 @@ public partial class SitePostEditorViewModel : ViewModelBase {
         _categories = categories;
         _onClosed = onClosed;
         PostId = postId;
+        LoadEditorPreferences();
     }
 
     public string PostId { get; }
@@ -62,7 +63,11 @@ public partial class SitePostEditorViewModel : ViewModelBase {
     partial void OnTitleChanged(string value) => NotifyEditorState();
     partial void OnSummaryChanged(string value) => NotifyEditorState();
     partial void OnSlugChanged(string value) => NotifyEditorState();
-    partial void OnContentChanged(string value) => NotifyEditorState();
+    partial void OnContentChanged(string value) {
+        OnPropertyChanged(nameof(ArticleContent));
+        NotifyEditorState();
+        RefreshPreviewForThemeChange();
+    }
     partial void OnSelectedCategoryChanged(Category? value) {
         OnPropertyChanged(nameof(CategorySelectionText));
         NotifyEditorState();
@@ -261,6 +266,7 @@ public partial class SitePostEditorViewModel : ViewModelBase {
     private void NotifyEditorState() {
         OnPropertyChanged(nameof(IsDirty));
         OnPropertyChanged(nameof(CanSave));
+        OnPropertyChanged(nameof(CanPreview));
         OnPropertyChanged(nameof(CanEdit));
         OnPropertyChanged(nameof(SaveStateText));
         OnPropertyChanged(nameof(StatusText));

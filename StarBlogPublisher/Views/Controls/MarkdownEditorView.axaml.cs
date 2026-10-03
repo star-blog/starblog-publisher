@@ -18,7 +18,7 @@ using StarBlogPublisher.ViewModels;
 namespace StarBlogPublisher.Views.Controls;
 
 public partial class MarkdownEditorView : UserControl {
-    private PublishViewModel? _viewModel;
+    private IMarkdownEditorContext? _viewModel;
     private SearchPanel? _searchPanel;
     private MarkdownSyntaxColorizer? _colorizer;
     private NativeWebView? _previewBrowser;
@@ -121,7 +121,7 @@ public partial class MarkdownEditorView : UserControl {
         _previewBrowser = new NativeWebView {
             Name = "PreviewBrowser",
         };
-        _previewBrowser.Bind(NativeWebView.SourceProperty, new Binding(nameof(PublishViewModel.PreviewUri)));
+        _previewBrowser.Bind(NativeWebView.SourceProperty, new Binding(nameof(IMarkdownEditorContext.PreviewUri)));
         _previewBrowser.NavigationCompleted += async (_, _) => {
             StartupLog.MarkFirstWebViewNavigationCompleted();
             PreviewPlaceholder.IsVisible = false;
@@ -154,7 +154,7 @@ public partial class MarkdownEditorView : UserControl {
         _pendingPreviewLine = null;
         _pendingPreviewSourceLine = null;
         _sourceLineBeforeModeChange = null;
-        _viewModel = DataContext as PublishViewModel;
+        _viewModel = DataContext as IMarkdownEditorContext;
         if (_viewModel != null) {
             _syncingText = true;
             Editor.Document = _viewModel.EditorDocument;
@@ -223,7 +223,7 @@ public partial class MarkdownEditorView : UserControl {
     }
 
     private void OnViewModelPropertyChanging(object? sender, System.ComponentModel.PropertyChangingEventArgs e) {
-        if (e.PropertyName != nameof(PublishViewModel.EditorMode)) return;
+        if (e.PropertyName != nameof(IMarkdownEditorContext.EditorMode)) return;
         _sourceLineBeforeModeChange = null;
         if (_viewModel is not { IsSourcePaneVisible: true }) return;
         var view = Editor.TextArea.TextView;
@@ -236,13 +236,13 @@ public partial class MarkdownEditorView : UserControl {
     }
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) {
-        if (e.PropertyName is nameof(PublishViewModel.IsPreviewPaneVisible)
-            or nameof(PublishViewModel.PreviewUri)
-            or nameof(PublishViewModel.EditorMode)) {
+        if (e.PropertyName is nameof(IMarkdownEditorContext.IsPreviewPaneVisible)
+            or nameof(IMarkdownEditorContext.PreviewUri)
+            or nameof(IMarkdownEditorContext.EditorMode)) {
             SchedulePreviewBrowserCreation();
         }
 
-        if (e.PropertyName == nameof(PublishViewModel.EditorMode)
+        if (e.PropertyName == nameof(IMarkdownEditorContext.EditorMode)
             && _viewModel is { IsPreviewPaneVisible: true } document
             && _sourceLineBeforeModeChange is { } sourceLine) {
             _sourceLineBeforeModeChange = null;
@@ -253,7 +253,7 @@ public partial class MarkdownEditorView : UserControl {
                 if (ReferenceEquals(document, _viewModel)) await ScrollPreviewToPendingHeading();
             }, DispatcherPriority.Loaded);
         }
-        if (e.PropertyName == nameof(PublishViewModel.ArticleContent)) {
+        if (e.PropertyName == nameof(IMarkdownEditorContext.ArticleContent)) {
             _pendingPreviewLine = null;
             _pendingPreviewSourceLine = null;
             _sourceLineBeforeModeChange = null;

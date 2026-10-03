@@ -230,11 +230,13 @@ public partial class MainWindowViewModel : ViewModelBase {
         AppThemeService.Apply(mode);
         SyncEffectiveIsDark();
         foreach (var document in Workspace.Documents) document.RefreshPreviewForThemeChange();
+        _sitePostsPage?.RefreshEditorPreviewForThemeChange();
     }
 
     private void OnActualThemeVariantChanged(object? sender, EventArgs e) {
         SyncEffectiveIsDark();
         foreach (var document in Workspace.Documents) document.RefreshPreviewForThemeChange();
+        _sitePostsPage?.RefreshEditorPreviewForThemeChange();
     }
 
     private void SyncEffectiveIsDark() {

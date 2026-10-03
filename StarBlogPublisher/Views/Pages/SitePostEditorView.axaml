@@ -3,7 +3,6 @@
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:models="using:StarBlogPublisher.Models"
              xmlns:fi="using:FluentIcons.Avalonia.Fluent"
-             xmlns:ae="https://github.com/avaloniaui/avaloniaedit"
              xmlns:controls="using:StarBlogPublisher.Views.Controls"
              x:Class="StarBlogPublisher.Views.SitePostEditorView"
              x:DataType="vm:SitePostEditorViewModel">
@@ -20,33 +19,23 @@
                                TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                 </Grid>
             </Border>
-            <Grid ColumnDefinitions="*,4,280">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="{Binding InspectorColumnWidth, Mode=TwoWay}" />
+                </Grid.ColumnDefinitions>
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Classes="SiteHeader">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                             <TextBlock Text="{Binding Title}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
-                                <TextBlock Text="Markdown" Classes="SiteLabel" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0" />
-                                <Button Classes="SiteTool" ToolTip.Tip="自动换行与行号" AutomationProperties.Name="编辑器选项">
-                                    <fi:FluentIcon Icon="TextFont" FontSize="14" />
-                                    <Button.Flyout><Flyout>
-                                        <StackPanel Spacing="8">
-                                            <CheckBox Content="自动换行" IsChecked="{Binding #OnlineEditor.WordWrap}" />
-                                            <CheckBox Content="显示行号" IsChecked="{Binding #OnlineEditor.ShowLineNumbers}" />
-                                        </StackPanel>
-                                    </Flyout></Button.Flyout>
-                                </Button>
-                            </StackPanel>
+                            <controls:MarkdownEditorToolbar Grid.Column="1" />
                         </Grid>
                     </Border>
-                    <ae:TextEditor x:Name="OnlineEditor" IsEnabled="{Binding CanEdit}"
-                                   ShowLineNumbers="True" WordWrap="True" Padding="20,12" FontSize="14"
-                                   FontFamily="Cascadia Code, Consolas, Menlo, monospace"
-                                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
-                                   AutomationProperties.Name="线上文章 Markdown 正文" />
+                    <controls:MarkdownEditorView x:Name="OnlineEditor" IsEnabled="{Binding CanEdit}" />
                 </DockPanel>
-                <GridSplitter Grid.Column="1" Width="4" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
-                <Border Grid.Column="2" Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
+                <GridSplitter Grid.Column="1" IsVisible="{Binding !IsSplitMode}" Width="4" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
+                <Border Grid.Column="2" IsVisible="{Binding !IsSplitMode}" Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1,0,0,0" MinWidth="240" MaxWidth="420">
                     <DockPanel>
                         <Border DockPanel.Dock="Top" Classes="SiteHeader">

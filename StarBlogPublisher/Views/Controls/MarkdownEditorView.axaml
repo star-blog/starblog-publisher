@@ -3,7 +3,7 @@
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:ae="https://github.com/avaloniaui/avaloniaedit"
              x:Class="StarBlogPublisher.Views.Controls.MarkdownEditorView"
-             x:DataType="vm:PublishViewModel"
+             x:DataType="vm:IMarkdownEditorContext"
              Focusable="True">
     <Grid>
         <Grid.ColumnDefinitions>
