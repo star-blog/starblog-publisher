@@ -2,6 +2,8 @@ using System.Net;
 using System.Text;
 using FluentAssertions;
 using Moq;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
@@ -177,14 +179,20 @@ public class WeChatDraftPublishApplicationServiceTests {
         }
     }
 
-    [Fact]
-    public async Task PublishAsync_UploadsContentImagesViaUploadimg() {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PublishAsync_UploadsContentImagesViaUploadimg(bool webp) {
         var coverPath = Path.Combine(Path.GetTempPath(), $"starblog-cover-{Guid.NewGuid():N}.jpg");
         var imageDir = Path.Combine(Path.GetTempPath(), $"starblog-imgs-{Guid.NewGuid():N}");
         Directory.CreateDirectory(imageDir);
-        var contentImagePath = Path.Combine(imageDir, "pic.png");
+        var fileName = webp ? "pic.webp" : "pic.png";
+        var contentImagePath = Path.Combine(imageDir, fileName);
         await File.WriteAllBytesAsync(coverPath, [0xFF, 0xD8, 0xFF, 0xD9]);
-        await File.WriteAllBytesAsync(contentImagePath, [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+        using (var image = new Image<Rgba32>(30, 20, new Rgba32(40, 80, 120))) {
+            if (webp) await image.SaveAsWebpAsync(contentImagePath);
+            else await image.SaveAsPngAsync(contentImagePath);
+        }
         try {
             var handler = new SequencingHandler([
                 (HttpMethod.Get, "cgi-bin/token", """{"access_token":"tok","expires_in":7200}"""),
@@ -198,7 +206,7 @@ public class WeChatDraftPublishApplicationServiceTests {
             settings.WeChatAppSecret = "secret";
 
             var result = await service.PublishAsync(
-                FormatResult("""<p><img src="pic.png" alt="x"></p>"""),
+                FormatResult($"<p><img src=\"{fileName}\" alt=\"x\"></p>"),
                 imageDir,
                 "summary",
                 coverPath);
@@ -212,13 +220,65 @@ public class WeChatDraftPublishApplicationServiceTests {
                 r.Uri.AbsoluteUri.Contains("cgi-bin/media/uploadimg", StringComparison.Ordinal));
             var contentUpload = handler.Requests.Single(r =>
                 r.Uri.AbsoluteUri.Contains("cgi-bin/media/uploadimg", StringComparison.Ordinal));
-            contentUpload.BodyText.Should().Contain("filename=\"media.png\"");
-            contentUpload.BodyText.Should().Contain("Content-Type: image/png");
+            contentUpload.BodyText.Should().Contain(webp ? "filename=\"media.jpg\"" : "filename=\"media.png\"");
+            contentUpload.BodyText.Should().Contain(webp ? "Content-Type: image/jpeg" : "Content-Type: image/png");
         }
         finally {
             File.Delete(coverPath);
             Directory.Delete(imageDir, recursive: true);
         }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PublishAsync_PreparesRemoteImagesRegardlessOfMimeAndOriginalSize(bool oversized) {
+        var coverPath = Path.Combine(Path.GetTempPath(), $"starblog-cover-{Guid.NewGuid():N}.jpg");
+        await File.WriteAllBytesAsync(coverPath, [0xFF, 0xD8, 0xFF, 0xD9]);
+        try {
+            using var image = new Image<Rgba32>(oversized ? 900 : 30, oversized ? 900 : 20);
+            var random = new Random(42);
+            image.ProcessPixelRows(accessor => {
+                for (var y = 0; y < accessor.Height; y++) {
+                    var row = accessor.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++) {
+                        row[x] = new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256));
+                    }
+                }
+            });
+            using var source = new MemoryStream();
+            if (oversized) await image.SaveAsPngAsync(source);
+            else await image.SaveAsWebpAsync(source);
+            if (oversized) source.Length.Should().BeGreaterThan(1024 * 1024);
+            var handler = new SequencingHandler([
+                (HttpMethod.Get, "cgi-bin/token", """{"access_token":"tok","expires_in":7200}"""),
+                (HttpMethod.Get, "images.example", ""),
+                (HttpMethod.Post, "cgi-bin/media/uploadimg", """{"url":"https://mmbiz.qpic.cn/prepared.jpg"}"""),
+                (HttpMethod.Post, "cgi-bin/material/add_material", """{"media_id":"cover"}"""),
+                (HttpMethod.Post, "cgi-bin/draft/add", """{"media_id":"draft"}"""),
+                (HttpMethod.Post, "cgi-bin/draft/get", """{"news_item":[{"title":"Hello"}]}""")
+            ]) { RemoteImageBytes = source.ToArray() };
+            var service = CreateService(handler, out var settings);
+            settings.WeChatAppId = $"app-remote-{Guid.NewGuid():N}";
+            settings.WeChatAppSecret = "secret";
+
+            var result = await service.PublishAsync(
+                FormatResult("<img src=\"https://images.example/download?id=1\">"), Path.GetTempPath(), "summary", coverPath);
+
+            result.Success.Should().BeTrue(result.ErrorMessage);
+            result.FormattedHtml.Should().Contain("https://mmbiz.qpic.cn/prepared.jpg");
+            var upload = handler.Requests.Single(r => r.Uri.AbsoluteUri.Contains("cgi-bin/media/uploadimg"));
+            upload.BodyText.Should().Contain("filename=\"media.jpg\"");
+            var headerEnd = Encoding.UTF8.GetString(upload.BodyBytes).IndexOf("\r\n\r\n", StringComparison.Ordinal) + 4;
+            var boundary = upload.ContentType.Split("boundary=")[1];
+            var footerSize = Encoding.UTF8.GetByteCount($"\r\n--{boundary}--\r\n");
+            var imageBytes = upload.BodyBytes[headerEnd..^footerSize];
+            imageBytes.Length.Should().BeLessThanOrEqualTo(1024 * 1024);
+            Image.DetectFormat(imageBytes).Name.Should().Be("JPEG");
+            using var decoded = Image.Load(imageBytes);
+            decoded.Width.Should().BeGreaterThan(0);
+        }
+        finally { File.Delete(coverPath); }
     }
 
     [Fact]
@@ -349,12 +409,13 @@ public class WeChatDraftPublishApplicationServiceTests {
         return new WeChatDraftPublishApplicationService(settings, factory.Object);
     }
 
-    private sealed record CapturedRequest(HttpMethod Method, Uri Uri, string ContentType, string BodyText);
+    private sealed record CapturedRequest(HttpMethod Method, Uri Uri, string ContentType, string BodyText, byte[] BodyBytes);
 
     private sealed class SequencingHandler : HttpMessageHandler {
         private readonly Queue<(HttpMethod Method, string PathContains, string ResponseJson)> _responses;
         private readonly HttpStatusCode _responseStatus;
         public List<CapturedRequest> Requests { get; } = [];
+        public byte[]? RemoteImageBytes { get; init; }
 
         public SequencingHandler(IEnumerable<(HttpMethod Method, string PathContains, string ResponseJson)> responses,
             HttpStatusCode responseStatus = HttpStatusCode.OK) {
@@ -369,7 +430,8 @@ public class WeChatDraftPublishApplicationServiceTests {
                 ? string.Empty
                 : await request.Content.ReadAsStringAsync(cancellationToken);
             var contentType = request.Content?.Headers.ContentType?.ToString() ?? string.Empty;
-            Requests.Add(new CapturedRequest(request.Method, request.RequestUri!, contentType, bodyText));
+            var bodyBytes = request.Content == null ? [] : await request.Content.ReadAsByteArrayAsync(cancellationToken);
+            Requests.Add(new CapturedRequest(request.Method, request.RequestUri!, contentType, bodyText, bodyBytes));
 
             if (_responses.Count == 0) {
                 throw new InvalidOperationException($"Unexpected request: {request.Method} {request.RequestUri}");
@@ -382,6 +444,10 @@ public class WeChatDraftPublishApplicationServiceTests {
                     $"Expected {expected.Method} containing '{expected.PathContains}', got {request.Method} {request.RequestUri}");
             }
 
+            if (expected.PathContains == "images.example" && RemoteImageBytes != null) {
+                // Extensionless URLs and generic MIME types must be decoded from actual bytes.
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(RemoteImageBytes) };
+            }
             return new HttpResponseMessage(_responseStatus) {
                 Content = new StringContent(expected.ResponseJson, Encoding.UTF8,
                     _responseStatus == HttpStatusCode.OK ? "application/json" : "text/html")

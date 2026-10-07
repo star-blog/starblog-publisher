@@ -19,7 +19,7 @@ namespace StarBlogPublisher.Services.Application;
 /// 将微信公众号排版后的文章上传为草稿箱图文。
 /// </summary>
 public sealed class WeChatDraftPublishApplicationService {
-    private const int MaxContentImageBytes = 1024 * 1024;
+    private const int MaxDownloadImageBytes = 20 * 1024 * 1024;
     private const int MaxCoverImageBytes = 2 * 1024 * 1024;
     /// <summary>WeChat draft title hard limit.</summary>
     public const int MaxTitleLength = 32;
@@ -179,12 +179,14 @@ public sealed class WeChatDraftPublishApplicationService {
                         throw new InvalidOperationException($"找不到正文图片: {source}");
                     }
 
-                    ValidateImage(imagePath, MaxContentImageBytes, "正文图片");
+                    onProgress?.Invoke(25 + (int)(completed * 45.0 / matches.Count), $"正在处理正文图片 ({completed + 1}/{matches.Count})...");
+                    var prepared = await WeChatContentImageService.PrepareAsync(imagePath);
                     var uploadedUrl = await UploadImageAsync(
                         account,
                         "cgi-bin/media/uploadimg",
                         token,
-                        imagePath,
+                        prepared.Bytes,
+                        prepared.Extension,
                         "url",
                         "上传正文图片");
                     replacement = match.Value.Replace(match.Groups["src"].Value, WebUtility.HtmlEncode(uploadedUrl), StringComparison.Ordinal);
@@ -225,9 +227,20 @@ public sealed class WeChatDraftPublishApplicationService {
         string imagePath,
         string resultField,
         string action) {
-        using var client = CreateApiClient(account);
         var fileBytes = await File.ReadAllBytesAsync(imagePath);
-        using var content = CreateWeChatMediaContent(fileBytes, Path.GetExtension(imagePath));
+        return await UploadImageAsync(account, endpoint, token, fileBytes, Path.GetExtension(imagePath), resultField, action);
+    }
+
+    private async Task<string> UploadImageAsync(
+        WeChatAccountProfile account,
+        string endpoint,
+        string token,
+        byte[] fileBytes,
+        string extension,
+        string resultField,
+        string action) {
+        using var client = CreateApiClient(account);
+        using var content = CreateWeChatMediaContent(fileBytes, extension);
 
         var separator = endpoint.Contains('?') ? "&" : "?";
         using var response = await client.PostAsync(
@@ -407,16 +420,12 @@ public sealed class WeChatDraftPublishApplicationService {
         using var client = _httpClientFactory.CreateClient(WeChatHttpClientRegistration.ImageDownloadClientName);
         using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
         response.EnsureSuccessStatusCode();
-        var extension = response.Content.Headers.ContentType?.MediaType switch {
-            "image/png" => ".png",
-            "image/jpeg" => ".jpg",
-            _ => throw new InvalidOperationException("正文图片仅支持 JPG 或 PNG 格式")
-        };
-        if (response.Content.Headers.ContentLength is > MaxContentImageBytes) {
-            throw new InvalidOperationException("正文图片不能超过 1 MB");
+        // Format is detected from downloaded bytes, including extensionless image URLs.
+        if (response.Content.Headers.ContentLength is > MaxDownloadImageBytes) {
+            throw new InvalidOperationException("在线正文图片不能超过 20 MB");
         }
 
-        var tempPath = Path.Combine(Path.GetTempPath(), $"starblog-wechat-{Guid.NewGuid():N}{extension}");
+        var tempPath = Path.Combine(Path.GetTempPath(), $"starblog-wechat-{Guid.NewGuid():N}.img");
         try {
             await using var input = await response.Content.ReadAsStreamAsync();
             await using var output = File.Create(tempPath);
@@ -425,7 +434,7 @@ public sealed class WeChatDraftPublishApplicationService {
             int read;
             while ((read = await input.ReadAsync(buffer)) > 0) {
                 totalBytes += read;
-                if (totalBytes > MaxContentImageBytes) throw new InvalidOperationException("正文图片不能超过 1 MB");
+                if (totalBytes > MaxDownloadImageBytes) throw new InvalidOperationException("在线正文图片不能超过 20 MB");
                 await output.WriteAsync(buffer.AsMemory(0, read));
             }
             return tempPath;
