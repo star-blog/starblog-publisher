@@ -31,8 +31,10 @@ public sealed class WeChatDraftPublishApplicationService {
     public const int MaxContentSourceUrlBytes = 1024;
     private static readonly SemaphoreSlim TokenLock = new(1, 1);
     private static readonly ConcurrentDictionary<string, WeChatAccessToken> TokenCache = new(StringComparer.Ordinal);
-    // WeChat draft/add expects raw UTF-8 Chinese in JSON. Default System.Text.Json escapes
-    // non-ASCII as \uXXXX, which WeChat then stores/displays literally.
+    // WeChat draft/add expects raw UTF-8 in JSON. Default System.Text.Json emits \uXXXX for
+    // non-ASCII; UnsafeRelaxedJsonEscaping keeps BMP Chinese but still encodes emoji and other
+    // supplementary-plane characters as UTF-16 surrogate pairs (\uD83D\uDE02). WeChat stores
+    // those escapes literally, so SerializeWeChatJson unescapes them after serialize.
     private static readonly JsonSerializerOptions WeChatJsonOptions = new() {
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
@@ -332,7 +334,59 @@ public sealed class WeChatDraftPublishApplicationService {
     }
 
     internal static string SerializeWeChatJson<T>(T value) =>
-        JsonSerializer.Serialize(value, WeChatJsonOptions);
+        SerializeWeChatJson(value, WeChatJsonOptions);
+
+    internal static string SerializeWeChatJson<T>(T value, JsonSerializerOptions options) =>
+        UnescapeJsonUnicode(JsonSerializer.Serialize(value, options));
+
+    /// <summary>
+    /// Turns JSON <c>\uXXXX</c> into the actual UTF-16 code unit, except for characters that
+    /// must stay escaped for the payload to remain valid JSON (quotes, backslash, controls).
+    /// Leaves already-escaped backslashes alone so a literal <c>\uXXXX</c> in article text
+    /// stays <c>\\uXXXX</c> in the JSON.
+    /// </summary>
+    internal static string UnescapeJsonUnicode(string json) {
+        if (json.IndexOf("\\u", StringComparison.Ordinal) < 0) return json;
+
+        var builder = new StringBuilder(json.Length);
+        for (var i = 0; i < json.Length;) {
+            if (json[i] == '\\' && i + 1 < json.Length) {
+                var next = json[i + 1];
+                if (next == 'u'
+                    && i + 5 < json.Length
+                    && IsHex(json[i + 2]) && IsHex(json[i + 3]) && IsHex(json[i + 4]) && IsHex(json[i + 5])) {
+                    var code = (HexValue(json[i + 2]) << 12)
+                               | (HexValue(json[i + 3]) << 8)
+                               | (HexValue(json[i + 4]) << 4)
+                               | HexValue(json[i + 5]);
+                    if (code is >= 0x20 and not '"' and not '\\') {
+                        builder.Append((char)code);
+                        i += 6;
+                        continue;
+                    }
+                }
+
+                builder.Append('\\');
+                builder.Append(next);
+                i += 2;
+                continue;
+            }
+
+            builder.Append(json[i]);
+            i++;
+        }
+
+        return builder.ToString();
+    }
+
+    private static bool IsHex(char c) =>
+        c is (>= '0' and <= '9') or (>= 'A' and <= 'F') or (>= 'a' and <= 'f');
+
+    private static int HexValue(char c) => c switch {
+        >= '0' and <= '9' => c - '0',
+        >= 'A' and <= 'F' => c - 'A' + 10,
+        _ => c - 'a' + 10
+    };
 
     /// <summary>
     /// Removes whitespace between HTML tags for draft/add. WeChat's rich-text editor treats
@@ -392,7 +446,7 @@ public sealed class WeChatDraftPublishApplicationService {
                 }
             ]
         };
-        using var content = new StringContent(JsonSerializer.Serialize(payload, DraftJsonOptions), Encoding.UTF8, "application/json");
+        using var content = new StringContent(SerializeWeChatJson(payload, DraftJsonOptions), Encoding.UTF8, "application/json");
         using var response = await client.PostAsync($"cgi-bin/draft/add?access_token={Uri.EscapeDataString(token)}", content);
         var document = await ReadResponseAsync(response);
         ThrowIfWeChatError(response, document, "创建公众号草稿");

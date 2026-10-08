@@ -107,6 +107,36 @@ public class WeChatDraftPublishApplicationServiceTests {
     }
 
     [Fact]
+    public void SerializeWeChatJson_KeepsEmojiInsteadOfSurrogateEscapes() {
+        const string emoji = "\U0001F602";
+        var json = WeChatDraftPublishApplicationService.SerializeWeChatJson(new {
+            content = $"花了一个多小时才到{emoji}",
+            title = $"打卡{emoji}"
+        });
+
+        json.Should().Contain($"花了一个多小时才到{emoji}");
+        json.Should().Contain($"打卡{emoji}");
+        json.Should().NotContain("\\uD83D");
+        json.Should().NotContain("\\uDE02");
+        json.Should().NotContain("\\u");
+    }
+
+    [Fact]
+    public void SerializeWeChatJson_KeepsLiteralUnicodeEscapeTextAndJsonMetacharacters() {
+        // \u005c is backslash; avoids C# treating \uD83D in the source as a surrogate character.
+        var literalEscape = "\u005cuD83D\u005cuDE02";
+        var json = WeChatDraftPublishApplicationService.SerializeWeChatJson(new {
+            content = $"code: {literalEscape} and \"quotes\" and \nnewline"
+        });
+
+        json.Should().Contain("\u005c\u005cuD83D\u005c\u005cuDE02");
+        json.Should().Contain("\\\"quotes\\\"");
+        json.Should().Contain("\\nnewline");
+        var parsed = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+        parsed!["content"].Should().Be($"code: {literalEscape} and \"quotes\" and \nnewline");
+    }
+
+    [Fact]
     public void MinifyHtmlForWeChatDraft_CollapsesWhitespaceBetweenTagsButKeepsPreContent() {
         var html = "<ul style=\"margin:0\">\n<li>one</li>\n<li>two</li>\n</ul>\n<pre style=\"x\">line1\nline2\n</pre>";
 
@@ -279,6 +309,42 @@ public class WeChatDraftPublishApplicationServiceTests {
             decoded.Width.Should().BeGreaterThan(0);
         }
         finally { File.Delete(coverPath); }
+    }
+
+    [Fact]
+    public async Task PublishAsync_KeepsEmojiInDraftContent() {
+        var coverPath = Path.Combine(Path.GetTempPath(), $"starblog-cover-{Guid.NewGuid():N}.jpg");
+        await File.WriteAllBytesAsync(coverPath, [0xFF, 0xD8, 0xFF, 0xD9]);
+        try {
+            var handler = new SequencingHandler([
+                (HttpMethod.Get, "cgi-bin/token", """{"access_token":"tok","expires_in":7200}"""),
+                (HttpMethod.Post, "cgi-bin/material/add_material", """{"media_id":"cover-media-1"}"""),
+                (HttpMethod.Post, "cgi-bin/draft/add", """{"media_id":"draft-1"}"""),
+                (HttpMethod.Post, "cgi-bin/draft/get", """{"news_item":[{"title":"Hello"}]}""")
+            ]);
+            var service = CreateService(handler, out var settings);
+            settings.WeChatAppId = $"app-emoji-{Guid.NewGuid():N}";
+            settings.WeChatAppSecret = "secret";
+
+            const string emoji = "\U0001F602";
+            var result = await service.PublishAsync(
+                FormatResult($"<p>花了一个多小时才到{emoji}</p>", $"打卡{emoji}"),
+                Path.GetTempPath(),
+                $"摘要{emoji}",
+                coverPath);
+
+            result.Success.Should().BeTrue(result.ErrorMessage);
+            var draft = handler.Requests.Should().ContainSingle(r =>
+                r.Uri.AbsoluteUri.Contains("cgi-bin/draft/add", StringComparison.Ordinal)).Subject;
+            draft.BodyText.Should().Contain($"花了一个多小时才到{emoji}");
+            draft.BodyText.Should().Contain($"打卡{emoji}");
+            draft.BodyText.Should().Contain($"摘要{emoji}");
+            draft.BodyText.Should().NotContain("\\uD83D");
+            draft.BodyText.Should().NotContain("\\uDE02");
+        }
+        finally {
+            File.Delete(coverPath);
+        }
     }
 
     [Fact]
