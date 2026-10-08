@@ -79,6 +79,42 @@ public class ArticleWorkspaceViewModelTests : IDisposable {
         shell.PublishPage.ArticleSlug.Should().Be("saved-article");
         shell.PublishPage.SelectedCategory!.Id.Should().Be(17);
         shell.PublishPage.IsDocumentDirty.Should().BeFalse();
+        var savedJson = await File.ReadAllTextAsync(path + ".starblog.json");
+        savedJson.Should().Contain("\"Title\": \"发布标题\"");
+        savedJson.Should().Contain("\"Description\": \"摘要\"");
+        savedJson.Should().NotContain("\\u");
+        savedJson.Should().NotContain("PostId");
+    }
+
+    [Fact]
+    public async Task Saving_PreservesSidecarIdentity_AndDoesNotMarkIdentityAsDirty() {
+        var shell = CreateShell();
+        var path = await Article("pulled.md", "# 正文");
+        var synced = new DateTime(2026, 4, 8, 8, 30, 0, DateTimeKind.Utc);
+        await ArticleSidecar.WriteAsync(path, new ArticleSidecar {
+            Title = "旧标题",
+            Description = "旧摘要",
+            PostId = "p-42",
+            IsPublish = true,
+            LastSyncedAt = synced
+        });
+
+        await shell.Workspace.OpenPathAsync(path);
+        var document = shell.PublishPage;
+        document.ArticleTitle.Should().Be("旧标题");
+        document.IsDocumentDirty.Should().BeFalse();
+
+        document.ArticleTitle = "新标题";
+        (await document.SaveDocumentAsync()).Should().BeTrue();
+        document.IsDocumentDirty.Should().BeFalse();
+
+        var sidecar = await ArticleSidecar.ReadAsync(path);
+        sidecar.Should().NotBeNull();
+        sidecar!.Title.Should().Be("新标题");
+        sidecar.Description.Should().Be("旧摘要");
+        sidecar.PostId.Should().Be("p-42");
+        sidecar.IsPublish.Should().BeTrue();
+        sidecar.LastSyncedAt.Should().Be(synced);
     }
 
     [Fact]
