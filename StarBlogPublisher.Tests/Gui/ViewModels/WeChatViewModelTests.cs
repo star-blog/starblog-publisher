@@ -184,6 +184,29 @@ public class WeChatViewModelTests {
     }
 
     [Fact]
+    public void ShowCoverStudio_UsesCurrentArticleImagesAndResolvesRelativePaths() {
+        var viewModel = CreateViewModel();
+        var article = Path.Combine(Path.GetTempPath(), "article", "post.md");
+        typeof(WeChatViewModel).GetField("_sourceFilePath", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(viewModel, article);
+        viewModel.FormattedHtml = "<img src='images/photo.png' alt='配图'><img src='https://images.example/photo.png'>";
+
+        viewModel.ShowCoverStudioCommand.Execute(null);
+
+        var studio = viewModel.ActiveStackPage.Should().BeOfType<CoverStudioViewModel>().Subject;
+        studio.ArticleImages.Select(image => image.Source).Should().Equal(
+            Path.Combine(Path.GetDirectoryName(article)!, "images", "photo.png"), "https://images.example/photo.png");
+        studio.HasArticleImages.Should().BeTrue();
+        viewModel.NavigateBreadcrumbAt(0);
+
+        viewModel.FormattedHtml = "<p>另一篇没有图片的文章</p>";
+        viewModel.ShowCoverStudioCommand.Execute(null);
+        var next = viewModel.ActiveStackPage.Should().BeOfType<CoverStudioViewModel>().Subject;
+        next.HasArticleImages.Should().BeFalse();
+        viewModel.NavigateBreadcrumbAt(0);
+    }
+
+    [Fact]
     public async Task UsePreparedCover_InstallsTheComposedImage() {
         var viewModel = CreateViewModel();
         var composed = await new CoverComposer().ComposeAsync(null, new CoverComposition { Title = "" });
