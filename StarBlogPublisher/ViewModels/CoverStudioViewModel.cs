@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -9,6 +10,8 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SixLabors.ImageSharp.Processing;
+using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
 
@@ -21,8 +24,10 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
     private readonly Action<PreparedWeChatCover> _applyToWeChat;
     private readonly object _gate = new();
     private CancellationTokenSource? _renderCts;
-    private CancellationTokenSource? _randomCts;
-    private int _randomRequest;
+    private CancellationTokenSource? _backgroundCts;
+    private readonly CancellationTokenSource _galleryCts = new();
+    private bool _galleryStarted;
+    private int _backgroundRequest;
     private byte[]? _background;
     private string? _unappliedPath;
     private string? _previewFile;
@@ -31,16 +36,22 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
     private bool _ready;
     private bool _started;
 
-    public CoverStudioViewModel(IHttpClientFactory httpClientFactory, string? articleTitle, Action<PreparedWeChatCover> applyToWeChat) {
+    public CoverStudioViewModel(IHttpClientFactory httpClientFactory, string? articleTitle, Action<PreparedWeChatCover> applyToWeChat,
+        IReadOnlyList<ArticleImageSource>? articleImages = null) {
         _httpClientFactory = httpClientFactory;
         _applyToWeChat = applyToWeChat;
         CoverTitle = articleTitle?.Trim() ?? "";
         SelectedRandomCoverProvider = RandomCoverProviders[0];
+        ArticleImages = new ObservableCollection<ArticleCoverImage>(
+            (articleImages ?? []).Select(image => new ArticleCoverImage(image)));
     }
 
     public string Title => "制作封面";
 
     public ObservableCollection<RandomCoverProvider> RandomCoverProviders { get; } = new(RandomCoverCatalog.All);
+    public ObservableCollection<ArticleCoverImage> ArticleImages { get; }
+    public bool HasArticleImages => ArticleImages.Count > 0;
+    public string ArticleImagePickerLabel => $"选择文章图片（{ArticleImages.Count}）";
 
     [ObservableProperty] private string _coverTitle = "";
     [ObservableProperty] private double _fontSize = CoverComposer.DefaultFontSize;
@@ -58,6 +69,8 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
     [ObservableProperty] private string _outputPath = "";
     [ObservableProperty] private int _effectiveFontSize;
     [ObservableProperty] private Bitmap? _preview;
+    [ObservableProperty] private bool _isArticleImagePickerOpen;
+    [ObservableProperty] private bool _isFetchingArticleBackground;
 
     public bool HasPreview => Preview != null;
     public bool IsWhiteColor => TextColorId == "white";
@@ -119,7 +132,7 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
                 throw new InvalidOperationException("本地图片不能超过 10 MB");
             }
 
-            CancelRandomFetch();
+            CancelBackgroundFetch();
             _background = buffer.ToArray();
             BackgroundDescription = $"本地图片 · {files[0].Name}";
         }
@@ -133,19 +146,90 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
     }
 
     [RelayCommand]
+    private async Task ShowArticleImages() {
+        if (_disposed == 1 || !HasArticleImages) return;
+        IsArticleImagePickerOpen = true;
+        if (_galleryStarted) return;
+        _galleryStarted = true;
+        var token = _galleryCts.Token;
+        using var concurrency = new SemaphoreSlim(4);
+        await Task.WhenAll(ArticleImages.Select(async image => {
+            try {
+                await concurrency.WaitAsync(token);
+                try {
+                    var bytes = await ReadArticleImageAsync(image.Source, token);
+                    using var decoded = SixLabors.ImageSharp.Image.Load(bytes);
+                    decoded.Mutate(context => context.AutoOrient().Resize(new ResizeOptions {
+                        Size = new SixLabors.ImageSharp.Size(240, 160), Mode = ResizeMode.Max
+                    }));
+                    using var thumbnail = new MemoryStream();
+                    await SixLabors.ImageSharp.ImageExtensions.SaveAsPngAsync(decoded, thumbnail, token);
+                    token.ThrowIfCancellationRequested();
+                    thumbnail.Position = 0;
+                    image.Thumbnail = new Bitmap(thumbnail);
+                    image.Status = "";
+                }
+                finally {
+                    concurrency.Release();
+                }
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) {
+            }
+            catch (Exception) {
+                if (!token.IsCancellationRequested) image.Status = "预览加载失败，点击重试";
+            }
+        }));
+    }
+
+    [RelayCommand]
+    private void CloseArticleImages() => IsArticleImagePickerOpen = false;
+
+    [RelayCommand]
+    private async Task SelectArticleBackground(ArticleCoverImage? image) {
+        if (image == null || !ArticleImages.Contains(image) || _disposed == 1) return;
+        var (request, token) = BeginBackgroundFetch();
+        IsArticleImagePickerOpen = false;
+        IsFetchingArticleBackground = true;
+        StatusMessage = "正在读取文章图片…";
+        try {
+            var bytes = await ReadArticleImageAsync(image.Source, token);
+            // Decode before replacing the background so a broken image preserves the current cover.
+            using var decoded = SixLabors.ImageSharp.Image.Load(bytes);
+            lock (_gate) {
+                if (!IsCurrentBackgroundRequest(request)) return;
+                _background = bytes;
+                BackgroundDescription = $"文章图片 · {image.Name}";
+            }
+            await RenderNowAsync();
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) {
+        }
+        catch (Exception ex) {
+            if (IsCurrentBackgroundRequest(request)) StatusMessage = $"读取文章图片失败: {ex.Message}";
+        }
+        finally {
+            if (IsCurrentBackgroundRequest(request)) IsFetchingArticleBackground = false;
+        }
+    }
+
+    private async Task<byte[]> ReadArticleImageAsync(string source, CancellationToken token) {
+        if (Uri.TryCreate(source, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https") {
+            return await DownloadAsync(uri, token);
+        }
+        await using var stream = File.OpenRead(source);
+        if (stream.Length > MaxImageBytes) throw new InvalidOperationException("文章图片不能超过 10 MB");
+        using var output = new MemoryStream();
+        await stream.CopyToAsync(output, token);
+        if (output.Length > MaxImageBytes) throw new InvalidOperationException("文章图片不能超过 10 MB");
+        return output.ToArray();
+    }
+
+    [RelayCommand]
     private async Task PickRandomBackground() {
         var provider = SelectedRandomCoverProvider;
         if (provider == null || _disposed == 1) return;
 
-        int request;
-        CancellationToken token;
-        lock (_gate) {
-            request = Interlocked.Increment(ref _randomRequest);
-            _randomCts?.Cancel();
-            _randomCts?.Dispose();
-            _randomCts = new CancellationTokenSource();
-            token = _randomCts.Token;
-        }
+        var (request, token) = BeginBackgroundFetch();
 
         IsFetchingRandomBackground = true;
         StatusMessage = "正在获取随机背景…";
@@ -156,7 +240,7 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
                 DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
             var bytes = await DownloadAsync(uri, token);
             lock (_gate) {
-                if (request != _randomRequest || _disposed == 1) return;
+                if (request != _backgroundRequest || _disposed == 1) return;
                 _background = bytes;
                 BackgroundDescription = $"随机图片 · {provider.Name}";
             }
@@ -166,14 +250,14 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
         catch (OperationCanceledException) when (token.IsCancellationRequested) {
         }
         catch (Exception ex) {
-            if (!IsCurrentRandomRequest(request)) return;
+            if (!IsCurrentBackgroundRequest(request)) return;
             if (string.IsNullOrWhiteSpace(OutputPath)) await RenderNowAsync();
-            if (!IsCurrentRandomRequest(request)) return;
+            if (!IsCurrentBackgroundRequest(request)) return;
             StatusMessage = $"获取随机背景失败: {ex.Message}";
             GuiHost.ToastError("获取随机背景失败", ex.Message);
         }
         finally {
-            if (IsCurrentRandomRequest(request)) IsFetchingRandomBackground = false;
+            if (IsCurrentBackgroundRequest(request)) IsFetchingRandomBackground = false;
         }
     }
 
@@ -246,7 +330,10 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
 
     public void Dispose() {
         if (Interlocked.Exchange(ref _disposed, 1) == 1) return;
-        CancelRandomFetch();
+        CancelBackgroundFetch();
+        _galleryCts.Cancel();
+        _galleryCts.Dispose();
+        foreach (var image in ArticleImages) image.Dispose();
         _renderCts?.Cancel();
         _renderCts?.Dispose();
         _renderCts = null;
@@ -422,18 +509,27 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
         Scrim = ShowScrim
     };
 
-    private bool IsCurrentRandomRequest(int request) =>
-        request == Volatile.Read(ref _randomRequest) && Volatile.Read(ref _disposed) == 0;
+    private bool IsCurrentBackgroundRequest(int request) =>
+        request == Volatile.Read(ref _backgroundRequest) && Volatile.Read(ref _disposed) == 0;
 
-    private void CancelRandomFetch() {
+    private void CancelBackgroundFetch() {
         lock (_gate) {
-            Interlocked.Increment(ref _randomRequest);
-            _randomCts?.Cancel();
-            _randomCts?.Dispose();
-            _randomCts = null;
+            Interlocked.Increment(ref _backgroundRequest);
+            _backgroundCts?.Cancel();
+            _backgroundCts?.Dispose();
+            _backgroundCts = null;
         }
 
         IsFetchingRandomBackground = false;
+        IsFetchingArticleBackground = false;
+    }
+
+    private (int Request, CancellationToken Token) BeginBackgroundFetch() {
+        CancelBackgroundFetch();
+        lock (_gate) {
+            _backgroundCts = new CancellationTokenSource();
+            return (_backgroundRequest, _backgroundCts.Token);
+        }
     }
 
     private async Task<byte[]> DownloadAsync(Uri uri, CancellationToken cancellationToken) {
@@ -455,7 +551,7 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
             bounded.Write(buffer, 0, read);
         }
 
-        if (bounded.Length == 0) throw new InvalidOperationException("随机图片是空的");
+        if (bounded.Length == 0) throw new InvalidOperationException("在线图片是空的");
         return bounded.ToArray();
     }
 

@@ -256,7 +256,7 @@ public partial class WeChatViewModel : PageViewModelBase {
         var page = new CoverStudioViewModel(_httpClientFactory, ArticleTitle, cover => {
             UsePreparedCover(cover, $"制作封面 · {cover.Width} × {cover.Height}");
             NavigateBreadcrumbAt(0);
-        });
+        }, ArticleImageCatalog.FromHtml(FormattedHtml, _sourceFilePath));
         OpenStackPage(page, page.Title);
     }
 

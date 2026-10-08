@@ -3,10 +3,12 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:StarBlogPublisher.ViewModels"
+             xmlns:models="using:StarBlogPublisher.Models"
              xmlns:fi="using:FluentIcons.Avalonia.Fluent"
              mc:Ignorable="d" d:DesignWidth="980" d:DesignHeight="680"
              x:Class="StarBlogPublisher.Views.CoverStudioView"
-             x:DataType="vm:CoverStudioViewModel">
+             x:DataType="vm:CoverStudioViewModel"
+             x:Name="StudioRoot">
     <UserControl.Styles>
         <Style Selector="TextBlock.InspectorLabel">
             <Setter Property="FontSize" Value="12" />
@@ -64,6 +66,11 @@
                                 Margin="0,0,0,12" Padding="10,4" CornerRadius="4" Background="#CC000000">
                             <TextBlock Text="正在获取随机背景…" FontSize="12" Foreground="White" />
                         </Border>
+                        <Border IsVisible="{Binding IsFetchingArticleBackground}"
+                                HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                                Margin="0,0,0,12" Padding="10,4" CornerRadius="4" Background="#CC000000">
+                            <TextBlock Text="正在读取文章图片…" FontSize="12" Foreground="White" />
+                        </Border>
                     </Panel>
                 </Border>
             </Grid>
@@ -82,6 +89,15 @@
                                 <TextBlock Text="选择本地图片" />
                             </StackPanel>
                         </Button>
+                        <Button Command="{Binding ShowArticleImagesCommand}" HorizontalAlignment="Stretch"
+                                IsEnabled="{Binding HasArticleImages}">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
+                                <fi:FluentIcon Icon="Image" IconVariant="Regular" FontSize="16" />
+                                <TextBlock Text="{Binding ArticleImagePickerLabel}" />
+                            </StackPanel>
+                        </Button>
+                        <TextBlock IsVisible="{Binding !HasArticleImages}" Text="文章正文中没有可用图片"
+                                   FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
                             <ComboBox Classes="InspectorInput" ItemsSource="{Binding RandomCoverProviders}"
                                       SelectedItem="{Binding SelectedRandomCoverProvider}"
@@ -206,5 +222,44 @@
             </ScrollViewer>
             </Border>
         </Grid>
+        <Border IsVisible="{Binding IsArticleImagePickerOpen}" Classes="Card" Padding="20"
+                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="12">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="选择文章图片作为背景" FontSize="18" FontWeight="SemiBold"
+                               VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Command="{Binding CloseArticleImagesCommand}" Content="关闭" />
+                </Grid>
+                <TextBlock Grid.Row="1" Text="点击图片即可使用；之后仍可调整标题和样式。"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <ScrollViewer Grid.Row="2">
+                    <ItemsControl ItemsSource="{Binding ArticleImages}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:ArticleCoverImage">
+                                <Button Width="180" Margin="0,0,12,12" Padding="8"
+                                        HorizontalContentAlignment="Stretch" ToolTip.Tip="{Binding Source}"
+                                        Command="{Binding #StudioRoot.((vm:CoverStudioViewModel)DataContext).SelectArticleBackgroundCommand}"
+                                        CommandParameter="{Binding}">
+                                    <StackPanel Spacing="6">
+                                        <Border Height="110" CornerRadius="4" ClipToBounds="True"
+                                                Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                            <Panel>
+                                                <Image Source="{Binding Thumbnail}" Stretch="Uniform" />
+                                                <TextBlock Text="{Binding Status}" TextWrapping="Wrap" FontSize="11"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8" />
+                                            </Panel>
+                                        </Border>
+                                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
     </Panel>
 </UserControl>
