@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.Input;
 using FluentAvalonia.UI.Controls;
+using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 
 namespace StarBlogPublisher.ViewModels;
@@ -22,6 +23,9 @@ public partial class PublishViewModel {
         }
     }
     private string _savedMetadata = "";
+    private string? _sidecarPostId;
+    private bool? _sidecarIsPublish;
+    private DateTime? _sidecarLastSyncedAt;
     private bool _isNewDocument;
     private bool _isSaving;
     private bool _isCheckingClose;
@@ -34,31 +38,35 @@ public partial class PublishViewModel {
         .Where(line => System.Text.RegularExpressions.Regex.IsMatch(line, @"^#{1,6}\s+"))
         .Select(line => line.TrimEnd('\r')));
     private string MetadataSnapshot() => JsonSerializer.Serialize(new ArticleProperties(
-        ArticleTitle, ArticleDescription, ArticleSlug, ArticleKeywords, SelectedCategory));
+        ArticleTitle, ArticleDescription, ArticleSlug, ArticleKeywords, SelectedCategory?.Id));
 
     public void InitializeNewDocument() {
         HasLoadedArticle = true;
         ArticleTitle = "未命名文章";
         _isNewDocument = true;
+        ClearSidecarIdentity();
         _savedMetadata = MetadataSnapshot();
         NotifyDocumentState();
     }
 
     private async Task LoadPropertiesAsync() {
-        var path = _currentFilePath + ".starblog.json";
-        if (File.Exists(path)) {
-            try {
-                var properties = JsonSerializer.Deserialize<ArticleProperties>(await File.ReadAllTextAsync(path));
-                if (properties != null) {
-                    ArticleTitle = properties.Title;
-                    ArticleDescription = properties.Description;
-                    ArticleSlug = properties.Slug;
-                    ArticleKeywords = properties.Keywords;
-                    SelectedCategory = properties.Category;
+        ClearSidecarIdentity();
+        try {
+            if (!string.IsNullOrEmpty(_currentFilePath)) {
+                var sidecar = await ArticleSidecar.ReadAsync(_currentFilePath);
+                if (sidecar != null) {
+                    ArticleTitle = sidecar.Title;
+                    ArticleDescription = sidecar.Description;
+                    ArticleSlug = sidecar.Slug;
+                    ArticleKeywords = sidecar.Keywords;
+                    SelectedCategory = sidecar.Category;
+                    _sidecarPostId = sidecar.PostId;
+                    _sidecarIsPublish = sidecar.IsPublish;
+                    _sidecarLastSyncedAt = sidecar.LastSyncedAt;
                 }
             }
-            catch (Exception ex) { GuiHost.ToastWarning("文章属性未加载", ex.Message); }
         }
+        catch (Exception ex) { GuiHost.ToastWarning("文章属性未加载", ex.Message); }
         _savedMetadata = MetadataSnapshot();
         NotifyDocumentState();
     }
@@ -78,19 +86,31 @@ public partial class PublishViewModel {
                 });
                 path = file?.TryGetLocalPath();
                 if (string.IsNullOrEmpty(path)) return false;
-                if (_shell.Workspace.Documents.Any(d => d != this && string.Equals(d.CurrentFilePath, path,
-                    OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))) {
+                if (_shell.Workspace.Documents.Any(d => d != this && SameDocumentPath(d.CurrentFilePath, path))) {
                     GuiHost.ToastWarning("无法保存", "该文件已在另一个标签中打开，请选择其他文件名。");
                     return false;
                 }
             }
             var content = ArticleContent;
-            var metadata = MetadataSnapshot();
+            var keepIdentity = SameDocumentPath(path, _currentFilePath);
+            var sidecar = new ArticleSidecar {
+                Title = ArticleTitle,
+                Description = ArticleDescription,
+                Slug = ArticleSlug,
+                Keywords = ArticleKeywords,
+                Category = SelectedCategory,
+                PostId = keepIdentity ? _sidecarPostId : null,
+                IsPublish = keepIdentity ? _sidecarIsPublish : null,
+                LastSyncedAt = keepIdentity ? _sidecarLastSyncedAt : null
+            };
             await WriteFileAtomicallyAsync(path, content);
-            await WriteFileAtomicallyAsync(path + ".starblog.json", metadata);
+            await ArticleSidecar.WriteAsync(path, sidecar);
             _currentFilePath = path;
             _loadedContent = content;
-            _savedMetadata = metadata;
+            _sidecarPostId = sidecar.PostId;
+            _sidecarIsPublish = sidecar.IsPublish;
+            _sidecarLastSyncedAt = sidecar.LastSyncedAt;
+            _savedMetadata = MetadataSnapshot();
             _isNewDocument = false;
             _shell.Workspace.RememberFile(path);
             NotifyDocumentState();
@@ -137,5 +157,16 @@ public partial class PublishViewModel {
 
     partial void OnArticleDescriptionChanged(string value) => NotifyDocumentState();
     partial void OnArticleSlugChanged(string value) => NotifyDocumentState();
-    public record ArticleProperties(string Title, string Description, string Slug, string Keywords, Models.Category? Category);
+
+    private void ClearSidecarIdentity() {
+        _sidecarPostId = null;
+        _sidecarIsPublish = null;
+        _sidecarLastSyncedAt = null;
+    }
+
+    private static bool SameDocumentPath(string? left, string? right) =>
+        !string.IsNullOrEmpty(left) && !string.IsNullOrEmpty(right) &&
+        string.Equals(left, right, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+
+    private record ArticleProperties(string Title, string Description, string Slug, string Keywords, int? CategoryId);
 }
