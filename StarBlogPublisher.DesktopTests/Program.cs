@@ -11,17 +11,17 @@ using StarBlogPublisher.Views;
 namespace StarBlogPublisher.DesktopTests;
 
 internal static class Program {
-    private static readonly string[] Names = ["workspace-state", "sidebar-and-menus", "focus-and-palette", "preview-navigation", "settings-layout", "site-posts-layout", "site-posts-preview", "theme-and-close"];
+    private static readonly string[] Names = ["workspace-state", "sidebar-and-menus", "focus-and-palette", "preview-navigation", "settings-layout", "site-posts-layout", "site-posts-preview", "cover-studio", "theme-and-close"];
     private sealed record Result(string Name, string Status, long DurationMs, string? Error = null);
 
     [STAThread]
     public static int Main(string[] args) {
         if (args.Contains("--help")) {
-            Console.WriteLine("DesktopTests [--webview] [--settings] [--site-posts] [--list]. Windows desktop required. Reports: output/desktop-tests/<run>/report.json");
+            Console.WriteLine("DesktopTests [--webview] [--settings] [--site-posts] [--cover-studio] [--list]. Windows desktop required. Reports: output/desktop-tests/<run>/report.json");
             return 0;
         }
         if (args.Contains("--list")) { foreach (var name in Names) Console.WriteLine(name); return 0; }
-        if (args.Any(a => a != "--webview" && a != "--settings" && a != "--site-posts")) { Console.Error.WriteLine("Unknown argument; use --help."); return 2; }
+        if (args.Any(a => a != "--webview" && a != "--settings" && a != "--site-posts" && a != "--cover-studio")) { Console.Error.WriteLine("Unknown argument; use --help."); return 2; }
         if (!OperatingSystem.IsWindows()) { Console.Error.WriteLine("Desktop tests currently require Windows."); return 2; }
         var output = Path.GetFullPath(Path.Combine("output", "desktop-tests", $"{DateTime.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}"));
         Directory.CreateDirectory(output);
@@ -37,6 +37,7 @@ internal static class Program {
             Environment.Exit(1);
         }, null, TimeSpan.FromSeconds(180), Timeout.InfiniteTimeSpan);
         try {
+            Optris.Icons.Avalonia.IconProvider.Current.Register<Optris.Icons.Avalonia.FontAwesome.FontAwesomeIconProvider>();
             var lifetime = new ClassicDesktopStyleApplicationLifetime { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             AppBuilder.Configure<App>().UsePlatformDetect().WithInterFont().SetupWithLifetime(lifetime);
             var window = (MainWindow)lifetime.MainWindow!;
@@ -44,10 +45,15 @@ internal static class Program {
             window.Width = 1280; window.Height = 800;
             window.Show();
             var scenarios = new WorkspaceScenarios(window, shell, output);
-            Func<Task>[] actions = [scenarios.WorkspaceState, scenarios.SidebarAndMenus, scenarios.FocusAndPalette, scenarios.PreviewNavigation, scenarios.SettingsLayout, scenarios.SitePostsLayout, scenarios.SitePostsPreview, scenarios.ThemeAndClose];
+            Func<Task>[] actions = [scenarios.WorkspaceState, scenarios.SidebarAndMenus, scenarios.FocusAndPalette, scenarios.PreviewNavigation, scenarios.SettingsLayout, scenarios.SitePostsLayout, scenarios.SitePostsPreview, scenarios.CoverStudio, scenarios.ThemeAndClose];
             Dispatcher.UIThread.Post(async () => {
                 var failed = false;
                 for (var i = 0; i < Names.Length; i++) {
+                    if (args.Contains("--cover-studio") && Names[i] != "cover-studio") {
+                        results.Add(new(Names[i], "skipped", 0, "Cover-studio-only run"));
+                        Report();
+                        continue;
+                    }
                     if (args.Contains("--site-posts") && !Names[i].StartsWith("site-posts-")) {
                         results.Add(new(Names[i], "skipped", 0, "Site-posts-only run"));
                         Report();
