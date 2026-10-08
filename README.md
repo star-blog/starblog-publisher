@@ -124,7 +124,7 @@ dotnet run --file .\build.cs -- --help
 标题栏合并了文件、编辑、查看、文章、发布和帮助菜单。中间可以搜索已打开的文章或命令。
 
 * `Ctrl+N` / `Ctrl+O`：新建或打开 Markdown，也可以把 `.md` 拖进窗口
-* `Ctrl+S`：保存正文和文章属性。正文写回原文件；标题、摘要、关键词、Slug 和分类写到同目录的 `文章.md.starblog.json`
+* `Ctrl+S`：保存正文和文章属性。正文写回原文件；标题、摘要、关键词、Slug 和分类写到同目录的 `文章.md.starblog.json`（已有 `PostId` 会一并保留）
 * `Ctrl+P`：快速打开；`Ctrl+Shift+P`：命令面板
 * `Ctrl+B` / `Ctrl+Alt+B` / `Ctrl+J`：文件侧栏、文章属性、任务面板
 * `Ctrl+Shift+F11`：专注模式
