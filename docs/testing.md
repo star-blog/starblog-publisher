@@ -43,7 +43,7 @@ dotnet run --project StarBlogPublisher.DesktopTests -c Release -- --list
 | preview-navigation | 源码滚动后切换分栏/预览、重复点击大纲、分栏导航保持模式 |
 | settings-layout | 设置首次打开无意外更改、五类导航、展开宽度稳定、800 DIP 窄窗口、主题预览、界面风格预览与实际效果提示、颜色切换保留风格、草稿保存与撤销、离页确认、写入失败保护 |
 | theme-and-close | 强制深浅主题截图、跟随系统（`PreferSystemTheme` / `ActualThemeVariant`）、800 DIP 窄窗口菜单、未保存时取消/丢弃/保存、重新打开 |
-| material-shell | 仅 `--material`：浅／深 × 标准／Mica／Acrylic 的 `TransparencyLevelHint`／`ActualTransparencyLevel` 记录、切回标准；打开文章后检查侧栏叠色、编辑画布不透明、面板显隐与宽度，截图写入本次运行目录 |
+| material-shell | 仅 `--material`：浅／深 × 标准／Mica／Acrylic 的主窗口与菜单材质请求、实际结果和背景叠色记录；菜单打开时切换、模拟高对比度、800 DIP 多级子菜单与切回标准；文章侧栏叠色、编辑画布不透明、面板显隐与宽度，截图写入本次运行目录 |
 
 这些阶段是有依赖的端到端工作流，不是彼此独立的单元测试。前一阶段失败后，后续阶段标记为 skipped，避免连锁报错。页面加载和对话框出现采用有超时的条件等待；部分布局、截图和原生焦点仍留有短暂稳定时间。每阶段超时 40 秒，整个进程有 180 秒看门狗。
 
@@ -58,3 +58,5 @@ dotnet run --project StarBlogPublisher.DesktopTests -c Release -- --list
 `SettingsViewModelTests` 覆盖草稿更改检测、AI 方案与公众号账号切换、主题与界面风格预览撤销、九种外观组合、颜色切换保留风格、材质状态提示不脏草稿、校验失败和离页决策。设置使用独立草稿，只有保存成功才更新运行中的配置；模型目录仅在主动获取或打开目录时请求。桌面测试使用占位凭据，保存检查只写入本次运行的独立配置。
 
 当前测试调用控件 API、命令和路由事件，不覆盖真实鼠标命中、系统窗口拖动或跨平台原生差异。PNG 供人工检查，并非像素基线断言；原生 WebView 内容使用 JavaScript 验证，不能靠 Avalonia 截图证明。桌面测试暂不在托管 CI 自动执行，因为它要求可交互桌面和原生浏览器环境。
+
+菜单材质在 `material.json` 中追加 `menuHint`、`menuActual`、`menuBackground`、`menuAcrylicLayer`、`menuTintOpacity` 和 `menuMaterialOpacity`，并生成 `*-menu.png`。Acrylic 成功时原有菜单实色背景必须透明，由独立材质层提供调色、亮度与噪点；实色回退时材质层隐藏。菜单 PNG 由 `RenderTargetBitmap` 绘制，不包含 DWM 背景取样及合成材质层；API 返回 Mica／AcrylicBlur 不等于已完成桌面合成观感的人工验收。原生桌面截图及验证边界见[菜单材质记录](2026-10-13-menu-material-follow-style.md)。
