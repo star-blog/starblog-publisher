@@ -23,22 +23,34 @@ public partial class MainWindow : FAAppWindow {
     private bool _checkingClose;
     private Control? _editTarget;
     private bool _paletteOpen;
+    private readonly WindowMaterialService _material = new();
     public MainWindow() {
         InitializeComponent();
         TitleBar.ExtendsContentIntoTitleBar = true;
+        _material.Attach(this);
+        _material.Apply(
+            AppSettings.Instance.InterfaceStyle,
+            AppThemeService.ResolveEffectiveIsDark(AppSettings.Instance.ThemeMode));
         Opened += (_, _) => {
             StartupLog.Mark("window_opened");
             if (DataContext is MainWindowViewModel vm) {
+                vm.AttachWindowMaterial(_material);
                 vm.OnMainWindowOpened();
             }
             GuiHost.SetFeedbackBar(FeedbackBar);
             SyncTitleBarMetrics();
         };
+        Closed += (_, _) => _material.Dispose();
         LayoutUpdated += (_, _) => SyncTitleBarMetrics();
         Closing += OnClosing;
         AddHandler(KeyDownEvent, OnWorkspaceKeyDown, RoutingStrategies.Tunnel);
         AddHandler(GotFocusEvent, OnEditorGotFocus, RoutingStrategies.Bubble, handledEventsToo: true);
-        DataContextChanged += (_, _) => InitializeShellMenus();
+        DataContextChanged += (_, _) => {
+            if (DataContext is MainWindowViewModel vm) {
+                vm.AttachWindowMaterial(_material);
+            }
+            InitializeShellMenus();
+        };
     }
 
     private void OnShellNavigationItemInvoked(object? sender, FANavigationViewItemInvokedEventArgs e) {

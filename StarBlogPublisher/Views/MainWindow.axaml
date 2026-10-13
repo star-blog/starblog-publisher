@@ -56,7 +56,8 @@
                             IsClosable="True"
                             IsOpen="False" />
                 <Panel Grid.Row="1">
-                    <Border IsVisible="{Binding IsWorkspaceActive}">
+                    <Border IsVisible="{Binding IsWorkspaceActive}"
+                            Background="{DynamicResource WorkspaceCanvasBrush}">
                         <views:ArticleWorkspaceView DataContext="{Binding Workspace}" />
                     </Border>
                     <ContentControl Content="{Binding SecondaryPage}" IsVisible="{Binding !IsWorkspaceActive}" />

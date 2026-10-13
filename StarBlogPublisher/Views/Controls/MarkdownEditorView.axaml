@@ -4,6 +4,7 @@
              xmlns:ae="https://github.com/avaloniaui/avaloniaedit"
              x:Class="StarBlogPublisher.Views.Controls.MarkdownEditorView"
              x:DataType="vm:IMarkdownEditorContext"
+             Background="{DynamicResource WorkspaceCanvasBrush}"
              Focusable="True">
     <Grid>
         <Grid.ColumnDefinitions>

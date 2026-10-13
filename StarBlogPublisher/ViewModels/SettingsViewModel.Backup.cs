@@ -88,6 +88,7 @@ public partial class SettingsViewModel {
 
         Reload();
         _shell.ApplyTheme(ThemeMode);
+        _shell.ApplyInterfaceStyle(AppSettings.Instance.InterfaceStyle);
         _shell.PublishPage.NotifyAiEnabled();
         foreach (var documentVm in _shell.Workspace.Documents) documentVm.NotifyAiEnabled();
         GuiHost.ToastSuccess("备份", "配置已导入并应用");

@@ -12,6 +12,7 @@ using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
 using StarBlogPublisher.Utils;
 using AppThemeMode = StarBlogPublisher.Models.ThemeMode;
+using AppInterfaceStyle = StarBlogPublisher.Models.InterfaceStyle;
 
 namespace StarBlogPublisher.ViewModels;
 
@@ -86,6 +87,8 @@ public partial class MainWindowViewModel : ViewModelBase {
         finally { _checkingSettingsNavigation = false; }
     }
     [ObservableProperty] private AppThemeMode _themeMode;
+    [ObservableProperty] private AppInterfaceStyle _interfaceStyle;
+    [ObservableProperty] private string _materialStatusDescription = "当前使用标准实色界面";
     [ObservableProperty] private bool _isDarkTheme;
     [ObservableProperty] private bool _isLoggedIn;
     [ObservableProperty] private bool _hasCredentials;
@@ -100,6 +103,7 @@ public partial class MainWindowViewModel : ViewModelBase {
 
     private double _titleBarRightInset = 140;
     private bool _restoreSettingsAfterModelCatalog;
+    private WindowMaterialService? _windowMaterial;
     private const double CompactPaneLength = 48;
     private const double OpenPaneLength = 220;
 
@@ -125,12 +129,34 @@ public partial class MainWindowViewModel : ViewModelBase {
         }
 
         ThemeMode = AppSettings.Instance.ThemeMode;
+        InterfaceStyle = AppSettings.Instance.InterfaceStyle;
         IsDarkTheme = AppThemeService.ResolveEffectiveIsDark(ThemeMode);
         if (Avalonia.Application.Current != null) {
             Avalonia.Application.Current.ActualThemeVariantChanged += OnActualThemeVariantChanged;
         }
         RefreshFooterNavItems();
         InitializeCommands();
+    }
+
+    public WindowMaterialStatus MaterialStatus =>
+        _windowMaterial?.Status
+        ?? WindowMaterialPolicy.CreateStatus(InterfaceStyle, false, Avalonia.Controls.WindowTransparencyLevel.None);
+
+    public void AttachWindowMaterial(WindowMaterialService service) {
+        if (ReferenceEquals(_windowMaterial, service)) {
+            service.Apply(InterfaceStyle, IsDarkTheme);
+            SyncMaterialStatus();
+            return;
+        }
+
+        if (_windowMaterial != null) {
+            _windowMaterial.StatusChanged -= OnMaterialStatusChanged;
+        }
+
+        _windowMaterial = service;
+        _windowMaterial.StatusChanged += OnMaterialStatusChanged;
+        _windowMaterial.Apply(InterfaceStyle, IsDarkTheme);
+        SyncMaterialStatus();
     }
 
     internal IHttpClientFactory HttpClientFactory => _httpClientFactory ??= AppHttpClients.Factory;
@@ -229,14 +255,41 @@ public partial class MainWindowViewModel : ViewModelBase {
         ThemeMode = mode;
         AppThemeService.Apply(mode);
         SyncEffectiveIsDark();
+        ApplyCurrentMaterial();
         foreach (var document in Workspace.Documents) document.RefreshPreviewForThemeChange();
         _sitePostsPage?.RefreshEditorPreviewForThemeChange();
     }
 
+    public void ApplyInterfaceStyle(AppInterfaceStyle style) {
+        PreviewInterfaceStyle(style);
+        var settings = AppSettings.Instance;
+        if (settings.InterfaceStyle != style) {
+            settings.InterfaceStyle = style;
+            settings.Save();
+        }
+    }
+
+    public void PreviewInterfaceStyle(AppInterfaceStyle style) {
+        InterfaceStyle = InterfaceStyleHelper.FromStorage(style);
+        ApplyCurrentMaterial();
+    }
+
     private void OnActualThemeVariantChanged(object? sender, EventArgs e) {
         SyncEffectiveIsDark();
+        ApplyCurrentMaterial();
         foreach (var document in Workspace.Documents) document.RefreshPreviewForThemeChange();
         _sitePostsPage?.RefreshEditorPreviewForThemeChange();
+    }
+
+    private void ApplyCurrentMaterial() => _windowMaterial?.Apply(InterfaceStyle, IsDarkTheme);
+
+    private void OnMaterialStatusChanged(object? sender, EventArgs e) => SyncMaterialStatus();
+
+    private void SyncMaterialStatus() {
+        var description = MaterialStatus.Description;
+        if (MaterialStatusDescription != description) {
+            MaterialStatusDescription = description;
+        }
     }
 
     private void SyncEffectiveIsDark() {
