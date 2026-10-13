@@ -76,14 +76,14 @@ public partial class MainWindow : FAAppWindow {
         vm.PaletteRequested = ShowPaletteAsync;
         vm.ExitRequested = Close;
         MainMenu.Items.Clear(); CompactMenu.Items.Clear();
-        var compactRoot = new MenuItem { Header = "☰", Classes = { "ChromeMenuItem" } };
+        var compactRoot = new MaterialMenuItem(_material) { Header = "☰", Classes = { "ChromeMenuItem" } };
         foreach (var group in vm.ShellCommands.GroupBy(command => command.Group)) {
             MainMenu.Items.Add(CreateMenuGroup(group.Key, group));
             compactRoot.Items.Add(CreateMenuGroup(group.Key, group));
         }
         CompactMenu.Items.Add(compactRoot);
         var recentMenus = new[] { (MenuItem)MainMenu.Items[0]!, (MenuItem)compactRoot.Items[0]! }
-            .Select(group => { var recent = new MenuItem { Header = "最近打开" }; group.Items.Insert(3, recent); return recent; }).ToArray();
+            .Select(group => { var recent = new MaterialMenuItem(_material) { Header = "最近打开" }; group.Items.Insert(3, recent); return recent; }).ToArray();
         void RefreshRecent() {
             foreach (var menu in recentMenus) {
                 menu.Items.Clear();
@@ -103,9 +103,9 @@ public partial class MainWindow : FAAppWindow {
         CompactMenu.PointerEntered += (_, _) => vm.RefreshCommands();
     }
 
-    private static MenuItem CreateMenuGroup(string name, System.Collections.Generic.IEnumerable<ShellCommand> commands) {
+    private MenuItem CreateMenuGroup(string name, System.Collections.Generic.IEnumerable<ShellCommand> commands) {
         var accessKey = name switch { "文件" => "F", "编辑" => "E", "查看" => "V", "文章" => "A", "发布" => "P", _ => "H" };
-        var group = new MenuItem { Header = $"{name}(_{accessKey})", Classes = { "ChromeMenuItem" } };
+        var group = new MaterialMenuItem(_material) { Header = $"{name}(_{accessKey})", Classes = { "ChromeMenuItem" } };
         foreach (var definition in commands) {
             var item = new MenuItem { Header = definition.Label, Command = definition.Command };
             if (definition.Shortcut != null) item.InputGesture = KeyGesture.Parse(definition.Shortcut);

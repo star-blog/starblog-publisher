@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Styling;
@@ -11,7 +12,7 @@ using StarBlogPublisher.Models;
 namespace StarBlogPublisher.Services;
 
 /// <summary>
-/// 将界面风格应用到窗口：请求材质、监听实际结果、叠色与实色回退。
+/// 将界面风格应用到主窗口及菜单弹出窗口：请求材质、监听实际结果、叠色与实色回退。
 /// </summary>
 public sealed class WindowMaterialService : IDisposable {
     private static readonly string[] OverlayKeys = [
@@ -27,6 +28,7 @@ public sealed class WindowMaterialService : IDisposable {
     ];
 
     private Window? _window;
+    private readonly Dictionary<PopupRoot, ExperimentalAcrylicBorder> _menuRoots = [];
     private InterfaceStyle _requested = InterfaceStyle.Standard;
     private bool _applying;
     private bool _disposed;
@@ -56,6 +58,16 @@ public sealed class WindowMaterialService : IDisposable {
         ApplyCore();
     }
 
+    internal void AttachMenuPopup(Popup popup, ExperimentalAcrylicBorder acrylic) {
+        if (_disposed || _window == null
+            || popup.Child == null || TopLevel.GetTopLevel(popup.Child) is not PopupRoot root
+            || !_menuRoots.TryAdd(root, acrylic)) return;
+
+        root.PropertyChanged += OnMenuRootPropertyChanged;
+        root.Closed += OnMenuRootClosed;
+        ApplyMenuRoot(root);
+    }
+
     public void Dispose() {
         if (_disposed) return;
         _disposed = true;
@@ -64,6 +76,16 @@ public sealed class WindowMaterialService : IDisposable {
 
     private void Detach() {
         if (_window == null) return;
+        foreach (var (root, acrylic) in _menuRoots) {
+            root.PropertyChanged -= OnMenuRootPropertyChanged;
+            root.Closed -= OnMenuRootClosed;
+            root.Resources.Remove("MenuFlyoutPresenterBackground");
+            root.TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
+            root.ClearValue(TopLevel.BackgroundProperty);
+            root.ClearValue(TopLevel.TransparencyBackgroundFallbackProperty);
+            acrylic.IsVisible = false;
+        }
+        _menuRoots.Clear();
         _window.PropertyChanged -= OnWindowPropertyChanged;
         _window.Closed -= OnWindowClosed;
         var platformSettings = GetPlatformSettings();
@@ -75,6 +97,21 @@ public sealed class WindowMaterialService : IDisposable {
     }
 
     private void OnWindowClosed(object? sender, EventArgs e) => Dispose();
+
+    private void OnMenuRootClosed(object? sender, EventArgs e) {
+        if (sender is not PopupRoot root) return;
+        root.PropertyChanged -= OnMenuRootPropertyChanged;
+        root.Closed -= OnMenuRootClosed;
+        _menuRoots.Remove(root);
+    }
+
+    private void OnMenuRootPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e) {
+        if (!_applying && sender is PopupRoot root
+            && (e.Property == TopLevel.ActualTransparencyLevelProperty
+                || e.Property == TopLevel.ActualThemeVariantProperty)) {
+            ApplyMenuRoot(root);
+        }
+    }
 
     private void OnColorValuesChanged(object? sender, PlatformColorValues e) => ApplyCore();
 
@@ -99,6 +136,7 @@ public sealed class WindowMaterialService : IDisposable {
             var frosted = WindowMaterialPolicy.ShouldUseTransparentWindowBackground(_requested, forceSolid, actual);
             ApplyResourceOverlays(frosted ? _requested : InterfaceStyle.Standard, frosted);
             ApplyWindowBackground(frosted, forceSolid);
+            foreach (var root in _menuRoots.Keys) ApplyMenuRoot(root);
 
             var status = WindowMaterialPolicy.CreateStatus(_requested, forceSolid, actual);
             if (status != Status) {
@@ -115,6 +153,54 @@ public sealed class WindowMaterialService : IDisposable {
         if (_window == null) return false;
         if (_window.ActualThemeVariant == FluentAvaloniaTheme.HighContrastTheme) return true;
         return GetPlatformSettings()?.GetColorValues().ContrastPreference == ColorContrastPreference.High;
+    }
+
+    private void ApplyMenuRoot(PopupRoot root) {
+        var wasApplying = _applying;
+        _applying = true;
+        try {
+            var forceSolid = ShouldForceSolid() || root.ActualThemeVariant == FluentAvaloniaTheme.HighContrastTheme;
+            var hints = WindowMaterialPolicy.GetMenuTransparencyHints(_requested, forceSolid);
+            root.Background = Brushes.Transparent;
+            if (!HintsEqual(root.TransparencyLevelHint, hints)) root.TransparencyLevelHint = hints;
+
+            // Override only this popup's semantic brush; its template keeps the
+            // existing rounding, border, shadow, text and interaction states.
+            var useMaterial = WindowMaterialPolicy.ShouldUseTransparentMenuBackground(
+                _requested, forceSolid, root.ActualTransparencyLevel);
+            var acrylic = _menuRoots[root];
+            acrylic.IsVisible = false;
+            if (useMaterial && _requested == InterfaceStyle.Acrylic
+                && root.TryFindResource("Material.Acrylic.MenuMaterial", root.ActualThemeVariant, out var materialValue)
+                && materialValue is ExperimentalAcrylicMaterial material) {
+                // Keep the per-popup material instance stable: the Acrylic control
+                // subscribes to it and adjusts its platform compensation.
+                var instance = acrylic.Material!;
+                instance.BackgroundSource = material.BackgroundSource;
+                instance.TintColor = material.TintColor;
+                instance.TintOpacity = material.TintOpacity;
+                instance.MaterialOpacity = material.MaterialOpacity;
+                instance.FallbackColor = material.FallbackColor;
+                acrylic.IsVisible = true;
+                root.Resources["MenuFlyoutPresenterBackground"] = Brushes.Transparent;
+            }
+            else {
+                var key = $"Material.{_requested}.MenuBackgroundBrush";
+                if (useMaterial && root.TryFindResource(key, root.ActualThemeVariant, out var value) && value is IBrush brush) {
+                    root.Resources["MenuFlyoutPresenterBackground"] = brush;
+                }
+                else {
+                    root.Resources.Remove("MenuFlyoutPresenterBackground");
+                }
+            }
+
+            if (TryFindBrush("MaterialFallbackBrush", out var fallback)) {
+                root.TransparencyBackgroundFallback = fallback;
+            }
+        }
+        finally {
+            _applying = wasApplying;
+        }
     }
 
     private IPlatformSettings? GetPlatformSettings() =>

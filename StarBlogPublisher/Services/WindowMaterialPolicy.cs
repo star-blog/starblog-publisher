@@ -22,6 +22,21 @@ public readonly record struct WindowMaterialStatus(
 /// 候选材质顺序与回退判断。不依赖窗口句柄，便于单元测试。
 /// </summary>
 public static class WindowMaterialPolicy {
+    // Popup roots need transparent corners for the existing rounded menu template.
+    // Transparent is only a host fallback; the menu surface stays opaque unless
+    // the platform actually supplies the material selected by the user.
+    public static IReadOnlyList<WindowTransparencyLevel> GetMenuTransparencyHints(InterfaceStyle style, bool forceSolid) =>
+        forceSolid ? [WindowTransparencyLevel.Transparent] : style switch {
+            InterfaceStyle.Mica => [WindowTransparencyLevel.Mica, WindowTransparencyLevel.Transparent],
+            InterfaceStyle.Acrylic => [WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Transparent],
+            _ => [WindowTransparencyLevel.Transparent]
+        };
+
+    public static bool ShouldUseTransparentMenuBackground(
+        InterfaceStyle style, bool forceSolid, WindowTransparencyLevel actual) =>
+        !forceSolid && (style == InterfaceStyle.Mica && actual == WindowTransparencyLevel.Mica
+            || style == InterfaceStyle.Acrylic && actual == WindowTransparencyLevel.AcrylicBlur);
+
     public static IReadOnlyList<WindowTransparencyLevel> GetTransparencyHints(InterfaceStyle style, bool forceSolid) {
         if (forceSolid || style == InterfaceStyle.Standard) {
             return [WindowTransparencyLevel.None];
