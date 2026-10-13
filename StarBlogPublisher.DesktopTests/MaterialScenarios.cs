@@ -1,7 +1,10 @@
 using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using FluentAvalonia.Styling;
 using Avalonia.VisualTree;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
@@ -37,6 +40,23 @@ internal sealed partial class WorkspaceScenarios {
                 ["inspectorAlpha"] = BrushAlpha(TryInspectorPane()),
                 ["chromeAlpha"] = BrushAlpha(TryDocumentTabs())
             });
+            var menu = window.FindControl<Menu>("MainMenu")!;
+            var group = (MenuItem)menu.Items[2]!;
+            group.IsSubMenuOpen = true;
+            try {
+                var root = await WaitForMenuRoot(group);
+                await Task.Delay(100);
+                AssertMenuMaterial(root, style);
+                records[^1]["menuHint"] = string.Join(",", root.TransparencyLevelHint);
+                records[^1]["menuActual"] = root.ActualTransparencyLevel.ToString();
+                records[^1]["menuBackground"] = MenuSurface(root).Background?.ToString() ?? "";
+                var acrylic = MenuAcrylicSurface(root);
+                records[^1]["menuAcrylicLayer"] = acrylic.IsVisible.ToString();
+                records[^1]["menuTintOpacity"] = acrylic.IsVisible ? acrylic.Material?.TintOpacity.ToString() ?? "" : "";
+                records[^1]["menuMaterialOpacity"] = acrylic.IsVisible ? acrylic.Material?.MaterialOpacity.ToString() ?? "" : "";
+                CaptureMenu(root, name + "-menu");
+            }
+            finally { group.IsSubMenuOpen = false; }
         }
 
         await CaptureStyle(ThemeMode.Light, InterfaceStyle.Standard, "material-light-standard");
@@ -70,6 +90,9 @@ internal sealed partial class WorkspaceScenarios {
         await CaptureStyle(ThemeMode.Light, InterfaceStyle.Standard, "workspace-light-standard");
         AssertWorkspaceLayering(InterfaceStyle.Standard);
 
+        await VerifyOpenMenuChanges();
+        await VerifyNestedMenus();
+
         var restored = records.First(item => item["name"] == "material-light-standard-restored");
         if (restored["style"] != nameof(InterfaceStyle.Standard)) {
             throw new Exception("Failed to restore standard style after material cycling");
@@ -78,6 +101,101 @@ internal sealed partial class WorkspaceScenarios {
         await File.WriteAllTextAsync(
             Path.Combine(output, "material.json"),
             JsonSerializer.Serialize(records, new JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    private async Task VerifyOpenMenuChanges() {
+        var group = (MenuItem)window.FindControl<Menu>("MainMenu")!.Items[2]!;
+        group.IsSubMenuOpen = true;
+        try {
+            var root = await WaitForMenuRoot(group);
+            foreach (var style in new[] { InterfaceStyle.Mica, InterfaceStyle.Acrylic, InterfaceStyle.Standard }) {
+                foreach (var theme in new[] { ThemeMode.Dark, ThemeMode.Light }) {
+                    shell.PreviewTheme(theme);
+                    shell.PreviewInterfaceStyle(style);
+                    await Task.Delay(100);
+                    AssertMenuMaterial(root, style);
+                }
+            }
+
+            shell.PreviewInterfaceStyle(InterfaceStyle.Mica);
+            window.RequestedThemeVariant = FluentAvaloniaTheme.HighContrastTheme;
+            await Task.Delay(100);
+            AssertMenuMaterial(root, InterfaceStyle.Mica, forceSolid: true);
+        }
+        finally {
+            group.IsSubMenuOpen = false;
+            window.ClearValue(ThemeVariantScope.RequestedThemeVariantProperty);
+            shell.PreviewTheme(ThemeMode.Light);
+            shell.PreviewInterfaceStyle(InterfaceStyle.Standard);
+        }
+    }
+
+    private async Task VerifyNestedMenus() {
+        var originalWidth = window.Width;
+        try {
+            window.Width = 800;
+            shell.PreviewInterfaceStyle(InterfaceStyle.Acrylic);
+            await Task.Delay(150);
+            var compact = (MenuItem)window.FindControl<Menu>("CompactMenu")!.Items[0]!;
+            compact.IsSubMenuOpen = true;
+            try {
+                AssertMenuMaterial(await WaitForMenuRoot(compact), InterfaceStyle.Acrylic);
+                var file = (MenuItem)compact.Items[0]!;
+                file.IsSubMenuOpen = true;
+                AssertMenuMaterial(await WaitForMenuRoot(file), InterfaceStyle.Acrylic);
+                var recent = (MenuItem)file.Items[3]!;
+                if (!recent.IsEnabled) throw new Exception("Recent files submenu was not populated");
+                recent.IsSubMenuOpen = true;
+                var recentRoot = await WaitForMenuRoot(recent);
+                AssertMenuMaterial(recentRoot, InterfaceStyle.Acrylic);
+                shell.PreviewInterfaceStyle(InterfaceStyle.Standard);
+                await Task.Delay(100);
+                AssertMenuMaterial(recentRoot, InterfaceStyle.Standard);
+            }
+            finally { compact.IsSubMenuOpen = false; }
+        }
+        finally {
+            window.Width = originalWidth;
+            shell.PreviewInterfaceStyle(InterfaceStyle.Standard);
+        }
+    }
+
+    private static async Task<PopupRoot> WaitForMenuRoot(MenuItem item) =>
+        (await WaitUntilAsync(() => {
+            var popup = item.GetTemplateDescendants().OfType<Popup>().FirstOrDefault(p => p.Name == "PART_Popup");
+            return Task.FromResult(popup?.Child == null ? null : TopLevel.GetTopLevel(popup.Child) as PopupRoot);
+        }, "Menu popup root did not open"))!;
+
+    private static Border MenuSurface(PopupRoot root) =>
+        ((Panel)root.Content!).Children.OfType<Border>().Single();
+
+    private static ExperimentalAcrylicBorder MenuAcrylicSurface(PopupRoot root) =>
+        ((Panel)root.Content!).Children.OfType<ExperimentalAcrylicBorder>().Single();
+
+    private static void AssertMenuMaterial(PopupRoot root, InterfaceStyle style, bool forceSolid = false) {
+        var hints = WindowMaterialPolicy.GetMenuTransparencyHints(style, forceSolid);
+        if (!root.TransparencyLevelHint.SequenceEqual(hints)) {
+            throw new Exception($"Menu did not follow {style}: hints={string.Join(",", root.TransparencyLevelHint)}");
+        }
+        var expectedMaterial = WindowMaterialPolicy.ShouldUseTransparentMenuBackground(style, forceSolid, root.ActualTransparencyLevel);
+        var surface = MenuSurface(root);
+        var alpha = ((ISolidColorBrush)surface.Background!).Color.A;
+        var acrylic = MenuAcrylicSurface(root);
+        var useAcrylic = expectedMaterial && style == InterfaceStyle.Acrylic;
+        if (acrylic.IsVisible != useAcrylic || (useAcrylic && (alpha != 0 || acrylic.Material == null
+            || acrylic.Material.BackgroundSource != AcrylicBackgroundSource.None))) {
+            throw new Exception($"Acrylic menu did not use the material layer under {style}");
+        }
+        if ((expectedMaterial && !useAcrylic && alpha == 255) || (!expectedMaterial && alpha != 255)) {
+            throw new Exception($"Menu surface did not match {style}: actual={root.ActualTransparencyLevel}, background={surface.Background}");
+        }
+    }
+
+    private void CaptureMenu(PopupRoot root, string name) {
+        using var bitmap = new RenderTargetBitmap(new Avalonia.PixelSize(
+            (int)Math.Ceiling(root.Bounds.Width), (int)Math.Ceiling(root.Bounds.Height)));
+        bitmap.Render(root);
+        bitmap.Save(Path.Combine(output, name + ".png"), PngBitmapEncoderOptions.Default);
     }
 
     private void AssertWorkspaceLayering(InterfaceStyle style) {

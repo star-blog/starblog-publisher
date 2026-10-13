@@ -7,6 +7,31 @@ namespace StarBlogPublisher.Tests.Gui.Services;
 
 public class WindowMaterialPolicyTests {
     [Fact]
+    public void Menus_RequestSelectedMaterial_AndPreserveTransparentCorners() {
+        WindowMaterialPolicy.GetMenuTransparencyHints(InterfaceStyle.Standard, false)
+            .Should().Equal(WindowTransparencyLevel.Transparent);
+        WindowMaterialPolicy.GetMenuTransparencyHints(InterfaceStyle.Mica, false)
+            .Should().Equal(WindowTransparencyLevel.Mica, WindowTransparencyLevel.Transparent);
+        WindowMaterialPolicy.GetMenuTransparencyHints(InterfaceStyle.Acrylic, false)
+            .Should().Equal(WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Transparent);
+    }
+
+    [Fact]
+    public void Menus_KeepSurfaceOpaque_WhenMaterialIsUnavailableOrAccessibilityForcesSolid() {
+        foreach (var style in new[] { InterfaceStyle.Standard, InterfaceStyle.Mica, InterfaceStyle.Acrylic }) {
+            foreach (var actual in new[] { WindowTransparencyLevel.None, WindowTransparencyLevel.Transparent,
+                WindowTransparencyLevel.Blur, WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur }) {
+                WindowMaterialPolicy.ShouldUseTransparentMenuBackground(style, true, actual).Should().BeFalse();
+                var matches = style == InterfaceStyle.Mica && actual == WindowTransparencyLevel.Mica
+                    || style == InterfaceStyle.Acrylic && actual == WindowTransparencyLevel.AcrylicBlur;
+                WindowMaterialPolicy.ShouldUseTransparentMenuBackground(style, false, actual).Should().Be(matches);
+            }
+            WindowMaterialPolicy.GetMenuTransparencyHints(style, true)
+                .Should().Equal(WindowTransparencyLevel.Transparent);
+        }
+    }
+
+    [Fact]
     public void Standard_RequestsNone_AndDoesNotTreatTransparentAsSuccess() {
         var hints = WindowMaterialPolicy.GetTransparencyHints(InterfaceStyle.Standard, forceSolid: false);
         hints.Should().Equal(WindowTransparencyLevel.None);
