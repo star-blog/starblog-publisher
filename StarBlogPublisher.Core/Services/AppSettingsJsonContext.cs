@@ -9,6 +9,8 @@ namespace StarBlogPublisher.Services;
 [JsonSerializable(typeof(LegacyAppSettingsSnapshot))]
 [JsonSerializable(typeof(ThemeMode))]
 [JsonSerializable(typeof(ThemeMode?))]
+[JsonSerializable(typeof(InterfaceStyle))]
+[JsonSerializable(typeof(InterfaceStyle?))]
 [JsonSerializable(typeof(AIProfile))]
 [JsonSerializable(typeof(List<AIProfile>))]
 [JsonSerializable(typeof(WeChatAccountProfile))]

@@ -112,6 +112,7 @@ public static class AppSettingsPortableTransfer {
             WeChatAccounts = settings.WeChatAccounts.Select(CloneWeChatAccount).ToList(),
             ThemeMode = settings.ThemeMode,
             IsDarkTheme = ThemeModeHelper.ToLegacyIsDarkTheme(settings.ThemeMode),
+            InterfaceStyle = InterfaceStyleHelper.FromStorage(settings.InterfaceStyle),
             EnableRegexImageParsing = settings.EnableRegexImageParsing,
             EditorFontSize = settings.EditorFontSize,
             EditorWordWrap = settings.EditorWordWrap,
@@ -158,6 +159,7 @@ public static class AppSettingsPortableTransfer {
         settings.WeChatDefaultTheme = WeChatThemeCatalog.NormalizeId(payload.WeChatDefaultTheme);
         settings.ThemeMode = ThemeModeHelper.FromStorage(payload.ThemeMode, payload.IsDarkTheme);
         settings.IsDarkTheme = ThemeModeHelper.ToLegacyIsDarkTheme(settings.ThemeMode);
+        settings.InterfaceStyle = InterfaceStyleHelper.FromStorage(payload.InterfaceStyle);
         settings.EditorFontSize = payload.EditorFontSize is >= 11 and <= 22 ? payload.EditorFontSize : 14;
         settings.EditorWordWrap = payload.EditorWordWrap;
         settings.EditorShowLineNumbers = payload.EditorShowLineNumbers;
@@ -331,6 +333,7 @@ public sealed class PortableAppSettingsPayload {
     public List<PortableWeChatAccount> WeChatAccounts { get; set; } = new();
     public ThemeMode? ThemeMode { get; set; }
     public bool IsDarkTheme { get; set; }
+    public InterfaceStyle? InterfaceStyle { get; set; }
     public bool EnableRegexImageParsing { get; set; }
     public double EditorFontSize { get; set; } = 14;
     public bool EditorWordWrap { get; set; } = true;
@@ -370,6 +373,8 @@ public sealed class PortableWeChatAccount {
 [JsonSerializable(typeof(PortableAppSettingsPayload))]
 [JsonSerializable(typeof(ThemeMode))]
 [JsonSerializable(typeof(ThemeMode?))]
+[JsonSerializable(typeof(InterfaceStyle))]
+[JsonSerializable(typeof(InterfaceStyle?))]
 [JsonSerializable(typeof(PortableAIProfile))]
 [JsonSerializable(typeof(List<PortableAIProfile>))]
 [JsonSerializable(typeof(PortableWeChatAccount))]

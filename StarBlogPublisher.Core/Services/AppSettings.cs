@@ -130,6 +130,11 @@ public class AppSettings {
     /// </summary>
     public bool IsDarkTheme { get; set; }
 
+    /// <summary>
+    /// 窗口材质风格。与 <see cref="ThemeMode"/> 独立；缺失时为标准实色，运行时降级不改写该偏好。
+    /// </summary>
+    public InterfaceStyle InterfaceStyle { get; set; } = InterfaceStyle.Standard;
+
     // 编辑器
     public double EditorFontSize { get; set; } = 14;
     public bool EditorWordWrap { get; set; } = true;
@@ -219,6 +224,7 @@ public class AppSettings {
             WeChatDefaultTheme = snapshot.WeChatDefaultTheme ?? "newspaper",
             ThemeMode = snapshot.ThemeMode,
             IsDarkTheme = ThemeModeHelper.ToLegacyIsDarkTheme(snapshot.ThemeMode),
+            InterfaceStyle = InterfaceStyleHelper.FromStorage(snapshot.InterfaceStyle),
             EnableRegexImageParsing = snapshot.EnableRegexImageParsing,
             EditorFontSize = snapshot.EditorFontSize is >= 11 and <= 22 ? snapshot.EditorFontSize : 14,
             EditorWordWrap = snapshot.EditorWordWrap,
@@ -257,6 +263,7 @@ public class AppSettings {
             WeChatDefaultTheme = WeChatDefaultTheme,
             ThemeMode = ThemeMode,
             IsDarkTheme = ThemeModeHelper.ToLegacyIsDarkTheme(ThemeMode),
+            InterfaceStyle = InterfaceStyleHelper.FromStorage(InterfaceStyle),
             EnableRegexImageParsing = EnableRegexImageParsing,
             EditorFontSize = EditorFontSize,
             EditorWordWrap = EditorWordWrap,
@@ -415,6 +422,7 @@ internal sealed class AppSettingsSnapshot {
     public string WeChatDefaultTheme { get; set; } = "newspaper";
     public ThemeMode ThemeMode { get; set; } = ThemeMode.System;
     public bool IsDarkTheme { get; set; }
+    public InterfaceStyle InterfaceStyle { get; set; } = InterfaceStyle.Standard;
     public bool EnableRegexImageParsing { get; set; }
     public double EditorFontSize { get; set; } = 14;
     public bool EditorWordWrap { get; set; } = true;
@@ -453,6 +461,7 @@ internal sealed class LegacyAppSettingsSnapshot {
     public string WeChatDefaultTheme { get; set; } = "newspaper";
     public ThemeMode? ThemeMode { get; set; }
     public bool IsDarkTheme { get; set; }
+    public InterfaceStyle? InterfaceStyle { get; set; }
     public bool EnableRegexImageParsing { get; set; }
     public double EditorFontSize { get; set; } = 14;
     public bool EditorWordWrap { get; set; } = true;
@@ -480,6 +489,7 @@ internal sealed class LegacyAppSettingsSnapshot {
             ? CurrentWeChatAccountId
             : weChatAccounts[0].Id;
         var themeMode = ThemeModeHelper.FromStorage(ThemeMode, IsDarkTheme);
+        var interfaceStyle = InterfaceStyleHelper.FromStorage(InterfaceStyle);
 
         return new AppSettingsSnapshot {
             UseProxy = UseProxy,
@@ -517,6 +527,7 @@ internal sealed class LegacyAppSettingsSnapshot {
             WeChatDefaultTheme = WeChatDefaultTheme,
             ThemeMode = themeMode,
             IsDarkTheme = ThemeModeHelper.ToLegacyIsDarkTheme(themeMode),
+            InterfaceStyle = interfaceStyle,
             EnableRegexImageParsing = EnableRegexImageParsing,
             EditorFontSize = EditorFontSize is >= 11 and <= 22 ? EditorFontSize : 14,
             EditorWordWrap = EditorWordWrap,
