@@ -1,9 +1,12 @@
+using System.Reflection;
+using System.Text.Json;
 using FluentAssertions;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 
 namespace StarBlogPublisher.Tests.Services;
 
+[Collection("AppSettings")]
 public class AppSettingsCompatibilityTests {
     [Fact]
     public void DeserializeSnapshot_ShouldReadLegacyPasswordAndAiKeyFields() {
@@ -113,5 +116,99 @@ public class AppSettingsCompatibilityTests {
 
         snapshot.ThemeMode.Should().Be(ThemeMode.Light);
         snapshot.IsDarkTheme.Should().BeFalse();
+    }
+
+    [Fact]
+    public void DeserializeSnapshot_MissingInterfaceStyle_DefaultsToStandard() {
+        var snapshot = AppSettings.DeserializeSnapshot("""
+            {
+              "ThemeMode": "Dark",
+              "IsDarkTheme": true
+            }
+            """);
+
+        snapshot.ThemeMode.Should().Be(ThemeMode.Dark);
+        snapshot.IsDarkTheme.Should().BeTrue();
+        snapshot.InterfaceStyle.Should().Be(InterfaceStyle.Standard);
+    }
+
+    [Fact]
+    public void DeserializeSnapshot_UnknownInterfaceStyleString_FallsBackToStandard() {
+        var snapshot = AppSettings.DeserializeSnapshot("""
+            {
+              "ThemeMode": "Dark",
+              "InterfaceStyle": "Glass"
+            }
+            """);
+
+        snapshot.ThemeMode.Should().Be(ThemeMode.Dark);
+        snapshot.InterfaceStyle.Should().Be(InterfaceStyle.Standard);
+    }
+
+    [Fact]
+    public void DeserializeSnapshot_UnknownInterfaceStyleNumber_FallsBackToStandard() {
+        var snapshot = AppSettings.DeserializeSnapshot("""
+            {
+              "ThemeMode": "Light",
+              "InterfaceStyle": 9
+            }
+            """);
+
+        snapshot.ThemeMode.Should().Be(ThemeMode.Light);
+        snapshot.InterfaceStyle.Should().Be(InterfaceStyle.Standard);
+    }
+
+    [Fact]
+    public void DeserializeSnapshot_UnknownThemeModeString_Throws() {
+        var act = () => AppSettings.DeserializeSnapshot("""{ "ThemeMode": "Solarized" }""");
+        act.Should().Throw<JsonException>();
+    }
+
+    [Theory]
+    [InlineData(ThemeMode.System, InterfaceStyle.Standard)]
+    [InlineData(ThemeMode.System, InterfaceStyle.Mica)]
+    [InlineData(ThemeMode.System, InterfaceStyle.Acrylic)]
+    [InlineData(ThemeMode.Light, InterfaceStyle.Standard)]
+    [InlineData(ThemeMode.Light, InterfaceStyle.Mica)]
+    [InlineData(ThemeMode.Light, InterfaceStyle.Acrylic)]
+    [InlineData(ThemeMode.Dark, InterfaceStyle.Standard)]
+    [InlineData(ThemeMode.Dark, InterfaceStyle.Mica)]
+    [InlineData(ThemeMode.Dark, InterfaceStyle.Acrylic)]
+    public void TryUpdate_NineAppearanceCombinations_RoundTrip(ThemeMode themeMode, InterfaceStyle interfaceStyle) {
+        WithIsolatedSettings(settings => {
+            settings.TryUpdate(target => {
+                target.ThemeMode = themeMode;
+                target.InterfaceStyle = interfaceStyle;
+            }, out var error).Should().BeTrue(error);
+
+            ResetAppSettingsSingleton();
+            var reloaded = AppSettings.Instance;
+            reloaded.ThemeMode.Should().Be(themeMode);
+            reloaded.IsDarkTheme.Should().Be(ThemeModeHelper.ToLegacyIsDarkTheme(themeMode));
+            reloaded.InterfaceStyle.Should().Be(interfaceStyle);
+        });
+    }
+
+    private static void WithIsolatedSettings(Action<AppSettings> action) {
+        var path = Path.Combine(Path.GetTempPath(), "starblog-settings-compat-tests", Guid.NewGuid() + ".json");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var originalPath = Environment.GetEnvironmentVariable("STARBLOGPUBLISHER_SETTINGS_PATH");
+        ResetAppSettingsSingleton();
+        try {
+            Environment.SetEnvironmentVariable("STARBLOGPUBLISHER_SETTINGS_PATH", path);
+            ResetAppSettingsSingleton();
+            action(AppSettings.Instance);
+        }
+        finally {
+            Environment.SetEnvironmentVariable("STARBLOGPUBLISHER_SETTINGS_PATH", originalPath);
+            ResetAppSettingsSingleton();
+            if (File.Exists(path)) File.Delete(path);
+        }
+    }
+
+    private static void ResetAppSettingsSingleton() {
+        var type = typeof(AppSettings);
+        type.GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)?.SetValue(null, null);
+        type.GetField("_loadErrorMessage", BindingFlags.Static | BindingFlags.NonPublic)?.SetValue(null, null);
     }
 }

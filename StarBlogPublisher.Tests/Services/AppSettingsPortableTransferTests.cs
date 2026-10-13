@@ -25,6 +25,7 @@ public sealed class AppSettingsPortableTransferTests {
                 target.EnableRegexImageParsing = true;
                 target.WeChatDefaultTheme = "warm-card";
                 target.ThemeMode = ThemeMode.Dark;
+                target.InterfaceStyle = InterfaceStyle.Acrylic;
                 target.EditorFontSize = 16;
                 target.EditorWordWrap = false;
                 target.EditorShowLineNumbers = true;
@@ -98,6 +99,8 @@ public sealed class AppSettingsPortableTransferTests {
             settings.WeChatDefaultTheme.Should().Be("warm-card");
             settings.ThemeMode.Should().Be(ThemeMode.Dark);
             settings.IsDarkTheme.Should().BeTrue();
+            settings.InterfaceStyle.Should().Be(InterfaceStyle.Acrylic);
+            exported.Should().Contain("\"interfaceStyle\": \"Acrylic\"");
             settings.EditorFontSize.Should().Be(16);
             settings.EditorShowLineNumbers.Should().BeTrue();
         });
@@ -147,6 +150,105 @@ public sealed class AppSettingsPortableTransferTests {
             applyError.Should().BeNull();
             settings.ThemeMode.Should().Be(ThemeMode.Dark);
             settings.IsDarkTheme.Should().BeTrue();
+            settings.InterfaceStyle.Should().Be(InterfaceStyle.Standard);
+        });
+    }
+
+    [Fact]
+    public void TryApply_PreservesRequestedStyle_WhenBackupOmitsRuntimeFallback() {
+        WithIsolatedSettings(settings => {
+            var json = """
+                {
+                  "format": "starblog-publisher-settings",
+                  "version": 1,
+                  "exportedAt": "2026-10-13T00:00:00+08:00",
+                  "settings": {
+                    "useProxy": false,
+                    "proxyType": "http",
+                    "proxyHost": "",
+                    "proxyPort": 0,
+                    "proxyTimeout": 30,
+                    "useCustomBackend": false,
+                    "backendUrl": "",
+                    "username": "",
+                    "password": "",
+                    "backendTimeout": 30,
+                    "enableAI": false,
+                    "aiProvider": "openai",
+                    "aiKey": "",
+                    "aiModel": "",
+                    "aiApiBase": "",
+                    "currentAIProfile": "默认",
+                    "aiProfiles": [],
+                    "weChatDefaultTheme": "newspaper",
+                    "currentWeChatAccountId": "",
+                    "weChatAccounts": [],
+                    "themeMode": "Light",
+                    "isDarkTheme": false,
+                    "interfaceStyle": "Mica",
+                    "enableRegexImageParsing": false,
+                    "editorFontSize": 14,
+                    "editorWordWrap": true,
+                    "editorShowLineNumbers": false
+                  }
+                }
+                """;
+
+            AppSettingsPortableTransfer.TryParse(json, out var document, out var parseError).Should().BeTrue();
+            parseError.Should().BeNull();
+            AppSettingsPortableTransfer.TryApply(settings, document!, out var applyError).Should().BeTrue();
+            applyError.Should().BeNull();
+            settings.ThemeMode.Should().Be(ThemeMode.Light);
+            settings.InterfaceStyle.Should().Be(InterfaceStyle.Mica);
+        });
+    }
+
+    [Fact]
+    public void TryApply_UnknownInterfaceStyle_FallsBackToStandard() {
+        WithIsolatedSettings(settings => {
+            settings.TryUpdate(target => target.InterfaceStyle = InterfaceStyle.Acrylic, out _).Should().BeTrue();
+            var json = """
+                {
+                  "format": "starblog-publisher-settings",
+                  "version": 1,
+                  "exportedAt": "2026-10-13T00:00:00+08:00",
+                  "settings": {
+                    "useProxy": false,
+                    "proxyType": "http",
+                    "proxyHost": "",
+                    "proxyPort": 0,
+                    "proxyTimeout": 30,
+                    "useCustomBackend": false,
+                    "backendUrl": "",
+                    "username": "",
+                    "password": "",
+                    "backendTimeout": 30,
+                    "enableAI": false,
+                    "aiProvider": "openai",
+                    "aiKey": "",
+                    "aiModel": "",
+                    "aiApiBase": "",
+                    "currentAIProfile": "默认",
+                    "aiProfiles": [],
+                    "weChatDefaultTheme": "newspaper",
+                    "currentWeChatAccountId": "",
+                    "weChatAccounts": [],
+                    "themeMode": "System",
+                    "interfaceStyle": "Glass",
+                    "enableRegexImageParsing": false,
+                    "editorFontSize": 14,
+                    "editorWordWrap": true,
+                    "editorShowLineNumbers": false
+                  }
+                }
+                """;
+
+            AppSettingsPortableTransfer.TryParse(json, out var document, out var parseError).Should().BeTrue();
+            parseError.Should().BeNull();
+            AppSettingsPortableTransfer.TryApply(settings, document!, out var applyError).Should().BeTrue();
+            applyError.Should().BeNull();
+            settings.ThemeMode.Should().Be(ThemeMode.System);
+            settings.InterfaceStyle.Should().Be(InterfaceStyle.Standard);
         });
     }
 
