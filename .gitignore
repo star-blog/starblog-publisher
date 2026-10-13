@@ -18,6 +18,9 @@ riderModule.iml
 # Local History for Visual Studio Code
 .history/
 
+# Pi local tool settings
+.pi/
+
 # Built Visual Studio Code Extensions
 *.vsix
 
