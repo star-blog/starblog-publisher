@@ -41,7 +41,7 @@ dotnet run --project StarBlogPublisher.DesktopTests -c Release -- --list
 | sidebar-and-menus | 紧凑侧栏、调整宽度、隐藏/显示、菜单分组 |
 | focus-and-palette | 编辑器与摘要输入框的命令焦点、替换及撤销、命令面板筛选与执行、大纲源码导航 |
 | preview-navigation | 源码滚动后切换分栏/预览、重复点击大纲、分栏导航保持模式 |
-| settings-layout | 设置首次打开无意外更改、五类导航、展开宽度稳定、800 DIP 窄窗口、主题预览、草稿保存与撤销、离页确认、写入失败保护 |
+| settings-layout | 设置首次打开无意外更改、五类导航、展开宽度稳定、800 DIP 窄窗口、主题预览、界面风格预览与实际效果提示、颜色切换保留风格、草稿保存与撤销、离页确认、写入失败保护 |
 | theme-and-close | 强制深浅主题截图、跟随系统（`PreferSystemTheme` / `ActualThemeVariant`）、800 DIP 窄窗口菜单、未保存时取消/丢弃/保存、重新打开 |
 | material-shell | 仅 `--material`：浅／深 × 标准／Mica／Acrylic 的 `TransparencyLevelHint`／`ActualTransparencyLevel` 记录、切回标准，截图写入本次运行目录 |
 
@@ -55,6 +55,6 @@ dotnet run --project StarBlogPublisher.DesktopTests -c Release -- --list
 
 状态规则优先放进 xUnit；需要真实布局、焦点、编辑器或 WebView 行为的回归，加入 `WorkspaceScenarios.cs` 对应阶段。WebView 必须等页面加载完成再读取 DOM，不能只检查 ViewModel 就声称页面已滚动。
 
-`SettingsViewModelTests` 覆盖草稿更改检测、AI 方案与公众号账号切换、主题预览撤销、校验失败和离页决策。设置使用独立草稿，只有保存成功才更新运行中的配置；模型目录仅在主动获取或打开目录时请求。桌面测试使用占位凭据，保存检查只写入本次运行的独立配置。
+`SettingsViewModelTests` 覆盖草稿更改检测、AI 方案与公众号账号切换、主题与界面风格预览撤销、九种外观组合、颜色切换保留风格、材质状态提示不脏草稿、校验失败和离页决策。设置使用独立草稿，只有保存成功才更新运行中的配置；模型目录仅在主动获取或打开目录时请求。桌面测试使用占位凭据，保存检查只写入本次运行的独立配置。
 
 当前测试调用控件 API、命令和路由事件，不覆盖真实鼠标命中、系统窗口拖动或跨平台原生差异。PNG 供人工检查，并非像素基线断言；原生 WebView 内容使用 JavaScript 验证，不能靠 Avalonia 截图证明。桌面测试暂不在托管 CI 自动执行，因为它要求可交互桌面和原生浏览器环境。
