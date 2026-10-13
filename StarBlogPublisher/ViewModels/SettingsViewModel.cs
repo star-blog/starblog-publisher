@@ -12,6 +12,7 @@ using StarBlogPublisher.Services.AI;
 using StarBlogPublisher.Services.Application;
 using FluentIcons.Common;
 using AppThemeMode = StarBlogPublisher.Models.ThemeMode;
+using AppInterfaceStyle = StarBlogPublisher.Models.InterfaceStyle;
 
 namespace StarBlogPublisher.ViewModels;
 
@@ -22,6 +23,7 @@ public partial class SettingsViewModel : PageViewModelBase {
 
     public SettingsViewModel(MainWindowViewModel shell) : base("设置", Icon.Settings) {
         _shell = shell;
+        _shell.PropertyChanged += OnShellPropertyChanged;
         Profiles.CollectionChanged += (_, _) => UpdateDirtyState();
         WeChatAccounts.CollectionChanged += (_, _) => UpdateDirtyState();
     }
@@ -51,7 +53,12 @@ public partial class SettingsViewModel : PageViewModelBase {
     [NotifyPropertyChangedFor(nameof(IsThemeModeLight))]
     [NotifyPropertyChangedFor(nameof(IsThemeModeDark))]
     private AppThemeMode _themeMode = AppThemeMode.System;
-    private bool _syncingTheme;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsInterfaceStyleStandard))]
+    [NotifyPropertyChangedFor(nameof(IsInterfaceStyleMica))]
+    [NotifyPropertyChangedFor(nameof(IsInterfaceStyleAcrylic))]
+    private AppInterfaceStyle _interfaceStyle = AppInterfaceStyle.Standard;
+    private bool _syncingAppearance;
 
     public bool IsThemeModeSystem {
         get => ThemeMode == AppThemeMode.System;
@@ -67,6 +74,23 @@ public partial class SettingsViewModel : PageViewModelBase {
         get => ThemeMode == AppThemeMode.Dark;
         set { if (value) ThemeMode = AppThemeMode.Dark; }
     }
+
+    public bool IsInterfaceStyleStandard {
+        get => InterfaceStyle == AppInterfaceStyle.Standard;
+        set { if (value) InterfaceStyle = AppInterfaceStyle.Standard; }
+    }
+
+    public bool IsInterfaceStyleMica {
+        get => InterfaceStyle == AppInterfaceStyle.Mica;
+        set { if (value) InterfaceStyle = AppInterfaceStyle.Mica; }
+    }
+
+    public bool IsInterfaceStyleAcrylic {
+        get => InterfaceStyle == AppInterfaceStyle.Acrylic;
+        set { if (value) InterfaceStyle = AppInterfaceStyle.Acrylic; }
+    }
+
+    public string MaterialStatusDescription => _shell.MaterialStatusDescription;
 
     [ObservableProperty] private bool _enableAI;
     [ObservableProperty] private string _AIProvider = "openai";
@@ -105,7 +129,7 @@ public partial class SettingsViewModel : PageViewModelBase {
     public void Reload() {
         var settings = AppSettings.Instance;
         _loadingDraft = true;
-        _syncingTheme = true;
+        _syncingAppearance = true;
         try {
             UseProxy = settings.UseProxy;
             ProxyType = settings.ProxyType;
@@ -121,11 +145,12 @@ public partial class SettingsViewModel : PageViewModelBase {
             EnableRegexImageParsing = settings.EnableRegexImageParsing;
             WeChatDefaultTheme = WeChatThemeCatalog.NormalizeId(settings.WeChatDefaultTheme);
             ThemeMode = settings.ThemeMode;
+            InterfaceStyle = InterfaceStyleHelper.FromStorage(settings.InterfaceStyle);
             LoadWeChatAccounts();
             LoadProfiles();
         }
         finally {
-            _syncingTheme = false;
+            _syncingAppearance = false;
             _loadingDraft = false;
         }
         AcceptChanges();
@@ -137,12 +162,26 @@ public partial class SettingsViewModel : PageViewModelBase {
     public void SyncThemeMode(AppThemeMode mode) {
         if (ThemeMode == mode) return;
         var wasDirty = HasChanges;
-        _syncingTheme = true;
+        _syncingAppearance = true;
         try {
             ThemeMode = mode;
         }
         finally {
-            _syncingTheme = false;
+            _syncingAppearance = false;
+        }
+        if (!wasDirty) AcceptChanges();
+    }
+
+    public void SyncInterfaceStyle(AppInterfaceStyle style) {
+        style = InterfaceStyleHelper.FromStorage(style);
+        if (InterfaceStyle == style) return;
+        var wasDirty = HasChanges;
+        _syncingAppearance = true;
+        try {
+            InterfaceStyle = style;
+        }
+        finally {
+            _syncingAppearance = false;
         }
         if (!wasDirty) AcceptChanges();
     }
@@ -305,8 +344,19 @@ public partial class SettingsViewModel : PageViewModelBase {
     }
 
     partial void OnThemeModeChanged(AppThemeMode value) {
-        if (_syncingTheme) return;
+        if (_syncingAppearance) return;
         _shell.PreviewTheme(value);
+    }
+
+    partial void OnInterfaceStyleChanged(AppInterfaceStyle value) {
+        if (_syncingAppearance) return;
+        _shell.PreviewInterfaceStyle(value);
+    }
+
+    private void OnShellPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) {
+        if (e.PropertyName == nameof(MainWindowViewModel.MaterialStatusDescription)) {
+            OnPropertyChanged(nameof(MaterialStatusDescription));
+        }
     }
 
     private void ResetModelCatalog() {
@@ -457,6 +507,7 @@ public partial class SettingsViewModel : PageViewModelBase {
         }
         AcceptChanges();
         _shell.ApplyTheme(ThemeMode);
+        _shell.ApplyInterfaceStyle(InterfaceStyle);
         _shell.PublishPage.NotifyAiEnabled();
         foreach (var document in _shell.Workspace.Documents) document.NotifyAiEnabled();
         GuiHost.ToastSuccess("设置", "已保存");
@@ -486,6 +537,7 @@ public partial class SettingsViewModel : PageViewModelBase {
         settings.WeChatDefaultTheme = WeChatDefaultTheme;
         settings.ThemeMode = ThemeMode;
         settings.IsDarkTheme = ThemeModeHelper.ToLegacyIsDarkTheme(ThemeMode);
+        settings.InterfaceStyle = InterfaceStyleHelper.FromStorage(InterfaceStyle);
 
         settings.EnableAI = EnableAI;
         settings.AIProvider = AIProvider;
@@ -507,6 +559,13 @@ public partial class SettingsViewModel : PageViewModelBase {
     private void Cancel() {
         Reload();
         _shell.PreviewTheme(ThemeMode);
+        _shell.PreviewInterfaceStyle(InterfaceStyle);
         GuiHost.ToastInfo("设置", "已还原为上次保存的配置");
+    }
+
+    [RelayCommand]
+    private void RestoreAppearanceDefaults() {
+        ThemeMode = AppThemeMode.System;
+        InterfaceStyle = AppInterfaceStyle.Standard;
     }
 }

@@ -111,12 +111,22 @@
                             <TextBlock Classes="Hint" Text="让写作环境更合你的习惯。"/>
                         </StackPanel>
                         <TextBlock Classes="GroupTitle" Text="外观"/>
-                        <StackPanel Orientation="Horizontal" Spacing="20">
+                        <TextBlock Text="颜色模式" FontWeight="SemiBold"/>
+                        <StackPanel x:Name="ThemeModeOptions" Orientation="Horizontal" Spacing="20">
                             <RadioButton GroupName="AppTheme" Content="跟随系统" IsChecked="{Binding IsThemeModeSystem, Mode=TwoWay}"/>
                             <RadioButton GroupName="AppTheme" Content="浅色" IsChecked="{Binding IsThemeModeLight, Mode=TwoWay}"/>
                             <RadioButton GroupName="AppTheme" Content="深色" IsChecked="{Binding IsThemeModeDark, Mode=TwoWay}"/>
                         </StackPanel>
-                        <TextBlock Classes="Hint" Text="即时预览，保存后保留；撤销可恢复。跟随系统时随操作系统浅色/深色自动切换。"/>
+                        <TextBlock Classes="Hint" Text="即时预览，保存后保留；撤销可恢复。跟随系统时随操作系统浅色/深色自动切换。左下角切换只改变颜色模式。"/>
+                        <TextBlock Text="界面风格" FontWeight="SemiBold"/>
+                        <StackPanel x:Name="InterfaceStyleOptions" Orientation="Horizontal" Spacing="20">
+                            <RadioButton GroupName="AppInterfaceStyle" Content="标准" IsChecked="{Binding IsInterfaceStyleStandard, Mode=TwoWay}"/>
+                            <RadioButton GroupName="AppInterfaceStyle" Content="Mica" IsChecked="{Binding IsInterfaceStyleMica, Mode=TwoWay}"/>
+                            <RadioButton GroupName="AppInterfaceStyle" Content="Acrylic" IsChecked="{Binding IsInterfaceStyleAcrylic, Mode=TwoWay}"/>
+                        </StackPanel>
+                        <TextBlock Classes="Hint" Text="标准保持现有实色界面。Mica 柔和取样桌面色彩。Acrylic 提供更明显的模糊半透明。不支持时自动使用实色，偏好不会被改写。"/>
+                        <TextBlock x:Name="MaterialStatusHint" Classes="Hint" Text="{Binding MaterialStatusDescription}"/>
+                        <Button Content="恢复默认外观" Command="{Binding RestoreAppearanceDefaultsCommand}" HorizontalAlignment="Left"/>
                         <Border Classes="Rule"/>
                         <TextBlock Classes="GroupTitle" Text="文章处理"/>
                         <ToggleSwitch Content="兼容含空格的图片路径" IsChecked="{Binding EnableRegexImageParsing}" OnContent="已开启" OffContent="已关闭"/>

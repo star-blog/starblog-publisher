@@ -252,10 +252,16 @@ public partial class MainWindowViewModel : ViewModelBase {
     }
 
     public void PreviewTheme(AppThemeMode mode) {
+        var previousMode = ThemeMode;
+        var previousDark = IsDarkTheme;
         ThemeMode = mode;
         AppThemeService.Apply(mode);
         SyncEffectiveIsDark();
         ApplyCurrentMaterial();
+        if (previousMode == mode && previousDark == IsDarkTheme) {
+            return;
+        }
+
         foreach (var document in Workspace.Documents) document.RefreshPreviewForThemeChange();
         _sitePostsPage?.RefreshEditorPreviewForThemeChange();
     }
@@ -267,6 +273,7 @@ public partial class MainWindowViewModel : ViewModelBase {
             settings.InterfaceStyle = style;
             settings.Save();
         }
+        _settingsPage?.SyncInterfaceStyle(style);
     }
 
     public void PreviewInterfaceStyle(AppInterfaceStyle style) {
