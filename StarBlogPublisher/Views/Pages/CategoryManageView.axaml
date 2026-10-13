@@ -15,7 +15,7 @@
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
             </Border>
             <Grid ColumnDefinitions="*,280">
-                <DockPanel>
+                <DockPanel Background="{DynamicResource WorkspaceCanvasBrush}">
                     <Border DockPanel.Dock="Top" Classes="SiteHeader">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Text="分类管理" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -40,7 +40,7 @@
                         </DataTemplate></ListBox.ItemTemplate>
                     </ListBox>
                 </DockPanel>
-                <Border Grid.Column="1" Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
+                <Border Grid.Column="1" Background="{DynamicResource InspectorBackgroundBrush}"
                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1,0,0,0">
                     <DockPanel>
                         <Border DockPanel.Dock="Top" Classes="SiteHeader">

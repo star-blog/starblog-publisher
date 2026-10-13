@@ -48,20 +48,22 @@
                     <ColumnDefinition Width="{Binding InspectorColumnWidth, Mode=TwoWay}" />
                 </Grid.ColumnDefinitions>
                 <DockPanel>
-                    <Border DockPanel.Dock="Top" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Padding="10,3">
+                    <Border x:Name="EditorToolbar" DockPanel.Dock="Top" BorderThickness="0,0,0,1"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Padding="10,3"
+                            Background="{DynamicResource WorkspaceChromeBrush}">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                             <TextBlock Text="{Binding BreadcrumbText}" TextTrimming="CharacterEllipsis" FontSize="11" VerticalAlignment="Center" Opacity="0.7" ToolTip.Tip="{Binding CurrentFilePath}" />
                             <controls:MarkdownEditorToolbar Grid.Column="1" />
                         </Grid>
                     </Border>
-                    <controls:MarkdownEditorView />
+                    <controls:MarkdownEditorView x:Name="EditorCanvas" />
                 </DockPanel>
                 <GridSplitter Grid.Column="1" Width="4" ResizeDirection="Columns" IsVisible="{Binding IsInspectorOpen}" />
-                <Border Grid.Column="2"
+                <Border x:Name="ArticleInspectorPane" Grid.Column="2"
                         IsVisible="{Binding IsInspectorOpen}"
                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1,0,0,0"
-                        Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}">
+                        Background="{DynamicResource InspectorBackgroundBrush}">
                     <Panel>
                         <controls:ArticleInspectorView IsVisible="{Binding IsInspectorOpen}" />
                     </Panel>

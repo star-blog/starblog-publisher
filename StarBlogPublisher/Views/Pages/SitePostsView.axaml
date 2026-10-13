@@ -24,7 +24,7 @@
                     </Grid>
                 </Border>
                 <Grid ColumnDefinitions="220,*">
-                    <Border Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
+                    <Border Background="{DynamicResource SidebarBackgroundBrush}"
                             BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,0,1,0">
                         <DockPanel>
                             <Border DockPanel.Dock="Top" Classes="SiteHeader">
@@ -77,7 +77,7 @@
                             </ScrollViewer>
                         </DockPanel>
                     </Border>
-                    <DockPanel Grid.Column="1">
+                    <DockPanel Grid.Column="1" Background="{DynamicResource WorkspaceCanvasBrush}">
                         <Border DockPanel.Dock="Top" Classes="SiteHeader">
                             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
                                 <TextBlock Text="线上文章库" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />

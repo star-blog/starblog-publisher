@@ -6,7 +6,6 @@
              xmlns:controls="using:StarBlogPublisher.Views.Controls"
              x:Class="StarBlogPublisher.Views.ArticleWorkspaceView"
              x:DataType="vm:ArticleWorkspaceViewModel"
-             Background="{DynamicResource WorkspaceCanvasBrush}"
              DragDrop.AllowDrop="True">
     <UserControl.Styles>
         <Style Selector="Button.FileRow"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Padding" Value="6,4" /><Setter Property="MinHeight" Value="28" /></Style>
@@ -54,8 +53,8 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <Border IsVisible="{Binding IsSidebarOpen}" ClipToBounds="True"
-                    Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}">
+            <Border x:Name="WorkspaceSidebar" IsVisible="{Binding IsSidebarOpen}" ClipToBounds="True"
+                    Background="{DynamicResource SidebarBackgroundBrush}">
                 <Grid RowDefinitions="40,Auto,Auto,Auto,Auto,Auto,*">
                     <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="16,0,8,0">
                         <TextBlock Text="文章" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -115,7 +114,9 @@
             </Border>
             <GridSplitter Grid.Column="1" Width="3" HorizontalAlignment="Stretch" Background="{DynamicResource CardStrokeColorDefaultBrush}" IsVisible="{Binding IsSidebarOpen}" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
             <DockPanel Grid.Column="2">
-                <Border DockPanel.Dock="Bottom" IsVisible="{Binding IsTaskPanelOpen}" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Height="180">
+                <Border x:Name="TaskPanel" DockPanel.Dock="Bottom" IsVisible="{Binding IsTaskPanelOpen}"
+                        Background="{DynamicResource WorkspaceChromeBrush}"
+                        BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Height="180">
                     <DockPanel Margin="12,6">
                         <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,6">
                             <TextBlock Text="文章任务与状态" FontSize="12" VerticalAlignment="Center" />
@@ -136,10 +137,10 @@
                         </ScrollViewer>
                     </DockPanel>
                 </Border>
-                <ListBox DockPanel.Dock="Top" Classes="DocumentTabs" ItemsSource="{Binding Documents}"
+                <ListBox x:Name="DocumentTabBar" DockPanel.Dock="Top" Classes="DocumentTabs" ItemsSource="{Binding Documents}"
                          SelectedItem="{Binding ActiveDocument, Mode=TwoWay}" IsVisible="{Binding HasDocuments}"
                          ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                         Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}">
+                         Background="{DynamicResource WorkspaceChromeBrush}">
                     <ListBox.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ListBox.ItemsPanel>
                     <ListBox.ItemTemplate><DataTemplate x:DataType="vm:PublishViewModel">
                         <Border BorderThickness="0,0,1,1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Padding="8,0,4,0">

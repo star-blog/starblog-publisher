@@ -35,7 +35,7 @@
                     <controls:MarkdownEditorView x:Name="OnlineEditor" IsEnabled="{Binding CanEdit}" />
                 </DockPanel>
                 <GridSplitter Grid.Column="1" IsVisible="{Binding !IsSplitMode}" Width="4" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
-                <Border Grid.Column="2" IsVisible="{Binding !IsSplitMode}" Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
+                <Border Grid.Column="2" IsVisible="{Binding !IsSplitMode}" Background="{DynamicResource InspectorBackgroundBrush}"
                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1,0,0,0" MinWidth="240" MaxWidth="420">
                     <DockPanel>
                         <Border DockPanel.Dock="Top" Classes="SiteHeader">

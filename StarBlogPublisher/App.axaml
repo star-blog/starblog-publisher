@@ -115,7 +115,7 @@
             <Setter Property="Padding" Value="12,8" />
         </Style>
         <Style Selector="Border.StatusBar">
-            <Setter Property="Background" Value="{DynamicResource SolidBackgroundFillColorTertiaryBrush}" />
+            <Setter Property="Background" Value="{DynamicResource WorkspaceChromeBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
             <Setter Property="BorderThickness" Value="0,1,0,0" />
             <Setter Property="Padding" Value="12,0" />

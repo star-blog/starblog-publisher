@@ -27,7 +27,8 @@
                       ResizeDirection="Columns"
                       IsVisible="{Binding IsSplitMode}" />
 
-        <Panel x:Name="PreviewHost" Grid.Column="2" IsVisible="{Binding IsPreviewPaneVisible}">
+        <Panel x:Name="PreviewHost" Grid.Column="2" IsVisible="{Binding IsPreviewPaneVisible}"
+               Background="{DynamicResource WorkspaceCanvasBrush}">
             <TextBlock x:Name="PreviewPlaceholder"
                        Text="预览加载中…"
                        HorizontalAlignment="Center"

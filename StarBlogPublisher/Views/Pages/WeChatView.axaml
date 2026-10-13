@@ -72,7 +72,7 @@
                 <Border Grid.Column="1" Width="{Binding InspectorPaneWidth}"
                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1,0,0,0"
-                        Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}">
+                        Background="{DynamicResource InspectorBackgroundBrush}">
                     <Panel>
                         <DockPanel IsVisible="{Binding IsInspectorOpen}">
                             <Border DockPanel.Dock="Top" Classes="InspectorActions">
