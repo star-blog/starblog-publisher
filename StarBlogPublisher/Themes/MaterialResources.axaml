@@ -8,11 +8,12 @@
             <SolidColorBrush x:Key="Material.Standard.WorkspaceCanvasBrush" Color="#F3F3F3" />
             <SolidColorBrush x:Key="Material.Standard.InspectorBackgroundBrush" Color="#EEEEEE" />
             <SolidColorBrush x:Key="Material.Standard.WorkspaceChromeBrush" Color="#F9F9F9" />
-            <SolidColorBrush x:Key="Material.Mica.ShellBackgroundBrush" Color="#CCF3F3F3" />
-            <SolidColorBrush x:Key="Material.Mica.SidebarBackgroundBrush" Color="#B3FFFFFF" />
+            <!-- Mica overlays stay thinner than Acrylic so wallpaper tint remains visible. Canvas stays opaque. -->
+            <SolidColorBrush x:Key="Material.Mica.ShellBackgroundBrush" Color="#80F3F3F3" />
+            <SolidColorBrush x:Key="Material.Mica.SidebarBackgroundBrush" Color="#66FFFFFF" />
             <SolidColorBrush x:Key="Material.Mica.WorkspaceCanvasBrush" Color="#F3F3F3" />
-            <SolidColorBrush x:Key="Material.Mica.InspectorBackgroundBrush" Color="#E6EEEEEE" />
-            <SolidColorBrush x:Key="Material.Mica.WorkspaceChromeBrush" Color="#E6F9F9F9" />
+            <SolidColorBrush x:Key="Material.Mica.InspectorBackgroundBrush" Color="#CCEEEEEE" />
+            <SolidColorBrush x:Key="Material.Mica.WorkspaceChromeBrush" Color="#CCF9F9F9" />
             <SolidColorBrush x:Key="Material.Acrylic.ShellBackgroundBrush" Color="#99F3F3F3" />
             <SolidColorBrush x:Key="Material.Acrylic.SidebarBackgroundBrush" Color="#99FFFFFF" />
             <SolidColorBrush x:Key="Material.Acrylic.WorkspaceCanvasBrush" Color="#F3F3F3" />
@@ -31,11 +32,11 @@
             <SolidColorBrush x:Key="Material.Standard.WorkspaceCanvasBrush" Color="#202020" />
             <SolidColorBrush x:Key="Material.Standard.InspectorBackgroundBrush" Color="#1C1C1C" />
             <SolidColorBrush x:Key="Material.Standard.WorkspaceChromeBrush" Color="#282828" />
-            <SolidColorBrush x:Key="Material.Mica.ShellBackgroundBrush" Color="#CC202020" />
-            <SolidColorBrush x:Key="Material.Mica.SidebarBackgroundBrush" Color="#733A3A3A" />
+            <SolidColorBrush x:Key="Material.Mica.ShellBackgroundBrush" Color="#80202020" />
+            <SolidColorBrush x:Key="Material.Mica.SidebarBackgroundBrush" Color="#593A3A3A" />
             <SolidColorBrush x:Key="Material.Mica.WorkspaceCanvasBrush" Color="#202020" />
-            <SolidColorBrush x:Key="Material.Mica.InspectorBackgroundBrush" Color="#E61C1C1C" />
-            <SolidColorBrush x:Key="Material.Mica.WorkspaceChromeBrush" Color="#E6282828" />
+            <SolidColorBrush x:Key="Material.Mica.InspectorBackgroundBrush" Color="#CC1C1C1C" />
+            <SolidColorBrush x:Key="Material.Mica.WorkspaceChromeBrush" Color="#CC282828" />
             <SolidColorBrush x:Key="Material.Acrylic.ShellBackgroundBrush" Color="#99202020" />
             <SolidColorBrush x:Key="Material.Acrylic.SidebarBackgroundBrush" Color="#663A3A3A" />
             <SolidColorBrush x:Key="Material.Acrylic.WorkspaceCanvasBrush" Color="#202020" />
