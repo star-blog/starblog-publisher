@@ -62,6 +62,7 @@ internal sealed partial class WorkspaceScenarios {
         if (parent.IsStackNavigating || parent.CoverPath != outputPath || !File.Exists(outputPath))
             throw new Exception("Composed article cover was not applied or was deleted on navigation");
         parent.CoverPreview?.Dispose();
+        parent.CoverPreview = null;
         File.Delete(outputPath);
 
         using var empty = new CoverStudioViewModel(factory, "无图文章", _ => { });
@@ -74,6 +75,8 @@ internal sealed partial class WorkspaceScenarios {
                 .Any(text => text.Text == "文章正文中没有可用图片" && text.IsEffectivelyVisible))
             throw new Exception("No-image article has no disabled picker and empty-state hint");
         parent.NavigateBreadcrumbAt(0);
+        shell.ActivePage = shell.Workspace;
+        await Task.Delay(100);
     }
 
     private sealed class CoverImageHttpClientFactory(byte[] bytes) : IHttpClientFactory {

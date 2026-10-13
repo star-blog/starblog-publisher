@@ -193,8 +193,11 @@ internal sealed partial class WorkspaceScenarios(MainWindow window, MainWindowVi
 
     public async Task SidebarAndMenus() {
         var workspaceView = window.GetVisualDescendants().OfType<ArticleWorkspaceView>().First();
-        var headers = workspaceView.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().Where(b => b.Classes.Contains("SectionHeader")).ToArray();
-        if (headers.Length != 3 || headers.Any(h => h.Bounds.Height != 28 || h.Bounds.Width < 180)) throw new Exception("Sidebar headers are not compact full-width rows");
+        var sidebar = workspaceView.FindControl<Border>("WorkspaceSidebar")
+            ?? throw new Exception("Workspace sidebar is missing");
+        var headers = sidebar.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().Where(b => b.Classes.Contains("SectionHeader")).ToArray();
+        if (headers.Length != 3 || headers.Any(h => h.Bounds.Height != 28 || h.Bounds.Width < 180))
+            throw new Exception($"Sidebar headers are not compact full-width rows: count={headers.Length}, sizes={string.Join(",", headers.Select(h => $"{h.Bounds.Width}x{h.Bounds.Height}"))}");
         shell.Workspace.SidebarColumnWidth = new GridLength(300);
         await Task.Delay(100);
         if (headers[0].Bounds.Width != 300) throw new Exception("Sidebar resize did not update layout");
@@ -300,6 +303,21 @@ internal sealed partial class WorkspaceScenarios(MainWindow window, MainWindowVi
     }
 
     public async Task ThemeAndClose() {
+        shell.ActivePage = shell.Workspace;
+        foreach (var extra in shell.Workspace.Documents.Where(document =>
+                     !ReferenceEquals(document, first) &&
+                     !string.Equals(document.CurrentFilePath, two, StringComparison.OrdinalIgnoreCase)).ToArray()) {
+            if (extra.IsDocumentDirty && !await extra.SaveDocumentAsync()) {
+                throw new Exception("Could not save extra document before close checks");
+            }
+            await shell.Workspace.CloseDocumentCommand.ExecuteAsync(extra);
+        }
+        if (shell.Workspace.Documents.Count != 2) {
+            throw new Exception($"Expected two workspace documents before close checks, found {shell.Workspace.Documents.Count}");
+        }
+        shell.Workspace.ActiveDocument = first;
+        await Task.Delay(150);
+
         var styleBeforeTheme = shell.InterfaceStyle;
         shell.ApplyTheme(ThemeMode.Dark);
         if (shell.InterfaceStyle != styleBeforeTheme) throw new Exception("Applying color mode reset interface style");
