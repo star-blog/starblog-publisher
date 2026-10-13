@@ -25,7 +25,7 @@ internal sealed partial class WorkspaceScenarios(MainWindow window, MainWindowVi
     private Menu mainMenu = null!;
 
     public async Task SettingsLayout() {
-        var before = typeof(SettingsViewModel).GetProperties().Where(p => p.PropertyType == typeof(string) || p.PropertyType == typeof(bool) || p.PropertyType == typeof(int))
+        var before = typeof(SettingsViewModel).GetProperties().Where(p => p.PropertyType == typeof(string) || p.PropertyType == typeof(bool) || p.PropertyType == typeof(int) || p.PropertyType.IsEnum)
             .ToDictionary(p => p.Name, p => p.GetValue(shell.SettingsPage));
         shell.ActivePage = shell.SettingsPage;
         await Task.Delay(200);
@@ -65,11 +65,36 @@ internal sealed partial class WorkspaceScenarios(MainWindow window, MainWindowVi
         await Task.Delay(200);
         if (scroll.Extent.Width > scroll.Viewport.Width + 1 || form.Bounds.Width < 300) throw new Exception("Narrow settings layout is unusable");
         Capture(window, Path.Combine(output, "settings-narrow.png"));
+        navigation.SelectedIndex = 0;
+        await Task.Delay(100);
         vm.ThemeMode = ThemeMode.Dark;
         await Task.Delay(150);
         Capture(window, Path.Combine(output, "settings-dark.png"));
+        var styleRadios = view.GetVisualDescendants().OfType<RadioButton>().Where(radio => radio.GroupName == "AppInterfaceStyle").ToArray();
+        if (styleRadios.Length != 3) throw new Exception("Interface style radios missing");
+        vm.InterfaceStyle = InterfaceStyle.Mica;
+        await Task.Delay(200);
+        if (shell.InterfaceStyle != InterfaceStyle.Mica || vm.InterfaceStyle != InterfaceStyle.Mica)
+            throw new Exception("Interface style preview did not apply");
+        if (string.IsNullOrWhiteSpace(vm.MaterialStatusDescription))
+            throw new Exception("Material status hint was empty");
+        var hint = view.FindControl<TextBlock>("MaterialStatusHint");
+        if (hint?.Text != vm.MaterialStatusDescription) throw new Exception("Material status hint did not bind");
+        if (!styleRadios.Any(radio => radio.IsChecked == true && radio.IsEffectivelyVisible))
+            throw new Exception("Interface style radios are not visible at 800 DIP");
+        Capture(window, Path.Combine(output, "settings-mica.png"));
+        shell.ToggleThemeCommand.Execute(null);
+        await Task.Delay(150);
+        if (vm.InterfaceStyle != InterfaceStyle.Mica || shell.InterfaceStyle != InterfaceStyle.Mica)
+            throw new Exception("Theme toggle reset interface style");
+        if (scroll.Extent.Width > scroll.Viewport.Width + 1 || form.Bounds.Width < 300)
+            throw new Exception("Narrow settings layout is unusable after style options");
+        Capture(window, Path.Combine(output, "settings-style-narrow.png"));
         vm.CancelCommand.Execute(null);
         if (vm.HasChanges) throw new Exception("Cancel did not clear settings draft");
+        if (vm.InterfaceStyle != StarBlogPublisher.Services.AppSettings.Instance.InterfaceStyle
+            || shell.InterfaceStyle != vm.InterfaceStyle)
+            throw new Exception("Cancel did not restore interface style");
         vm.Username = "leave-dialog-draft";
         shell.ActivePage = shell.AboutPage;
         await WaitUntilAsync(() => Task.FromResult(window.GetVisualDescendants().OfType<FluentAvalonia.UI.Controls.FAContentDialog>().Any()), "Settings leave dialog did not open");
@@ -275,7 +300,9 @@ internal sealed partial class WorkspaceScenarios(MainWindow window, MainWindowVi
     }
 
     public async Task ThemeAndClose() {
+        var styleBeforeTheme = shell.InterfaceStyle;
         shell.ApplyTheme(ThemeMode.Dark);
+        if (shell.InterfaceStyle != styleBeforeTheme) throw new Exception("Applying color mode reset interface style");
         await Task.Delay(300);
         Capture(window, Path.Combine(output, "workspace-dark.png"));
         shell.ApplyTheme(ThemeMode.Light);
