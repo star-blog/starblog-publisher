@@ -18,7 +18,7 @@
             <SolidColorBrush x:Key="Material.Acrylic.ShellBackgroundBrush" Color="#99F3F3F3" />
             <ExperimentalAcrylicMaterial x:Key="Material.Acrylic.MenuMaterial"
                                         BackgroundSource="None" TintColor="#F9F9F9"
-                                        TintOpacity="0.5" MaterialOpacity="0.12" FallbackColor="#F9F9F9" />
+                                        TintOpacity="0.4" MaterialOpacity="0.08" FallbackColor="#F9F9F9" />
             <SolidColorBrush x:Key="Material.Acrylic.SidebarBackgroundBrush" Color="#99FFFFFF" />
             <SolidColorBrush x:Key="Material.Acrylic.WorkspaceCanvasBrush" Color="#F3F3F3" />
             <SolidColorBrush x:Key="Material.Acrylic.InspectorBackgroundBrush" Color="#CCEEEEEE" />
@@ -45,7 +45,7 @@
             <SolidColorBrush x:Key="Material.Acrylic.ShellBackgroundBrush" Color="#99202020" />
             <ExperimentalAcrylicMaterial x:Key="Material.Acrylic.MenuMaterial"
                                         BackgroundSource="None" TintColor="#2C2C2C"
-                                        TintOpacity="0.9" MaterialOpacity="0.12" FallbackColor="#2C2C2C" />
+                                        TintOpacity="0.8" MaterialOpacity="0.08" FallbackColor="#2C2C2C" />
             <SolidColorBrush x:Key="Material.Acrylic.SidebarBackgroundBrush" Color="#663A3A3A" />
             <SolidColorBrush x:Key="Material.Acrylic.WorkspaceCanvasBrush" Color="#202020" />
             <SolidColorBrush x:Key="Material.Acrylic.InspectorBackgroundBrush" Color="#CC1C1C1C" />
