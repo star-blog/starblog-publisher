@@ -138,19 +138,16 @@ public partial class WeChatViewModel : PageViewModelBase {
             return;
         }
 
-        var publishedMarkdown = publish.LastPublishResult?.Success == true
-            ? publish.LastPublishResult.MarkdownContent
-            : null;
-        var usesPublishedMarkdown = !string.IsNullOrWhiteSpace(publishedMarkdown);
+        var publishedToStarBlog = publish.LastPublishResult?.Success == true;
 
-        _markdown = usesPublishedMarkdown ? publishedMarkdown! : publish.ArticleContent;
+        _markdown = publish.ArticleContent;
         _sourceFilePath = publish.CurrentFilePath;
         Digest = WeChatDraftPublishApplicationService.TruncateDigest(publish.ArticleDescription);
         ContentSourceUrl = WeChatDraftPublishApplicationService.PublishedContentSourceUrl(publish.LastPublishResult) ?? string.Empty;
         _titleCustomized = false;
         ApplySyncedTitle(publish.ArticleTitle);
-        MarkdownSourceMessage = usesPublishedMarkdown
-            ? "当前使用 StarBlog 发布后返回的 Markdown；其中的图片链接已替换为博客 URL，上传草稿时会再转存到微信 CDN。"
+        MarkdownSourceMessage = publishedToStarBlog
+            ? "当前使用本地 Markdown 原文（含本地图片路径）。StarBlog 发布后的图片 URL 只出现在发布结果里；上传草稿时仍从本地转存到微信 CDN。"
             : "当前使用本地 Markdown；文章尚未在 StarBlog 发布，正文图片会在上传草稿时直接转存到微信 CDN。";
         HasArticle = true;
         GenerateFormat();

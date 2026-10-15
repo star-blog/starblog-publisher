@@ -564,18 +564,10 @@ public partial class PublishViewModel : PageViewModelBase {
                 StatusMessage = msg;
             });
 
-            if (result.Success && result.Post != null) {
+        if (result.Success && result.Post != null) {
             PublishProgress = 100;
-            if (!string.IsNullOrWhiteSpace(result.Post.Content)) {
-                ArticleContent = result.Post.Content;
-                NotifyDocumentState();
-                StatusMessage = "发布完成，已用服务器内容更新编辑器";
-            }
-            else {
-                StatusMessage = "发布完成";
-            }
-
             LastPublishResult = result;
+            StatusMessage = "发布完成";
             if (Result != null) {
                 OpenStackPage(Result, "发布结果");
             }
