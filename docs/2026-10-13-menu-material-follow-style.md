@@ -25,6 +25,22 @@
 
 ## 本机读数
 
+### 2026-10-14 通透度试调
+
+为让背景更透，调整菜单 Acrylic 的背景材质参数：
+
+| 参数 | 提交版 | 试调版 |
+| --- | --- | --- |
+| 浅色 `TintOpacity` | 0.50 | 0.40 |
+| 深色 `TintOpacity` | 0.90 | 0.80 |
+| 浅／深 `MaterialOpacity` | 0.12 | 0.08 |
+
+材质回归通过，浅色与深色均返回 `AcrylicBlur`，JSON 中记录的新参数与资源一致。产物位于 `output/desktop-tests/20261013-161946-a1b8bf551c0a41218cd5adb95641b66e/`。真实桌面检查确认设置页文字保持清晰；平缓背景上的变化较细微，彩色底图上的背景色彩更明显。
+
+对照原有截图的试调效果：[浅色设置页](images/material-menu/acrylic-light-translucent.png)、[深色设置页](images/material-menu/acrylic-dark-translucent.png)、[浅色彩色底图](images/material-menu/acrylic-pattern-light-translucent.png)、[深色彩色底图](images/material-menu/acrylic-pattern-dark-translucent.png)。
+
+### 初版与材质层修正读数
+
 产物：[material.json](../output/desktop-tests/20261013-152315-c6f2c9defd654666b51e96b69dc6f90f/material.json)，[report.json](../output/desktop-tests/20261013-152315-c6f2c9defd654666b51e96b69dc6f90f/report.json)。
 
 下表是初版读数；修正后的材质、回退及多级菜单测试产物位于 `output/desktop-tests/20261013-155442-1adbd7434ef344f894e897ba955e652b/`，Acrylic 的 `menuBackground` 为透明、`menuAcrylicLayer` 为 true，实际调色和亮度参数追加到 JSON 中。
