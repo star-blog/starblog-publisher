@@ -1,13 +1,16 @@
 using System.Reflection;
 using FluentAssertions;
 using Moq;
+using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
 using StarBlogPublisher.ViewModels;
 
 namespace StarBlogPublisher.Tests.Gui.ViewModels;
 
-public class WeChatViewModelTests {
+[Collection("AppSettings")]
+public class WeChatViewModelTests : IDisposable {
+    private readonly string _directory = Path.Combine(Path.GetTempPath(), "starblog-wechat-tests", Guid.NewGuid().ToString("N"));
     [Fact]
     public void Constructor_SelectsUsableDefaults() {
         var viewModel = CreateViewModel();
@@ -228,6 +231,54 @@ public class WeChatViewModelTests {
         }
     }
 
+    [Fact]
+    public async Task SyncFrom_AfterStarBlogPublish_KeepsLocalImagePathsInsteadOfBlogUrls() {
+        var path = await Article("post.md", "# 标题\n\n![封面](images/cover.png)\n\n正文");
+        var shell = new MainWindowViewModel(Mock.Of<IHttpClientFactory>(), initializeSession: false,
+            workspaceHistoryPath: Path.Combine(_directory, "workspace.json"));
+        await shell.Workspace.OpenPathAsync(path);
+        var publish = shell.PublishPage;
+        publish.LastPublishResult = PublishResult.Ok(
+            new BlogPost { Id = "post-1", Title = "标题", Content = "# 标题\n\n![封面](https://blog.example/media/cover.png)\n\n正文" },
+            "https://blog.example/p/post",
+            "# 标题\n\n![封面](https://blog.example/media/cover.png)\n\n正文");
+
+        var viewModel = CreateViewModel();
+        viewModel.SyncFrom(publish);
+
+        publish.ArticleContent.Should().Contain("images/cover.png");
+        viewModel.MarkdownSourceMessage.Should().Contain("本地 Markdown 原文");
+        viewModel.ContentSourceUrl.Should().Be("https://blog.example/p/post");
+        viewModel.FormattedHtml.Should().Contain("images/cover.png");
+        viewModel.FormattedHtml.Should().NotContain("blog.example/media/cover.png");
+    }
+
+    [Fact]
+    public async Task SyncFrom_WithoutStarBlogPublish_UsesLocalMarkdown() {
+        var path = await Article("draft.md", "# 草稿\n\n![图](pic.jpg)");
+        var shell = new MainWindowViewModel(Mock.Of<IHttpClientFactory>(), initializeSession: false,
+            workspaceHistoryPath: Path.Combine(_directory, "workspace.json"));
+        await shell.Workspace.OpenPathAsync(path);
+
+        var viewModel = CreateViewModel();
+        viewModel.SyncFrom(shell.PublishPage);
+
+        viewModel.MarkdownSourceMessage.Should().Contain("尚未在 StarBlog 发布");
+        viewModel.ContentSourceUrl.Should().BeEmpty();
+        viewModel.FormattedHtml.Should().Contain("pic.jpg");
+    }
+
+    private async Task<string> Article(string name, string content) {
+        Directory.CreateDirectory(_directory);
+        var path = Path.Combine(_directory, name);
+        await File.WriteAllTextAsync(path, content);
+        return path;
+    }
+
     private static WeChatViewModel CreateViewModel() =>
         new(Mock.Of<IHttpClientFactory>());
+
+    public void Dispose() {
+        if (Directory.Exists(_directory)) Directory.Delete(_directory, true);
+    }
 }
