@@ -87,6 +87,28 @@ public class WeChatViewModelTests : IDisposable {
     }
 
     [Fact]
+    public void ArticleTitle_CountsEnglishAsHalfWords() {
+        var viewModel = CreateViewModel();
+
+        viewModel.ArticleTitle = new string('A', 127);
+        viewModel.TitleCounterText.Should().Be("63.5/64");
+
+        viewModel.ArticleTitle += "BC";
+        viewModel.ArticleTitle.Should().Be(new string('A', 127) + "B");
+        viewModel.TitleCounterText.Should().Be("64/64");
+    }
+
+    [Fact]
+    public void ArticleTitle_DoesNotSplitEmojiWhenClamped() {
+        var viewModel = CreateViewModel();
+
+        viewModel.ArticleTitle = new string('题', 63) + "\U0001F600";
+
+        viewModel.ArticleTitle.Should().Be(new string('题', 63));
+        viewModel.TitleCounterText.Should().Be("63/64");
+    }
+
+    [Fact]
     public void Author_IsClampedToWeChatLimit() {
         var viewModel = CreateViewModel();
 
@@ -141,6 +163,41 @@ public class WeChatViewModelTests : IDisposable {
         viewModel.Digest.Should().HaveLength(120);
         viewModel.DigestCounterText.Should().Be("120/120");
         viewModel.DigestRemainingLength.Should().Be(0);
+    }
+
+    [Fact]
+    public void Digest_RegressionSampleMatchesWeChatCounterAndPreservesHalfWords() {
+        const string summary = "C# 代码长到像答辩？用 CSharpier 自动折行，再用 Roslyn 修正 K&R 花括号，Taskfile 一键收尾。再补上 format-check，省得 CI 反复制造 Git diff。两步流水线并非原生 gofmt，顺序和版";
+        var viewModel = CreateViewModel();
+
+        viewModel.Digest = summary;
+
+        viewModel.Digest.Should().Be(summary);
+        viewModel.DigestCounterText.Should().Be("86/120");
+        viewModel.DigestRemainingLength.Should().Be(34m);
+
+        viewModel.Digest += "a";
+
+        viewModel.Digest.Should().Be(summary + "a");
+        viewModel.DigestCounterText.Should().Be("86.5/120");
+        viewModel.DigestRemainingLength.Should().Be(33.5m);
+    }
+
+    [Fact]
+    public void Digest_Allows240EnglishCharactersAndClampsAtTheWeightedLimit() {
+        var viewModel = CreateViewModel();
+
+        viewModel.Digest = new string('a', 241);
+
+        viewModel.Digest.Should().Be(new string('a', 240));
+        viewModel.DigestCounterText.Should().Be("120/120");
+        viewModel.DigestRemainingLength.Should().Be(0m);
+
+        viewModel.Digest = new string('a', 239) + "中b";
+
+        viewModel.Digest.Should().Be(new string('a', 239));
+        viewModel.DigestCounterText.Should().Be("119.5/120");
+        viewModel.DigestRemainingLength.Should().Be(0.5m);
     }
 
     [Fact]
@@ -266,6 +323,25 @@ public class WeChatViewModelTests : IDisposable {
         viewModel.MarkdownSourceMessage.Should().Contain("尚未在 StarBlog 发布");
         viewModel.ContentSourceUrl.Should().BeEmpty();
         viewModel.FormattedHtml.Should().Contain("pic.jpg");
+    }
+
+    [Fact]
+    public async Task SyncFrom_PreservesLongEnglishMetadataWithinWeightedLimits() {
+        var title = new string('A', 128);
+        var summary = new string('a', 240);
+        var path = await Article("english.md", $"# {title}\n\n正文内容");
+        var shell = new MainWindowViewModel(Mock.Of<IHttpClientFactory>(), initializeSession: false,
+            workspaceHistoryPath: Path.Combine(_directory, "workspace.json"));
+        await shell.Workspace.OpenPathAsync(path);
+        shell.PublishPage.ArticleDescription = summary;
+
+        var viewModel = CreateViewModel();
+        viewModel.SyncFrom(shell.PublishPage);
+
+        viewModel.ArticleTitle.Should().Be(title);
+        viewModel.TitleCounterText.Should().Be("64/64");
+        viewModel.Digest.Should().Be(summary);
+        viewModel.DigestCounterText.Should().Be("120/120");
     }
 
     private async Task<string> Article(string name, string content) {

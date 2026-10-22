@@ -51,6 +51,12 @@ public class WeChatDraftPublishApplicationServiceTests {
     }
 
     [Fact]
+    public void TruncateTitle_Allows128EnglishCharacters() {
+        WeChatDraftPublishApplicationService.TruncateTitle(new string('A', 129))
+            .Should().Be(new string('A', 128));
+    }
+
+    [Fact]
     public void TruncateAuthor_CapsAt16Characters() {
         var truncated = WeChatDraftPublishApplicationService.TruncateAuthor(new string('作', 20));
 
@@ -89,6 +95,71 @@ public class WeChatDraftPublishApplicationServiceTests {
 
         truncated.Should().HaveLength(WeChatDraftPublishApplicationService.MaxDigestLength);
         truncated.Should().Be(new string('摘', 120));
+    }
+
+    [Fact]
+    public void TruncateDigest_Allows240EnglishCharacters() {
+        WeChatDraftPublishApplicationService.TruncateDigest(new string('a', 241))
+            .Should().Be(new string('a', 240));
+    }
+
+    [Fact]
+    public void TruncateDraftMetadata_KeepsEmojiAndCombiningCharactersIntact() {
+        WeChatDraftPublishApplicationService.TruncateTitle(new string('题', 62) + "\U0001F600a")
+            .Should().Be(new string('题', 62) + "\U0001F600");
+        WeChatDraftPublishApplicationService.TruncateDigest(new string('摘', 119) + "e\u0301")
+            .Should().Be(new string('摘', 119));
+        WeChatDraftPublishApplicationService.TruncateTitle(null).Should().BeEmpty();
+        WeChatDraftPublishApplicationService.TruncateDigest(null).Should().BeEmpty();
+    }
+
+    public static IEnumerable<object[]> WeightedDraftMetadataCases() {
+        var englishTitle = new string('A', 128);
+        var englishDigest = new string('a', 240);
+        yield return [englishTitle, englishDigest, englishTitle, englishDigest];
+        yield return [englishTitle + "B", englishDigest + "b", englishTitle, englishDigest];
+
+        var mixedTitle = new string('题', 63) + "Ab";
+        const string summary = "C# 代码长到像答辩？用 CSharpier 自动折行，再用 Roslyn 修正 K&R 花括号，Taskfile 一键收尾。再补上 format-check，省得 CI 反复制造 Git diff。两步流水线并非原生 gofmt，顺序和版";
+        var mixedDigest = summary + new string('a', 68);
+        yield return [mixedTitle, mixedDigest, mixedTitle, mixedDigest];
+        yield return [
+            new string('题', 63) + "A中",
+            new string('摘', 118) + "\U0001F600e\u0301",
+            new string('题', 63) + "A",
+            new string('摘', 118) + "\U0001F600"
+        ];
+    }
+
+    [Theory]
+    [MemberData(nameof(WeightedDraftMetadataCases))]
+    public async Task PublishAsync_SendsMetadataWithWeightedLimits(
+        string title, string digest, string expectedTitle, string expectedDigest) {
+        var coverPath = Path.Combine(Path.GetTempPath(), $"starblog-cover-{Guid.NewGuid():N}.jpg");
+        await File.WriteAllBytesAsync(coverPath, [0xFF, 0xD8, 0xFF, 0xD9]);
+        try {
+            var handler = new SequencingHandler([
+                (HttpMethod.Get, "cgi-bin/token", """{"access_token":"tok","expires_in":7200}"""),
+                (HttpMethod.Post, "cgi-bin/material/add_material", """{"media_id":"cover-media-1"}"""),
+                (HttpMethod.Post, "cgi-bin/draft/add", """{"media_id":"draft-1"}"""),
+                (HttpMethod.Post, "cgi-bin/draft/get", """{"news_item":[{"title":"Hello"}]}""")
+            ]);
+            var service = CreateService(handler, out var settings);
+            settings.WeChatAppId = $"app-weighted-{Guid.NewGuid():N}";
+            settings.WeChatAppSecret = "secret";
+
+            var result = await service.PublishAsync(FormatResult("<p>正文</p>", title), Path.GetTempPath(), digest, coverPath);
+
+            result.Success.Should().BeTrue(result.ErrorMessage);
+            var draft = handler.Requests.Single(request => request.Uri.AbsolutePath.EndsWith("/draft/add", StringComparison.Ordinal));
+            using var document = System.Text.Json.JsonDocument.Parse(draft.BodyText);
+            var article = document.RootElement.GetProperty("articles")[0];
+            article.GetProperty("title").GetString().Should().Be(expectedTitle);
+            article.GetProperty("digest").GetString().Should().Be(expectedDigest);
+        }
+        finally {
+            File.Delete(coverPath);
+        }
     }
 
     [Fact]
