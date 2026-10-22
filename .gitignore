@@ -4,6 +4,7 @@ dist/
 bin/
 obj/
 temp/
+.temp/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/### VisualStudioCode template
