@@ -1,4 +1,6 @@
 using FluentAssertions;
+using System.Net;
+using System.Text.RegularExpressions;
 using StarBlogPublisher.Services.Application;
 
 namespace StarBlogPublisher.Tests.Services.Application;
@@ -28,6 +30,157 @@ public class WeChatFormattingServiceTests {
 
         result.Title.Should().Be("前言标题");
         result.Html.Should().NotContain("title: 前言标题");
+    }
+
+    [Fact]
+    public void Format_ConvertsExternalLinksToNumberedReferencesInReadingOrder() {
+        var markdown = """
+            比如《[当人人都能用 AI 写代码时，我为什么选择重回 Django?](https://blog.deali.cn/p/refocus-on-django)》。
+
+            后面看了 [Armin Ronacher](https://lucumr.pocoo.org/about/) 的文章《[90%](https://lucumr.pocoo.org/2025/9/29/90-percent/)》。
+            """;
+
+        var html = new WeChatFormattingService().Format(markdown, "标题").Html;
+        var text = WebUtility.HtmlDecode(Regex.Replace(html, "<[^>]*>", string.Empty));
+
+        Regex.Matches(html, @"<sup\b[^>]*>\[\d+\]</sup>").Select(match => match.Value)
+            .Should().HaveCount(3);
+        text.Should().Contain("当人人都能用 AI 写代码时，我为什么选择重回 Django?[1]");
+        text.Should().Contain("Armin Ronacher[2]");
+        text.Should().Contain("90%[3]");
+        text.Should().Contain("引用链接");
+        text.Should().Contain("[1] 当人人都能用 AI 写代码时，我为什么选择重回 Django?：https://blog.deali.cn/p/refocus-on-django");
+        text.Should().Contain("[2] Armin Ronacher：https://lucumr.pocoo.org/about/");
+        text.Should().Contain("[3] 90%：https://lucumr.pocoo.org/2025/9/29/90-percent/");
+        html.Should().NotContain("href=\"https://");
+    }
+
+    [Fact]
+    public void Format_ReusesNumbersForRepeatedUrlsAndStartsFreshForEachArticle() {
+        var service = new WeChatFormattingService();
+        var html = service.Format("[第一次](https://example.com/a) [第二个](https://example.com/b) [再次](https://example.com/a)", "标题").Html;
+
+        Regex.Matches(html, @"<sup\b[^>]*>(?<number>\[\d+\])</sup>")
+            .Select(match => match.Groups["number"].Value).Should().Equal("[1]", "[2]", "[1]");
+        Regex.Matches(html, "https://example.com/a").Count.Should().Be(1);
+        html.Should().NotContain("[3]");
+
+        var next = service.Format("[下一篇](https://example.com/c)", "标题").Html;
+        next.Should().Contain(">[1]</sup>");
+        next.Should().NotContain("example.com/a");
+    }
+
+    [Theory]
+    [InlineData("[引用式][source]\n\n[source]: https://example.com/path_(part) \"标题\"")]
+    [InlineData("<https://example.com/path_(part)>")]
+    [InlineData("https://example.com/path_(part)")]
+    [InlineData("<a title='a > b' href='https://example.com/path_(part)'>HTML</a>")]
+    [InlineData("<a href=https://example.com/path_(part)>HTML</a>")]
+    public void Format_ConvertsSupportedLinkSyntaxWithoutTruncatingUrls(string markdown) {
+        var html = new WeChatFormattingService().Format(markdown, "标题").Html;
+
+        html.Should().Contain(">[1]</sup>");
+        html.Should().Contain("引用链接");
+        html.Should().Contain("https://example.com/path_(part)");
+        html.Should().NotContain("href=");
+    }
+
+    [Fact]
+    public void Format_PreservesFormattingAndSafelyEncodesReferenceText() {
+        var html = new WeChatFormattingService().Format(
+            "[**粗体**与 `code` &lt;img&gt; &amp; 更多](https://example.com/search?a=1&b=2)", "标题").Html;
+
+        html.Should().Contain("<strong");
+        html.Should().Contain("<code");
+        html.Should().Contain("&lt;img&gt;");
+        html.Should().NotContain("<img>");
+        html.Should().Contain("https://example.com/search?a=1&amp;b=2");
+        html.Should().NotContain("&amp;amp;");
+        WebUtility.HtmlDecode(Regex.Replace(html, "<[^>]*>", string.Empty))
+            .Should().Contain("[1] 粗体与 code <img> & 更多：https://example.com/search?a=1&b=2");
+    }
+
+    [Fact]
+    public void Format_OnlyExemptsTheExactWeChatArticleHost() {
+        var html = new WeChatFormattingService().Format("""
+            [微信文章](https://MP.WEIXIN.QQ.COM/s/article)
+            [微信相对协议](//mp.weixin.qq.com/s/other)
+            [其他站点](https://mp.weixin.qq.com.example.com/article)
+            [外部相对协议](//example.com/article)
+            """, "标题").Html;
+
+        html.Should().Contain("href=\"https://MP.WEIXIN.QQ.COM/s/article\"");
+        html.Should().Contain("href=\"//mp.weixin.qq.com/s/other\"");
+        html.Should().NotContain("href=\"https://mp.weixin.qq.com.example.com");
+        html.Should().NotContain("href=\"//example.com");
+        html.Should().Contain(">[1]</sup>");
+        html.Should().Contain(">[2]</sup>");
+        html.Should().NotContain(">[3]</sup>");
+    }
+
+    [Fact]
+    public void Format_DoesNotReferenceImagesCodeCommentsOrNonWebLinks() {
+        var html = new WeChatFormattingService().Format("""
+            [章节](#section) [相对地址](../post.md) [邮件](mailto:author@example.com)
+
+            ![图片](https://example.com/image.png)
+
+            `[行内代码](https://example.com/inline)`
+
+            ```html
+            <a href="https://example.com/code">代码</a>
+            ```
+
+            <pre><a href="https://example.com/raw-code">原始代码</a></pre>
+
+            <!-- <a href="https://example.com/comment">注释</a> -->
+            """, "标题").Html;
+
+        html.Should().Contain("href=\"#section\"");
+        html.Should().Contain("href=\"../post.md\"");
+        html.Should().Contain("href=\"mailto:author@example.com\"");
+        html.Should().Contain("src=\"https://example.com/image.png\"");
+        html.Should().Contain("[行内代码](https://example.com/inline)");
+        html.Should().NotContain("引用链接");
+        html.Should().NotContain("<sup");
+    }
+
+    [Fact]
+    public void Format_PreservesLinkedImagesAndUsesAltTextForTheirReferences() {
+        var html = new WeChatFormattingService().Format(
+            "[![示意图](images/diagram.png)](https://example.com/article)", "标题").Html;
+
+        html.Should().Contain("src=\"images/diagram.png\"");
+        html.Should().Contain(">[1]</sup>");
+        WebUtility.HtmlDecode(Regex.Replace(html, "<[^>]*>", string.Empty))
+            .Should().Contain("[1] 示意图：https://example.com/article");
+    }
+
+    [Theory]
+    [InlineData("newspaper")]
+    [InlineData("warm-card")]
+    public void Format_UsesThemeReferenceStylesAndRetainsVisibleReferencesForDrafts(string themeId) {
+        var result = new WeChatFormattingService().Format("[链接](https://example.com/article)", "标题", themeId);
+        var uploaded = WeChatDraftPublishApplicationService.MinifyHtmlForWeChatDraft(result.Html);
+
+        uploaded.Should().Contain(result.Theme.Styles["footnote_section"]);
+        uploaded.Should().Contain(result.Theme.Styles["footnote_title"]);
+        uploaded.Should().Contain(result.Theme.Styles["footnote_item"]);
+        uploaded.Should().Contain(result.Theme.Styles["footnote_sup"]);
+        uploaded.Should().Contain(">[1]</sup>");
+        uploaded.Should().Contain("引用链接");
+        uploaded.Should().Contain("https://example.com/article");
+        uploaded.Should().NotContain("href=");
+    }
+
+    [Fact]
+    public void Format_CanDisableExternalLinkReferences() {
+        var html = new WeChatFormattingService().Format("[链接](https://example.com/article)", "标题",
+            convertExternalLinksToReferences: false).Html;
+
+        html.Should().Contain("href=\"https://example.com/article\"");
+        html.Should().NotContain("引用链接");
+        html.Should().NotContain("<sup");
     }
 
     [Fact]

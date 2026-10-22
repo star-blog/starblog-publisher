@@ -126,6 +126,11 @@
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                         <TextBlock Text="切换后会自动刷新预览。" FontSize="11"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        <CheckBox Content="外链转引用"
+                                                  IsChecked="{Binding ConvertExternalLinksToReferences, Mode=TwoWay}" />
+                                        <TextBlock Text="正文标注引用编号，文末列出链接地址；微信公众号文章链接保留原样。"
+                                                   FontSize="11" TextWrapping="Wrap"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
 
                                     <ToggleButton Classes="SectionHeader" Content="基本属性"

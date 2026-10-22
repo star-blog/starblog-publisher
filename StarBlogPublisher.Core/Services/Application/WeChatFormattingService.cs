@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 using Markdig;
 using Markdown.ColorCode;
@@ -19,7 +21,7 @@ public sealed class WeChatFormattingService {
 
     public static IReadOnlyList<WeChatTheme> Themes => WeChatThemeCatalog.All;
 
-    public WeChatFormatResult Format(string markdown, string fallbackTitle, string? themeId = null) {
+    public WeChatFormatResult Format(string markdown, string fallbackTitle, string? themeId = null, bool convertExternalLinksToReferences = true) {
         if (string.IsNullOrWhiteSpace(markdown)) {
             throw new ArgumentException("文章内容为空", nameof(markdown));
         }
@@ -30,7 +32,7 @@ public sealed class WeChatFormattingService {
         var html = Markdig.Markdown.ToHtml(source, Pipeline);
 
         return new WeChatFormatResult {
-            Html = ApplyWeChatStyles(html, theme),
+            Html = ApplyWeChatStyles(html, theme, convertExternalLinksToReferences),
             Title = title,
             WordCount = CountWords(source),
             Theme = theme
@@ -75,7 +77,8 @@ public sealed class WeChatFormattingService {
         return result;
     }
 
-    private static string ApplyWeChatStyles(string html, WeChatTheme theme) {
+    private static string ApplyWeChatStyles(string html, WeChatTheme theme, bool convertExternalLinksToReferences) {
+        if (convertExternalLinksToReferences) html = ConvertExternalLinksToReferences(html, theme);
         html = ConvertLists(html, theme);
         html = StyleTag(html, "h1", StyleOf(theme, "h1", $"font-size:26px;line-height:1.45;color:{theme.PrimaryColor};font-weight:700;margin:28px 0 18px;text-align:center"));
         html = StyleTag(html, "h2", StyleOf(theme, "h2", $"font-size:22px;line-height:1.5;color:{theme.PrimaryColor};font-weight:700;border-left:4px solid {theme.AccentColor};padding-left:10px;margin:28px 0 16px"));
@@ -105,6 +108,68 @@ public sealed class WeChatFormattingService {
             ? "max-width:677px;margin:0 auto;box-sizing:border-box;" + StyleOf(theme, "wrapper", "padding:8px 16px;background:#FFFFFF")
             : $"max-width:677px;margin:0 auto;box-sizing:border-box;padding:40px 10px;background-color:{theme.Card.Background};display:flex;flex-direction:column;align-items:center;gap:24px";
         return $"<section style=\"{wrapper}\">{html}</section>";
+    }
+
+    private static string ConvertExternalLinksToReferences(string html, WeChatTheme theme) {
+        var references = new List<(string Title, string Url)>();
+        var numbers = new Dictionary<string, int>(StringComparer.Ordinal);
+        var linkStyle = StyleOf(theme, "a", $"color:{theme.PrimaryColor};text-decoration:none;border-bottom:1px solid {theme.AccentColor}");
+        var superscriptStyle = StyleOf(theme, "footnote_sup", $"font-size:12px;color:{theme.PrimaryColor};vertical-align:super;margin-left:2px");
+
+        // Work on rendered anchors so inline, reference-style, automatic and raw HTML links
+        // share the same numbering. Skip code and comments, including raw HTML code samples.
+        html = Regex.Replace(html,
+            """<!--.*?-->|<(?<protected>pre|code|script|style)\b(?:"[^"]*"|'[^']*'|[^'"<>])*?>.*?</\k<protected>\s*>|<a\b(?<attributes>(?:"[^"]*"|'[^']*'|[^'"<>])*)>(?<content>.*?)</a\s*>""",
+            match => {
+                if (!match.Groups["attributes"].Success) return match.Value;
+                var attributes = match.Groups["attributes"].Value;
+                var href = FindHtmlAttribute(attributes, "href");
+                if (href == null) return match.Value;
+                var url = WebUtility.HtmlDecode(href.Groups["value"].Value).Trim();
+                var absoluteUrl = url.StartsWith("//", StringComparison.Ordinal) ? "https:" + url : url;
+                if (!Uri.TryCreate(absoluteUrl, UriKind.Absolute, out var uri) ||
+                    (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps) ||
+                    uri.Host.Equals("mp.weixin.qq.com", StringComparison.OrdinalIgnoreCase)) {
+                    return match.Value;
+                }
+
+                var content = match.Groups["content"].Value;
+                if (!numbers.TryGetValue(url, out var number)) {
+                    var title = Regex.Replace(content, """<img\b(?<attributes>(?:"[^"]*"|'[^']*'|[^'"<>])*)>""", image =>
+                        FindHtmlAttribute(image.Groups["attributes"].Value, "alt")?.Groups["value"].Value ?? string.Empty,
+                        RegexOptions.IgnoreCase);
+                    title = WebUtility.HtmlDecode(Regex.Replace(title, @"<[^>]*>", string.Empty));
+                    title = Regex.Replace(title, @"\s+", " ").Trim();
+                    number = references.Count + 1;
+                    references.Add((string.IsNullOrWhiteSpace(title) ? url : title, url));
+                    numbers.Add(url, number);
+                }
+
+                // Use visible text for both the marker and URL; neither depends on an href
+                // surviving WeChat's editor. Retain the link's inline formatting and images.
+                return $"<span{MergeStyle(attributes.Remove(href.Index, href.Length), linkStyle)}>{content}</span><sup style=\"{superscriptStyle}\">[{number}]</sup>";
+            }, RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
+        if (references.Count == 0) return html;
+
+        var sectionStyle = StyleOf(theme, "footnote_section", "margin-top:32px;padding-top:16px;border-top:1px solid #E5E7EB");
+        var titleStyle = StyleOf(theme, "footnote_title", $"font-size:16px;font-weight:bold;color:{theme.PrimaryColor};margin-bottom:12px");
+        var itemStyle = StyleOf(theme, "footnote_item", $"font-size:14px;color:{theme.TextColor};margin-bottom:6px;line-height:1.6;word-break:break-all");
+        var output = new StringBuilder(html);
+        output.Append($"<section style=\"{sectionStyle}\"><section style=\"{titleStyle}\">引用链接</section>");
+        for (var index = 0; index < references.Count; index++) {
+            var reference = references[index];
+            output.Append($"<section style=\"{itemStyle}\">[{index + 1}] {WebUtility.HtmlEncode(reference.Title)}：<span style=\"font-style:italic;word-break:break-all;overflow-wrap:anywhere\">{WebUtility.HtmlEncode(reference.Url)}</span></section>");
+        }
+        return output.Append("</section>").ToString();
+    }
+
+    private static Match? FindHtmlAttribute(string attributes, string name) {
+        foreach (Match match in Regex.Matches(attributes,
+                     """(?<name>[^\s=/>]+)(?:\s*=\s*(?:"(?<value>[^"]*)"|'(?<value>[^']*)'|(?<value>[^\s"'=<>`]+)))?""")) {
+            if (match.Groups["name"].Value.Equals(name, StringComparison.OrdinalIgnoreCase)) return match;
+        }
+        return null;
     }
 
     private static string StyleCodeBlocks(string html, WeChatTheme theme) {

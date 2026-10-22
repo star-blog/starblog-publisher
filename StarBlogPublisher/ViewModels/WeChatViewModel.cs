@@ -61,6 +61,7 @@ public partial class WeChatViewModel : PageViewModelBase {
     public ObservableCollection<RandomCoverProvider> RandomCoverProviders { get; } = new(RandomCoverCatalog.All);
 
     [ObservableProperty] private WeChatTheme? _selectedTheme;
+    [ObservableProperty] private bool _convertExternalLinksToReferences = true;
     [ObservableProperty] private WeChatAccountProfile? _selectedWeChatAccount;
     [ObservableProperty] private string _articleTitle = string.Empty;
     [ObservableProperty] private string _author = string.Empty;
@@ -156,6 +157,10 @@ public partial class WeChatViewModel : PageViewModelBase {
 
     partial void OnSelectedThemeChanged(WeChatTheme? value) {
         if (value != null && HasArticle) GenerateFormat();
+    }
+
+    partial void OnConvertExternalLinksToReferencesChanged(bool value) {
+        if (HasArticle) GenerateFormat();
     }
 
     partial void OnSelectedWeChatAccountChanged(WeChatAccountProfile? value) {
@@ -315,7 +320,7 @@ public partial class WeChatViewModel : PageViewModelBase {
         if (!HasArticle || SelectedTheme == null) return;
 
         try {
-            var result = _formattingService.Format(_markdown, ArticleTitle, SelectedTheme.Id);
+            var result = _formattingService.Format(_markdown, ArticleTitle, SelectedTheme.Id, ConvertExternalLinksToReferences);
             if (!_titleCustomized) ApplySyncedTitle(result.Title);
             WordCount = result.WordCount;
             FormattedHtml = result.Html;

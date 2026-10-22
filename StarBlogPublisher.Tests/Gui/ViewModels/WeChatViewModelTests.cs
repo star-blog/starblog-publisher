@@ -17,6 +17,7 @@ public class WeChatViewModelTests : IDisposable {
 
         viewModel.Themes.Should().NotBeEmpty();
         viewModel.SelectedTheme.Should().NotBeNull();
+        viewModel.ConvertExternalLinksToReferences.Should().BeTrue();
         viewModel.SelectedCoverSource!.Id.Should().Be("random");
         viewModel.SelectedCoverSize!.Id.Should().Be("headline");
         viewModel.SelectedRandomCoverProvider.Should().NotBeNull();
@@ -148,6 +149,43 @@ public class WeChatViewModelTests : IDisposable {
 
             viewModel.ArticleTitle.Should().Be("自定义标题");
             viewModel.FormattedHtml.Should().NotBeNullOrWhiteSpace();
+        }
+        finally {
+            AppSettings.Instance.WeChatDefaultTheme = previousTheme;
+        }
+    }
+
+    [Fact]
+    public async Task ExternalLinkReferences_RefreshPreviewWhenToggledWithoutChangingMarkdown() {
+        const string markdown = "# 标题\n\n[外部文章](https://example.com/article)";
+        var path = await Article("references.md", markdown);
+        var shell = new MainWindowViewModel(Mock.Of<IHttpClientFactory>(), initializeSession: false,
+            workspaceHistoryPath: Path.Combine(_directory, "workspace.json"));
+        await shell.Workspace.OpenPathAsync(path);
+        var viewModel = CreateViewModel();
+        var previousTheme = AppSettings.Instance.WeChatDefaultTheme;
+        try {
+            viewModel.SyncFrom(shell.PublishPage);
+            viewModel.ArticleTitle = "自定义标题";
+            viewModel.FormattedHtml.Should().Contain("引用链接");
+            var wordCount = viewModel.WordCount;
+
+            viewModel.ConvertExternalLinksToReferences = false;
+
+            viewModel.FormattedHtml.Should().Contain("href=\"https://example.com/article\"");
+            viewModel.FormattedHtml.Should().NotContain("引用链接");
+
+            viewModel.ConvertExternalLinksToReferences = true;
+            viewModel.SelectedTheme = WeChatThemeCatalog.Resolve("warm-card");
+            viewModel.GenerateFormatCommand.Execute(null);
+
+            viewModel.FormattedHtml.Should().Contain(">[1]</sup>");
+            viewModel.FormattedHtml.Should().NotContain(">[2]</sup>");
+            viewModel.FormattedHtml.Should().Contain("引用链接");
+            viewModel.WordCount.Should().Be(wordCount);
+            viewModel.ArticleTitle.Should().Be("自定义标题");
+            shell.PublishPage.ArticleContent.Should().Be(markdown);
+            File.ReadAllText(path).Should().Be(markdown);
         }
         finally {
             AppSettings.Instance.WeChatDefaultTheme = previousTheme;
