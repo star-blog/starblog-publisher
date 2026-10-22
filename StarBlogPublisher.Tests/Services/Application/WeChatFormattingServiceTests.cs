@@ -184,6 +184,20 @@ public class WeChatFormattingServiceTests {
     }
 
     [Fact]
+    public void Format_KeepsCodeHighlightingAndReferencesIndependentAcrossConcurrentArticles() {
+        var service = new WeChatFormattingService();
+
+        Parallel.For(0, 32, index => {
+            var html = service.Format($"[文章](https://example.com/{index})\n\n```csharp\nvar value = \"article-{index}\";\n```", "标题").Html;
+
+            html.Should().Contain($"article-{index}");
+            html.Should().Contain($"https://example.com/{index}</span>");
+            html.Should().Contain(">[1]</sup>");
+            html.Should().NotContain(">[2]</sup>");
+        });
+    }
+
+    [Fact]
     public void Format_HighlightsCSharpFencedCodeWithInlineStyles() {
         var service = new WeChatFormattingService();
 

@@ -14,7 +14,8 @@ namespace StarBlogPublisher.Services.Application;
 /// 将 Markdown 转为适合粘贴或上传到微信公众号的内联样式 HTML。
 /// </summary>
 public sealed class WeChatFormattingService {
-    private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
+    // ColorCode keeps a mutable writer, so each formatting operation needs its own pipeline.
+    private static MarkdownPipeline CreatePipeline() => new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .UseColorCode(HtmlFormatterType.Style)
         .Build();
@@ -29,7 +30,7 @@ public sealed class WeChatFormattingService {
         var theme = WeChatThemeCatalog.Resolve(themeId);
         var title = ExtractTitle(markdown, fallbackTitle);
         var source = PrepareMarkdown(markdown);
-        var html = Markdig.Markdown.ToHtml(source, Pipeline);
+        var html = Markdig.Markdown.ToHtml(source, CreatePipeline());
 
         return new WeChatFormatResult {
             Html = ApplyWeChatStyles(html, theme, convertExternalLinksToReferences),
