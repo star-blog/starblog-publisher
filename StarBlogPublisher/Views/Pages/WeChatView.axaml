@@ -140,9 +140,8 @@
                                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                             </Grid>
                                             <TextBox Classes="InspectorInput" Text="{Binding ArticleTitle}"
-                                                     PlaceholderText="公众号标题"
-                                                     MaxLength="{Binding TitleMaxLength}" />
-                                            <TextBlock Text="用于公众号草稿标题，最多 32 字。同步时优先采用 Markdown 的 title 或一级标题。"
+                                                     PlaceholderText="公众号标题" />
+                                            <TextBlock Text="最多 64 字；中文 1 字，英文及半角字符 0.5 字。同步时优先采用 Markdown 的 title 或一级标题。"
                                                        FontSize="11" TextWrapping="Wrap"
                                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                         </StackPanel>
@@ -169,10 +168,9 @@
                                                      PlaceholderText="用于公众号草稿摘要，最多 120 字"
                                                      AcceptsReturn="True"
                                                      TextWrapping="Wrap"
-                                                     MaxLength="{Binding DigestMaxLength}"
                                                      MinHeight="72"
                                                      MaxHeight="120" />
-                                            <TextBlock Text="独立于 StarBlog 文章摘要；从发布页同步时会自动带入并截断到 120 字。"
+                                            <TextBlock Text="独立于 StarBlog 文章摘要；中文 1 字，英文及半角字符 0.5 字。同步时自动带入，超出 120 字会截断。"
                                                        FontSize="11" TextWrapping="Wrap"
                                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                         </StackPanel>

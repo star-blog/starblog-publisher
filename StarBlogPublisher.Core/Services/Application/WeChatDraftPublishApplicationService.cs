@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using StarBlogPublisher.Models;
+using StarBlogPublisher.Utils;
 
 namespace StarBlogPublisher.Services.Application;
 
@@ -21,11 +22,11 @@ namespace StarBlogPublisher.Services.Application;
 public sealed class WeChatDraftPublishApplicationService {
     private const int MaxDownloadImageBytes = 20 * 1024 * 1024;
     private const int MaxCoverImageBytes = 2 * 1024 * 1024;
-    /// <summary>WeChat draft title hard limit.</summary>
-    public const int MaxTitleLength = 32;
+    /// <summary>WeChat draft title limit in weighted words.</summary>
+    public const int MaxTitleLength = 64;
     /// <summary>WeChat draft author hard limit.</summary>
     public const int MaxAuthorLength = 16;
-    /// <summary>WeChat draft digest (description) hard limit.</summary>
+    /// <summary>WeChat draft digest (description) limit in weighted words.</summary>
     public const int MaxDigestLength = 120;
     /// <summary>WeChat draft content_source_url hard limit.</summary>
     public const int MaxContentSourceUrlBytes = 1024;
@@ -286,11 +287,8 @@ public sealed class WeChatDraftPublishApplicationService {
         return normalized is ".png" or ".jpg" or ".jpeg" ? (normalized == ".jpeg" ? ".jpg" : normalized) : ".jpg";
     }
 
-    /// <summary>Truncates a draft title to WeChat's 32-character limit.</summary>
-    public static string TruncateTitle(string? title) {
-        if (string.IsNullOrEmpty(title)) return string.Empty;
-        return title.Length <= MaxTitleLength ? title : title[..MaxTitleLength];
-    }
+    /// <summary>Truncates a draft title to WeChat's 64-word weighted limit.</summary>
+    public static string TruncateTitle(string? title) => WeChatTextLength.Truncate(title, MaxTitleLength);
 
     /// <summary>Truncates a draft author to WeChat's 16-character limit.</summary>
     public static string TruncateAuthor(string? author) {
@@ -327,11 +325,8 @@ public sealed class WeChatDraftPublishApplicationService {
         return true;
     }
 
-    /// <summary>Truncates digest to WeChat's 120-character limit.</summary>
-    public static string TruncateDigest(string? summary) {
-        if (string.IsNullOrEmpty(summary)) return string.Empty;
-        return summary.Length <= MaxDigestLength ? summary : summary[..MaxDigestLength];
-    }
+    /// <summary>Truncates digest to WeChat's 120-word weighted limit.</summary>
+    public static string TruncateDigest(string? summary) => WeChatTextLength.Truncate(summary, MaxDigestLength);
 
     internal static string SerializeWeChatJson<T>(T value) =>
         SerializeWeChatJson(value, WeChatJsonOptions);

@@ -19,6 +19,7 @@ using FluentIcons.Common;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
+using StarBlogPublisher.Utils;
 
 namespace StarBlogPublisher.ViewModels;
 
@@ -100,7 +101,7 @@ public partial class WeChatViewModel : PageViewModelBase {
     public bool HasFormattedHtml => !string.IsNullOrWhiteSpace(FormattedHtml);
     public bool HasCover => !string.IsNullOrWhiteSpace(CoverPath);
     public int TitleMaxLength => WeChatDraftPublishApplicationService.MaxTitleLength;
-    public string TitleCounterText => $"{ArticleTitle?.Length ?? 0}/{TitleMaxLength}";
+    public string TitleCounterText => FormattableString.Invariant($"{WeChatTextLength.GetLength(ArticleTitle):0.#}/{TitleMaxLength}");
     public int AuthorMaxLength => WeChatDraftPublishApplicationService.MaxAuthorLength;
     public string AuthorCounterText => $"{Author?.Length ?? 0}/{AuthorMaxLength}";
     public int ContentSourceUrlMaxLength => WeChatDraftPublishApplicationService.MaxContentSourceUrlBytes;
@@ -115,8 +116,8 @@ public partial class WeChatViewModel : PageViewModelBase {
         }
     }
     public int DigestMaxLength => WeChatDraftPublishApplicationService.MaxDigestLength;
-    public int DigestRemainingLength => Math.Max(0, DigestMaxLength - (Digest?.Length ?? 0));
-    public string DigestCounterText => $"{Digest?.Length ?? 0}/{DigestMaxLength}";
+    public decimal DigestRemainingLength => Math.Max(0m, DigestMaxLength - WeChatTextLength.GetLength(Digest));
+    public string DigestCounterText => FormattableString.Invariant($"{WeChatTextLength.GetLength(Digest):0.#}/{DigestMaxLength}");
     public bool IsLocalCoverSource => SelectedCoverSource?.Id == "local";
     public bool IsUrlCoverSource => SelectedCoverSource?.Id == "url";
     public bool IsRandomCoverSource => SelectedCoverSource?.Id == "random";
@@ -167,7 +168,7 @@ public partial class WeChatViewModel : PageViewModelBase {
     }
 
     partial void OnArticleTitleChanged(string value) {
-        if (value.Length > TitleMaxLength) {
+        if (WeChatTextLength.GetLength(value) > TitleMaxLength) {
             ArticleTitle = WeChatDraftPublishApplicationService.TruncateTitle(value);
             return;
         }
@@ -194,8 +195,8 @@ public partial class WeChatViewModel : PageViewModelBase {
     partial void OnCoverPixelHeightChanged(int value) => OnPropertyChanged(nameof(CoverCropDetail));
 
     partial void OnDigestChanged(string value) {
-        if (value.Length > DigestMaxLength) {
-            Digest = value[..DigestMaxLength];
+        if (WeChatTextLength.GetLength(value) > DigestMaxLength) {
+            Digest = WeChatDraftPublishApplicationService.TruncateDigest(value);
             return;
         }
 

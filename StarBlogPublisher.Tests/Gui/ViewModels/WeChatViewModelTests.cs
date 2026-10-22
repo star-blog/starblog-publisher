@@ -82,8 +82,8 @@ public class WeChatViewModelTests : IDisposable {
 
         viewModel.ArticleTitle = new string('题', 80);
 
-        viewModel.ArticleTitle.Should().HaveLength(32);
-        viewModel.TitleCounterText.Should().Be("32/32");
+        viewModel.ArticleTitle.Should().HaveLength(64);
+        viewModel.TitleCounterText.Should().Be("64/64");
     }
 
     [Fact]
