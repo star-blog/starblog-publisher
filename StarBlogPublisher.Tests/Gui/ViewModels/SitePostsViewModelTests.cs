@@ -172,6 +172,6 @@ public class SitePostsViewModelTests {
     public void CommandPalette_IncludesSitePosts() {
         var shell = Shell();
         shell.GetCommand("view.sitePosts").Label.Should().Be("站点文章");
-        shell.NavigationItems.Select(i => i.Title).Should().Contain("站点文章");
+        shell.NavigationItems.Select(i => i.Title).Should().Equal("文章", "公众号排版", "站点文章", "设置", "关于");
     }
 }

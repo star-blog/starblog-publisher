@@ -117,7 +117,7 @@ public partial class MainWindowViewModel : ViewModelBase {
         _weChatNav = new ShellPageNavItem(ShellPageId.WeChat, "公众号排版", Icon.Mail);
         _settingsNav = new ShellPageNavItem(ShellPageId.Settings, "设置", Icon.Settings);
         _aboutNav = new ShellPageNavItem(ShellPageId.About, "关于", Icon.Info);
-        NavigationItems = [Workspace, _sitePostsNav, _weChatNav, _settingsNav, _aboutNav];
+        NavigationItems = [Workspace, _weChatNav, _sitePostsNav, _settingsNav, _aboutNav];
         ThemeFooterItem = new ShellFooterNavItem { Tag = "theme", Title = "主题" };
         AccountFooterItem = new ShellFooterNavItem { Tag = "account", Title = "登录" };
         FooterNavItems = [ThemeFooterItem, AccountFooterItem];
