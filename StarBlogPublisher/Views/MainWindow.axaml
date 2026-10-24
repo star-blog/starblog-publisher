@@ -6,6 +6,7 @@
                xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                xmlns:ui="using:FluentAvalonia.UI.Controls"
                xmlns:fi="using:FluentIcons.Avalonia.Fluent"
+               xmlns:conv="using:StarBlogPublisher.Converters"
                xmlns:wnd="using:FluentAvalonia.UI.Windowing"
                mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="720"
                x:Class="StarBlogPublisher.Views.MainWindow"
@@ -43,7 +44,10 @@
                                            SelectsOnInvoked="{Binding SelectsOnInvoked}"
                                            ToolTip.Tip="{Binding ToolTip}">
                         <ui:FANavigationViewItem.IconSource>
-                            <fi:FluentIconSource Icon="{Binding NavIcon}" IconVariant="Regular" />
+                            <MultiBinding Converter="{x:Static conv:NavigationMenuIconConverter.Instance}">
+                                <Binding Path="NavIcon" />
+                                <Binding Path="Tag" />
+                            </MultiBinding>
                         </ui:FANavigationViewItem.IconSource>
                     </ui:FANavigationViewItem>
                 </DataTemplate>
