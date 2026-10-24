@@ -37,6 +37,11 @@
                            FooterMenuItemsSource="{Binding FooterNavItems}"
                            SelectedItem="{Binding SelectedNavigationItem, Mode=TwoWay}"
                            ItemInvoked="OnShellNavigationItemInvoked">
+            <ui:FANavigationView.Resources>
+                <!-- 侧栏图标格子高度，默认 16。选中指示条与格子用同一个值。 -->
+                <x:Double x:Key="NavigationViewItemOnLeftIconBoxHeight">20</x:Double>
+                <x:Double x:Key="NavigationViewSelectionIndicatorHeight">20</x:Double>
+            </ui:FANavigationView.Resources>
             <ui:FANavigationView.MenuItemTemplate>
                 <DataTemplate x:DataType="vm:INavigationMenuItem">
                     <ui:FANavigationViewItem Content="{Binding Title}"
