@@ -178,7 +178,7 @@ public partial class SettingsViewModel {
                 PrimaryButtonText = "保存更改", SecondaryButtonText = "放弃更改", CloseButtonText = "继续编辑",
                 DefaultButton = FAContentDialogButton.Primary
             };
-            choice = await dialog.ShowAsync(GuiHost.GetMainWindow()) switch {
+            choice = await GuiHost.ShowDialogAsync(dialog) switch {
                 FAContentDialogResult.Primary => LeaveChoice.Save,
                 FAContentDialogResult.Secondary => LeaveChoice.Discard,
                 _ => LeaveChoice.Cancel

@@ -133,7 +133,7 @@ public partial class MainWindow : FAAppWindow {
                 selected = entry;
                 dialog.Hide();
             };
-            await dialog.ShowAsync(this);
+            await GuiHost.ShowDialogAsync(dialog, this);
         }
         finally { _paletteOpen = false; }
         if (selected?.CanExecute() == true) await selected.Execute();
@@ -205,7 +205,7 @@ public partial class MainWindow : FAAppWindow {
             message.Text = content == updated ? "没有需要替换的内容" : "已替换，可撤销";
             offset = 0;
         };
-        await dialog.ShowAsync(this);
+        await GuiHost.ShowDialogAsync(dialog, this);
         target.Focus();
     }
 
@@ -216,6 +216,10 @@ public partial class MainWindow : FAAppWindow {
         _checkingClose = true;
         try {
             if (await vm.CanCloseShellAsync() && await vm.Workspace.CanCloseAllAsync()) { _allowClose = true; Close(); }
+        }
+        catch (Exception ex) {
+            _allowClose = false;
+            GuiHost.ToastError("关闭失败", ex.Message);
         }
         finally { _checkingClose = false; }
     }

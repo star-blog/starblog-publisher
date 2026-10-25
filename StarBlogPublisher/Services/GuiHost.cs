@@ -15,7 +15,7 @@ namespace StarBlogPublisher.Services;
 /// <summary>
 /// GUI feedback host: shell-level Fluent FAInfoBar plus Fluent dialogs owned by the main window.
 /// </summary>
-public static class GuiHost {
+public static partial class GuiHost {
     private static FAInfoBar? _feedbackBar;
     private static DispatcherTimer? _feedbackTimer;
     private static Button? _copyButton;
@@ -117,14 +117,14 @@ public static class GuiHost {
     public static async Task AlertAsync(string title, string message, NotificationType type = NotificationType.Information) {
         var dialog = CreateTaskDialog(title, message);
         dialog.Buttons.Add(new FATaskDialogButton("确定", FATaskDialogStandardResult.OK) { IsDefault = true });
-        await dialog.ShowAsync();
+        await ShowDialogAsync(dialog);
     }
 
     public static async Task<bool> ConfirmAsync(string title, string message) {
         var dialog = CreateTaskDialog(title, message);
         dialog.Buttons.Add(new FATaskDialogButton("确定", FATaskDialogStandardResult.OK) { IsDefault = true });
         dialog.Buttons.Add(new FATaskDialogButton("取消", FATaskDialogStandardResult.Cancel));
-        var result = await dialog.ShowAsync();
+        var result = await ShowDialogAsync(dialog);
         return result is FATaskDialogStandardResult.OK;
     }
 
@@ -141,7 +141,7 @@ public static class GuiHost {
             CloseButtonText = "取消",
             DefaultButton = FAContentDialogButton.Primary
         };
-        var result = await dialog.ShowAsync(GetMainWindow());
+        var result = await ShowDialogAsync(dialog);
         return result == FAContentDialogResult.Primary ? textBox.Text : null;
     }
 
@@ -174,11 +174,15 @@ public static class GuiHost {
             DefaultButton = FAContentDialogButton.Primary
         };
 
-        if (viewModel is IDialogHostAware aware) {
-            aware.CloseRequested += () => dialog.Hide();
+        var aware = viewModel as IDialogHostAware;
+        void CloseDialog() => dialog.Hide();
+        if (aware != null) aware.CloseRequested += CloseDialog;
+        try {
+            await ShowDialogAsync(dialog);
         }
-
-        await dialog.ShowAsync(GetMainWindow());
+        finally {
+            if (aware != null) aware.CloseRequested -= CloseDialog;
+        }
     }
 }
 

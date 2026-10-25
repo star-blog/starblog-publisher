@@ -151,7 +151,7 @@ public partial class PublishViewModel {
             PrimaryButtonText = "保存", SecondaryButtonText = "不保存", CloseButtonText = "取消",
             DefaultButton = FAContentDialogButton.Primary
         };
-        var result = await dialog.ShowAsync(GuiHost.GetMainWindow());
+        var result = await GuiHost.ShowDialogAsync(dialog);
         return result == FAContentDialogResult.Secondary || result == FAContentDialogResult.Primary && await SaveDocumentAsync();
     }
 

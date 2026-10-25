@@ -77,7 +77,7 @@ public partial class SettingsViewModel {
             CloseButtonText = "取消",
             DefaultButton = FAContentDialogButton.Close
         };
-        if (await dialog.ShowAsync(GuiHost.GetMainWindow()) != FAContentDialogResult.Primary) {
+        if (await GuiHost.ShowDialogAsync(dialog) != FAContentDialogResult.Primary) {
             return;
         }
 
