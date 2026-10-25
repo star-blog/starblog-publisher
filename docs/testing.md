@@ -29,6 +29,9 @@ dotnet run --project StarBlogPublisher.DesktopTests -c Release -- --settings
 # 记录窗口材质请求/实际结果与对照截图（隔离配置）
 dotnet run --project StarBlogPublisher.DesktopTests -c Release -- --material
 
+# 真实 WebView 弹窗及主窗口退出回归（每个退出用例使用独立进程）
+dotnet run --project StarBlogPublisher.DesktopTests -c Release -- --dialogs
+
 # 查看场景，不启动窗口
 dotnet run --project StarBlogPublisher.DesktopTests -c Release -- --list
 ```
@@ -50,6 +53,20 @@ dotnet run --project StarBlogPublisher.DesktopTests -c Release -- --list
 每次运行创建唯一的 `output/desktop-tests/<时间-随机ID>/`，其中保存测试文章、独立配置、工作区历史、WebView2 用户数据、截图和 `report.json`。不会读取正常应用的账号配置，也不调用发布或 AI 服务。输出目录被 Git 忽略，保留用于排查；确认不需要后可手动删除对应运行目录。
 
 退出码：`0` 表示所有已启用阶段通过，`1` 表示失败或超时，`2` 表示参数或平台不支持。未启用的 WebView 阶段不会计作通过。失败报告包含阶段名、耗时和异常，尽可能另存失败截图；UI 线程卡死时输出 `timeout.txt` 并退出。排查 WebView 加载超时时先检查 Runtime、桌面会话和进程写入权限。
+
+## WebView 弹窗与主窗口关闭回归
+
+Windows 上原生 WebView 会覆盖窗口内部的 Fluent 弹窗。复现条件是预览可见、文章有未保存修改，然后点击主窗口关闭：保存确认框被网页挡住，其他控件被弹窗遮罩阻挡，网页仍能滚动，看起来像关闭卡死。公众号排版和文章预览／分栏都可能触发。
+
+应用内模态弹窗统一通过 `GuiHost.ShowDialogAsync` 显示，保留 `FAContentDialog` 和 `FATaskDialog` 的呈现方式、按钮和返回结果。显示期间暂时隐藏所属窗口的背景 WebView，最后一个弹窗结束后撤销临时属性覆盖；原有可见性绑定、源码模式和网页内容得以保留。系统文件选择器、Toast、菜单和工具提示不经过这个入口。
+
+`--dialogs` 要求真实 WebView2 Runtime，不需要另加 `--webview`，也不与其他运行模式组合。它依次启动 `lifecycle`、`save`、`discard`、`clean` 四个独立测试进程。每个进程沿用隔离配置、文章、工作区和 WebView2 数据目录；汇总报告与日志写入 `output/desktop-tests/dialogs-<时间-随机ID>/`，日志指向各子进程的 `report.json`。每个子进程场景最多 90 秒，父进程 120 秒超时后终止该测试子进程，继续执行其他独立用例。
+
+- `lifecycle`：公众号、本地预览／分栏、站点文章预览；网页内容和滚动位置保留；原本隐藏的 WebView 和可见性绑定恢复；嵌套弹窗、新增背景 WebView、弹窗内 WebView、独立窗口隔离、显示失败和所属窗口关闭清理；命令面板、输入框、TaskDialog、内容弹窗关闭订阅清理、查找焦点恢复、设置离页决策及关闭异常后的重试。
+- `save`、`discard`：真正调用主窗口 `Close()`，验证取消后保留修改并恢复预览、重复关闭不叠加确认框，然后连续处理两篇未保存文章，最终关闭窗口并检查保存／不保存的磁盘结果。
+- `clean`：公众号 WebView 已加载且没有修改时直接关闭主窗口。
+
+这些自动断言验证实际控件状态和 WebView DOM，按钮通过路由事件触发。原生遮挡还需要桌面验收：在公众号及预览／分栏页面点击标题栏关闭，确认保存框可见且可用鼠标点击；取消后网页可滚动，保存／不保存后窗口退出。检查一次最大化状态。使用系统级原生窗口截图确认弹窗与网页的层叠，不能用 `RenderTargetBitmap` 截图替代这一步。
 
 ## 覆盖边界与新增用例
 

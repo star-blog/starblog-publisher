@@ -17,12 +17,18 @@ internal static class Program {
     [STAThread]
     public static int Main(string[] args) {
         if (args.Contains("--help")) {
-            Console.WriteLine("DesktopTests [--webview] [--settings] [--site-posts] [--cover-studio] [--material] [--list]. Windows desktop required. Reports: output/desktop-tests/<run>/report.json");
+            Console.WriteLine("DesktopTests [--webview] [--settings] [--site-posts] [--cover-studio] [--material] [--dialogs] [--list]. Windows desktop required. Reports: output/desktop-tests/<run>/report.json");
             return 0;
         }
-        if (args.Contains("--list")) { foreach (var name in Names) Console.WriteLine(name); return 0; }
-        if (args.Any(a => a != "--webview" && a != "--settings" && a != "--site-posts" && a != "--cover-studio" && a != "--material")) { Console.Error.WriteLine("Unknown argument; use --help."); return 2; }
+        if (args.Contains("--list")) { foreach (var name in Names.Concat(DialogScenarios.Cases.Select(c => "dialogs-" + c))) Console.WriteLine(name); return 0; }
         if (!OperatingSystem.IsWindows()) { Console.Error.WriteLine("Desktop tests currently require Windows."); return 2; }
+        if (args.Length == 1 && args[0] == "--dialogs") return DialogScenarios.RunIsolatedCases().GetAwaiter().GetResult();
+        var dialogCase = args.Length == 1 && args[0].StartsWith("--dialog-case=", StringComparison.Ordinal)
+            ? args[0]["--dialog-case=".Length..] : null;
+        if (dialogCase != null ? !DialogScenarios.Cases.Contains(dialogCase)
+            : args.Any(a => a != "--webview" && a != "--settings" && a != "--site-posts" && a != "--cover-studio" && a != "--material")) {
+            Console.Error.WriteLine("Unknown argument; use --help."); return 2;
+        }
         var output = Path.GetFullPath(Path.Combine("output", "desktop-tests", $"{DateTime.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}"));
         Directory.CreateDirectory(output);
         // Must be set before AppSettings or any application services are initialized.
@@ -45,54 +51,58 @@ internal static class Program {
             window.Width = 1280; window.Height = 800;
             window.Show();
             var scenarios = new WorkspaceScenarios(window, shell, output);
-            Func<Task>[] actions = [scenarios.WorkspaceState, scenarios.SidebarAndMenus, scenarios.FocusAndPalette, scenarios.PreviewNavigation, scenarios.SettingsLayout, scenarios.SitePostsLayout, scenarios.SitePostsPreview, scenarios.CoverStudio, scenarios.ThemeAndClose, scenarios.MaterialShell];
+            var names = dialogCase == null ? Names : ["dialogs-" + dialogCase];
+            Func<Task>[] actions = dialogCase == null
+                ? [scenarios.WorkspaceState, scenarios.SidebarAndMenus, scenarios.FocusAndPalette, scenarios.PreviewNavigation, scenarios.SettingsLayout, scenarios.SitePostsLayout, scenarios.SitePostsPreview, scenarios.CoverStudio, scenarios.ThemeAndClose, scenarios.MaterialShell]
+                : [() => new DialogScenarios(window, shell, output).RunAsync(dialogCase)];
             Dispatcher.UIThread.Post(async () => {
                 var failed = false;
-                for (var i = 0; i < Names.Length; i++) {
-                    if (args.Contains("--cover-studio") && Names[i] != "cover-studio") {
-                        results.Add(new(Names[i], "skipped", 0, "Cover-studio-only run"));
+                for (var i = 0; i < names.Length; i++) {
+                    var name = names[i];
+                    if (args.Contains("--cover-studio") && name != "cover-studio") {
+                        results.Add(new(name, "skipped", 0, "Cover-studio-only run"));
                         Report();
                         continue;
                     }
-                    if (args.Contains("--site-posts") && !Names[i].StartsWith("site-posts-")) {
-                        results.Add(new(Names[i], "skipped", 0, "Site-posts-only run"));
+                    if (args.Contains("--site-posts") && !name.StartsWith("site-posts-")) {
+                        results.Add(new(name, "skipped", 0, "Site-posts-only run"));
                         Report();
                         continue;
                     }
-                    if (args.Contains("--settings") && Names[i] != "settings-layout") {
-                        results.Add(new(Names[i], "skipped", 0, "Settings-only run"));
+                    if (args.Contains("--settings") && name != "settings-layout") {
+                        results.Add(new(name, "skipped", 0, "Settings-only run"));
                         Report();
                         continue;
                     }
-                    if (args.Contains("--material") && Names[i] != "material-shell") {
-                        results.Add(new(Names[i], "skipped", 0, "Material-only run"));
+                    if (args.Contains("--material") && name != "material-shell") {
+                        results.Add(new(name, "skipped", 0, "Material-only run"));
                         Report();
                         continue;
                     }
-                    if (Names[i] == "material-shell" && !args.Contains("--material")) {
-                        results.Add(new(Names[i], "skipped", 0, "Requires --material"));
+                    if (name == "material-shell" && !args.Contains("--material")) {
+                        results.Add(new(name, "skipped", 0, "Requires --material"));
                         Report();
                         continue;
                     }
-                    if (failed || (Names[i] is "preview-navigation" or "site-posts-preview" && !args.Contains("--webview"))) {
-                        results.Add(new(Names[i], "skipped", 0, failed ? "Earlier workflow stage failed" : "Requires --webview"));
+                    if (failed || (name is "preview-navigation" or "site-posts-preview" && !args.Contains("--webview"))) {
+                        results.Add(new(name, "skipped", 0, failed ? "Earlier workflow stage failed" : "Requires --webview"));
                         Report();
                         continue;
                     }
                     var watch = Stopwatch.StartNew();
                     try {
-                        await actions[i]().WaitAsync(TimeSpan.FromSeconds(40));
-                        results.Add(new(Names[i], "passed", watch.ElapsedMilliseconds));
-                        Console.WriteLine($"PASS {Names[i]}");
+                        await actions[i]().WaitAsync(TimeSpan.FromSeconds(dialogCase == null ? 40 : 90));
+                        results.Add(new(name, "passed", watch.ElapsedMilliseconds));
+                        Console.WriteLine($"PASS {name}");
                     }
                     catch (Exception ex) {
                         failed = true;
-                        results.Add(new(Names[i], "failed", watch.ElapsedMilliseconds, ex.ToString()));
-                        Console.Error.WriteLine($"FAIL {Names[i]}: {ex}");
+                        results.Add(new(name, "failed", watch.ElapsedMilliseconds, ex.ToString()));
+                        Console.Error.WriteLine($"FAIL {name}: {ex}");
                         try {
                             using var bitmap = new RenderTargetBitmap(new PixelSize((int)window.Bounds.Width, (int)window.Bounds.Height));
                             bitmap.Render(window);
-                            bitmap.Save(Path.Combine(output, $"failure-{Names[i]}.png"), PngBitmapEncoderOptions.Default);
+                            bitmap.Save(Path.Combine(output, $"failure-{name}.png"), PngBitmapEncoderOptions.Default);
                         } catch (Exception captureError) { File.WriteAllText(Path.Combine(output, "capture-error.txt"), captureError.ToString()); }
                     }
                     Report();
