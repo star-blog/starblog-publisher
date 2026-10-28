@@ -18,6 +18,7 @@ public class WeChatViewModelTests : IDisposable {
         viewModel.Themes.Should().NotBeEmpty();
         viewModel.SelectedTheme.Should().NotBeNull();
         viewModel.ConvertExternalLinksToReferences.Should().BeTrue();
+        viewModel.InsertAccountChrome.Should().BeTrue();
         viewModel.SelectedCoverSource!.Id.Should().Be("random");
         viewModel.SelectedCoverSize!.Id.Should().Be("headline");
         viewModel.SelectedRandomCoverProvider.Should().NotBeNull();
@@ -130,6 +131,37 @@ public class WeChatViewModelTests : IDisposable {
         viewModel.OpenComment = false;
 
         viewModel.FansOnlyComment.Should().BeFalse();
+    }
+
+    [Fact]
+    public void GenerateFormat_InsertsTheSelectedAccountChromeUntilTurnedOff() {
+        var viewModel = CreateViewModel();
+        var previousTheme = AppSettings.Instance.WeChatDefaultTheme;
+        try {
+            viewModel.SelectedWeChatAccount.Should().NotBeNull();
+            viewModel.SelectedWeChatAccount!.HeaderHtml = "<p>文章开头标记</p>";
+            viewModel.SelectedWeChatAccount.FooterHtml = "<p>文末引导标记</p><mp-common-profile data-nickname=\"曦远Life\"></mp-common-profile>";
+            viewModel.GetType().GetField("_markdown", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(viewModel, "# 标题\n\n正文");
+            viewModel.HasArticle = true;
+
+            viewModel.GenerateFormatCommand.Execute(null);
+
+            viewModel.FormattedHtml.Should().Contain("文章开头标记");
+            viewModel.FormattedHtml.Should().Contain("文末引导标记");
+            viewModel.FormattedHtml.Should().Contain("mp-common-profile");
+            viewModel.StatusMessage.Should().Contain("已插入开头和文末");
+            var wordCount = viewModel.WordCount;
+
+            viewModel.InsertAccountChrome = false;
+
+            viewModel.FormattedHtml.Should().NotContain("文章开头标记");
+            viewModel.FormattedHtml.Should().NotContain("mp-common-profile");
+            viewModel.WordCount.Should().Be(wordCount);
+        }
+        finally {
+            AppSettings.Instance.WeChatDefaultTheme = previousTheme;
+        }
     }
 
     [Fact]

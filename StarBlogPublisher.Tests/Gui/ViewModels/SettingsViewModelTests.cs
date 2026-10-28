@@ -45,6 +45,37 @@ public sealed class SettingsViewModelTests {
     }
 
     [Fact]
+    public void WeChatChrome_IsDraftedPerAccount_AndCancelRestoresIt() {
+        var vm = Shell().SettingsPage;
+        var originalHeader = vm.WeChatHeaderHtml;
+        var originalFooter = vm.WeChatFooterHtml;
+        var first = vm.CurrentWeChatAccount!;
+        vm.WeChatHeaderHtml = "<p>文章开头</p>";
+        vm.WeChatFooterHtml = "<mp-common-profile data-nickname=\"曦远Life\"></mp-common-profile>";
+        vm.HasChanges.Should().BeTrue();
+        vm.WeChatHeaderSummary.Should().Contain("文章开头");
+        vm.WeChatFooterSummary.Should().Contain("1 张公众号名片");
+        vm.CurrentWeChatAccount!.HeaderHtml.Should().Be("<p>文章开头</p>");
+
+        var second = new WeChatAccountProfile { Name = "另一号", HeaderHtml = "<p>另一段开头</p>" };
+        vm.WeChatAccounts.Add(second);
+        vm.CurrentWeChatAccount = second;
+        vm.WeChatHeaderHtml.Should().Be("<p>另一段开头</p>");
+        vm.WeChatFooterHtml.Should().BeEmpty();
+        vm.CurrentWeChatAccount = first;
+        vm.WeChatHeaderHtml.Should().Be("<p>文章开头</p>");
+        vm.WeChatFooterHtml.Should().Contain("曦远Life");
+
+        vm.ClearWeChatHeaderCommand.Execute(null);
+        vm.WeChatHeaderHtml.Should().BeEmpty();
+        vm.WeChatHeaderSummary.Should().Be("未设置");
+        vm.CancelCommand.Execute(null);
+        vm.HasChanges.Should().BeFalse();
+        vm.WeChatHeaderHtml.Should().Be(originalHeader);
+        vm.WeChatFooterHtml.Should().Be(originalFooter);
+    }
+
+    [Fact]
     public void SwitchingAccounts_PreservesEdits_AndRelayChoiceRestoresDraftUrl() {
         var vm = Shell().SettingsPage;
         var first = vm.CurrentWeChatAccount!;

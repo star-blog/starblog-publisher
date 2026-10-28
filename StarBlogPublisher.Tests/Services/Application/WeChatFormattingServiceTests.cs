@@ -7,6 +7,48 @@ namespace StarBlogPublisher.Tests.Services.Application;
 
 public class WeChatFormattingServiceTests {
     [Fact]
+    public void Format_InsertsChromeAfterStylingAndKeepsFooterLast() {
+        var header = """<p style="color:rgb(130, 127, 196)">纯原创无AI污染</p><script>alert(1)</script>""";
+        var footer = """<p style="color:rgb(77, 96, 138)" onclick="evil()">欢迎关注</p><mp-common-profile data-nickname="曦远Life" data-signature="生活手记"></mp-common-profile>""";
+        var service = new WeChatFormattingService();
+        var plain = service.Format("# 标题\n\n正文 [外部](https://example.com/a)", "标题");
+        var withChrome = service.Format(
+            "# 标题\n\n正文 [外部](https://example.com/a)",
+            "标题",
+            headerHtml: header,
+            footerHtml: footer);
+
+        withChrome.WordCount.Should().Be(plain.WordCount);
+        var html = withChrome.Html;
+        html.IndexOf("纯原创无AI污染", StringComparison.Ordinal)
+            .Should().BeLessThan(html.IndexOf("正文", StringComparison.Ordinal));
+        html.IndexOf("引用链接", StringComparison.Ordinal)
+            .Should().BeLessThan(html.IndexOf("欢迎关注", StringComparison.Ordinal));
+        html.Should().Contain("<p style=\"color:rgb(130, 127, 196)\">纯原创无AI污染</p>");
+        html.Should().Contain("<p style=\"color:rgb(77, 96, 138)\">欢迎关注</p>");
+        html.Should().Contain("data-nickname=\"曦远Life\"");
+        html.Should().NotContain("alert(1)");
+        html.Should().NotContain("onclick");
+        html.Should().EndWith("</mp-common-profile></section>");
+    }
+
+    [Fact]
+    public void Format_KeepsChromeOutsideCardSections() {
+        var html = new WeChatFormattingService().Format(
+            "# 标题\n\n正文",
+            "标题",
+            "warm-card",
+            convertExternalLinksToReferences: false,
+            headerHtml: "<p>文章开头标记</p>",
+            footerHtml: "<p>文末引导标记</p>").Html;
+
+        html.IndexOf("文章开头标记", StringComparison.Ordinal)
+            .Should().BeLessThan(html.IndexOf("max-width:800px", StringComparison.Ordinal));
+        html.LastIndexOf("文末引导标记", StringComparison.Ordinal)
+            .Should().BeGreaterThan(html.LastIndexOf("max-width:800px", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Format_GeneratesWeChatInlineHtmlAndPreservesImageSource() {
         var service = new WeChatFormattingService();
 

@@ -107,6 +107,39 @@ public sealed class AppSettingsPortableTransferTests {
     }
 
     [Fact]
+    public void ExportAndApply_RoundTrip_PreservesWeChatChromeHtml() {
+        WithIsolatedSettings(settings => {
+            settings.TryUpdate(target => {
+                target.WeChatAccounts = [
+                    new WeChatAccountProfile {
+                        Name = "主号",
+                        AppId = "wx-main",
+                        HeaderHtml = "<p style=\"color:rgb(130, 127, 196)\">纯原创无AI污染</p>",
+                        FooterHtml = "<mp-common-profile data-nickname=\"曦远Life\"></mp-common-profile>"
+                    }
+                ];
+                target.CurrentWeChatAccountId = target.WeChatAccounts[0].Id;
+            }, out _).Should().BeTrue();
+
+            var exported = AppSettingsPortableTransfer.ExportJson(settings);
+            exported.Should().Contain("纯原创无AI污染");
+            exported.Should().Contain("mp-common-profile");
+
+            settings.TryUpdate(target => {
+                target.WeChatAccounts[0].HeaderHtml = "mutated";
+                target.WeChatAccounts[0].FooterHtml = "mutated";
+            }, out _).Should().BeTrue();
+
+            AppSettingsPortableTransfer.TryParse(exported, out var document, out var parseError).Should().BeTrue();
+            parseError.Should().BeNull();
+            AppSettingsPortableTransfer.TryApply(settings, document!, out var applyError).Should().BeTrue();
+            applyError.Should().BeNull();
+            settings.CurrentWeChatAccount.HeaderHtml.Should().Contain("纯原创无AI污染");
+            settings.CurrentWeChatAccount.FooterHtml.Should().Contain("曦远Life");
+        });
+    }
+
+    [Fact]
     public void TryApply_LegacyIsDarkThemeWithoutThemeMode_MapsToForcedDark() {
         WithIsolatedSettings(settings => {
             var json = """
