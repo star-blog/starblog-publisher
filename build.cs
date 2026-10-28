@@ -37,21 +37,27 @@ try
     {
         Console.WriteLine("Dry run; no files will be published or deleted.");
         foreach (var build in builds)
+        {
             Console.WriteLine(FormatPublishCommand(build, version));
+            if (IsWindowsRid(build.Rid))
+                Console.WriteLine($"Would copy {ProjectName}.exe to dist\\{ProjectName}.exe");
+        }
         return;
     }
 
     // A normal run intentionally starts with an empty dist directory, so its output
-    // always contains only the packages selected by this invocation.
+    // always contains only the packages selected by this invocation, plus
+    // dist\StarBlogPublisher.exe when a Windows RID is published.
     var distDirectory = Path.Combine(repositoryDirectory, "dist");
     if (Directory.Exists(distDirectory))
         Directory.Delete(distDirectory, recursive: true);
     Directory.CreateDirectory(distDirectory);
 
     var successCount = 0;
+    string? windowsExecutableLabel = null;
     foreach (var build in builds)
     {
-        if (BuildAndPackage(build, targetFramework, projectDirectory, distDirectory, version))
+        if (BuildAndPackage(build, targetFramework, projectDirectory, distDirectory, version, ref windowsExecutableLabel))
             successCount++;
     }
 
@@ -167,7 +173,7 @@ static List<BuildTarget> ResolveBuilds(BuildOptions options, IReadOnlyDictionary
     return builds;
 }
 
-static bool BuildAndPackage(BuildTarget build, string targetFramework, string projectDirectory, string distDirectory, string version)
+static bool BuildAndPackage(BuildTarget build, string targetFramework, string projectDirectory, string distDirectory, string version, ref string? windowsExecutableLabel)
 {
     var targetName = build.Rid;
     Console.WriteLine($"\nBuilding {build.Profile} - {targetName}...");
@@ -183,6 +189,7 @@ static bool BuildAndPackage(BuildTarget build, string targetFramework, string pr
         var zipFileName = GetPackageFileName(build, version);
         CreateZip(publishDirectory, Path.Combine(distDirectory, zipFileName));
         Console.WriteLine($"Packaged: {zipFileName}");
+        windowsExecutableLabel = CopyWindowsExecutable(publishDirectory, distDirectory, build, windowsExecutableLabel);
         return true;
     }
     catch (Exception exception)
@@ -198,6 +205,30 @@ static string[] CreatePublishArguments(BuildTarget build, string version) =>
     build.Compress
         ? ["publish", "-c", "Release", "-r", build.Rid, .. build.Configuration.Arguments, "-p:Version=" + version, "-p:EnableCompressionInSingleFile=true"]
         : ["publish", "-c", "Release", "-r", build.Rid, .. build.Configuration.Arguments, "-p:Version=" + version];
+
+// Single-file and Native AOT Windows publishes emit one StarBlogPublisher.exe.
+// Leave that file beside the zip so dist can be launched without unpacking.
+// Several Windows targets in one run keep the executable from the last Windows publish.
+static string? CopyWindowsExecutable(string publishDirectory, string distDirectory, BuildTarget build, string? previousLabel)
+{
+    if (!IsWindowsRid(build.Rid))
+        return previousLabel;
+
+    var fileName = $"{ProjectName}.exe";
+    var source = Path.Combine(publishDirectory, fileName);
+    if (!File.Exists(source))
+        throw new FileNotFoundException($"Published executable not found: {source}");
+
+    var label = $"{build.Profile}/{build.Rid}";
+    if (previousLabel is not null)
+        Console.WriteLine($"Replacing {fileName} ({previousLabel}) with {label}.");
+
+    File.Copy(source, Path.Combine(distDirectory, fileName), overwrite: true);
+    Console.WriteLine($"Executable: {fileName}");
+    return label;
+}
+
+static bool IsWindowsRid(string rid) => rid.StartsWith("win-", StringComparison.OrdinalIgnoreCase);
 
 static string GetPackageFileName(BuildTarget build, string version)
 {
@@ -309,6 +340,11 @@ Options:
       --compress       Compress embedded managed assemblies in self-contained packages.
       --list           List profiles and their default target RIDs.
   -h, --help           Show this help.
+
+Output:
+  dist\                Zip package for every selected target. A Windows publish
+                       also copies StarBlogPublisher.exe here. Several Windows
+                       targets in one run leave the last Windows executable.
 
 Examples:
   dotnet run --file .\build.cs --

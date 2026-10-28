@@ -113,7 +113,7 @@ dotnet build.cs --dry-run
 dotnet run --file .\build.cs -- --help
 ```
 
-脚本从最新 Git tag 读取版本号，并重建 `dist/`。Windows 上编译 Native AOT 需要 Visual Studio 的「使用 C++ 的桌面开发」工作负载。可选档案为 `aot`（默认，仅当前主机 RID）、`framework-dependent` 和 `self-contained`。
+脚本从最新 Git tag 读取版本号，并重建 `dist/`。除压缩包外，Windows 目标还会留下可直接运行的 `dist/StarBlogPublisher.exe`；同一次构建有多个 Windows 目标时，这个文件来自最后一次 Windows 发布。Windows 上编译 Native AOT 需要 Visual Studio 的「使用 C++ 的桌面开发」工作负载。可选档案为 `aot`（默认，仅当前主机 RID）、`framework-dependent` 和 `self-contained`。
 
 ## 桌面应用
 
