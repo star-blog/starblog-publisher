@@ -141,7 +141,9 @@ public static class AppSettingsPortableTransfer {
         AppSecret = account.AppSecret,
         ApiBaseUrl = account.ApiBaseUrl,
         ApiAuthorization = account.ApiAuthorization,
-        Author = account.Author
+        Author = account.Author,
+        HeaderHtml = account.HeaderHtml,
+        FooterHtml = account.FooterHtml
     };
 
     private static void ApplyPayload(AppSettings settings, PortableAppSettingsPayload payload) {
@@ -215,7 +217,9 @@ public static class AppSettingsPortableTransfer {
             : account.ApiBaseUrl,
         AppSecret = account.AppSecret ?? string.Empty,
         ApiAuthorization = account.ApiAuthorization ?? string.Empty,
-        Author = account.Author ?? string.Empty
+        Author = account.Author ?? string.Empty,
+        HeaderHtml = account.HeaderHtml ?? string.Empty,
+        FooterHtml = account.FooterHtml ?? string.Empty
     };
 
     private static void EnsureWeChatAccounts(AppSettings settings, PortableAppSettingsPayload payload) {
@@ -362,6 +366,8 @@ public sealed class PortableWeChatAccount {
     public string ApiBaseUrl { get; set; } = WeChatHttpClientRegistration.OfficialApiBaseUrl;
     public string ApiAuthorization { get; set; } = string.Empty;
     public string Author { get; set; } = string.Empty;
+    public string HeaderHtml { get; set; } = string.Empty;
+    public string FooterHtml { get; set; } = string.Empty;
 }
 
 [JsonSourceGenerationOptions(

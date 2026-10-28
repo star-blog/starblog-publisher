@@ -25,6 +25,10 @@ public sealed class WeChatAccountProfile : INotifyPropertyChanged {
     public string AppId { get; set; } = string.Empty;
     public string ApiBaseUrl { get; set; } = "https://api.weixin.qq.com/";
     public string Author { get; set; } = string.Empty;
+    /// <summary>文章开头 HTML，从公众号编辑器复制。空字符串表示不插入。</summary>
+    public string HeaderHtml { get; set; } = string.Empty;
+    /// <summary>文末引导 HTML，从公众号编辑器复制。空字符串表示不插入。</summary>
+    public string FooterHtml { get; set; } = string.Empty;
 
     [JsonIgnore]
     public string AppSecret {
@@ -58,6 +62,8 @@ public sealed class WeChatAccountProfile : INotifyPropertyChanged {
         ApiBaseUrl = ApiBaseUrl,
         Author = Author,
         EncryptedAppSecret = EncryptedAppSecret,
-        EncryptedApiAuthorization = EncryptedApiAuthorization
+        EncryptedApiAuthorization = EncryptedApiAuthorization,
+        HeaderHtml = HeaderHtml,
+        FooterHtml = FooterHtml
     };
 }
