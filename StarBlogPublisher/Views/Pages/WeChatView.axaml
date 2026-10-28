@@ -131,6 +131,11 @@
                                         <TextBlock Text="正文标注引用编号，文末列出链接地址；微信公众号文章链接保留原样。"
                                                    FontSize="11" TextWrapping="Wrap"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        <CheckBox Content="插入账号头尾"
+                                                  IsChecked="{Binding InsertAccountChrome, Mode=TwoWay}" />
+                                        <TextBlock Text="使用当前公众号在设置里保存的文章开头和文末引导。引导放在正文和引用链接之后。"
+                                                   FontSize="11" TextWrapping="Wrap"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
 
                                     <ToggleButton Classes="SectionHeader" Content="基本属性"

@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Input;
+using Avalonia.Input.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StarBlogPublisher.Models;
@@ -45,6 +47,8 @@ public partial class SettingsViewModel : PageViewModelBase {
     [ObservableProperty] private string _weChatApiAuthorization = string.Empty;
     [ObservableProperty] private string _weChatAppSecret = string.Empty;
     [ObservableProperty] private string _weChatAuthor = string.Empty;
+    [ObservableProperty] private string _weChatHeaderHtml = string.Empty;
+    [ObservableProperty] private string _weChatFooterHtml = string.Empty;
     [ObservableProperty] private string _weChatDefaultTheme = "newspaper";
     [ObservableProperty] private ObservableCollection<WeChatAccountProfile> _weChatAccounts = new();
     [ObservableProperty] private WeChatAccountProfile? _currentWeChatAccount;
@@ -91,6 +95,8 @@ public partial class SettingsViewModel : PageViewModelBase {
     }
 
     public string MaterialStatusDescription => _shell.MaterialStatusDescription;
+    public string WeChatHeaderSummary => WeChatChromeHtml.Summarize(WeChatHeaderHtml);
+    public string WeChatFooterSummary => WeChatChromeHtml.Summarize(WeChatFooterHtml);
 
     [ObservableProperty] private bool _enableAI;
     [ObservableProperty] private string _AIProvider = "openai";
@@ -283,6 +289,8 @@ public partial class SettingsViewModel : PageViewModelBase {
             WeChatApiAuthorization = account.ApiAuthorization;
             WeChatAppSecret = account.AppSecret;
             WeChatAuthor = account.Author;
+            WeChatHeaderHtml = account.HeaderHtml;
+            WeChatFooterHtml = account.FooterHtml;
             UseWeChatRelay = !string.Equals(account.ApiBaseUrl.TrimEnd('/'), WeChatHttpClientRegistration.OfficialApiBaseUrl.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)
                 || !string.IsNullOrEmpty(account.ApiAuthorization);
             _relayUrl = UseWeChatRelay ? account.ApiBaseUrl : string.Empty;
@@ -299,6 +307,72 @@ public partial class SettingsViewModel : PageViewModelBase {
         CurrentWeChatAccount.ApiAuthorization = WeChatApiAuthorization;
         CurrentWeChatAccount.AppSecret = WeChatAppSecret;
         CurrentWeChatAccount.Author = WeChatAuthor;
+        CurrentWeChatAccount.HeaderHtml = WeChatHeaderHtml;
+        CurrentWeChatAccount.FooterHtml = WeChatFooterHtml;
+    }
+
+    partial void OnWeChatHeaderHtmlChanged(string value) => OnPropertyChanged(nameof(WeChatHeaderSummary));
+
+    partial void OnWeChatFooterHtmlChanged(string value) => OnPropertyChanged(nameof(WeChatFooterSummary));
+
+    [RelayCommand]
+    private async Task PasteWeChatHeader() => await PasteChromeAsync(header: true);
+
+    [RelayCommand]
+    private async Task PasteWeChatFooter() => await PasteChromeAsync(header: false);
+
+    [RelayCommand]
+    private void ClearWeChatHeader() => WeChatHeaderHtml = string.Empty;
+
+    [RelayCommand]
+    private void ClearWeChatFooter() => WeChatFooterHtml = string.Empty;
+
+    private async Task PasteChromeAsync(bool header) {
+        var label = header ? "文章开头" : "文末引导";
+        if (CurrentWeChatAccount == null) {
+            GuiHost.ToastWarning(label, "请先选择公众号账号");
+            return;
+        }
+
+        var clipboard = GuiHost.GetTopLevel()?.Clipboard;
+        if (clipboard == null) {
+            GuiHost.ToastWarning(label, "无法访问系统剪贴板");
+            return;
+        }
+
+        try {
+            var clipboardHtml = await ReadHtmlFormatAsync(clipboard);
+            var fragment = WeChatChromeHtml.TryExtractFragment(clipboardHtml);
+            if (fragment == null) {
+                GuiHost.ToastWarning(label, "剪贴板里没有公众号 HTML。请在编辑器中选中模版正文后复制。");
+                return;
+            }
+
+            var sanitized = WeChatChromeHtml.Sanitize(fragment);
+            if (string.IsNullOrWhiteSpace(sanitized)) {
+                GuiHost.ToastWarning(label, "这段内容里没有可保留的 HTML。");
+                return;
+            }
+
+            if (header) WeChatHeaderHtml = sanitized;
+            else WeChatFooterHtml = sanitized;
+            GuiHost.ToastSuccess(label, "已从剪贴板读取，保存设置后用于排版。");
+        }
+        catch (Exception ex) {
+            GuiHost.ToastError(label, ex.Message);
+        }
+    }
+
+    private static async Task<string?> ReadHtmlFormatAsync(IClipboard clipboard) {
+        var data = await clipboard.TryGetDataAsync();
+        if (data == null) return null;
+        using (data) {
+            // 读取原始字节。HTML Format 是 UTF-8，不能交给会按系统 ANSI 代码页解码的字符串接口。
+            var bytes = await data.TryGetValueAsync(DataFormat.CreateBytesPlatformFormat("HTML Format"));
+            if (bytes is { Length: > 0 }) return WeChatChromeHtml.DecodeClipboardBytes(bytes);
+
+            return await data.TryGetValueAsync(DataFormat.CreateStringPlatformFormat("HTML Format"));
+        }
     }
 
     partial void OnAIModelChanged(string value) => UpdateSelectedModelDetails();

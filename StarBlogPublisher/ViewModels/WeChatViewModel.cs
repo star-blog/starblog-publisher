@@ -33,6 +33,7 @@ public partial class WeChatViewModel : PageViewModelBase {
     private string _previewPath = string.Empty;
     private bool _suppressTitleCustomization;
     private bool _titleCustomized;
+    private bool _loadingAccounts;
 
     public WeChatViewModel(IHttpClientFactory httpClientFactory) : base("公众号排版", Icon.Mail) {
         _httpClientFactory = httpClientFactory;
@@ -62,6 +63,7 @@ public partial class WeChatViewModel : PageViewModelBase {
 
     [ObservableProperty] private WeChatTheme? _selectedTheme;
     [ObservableProperty] private bool _convertExternalLinksToReferences = true;
+    [ObservableProperty] private bool _insertAccountChrome = true;
     [ObservableProperty] private WeChatAccountProfile? _selectedWeChatAccount;
     [ObservableProperty] private string _articleTitle = string.Empty;
     [ObservableProperty] private string _author = string.Empty;
@@ -163,13 +165,21 @@ public partial class WeChatViewModel : PageViewModelBase {
         if (HasArticle) GenerateFormat();
     }
 
+    partial void OnInsertAccountChromeChanged(bool value) {
+        if (HasArticle) GenerateFormat();
+    }
+
     partial void OnSelectedWeChatAccountChanged(WeChatAccountProfile? value) {
         ApplySyncedAuthor(value?.Author ?? string.Empty);
-        if (value == null) return;
-        var settings = AppSettings.Instance;
-        if (settings.CurrentWeChatAccountId == value.Id) return;
-        settings.CurrentWeChatAccountId = value.Id;
-        settings.Save();
+        if (value != null) {
+            var settings = AppSettings.Instance;
+            if (settings.CurrentWeChatAccountId != value.Id) {
+                settings.CurrentWeChatAccountId = value.Id;
+                settings.Save();
+            }
+        }
+
+        if (!_loadingAccounts && HasArticle) GenerateFormat();
     }
 
     partial void OnArticleTitleChanged(string value) {
@@ -320,13 +330,20 @@ public partial class WeChatViewModel : PageViewModelBase {
         if (!HasArticle || SelectedTheme == null) return;
 
         try {
-            var result = _formattingService.Format(_markdown, ArticleTitle, SelectedTheme.Id, ConvertExternalLinksToReferences);
+            var account = InsertAccountChrome ? SelectedWeChatAccount : null;
+            var result = _formattingService.Format(
+                _markdown,
+                ArticleTitle,
+                SelectedTheme.Id,
+                ConvertExternalLinksToReferences,
+                account?.HeaderHtml,
+                account?.FooterHtml);
             if (!_titleCustomized) ApplySyncedTitle(result.Title);
             WordCount = result.WordCount;
             FormattedHtml = result.Html;
             RefreshPreview();
             AppSettings.Instance.WeChatDefaultTheme = SelectedTheme.Id;
-            StatusMessage = $"已按“{SelectedTheme.Name}”生成排版（约 {WordCount} 字）";
+            StatusMessage = $"已按“{SelectedTheme.Name}”生成排版（约 {WordCount} 字）{ChromeStatus(account)}";
         }
         catch (Exception ex) {
             StatusMessage = $"排版失败: {ex.Message}";
@@ -524,14 +541,27 @@ public partial class WeChatViewModel : PageViewModelBase {
 
     private void LoadWeChatAccounts() {
         var settings = AppSettings.Instance;
-        WeChatAccounts.Clear();
-        foreach (var account in settings.WeChatAccounts) {
-            WeChatAccounts.Add(account.Clone());
-        }
+        _loadingAccounts = true;
+        try {
+            WeChatAccounts.Clear();
+            foreach (var account in settings.WeChatAccounts) {
+                WeChatAccounts.Add(account.Clone());
+            }
 
-        SelectedWeChatAccount = WeChatAccounts.FirstOrDefault(account => account.Id == settings.CurrentWeChatAccountId)
-            ?? WeChatAccounts.FirstOrDefault();
-        OnPropertyChanged(nameof(HasWeChatAccounts));
+            SelectedWeChatAccount = WeChatAccounts.FirstOrDefault(account => account.Id == settings.CurrentWeChatAccountId)
+                ?? WeChatAccounts.FirstOrDefault();
+            OnPropertyChanged(nameof(HasWeChatAccounts));
+        }
+        finally {
+            _loadingAccounts = false;
+        }
+    }
+
+    private static string ChromeStatus(WeChatAccountProfile? account) {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(account?.HeaderHtml)) parts.Add("开头");
+        if (!string.IsNullOrWhiteSpace(account?.FooterHtml)) parts.Add("文末");
+        return parts.Count == 0 ? "" : "，已插入" + string.Join("和", parts);
     }
 
     private async Task PrepareCoverAsync(Func<Task<PreparedWeChatCover>> prepare, string sourceDescription) {
@@ -582,6 +612,7 @@ public partial class WeChatViewModel : PageViewModelBase {
                     ? sourceDirectory
                     : sourceDirectory + Path.DirectorySeparatorChar).AbsoluteUri;
 
+            var previewBody = WeChatChromeHtml.ToPreviewHtml(FormattedHtml);
             var page = $$"""
                 <!doctype html>
                 <html lang="zh-CN">
@@ -598,7 +629,7 @@ public partial class WeChatViewModel : PageViewModelBase {
                     @media (max-width: 720px) { body { padding: 0; background: #fff; } .wechat-preview-frame { width: 100%; box-shadow: none; } }
                   </style>
                 </head>
-                <body><main class="wechat-preview-frame">{{FormattedHtml}}</main></body>
+                <body><main class="wechat-preview-frame">{{previewBody}}</main></body>
                 </html>
                 """;
 

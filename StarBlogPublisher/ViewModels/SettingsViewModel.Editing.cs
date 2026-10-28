@@ -82,7 +82,8 @@ public partial class SettingsViewModel {
         nameof(UseCustomBackend), nameof(BackendUrl), nameof(Username), nameof(Password), nameof(BackendTimeout),
         nameof(EnableRegexImageParsing), nameof(ThemeMode), nameof(InterfaceStyle), nameof(WeChatDefaultTheme),
         nameof(WeChatAccountName), nameof(WeChatAppId), nameof(WeChatApiBaseUrl), nameof(WeChatApiAuthorization),
-        nameof(WeChatAppSecret), nameof(WeChatAuthor), nameof(CurrentWeChatAccount),
+        nameof(WeChatAppSecret), nameof(WeChatAuthor), nameof(WeChatHeaderHtml), nameof(WeChatFooterHtml),
+        nameof(CurrentWeChatAccount),
         nameof(EnableAI), nameof(AIProvider), nameof(AIKey), nameof(AIModel), nameof(AIApiBase), nameof(CurrentProfile)
     ];
 
@@ -111,7 +112,8 @@ public partial class SettingsViewModel {
             CurrentWeChatAccount?.Id ?? "", CurrentProfile?.Name ?? ""
         };
         foreach (var account in WeChatAccounts) values.AddRange([
-            account.Id, account.Name, account.AppId, account.AppSecret, account.ApiBaseUrl, account.ApiAuthorization, account.Author]);
+            account.Id, account.Name, account.AppId, account.AppSecret, account.ApiBaseUrl, account.ApiAuthorization, account.Author,
+            account.HeaderHtml, account.FooterHtml]);
         foreach (var profile in Profiles) values.AddRange([
             profile.Name, profile.EnableAI.ToString(), profile.Provider, profile.Key, profile.Model, profile.ApiBase]);
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Concat(values.Select(v => $"{v?.Length ?? 0}:{v}")))));

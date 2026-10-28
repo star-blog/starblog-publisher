@@ -218,6 +218,24 @@
                             <TextBox Text="{Binding WeChatAuthor}" PlaceholderText="可留空"/>
                         </StackPanel>
                         <StackPanel Classes="Field">
+                            <TextBlock Text="文章开头 · 当前账号"/>
+                            <TextBlock Classes="Hint" Text="{Binding WeChatHeaderSummary}" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="从剪贴板粘贴" Command="{Binding PasteWeChatHeaderCommand}" AutomationProperties.Name="粘贴文章开头"/>
+                                <Button Content="清空" Command="{Binding ClearWeChatHeaderCommand}" AutomationProperties.Name="清空文章开头"/>
+                            </StackPanel>
+                            <TextBlock Classes="Hint" Text="在公众号编辑器里选中模版正文并复制，再粘贴到这里。保存后，排版会把这段 HTML 放在正文之前。"/>
+                        </StackPanel>
+                        <StackPanel Classes="Field">
+                            <TextBlock Text="文末引导 · 当前账号"/>
+                            <TextBlock Classes="Hint" Text="{Binding WeChatFooterSummary}" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="从剪贴板粘贴" Command="{Binding PasteWeChatFooterCommand}" AutomationProperties.Name="粘贴文末引导"/>
+                                <Button Content="清空" Command="{Binding ClearWeChatFooterCommand}" AutomationProperties.Name="清空文末引导"/>
+                            </StackPanel>
+                            <TextBlock Classes="Hint" Text="同样从公众号编辑器复制。保存后放在正文和引用链接的最后，名片标签会原样保留。"/>
+                        </StackPanel>
+                        <StackPanel Classes="Field">
                             <TextBlock Text="默认排版主题 · 所有账号"/>
                             <controls:WeChatThemePicker x:Name="WeChatThemeSelector"
                                                         SelectedThemeId="{Binding WeChatDefaultTheme}" />
