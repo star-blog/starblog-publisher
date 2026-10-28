@@ -22,7 +22,13 @@ public sealed class WeChatFormattingService {
 
     public static IReadOnlyList<WeChatTheme> Themes => WeChatThemeCatalog.All;
 
-    public WeChatFormatResult Format(string markdown, string fallbackTitle, string? themeId = null, bool convertExternalLinksToReferences = true) {
+    public WeChatFormatResult Format(
+        string markdown,
+        string fallbackTitle,
+        string? themeId = null,
+        bool convertExternalLinksToReferences = true,
+        string? headerHtml = null,
+        string? footerHtml = null) {
         if (string.IsNullOrWhiteSpace(markdown)) {
             throw new ArgumentException("文章内容为空", nameof(markdown));
         }
@@ -33,7 +39,7 @@ public sealed class WeChatFormattingService {
         var html = Markdig.Markdown.ToHtml(source, CreatePipeline());
 
         return new WeChatFormatResult {
-            Html = ApplyWeChatStyles(html, theme, convertExternalLinksToReferences),
+            Html = ApplyWeChatStyles(html, theme, convertExternalLinksToReferences, headerHtml, footerHtml),
             Title = title,
             WordCount = CountWords(source),
             Theme = theme
@@ -78,7 +84,12 @@ public sealed class WeChatFormattingService {
         return result;
     }
 
-    private static string ApplyWeChatStyles(string html, WeChatTheme theme, bool convertExternalLinksToReferences) {
+    private static string ApplyWeChatStyles(
+        string html,
+        WeChatTheme theme,
+        bool convertExternalLinksToReferences,
+        string? headerHtml,
+        string? footerHtml) {
         if (convertExternalLinksToReferences) html = ConvertExternalLinksToReferences(html, theme);
         html = ConvertLists(html, theme);
         html = StyleTag(html, "h1", StyleOf(theme, "h1", $"font-size:26px;line-height:1.45;color:{theme.PrimaryColor};font-weight:700;margin:28px 0 18px;text-align:center"));
@@ -105,10 +116,13 @@ public sealed class WeChatFormattingService {
         html = StyleInlineCode(html, theme);
         html = WrapCards(html, theme);
 
+        // 头尾在主题上色和卡片拆分之后原样拼入，避免主题样式盖掉编辑器里复制来的内联样式。
+        var header = WeChatChromeHtml.Sanitize(headerHtml);
+        var footer = WeChatChromeHtml.Sanitize(footerHtml);
         var wrapper = theme.Card == null
             ? "max-width:677px;margin:0 auto;box-sizing:border-box;" + StyleOf(theme, "wrapper", "padding:8px 16px;background:#FFFFFF")
             : $"max-width:677px;margin:0 auto;box-sizing:border-box;padding:40px 10px;background-color:{theme.Card.Background};display:flex;flex-direction:column;align-items:center;gap:24px";
-        return $"<section style=\"{wrapper}\">{html}</section>";
+        return $"<section style=\"{wrapper}\">{header}{html}{footer}</section>";
     }
 
     private static string ConvertExternalLinksToReferences(string html, WeChatTheme theme) {

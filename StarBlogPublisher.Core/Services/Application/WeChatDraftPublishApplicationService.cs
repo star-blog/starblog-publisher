@@ -172,7 +172,9 @@ public sealed class WeChatDraftPublishApplicationService {
             output.Append(html, cursor, match.Index - cursor);
             var source = WebUtility.HtmlDecode(match.Groups["src"].Value);
             var replacement = match.Value;
-            if (!source.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && !source.Contains("mmbiz.qpic.cn", StringComparison.OrdinalIgnoreCase)) {
+            if (!source.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
+                && !source.Contains("mmbiz.qpic.cn", StringComparison.OrdinalIgnoreCase)
+                && !WeChatChromeHtml.ContainsIndexInProfileCard(html, match.Index)) {
                 string? temporaryPath = null;
                 try {
                     var imagePath = source.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || source.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
