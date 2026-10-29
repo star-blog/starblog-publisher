@@ -1,5 +1,15 @@
 # 测试指南
 
+## 封面工作室回归
+
+`dotnet run --project StarBlogPublisher.DesktopTests -- --cover-studio` 单独检查原生封面编辑器，避免依赖公众号 WebView2。覆盖文章图片、本地/在线/损坏素材、四模板、浅深主题、1000/1280 DIP 布局、双比例预览和异步应用后的资源存续；截图保存在本次运行目录。
+
+设置进程环境变量 `STARBLOG_COVER_MANUAL_TEST=1` 后运行该命令，测试会在工作室停留 90 秒，供真实鼠标拖动、滑块和键盘撤销验收。本次重构已通过真实标题拖动、Ctrl+Z 恢复和缩放滑块操作检查。
+
+Core 和 ViewModel 用例覆盖草稿/已应用快照、保存重开、文章隔离、恢复、素材迁移、未知版本保留、长标题溢出，以及预览与草稿上传裁切参数一致性。
+
+`NavigationMenuIconConverterTests` 会初始化进程级 Avalonia Application；与普通 ViewModel 测试同进程运行可能引起 UI 线程归属错误。可分两个测试进程运行全部用例：先过滤 `FullyQualifiedName!~NavigationMenuIconConverterTests`，再过滤 `FullyQualifiedName~NavigationMenuIconConverterTests`。
+
 ## 日常自动化测试
 
 在仓库根目录运行：
