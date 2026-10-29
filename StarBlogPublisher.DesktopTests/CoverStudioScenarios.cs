@@ -17,8 +17,16 @@ internal sealed partial class WorkspaceScenarios {
                      ("蓝色的在线配图", new SKColor(40, 80, 190))
                  }) {
             var path = Path.Combine(output, name + ".png");
-            using var bitmap = new SKBitmap(new SKImageInfo(600, 400, SKColorType.Rgba8888, SKAlphaType.Opaque));
+            using var bitmap = new SKBitmap(new SKImageInfo(4000, 3000, SKColorType.Rgba8888, SKAlphaType.Opaque));
             bitmap.Erase(color);
+            using (var canvas = new SKCanvas(bitmap)) {
+                using var gradient = SKShader.CreateLinearGradient(new(0, 0), new(4000, 3000), [color, new SKColor(12, 35, 60)], SKShaderTileMode.Clamp);
+                using var paint = new SKPaint { Shader = gradient };
+                canvas.DrawRect(0, 0, 4000, 3000, paint);
+                using var circle = new SKPaint { Color = new SKColor(255, 255, 255, 20), IsAntialias = true };
+                canvas.DrawCircle(3200, 600, 1100, circle);
+                canvas.DrawCircle(3600, 2500, 1500, circle);
+            }
             using var image = SKImage.FromBitmap(bitmap);
             using var data = image.Encode(SKEncodedImageFormat.Png, 100);
             await using var file = File.Create(path);
@@ -31,13 +39,14 @@ internal sealed partial class WorkspaceScenarios {
         var factory = new CoverImageHttpClientFactory(onlineBytes);
         var parent = new WeChatViewModel(factory);
         // Exercise the native editor without attaching the unrelated WebView2 formatting preview.
-        var previousContent = window.Content;
+        var previousSidebar = shell.Workspace.IsSidebarOpen;
+        shell.Workspace.IsSidebarOpen = false;
         var studio = new CoverStudioViewModel(factory, "从文章图片制作公众号封面：中文标题与裁剪验收", cover => {
             parent.UsePreparedCover(cover, "文章图片制作封面");
             parent.NavigateBreadcrumbAt(0);
         }, sources);
         parent.OpenStackPage(studio, studio.Title);
-        window.Content = new CoverStudioView { DataContext = studio };
+        shell.Workspace.CurrentDocument.OpenStackPage(studio, studio.Title);
         await WaitUntilAsync(() => Task.FromResult(studio.HasPreview), "Cover preview did not load");
         var view = window.GetVisualDescendants().OfType<CoverStudioView>().Single();
         studio.IsInspectorOpen = true; studio.InspectorTab = 1;
@@ -79,6 +88,7 @@ internal sealed partial class WorkspaceScenarios {
         studio.SelectTemplateCommand.Execute(CoverTemplate.All.Single(t => t.Id == "photo"));
         studio.CoverTitle = "封面工作室";
         await studio.RenderNowAsync();
+        Capture(window, Path.Combine(output, "cover-studio-final.png"));
         if (Environment.GetEnvironmentVariable("STARBLOG_COVER_MANUAL_TEST") == "1") {
             studio.DragTarget = "文字";
             Console.WriteLine("Cover studio ready for 90 seconds of manual pointer/keyboard inspection.");
@@ -97,7 +107,7 @@ internal sealed partial class WorkspaceScenarios {
 
         using var empty = new CoverStudioViewModel(factory, "无图文章", _ => { });
         parent.OpenStackPage(empty, empty.Title);
-        window.Content = new CoverStudioView { DataContext = empty };
+        shell.Workspace.CurrentDocument.OpenStackPage(empty, empty.Title);
         empty.IsInspectorOpen = true; empty.InspectorTab = 1;
         await Task.Delay(150);
         view = window.GetVisualDescendants().OfType<CoverStudioView>().Single();
@@ -106,7 +116,8 @@ internal sealed partial class WorkspaceScenarios {
         if (picker.IsEnabled)
             throw new Exception("No-image article has no disabled picker and empty-state hint");
         parent.NavigateBreadcrumbAt(0);
-        window.Content = previousContent;
+        shell.Workspace.CurrentDocument.NavigateBreadcrumbAt(0);
+        shell.Workspace.IsSidebarOpen = previousSidebar;
         shell.ActivePage = shell.Workspace;
         await Task.Delay(100);
     }
