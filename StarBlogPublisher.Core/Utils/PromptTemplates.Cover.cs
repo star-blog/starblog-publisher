@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace StarBlogPublisher.Utils;
 
@@ -236,7 +236,7 @@ public static partial class PromptTemplates {
         },
         
         new PromptTemplate {
-            Key = "BeCreativeGirl",
+            Key = "BeCreativeCat",
             Name = "喵喵 - 自由发挥",
             Prompt = 
                 """

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,6 +15,27 @@ namespace StarBlogPublisher.Services.Application;
 /// 封装 AI 辅助写作相关的业务流程，供 GUI、CLI、MCP 共用
 /// </summary>
 public class AiApplicationService {
+    public async Task<string> GenerateCoverPromptAsync(CoverPromptRequest request, CancellationToken cancellationToken = default) {
+        var template = PromptTemplates.Cover.Find(t => t.Key == request.StyleKey) ?? PromptTemplates.Cover[0];
+        var prompt = PromptBuilder.Create(template.Prompt.Replace("16:9", request.AspectRatio))
+            .AddParameter("title", request.Title).AddParameter("summary", request.Summary).AddParameter("content", request.Content).Build();
+        var result = new StringBuilder();
+        await foreach (var update in _aiService.GenerateTextStreamAsync(prompt + "\n" + request.Reservation + ". Image only, no typography.").WithCancellation(cancellationToken))
+            result.Append(update.Text);
+        cancellationToken.ThrowIfCancellationRequested();
+        return result.ToString();
+    }
+    public async Task<string[]> SuggestCoverTitlesAsync(string title, string summary, CancellationToken cancellationToken = default) {
+        var prompt = $"为文章提供恰好三个简短、准确的中文封面标题，每个建议不超过18字，每行一个，不要编号或解释。\n标题：{title}\n摘要：{summary}";
+        var result = new StringBuilder();
+        await foreach (var update in _aiService.GenerateTextStreamAsync(prompt).WithCancellation(cancellationToken)) result.Append(update.Text);
+        cancellationToken.ThrowIfCancellationRequested();
+        var suggestions = result.ToString().Split('\n')
+            .Select(line => System.Text.RegularExpressions.Regex.Replace(line.Trim(), @"^(?:[-*•]\s*|\d+[.、)）]\s*)", ""))
+            .Where(line => line.Length > 0).Distinct().Take(3).ToArray();
+        if (suggestions.Length != 3) throw new InvalidOperationException("AI 未返回三个有效标题，请重试");
+        return suggestions;
+    }
     private readonly AiService _aiService;
     private readonly AppSettings _settings;
 
