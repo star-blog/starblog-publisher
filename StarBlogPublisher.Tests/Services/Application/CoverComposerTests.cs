@@ -31,6 +31,65 @@ public class CoverComposerTests {
     private readonly CoverComposer _composer = new();
 
     [Fact]
+    public void Wrap_ReviewTitleKeepsColonOffLineStart() {
+        const string title = "从文章图片制作公众号封面：中文标题与裁剪验收";
+        CoverComposer.TryResolveFont(true, out var typeface, out _).Should().BeTrue();
+        using (typeface)
+        using (var font = new SKFont(typeface, 64)) {
+            var lines = CoverComposer.Wrap(font, title, CoverSafeZone.TextArea().Width);
+
+            lines.Length.Should().BeGreaterThan(1);
+            string.Concat(lines).Should().Be(title);
+            lines.Should().OnlyContain(line => !line.StartsWith("："));
+            lines.Should().OnlyContain(line => font.MeasureText(line) <= CoverSafeZone.TextArea().Width);
+        }
+    }
+
+    [Theory]
+    [InlineData("：")]
+    [InlineData("，")]
+    [InlineData("。")]
+    [InlineData("！")]
+    [InlineData("；")]
+    [InlineData("？")]
+    [InlineData("、")]
+    [InlineData("）")]
+    [InlineData("”")]
+    public void Wrap_KeepsClosingPunctuationWithPreviousCharacter(string punctuation) {
+        using var font = new SKFont(SKTypeface.Default, 32);
+        var title = "封面" + punctuation + "测试";
+        var width = (int)Math.Ceiling(font.MeasureText("封面"));
+
+        var lines = CoverComposer.Wrap(font, title, width);
+
+        string.Concat(lines).Should().Be(title);
+        lines.Should().OnlyContain(line => !line.StartsWith(punctuation));
+    }
+
+    [Theory]
+    [InlineData("（", "）")]
+    [InlineData("“", "”")]
+    [InlineData("《", "》")]
+    public void Wrap_KeepsOpeningPunctuationWithNextCharacter(string opening, string closing) {
+        using var font = new SKFont(SKTypeface.Default, 32);
+        var title = "封面" + opening + "测试" + closing + "中文";
+        var width = (int)Math.Ceiling(font.MeasureText("封面" + opening));
+
+        var lines = CoverComposer.Wrap(font, title, width);
+
+        string.Concat(lines).Should().Be(title);
+        lines.Should().OnlyContain(line => !line.EndsWith(opening) && !line.StartsWith(closing));
+    }
+
+    [Fact]
+    public void Wrap_PreservesTextElementsAndExplicitBlankLinesAtNarrowWidths() {
+        using var font = new SKFont(SKTypeface.Default, 32);
+        var lines = CoverComposer.Wrap(font, "😀e\u0301👩‍💻\n\n封面", 1);
+
+        lines.Should().Equal("😀", "e\u0301", "👩‍💻", "", "封", "面");
+    }
+
+    [Fact]
     public async Task RenderAsync_CoverFitsASolidBackground() {
         await using var background = new MemoryStream(SkiaFixture.EncodeSolid(100, 50, 0, 170, 0, 255, "png"));
 
