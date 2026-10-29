@@ -10,6 +10,13 @@ using StarBlogPublisher.Services.Application;
 namespace StarBlogPublisher.Tests.Services.Application;
 
 public class WeChatDraftPublishApplicationServiceTests {
+    [Fact] public async Task InvalidCustomCrop_FailsBeforeAnyNetworkRequest() {
+        var handler = new SequencingHandler([]);
+        var service = CreateService(handler, out _);
+        var result = await service.PublishAsync(FormatResult("<p>正文</p>"), Path.GetTempPath(), "", "missing.jpg",
+            metadata: new() { CoverWidth = 1200, CoverHeight = 900, CoverCrops = new() { HeadlineOffset = double.NaN } });
+        result.Success.Should().BeFalse(); result.ErrorMessage.Should().Contain("裁切"); handler.Requests.Should().BeEmpty();
+    }
     [Fact]
     public async Task CreateWeChatMediaContent_UsesQuotedDispositionWithoutFilenameStar() {
         var jpegBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0xD9 };
@@ -403,8 +410,10 @@ public class WeChatDraftPublishApplicationServiceTests {
         }
     }
 
-    [Fact]
-    public async Task PublishAsync_SendsDraftMetadataAndCenterCrops() {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PublishAsync_SendsDraftMetadataAndCenterCrops(bool manual) {
         var coverPath = Path.Combine(Path.GetTempPath(), $"starblog-cover-{Guid.NewGuid():N}.jpg");
         await File.WriteAllBytesAsync(coverPath, [0xFF, 0xD8, 0xFF, 0xD9]);
         try {
@@ -430,7 +439,8 @@ public class WeChatDraftPublishApplicationServiceTests {
                     OpenComment = true,
                     FansOnlyComment = false,
                     CoverWidth = 1400,
-                    CoverHeight = 700
+                    CoverHeight = 700,
+                    CoverCrops = manual ? new CoverCropSet { HeadlineOffset = 0, SecondaryOffset = 1 } : null
                 });
 
             result.Success.Should().BeTrue(result.ErrorMessage);
@@ -443,7 +453,7 @@ public class WeChatDraftPublishApplicationServiceTests {
             draft.BodyText.Should().Contain("\"only_fans_can_comment\":0");
             draft.BodyText.Should().Contain("\"ratio\":\"2.35_1\"");
             draft.BodyText.Should().Contain("\"ratio\":\"1_1\"");
-            draft.BodyText.Should().Contain("\"x1\":\"0.2500\"");
+            draft.BodyText.Should().Contain(manual ? "\"x1\":\"0.5000\"" : "\"x1\":\"0.2500\"");
             draft.BodyText.Should().NotContain("show_cover_pic");
         }
         finally {

@@ -9,7 +9,9 @@ using StarBlogPublisher.Services.Imaging;
 namespace StarBlogPublisher.Services.Application;
 
 /// <summary>A JPEG cover kept at its source aspect ratio, ready for WeChat crop windows.</summary>
-public readonly record struct PreparedWeChatCover(string Path, int Width, int Height);
+public readonly record struct PreparedWeChatCover(string Path, int Width, int Height) {
+    public StarBlogPublisher.Models.CoverCropSet? Crops { get; init; }
+}
 
 /// <summary>
 /// Normalizes local and remote cover images for the WeChat draft API.

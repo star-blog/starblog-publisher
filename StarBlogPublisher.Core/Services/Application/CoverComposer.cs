@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SkiaSharp;
 using StarBlogPublisher.Services.Imaging;
+using StarBlogPublisher.Models;
 
 namespace StarBlogPublisher.Services.Application;
 
@@ -98,11 +99,11 @@ public sealed class CoverComposer {
         return Task.FromResult(Render(background, composition));
     }
 
-    public byte[] CreatePreviewPng(string composedPath, CoverPreviewFrame frame) {
+    public byte[] CreatePreviewPng(string composedPath, CoverPreviewFrame frame, CoverCropSet? crops = null) {
         using var image = DecodedImage.Decode(composedPath);
         var crop = frame switch {
-            CoverPreviewFrame.Headline => CoverSafeZone.Headline(image.Width, image.Height),
-            CoverPreviewFrame.Secondary => CoverSafeZone.Secondary(image.Width, image.Height),
+            CoverPreviewFrame.Headline => crops?.Window(image.Width, image.Height, true) ?? CoverSafeZone.Headline(image.Width, image.Height),
+            CoverPreviewFrame.Secondary => crops?.Window(image.Width, image.Height, false) ?? CoverSafeZone.Secondary(image.Width, image.Height),
             _ => new CoverPixelRect(0, 0, image.Width, image.Height)
         };
         using var framed = image.Crop(crop.X, crop.Y, crop.Width, crop.Height);

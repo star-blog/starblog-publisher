@@ -20,12 +20,13 @@ public class ArticleSidecar {
     public string? PostId { get; set; }
     public bool? IsPublish { get; set; }
     public DateTime? LastSyncedAt { get; set; }
+    public ArticleCoverState? Cover { get; set; }
 
     public static string PathFor(string markdownPath) => markdownPath + ".starblog.json";
 
     public static async Task WriteAsync(string markdownPath, ArticleSidecar sidecar) {
         var path = PathFor(markdownPath);
-        var json = JsonSerializer.Serialize(CloneForWrite(sidecar), SidecarJsonOptions);
+        var json = JsonSerializer.Serialize(CloneForWrite(sidecar), Serializer.ArticleSidecar);
         var temporaryPath = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try {
             await File.WriteAllTextAsync(temporaryPath, json, new UTF8Encoding(false));
@@ -39,7 +40,7 @@ public class ArticleSidecar {
     public static async Task<ArticleSidecar?> ReadAsync(string markdownPath) {
         var path = PathFor(markdownPath);
         if (!File.Exists(path)) return null;
-        return JsonSerializer.Deserialize<ArticleSidecar>(await File.ReadAllTextAsync(path), SidecarJsonOptions);
+        return JsonSerializer.Deserialize(await File.ReadAllTextAsync(path), Serializer.ArticleSidecar);
     }
 
     internal static readonly JsonSerializerOptions SidecarJsonOptions = new() {
@@ -48,6 +49,7 @@ public class ArticleSidecar {
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
+    private static readonly CoverJsonContext Serializer = new(SidecarJsonOptions);
 
     internal static ArticleSidecar CloneForWrite(ArticleSidecar sidecar) => new() {
         Title = sidecar.Title,
@@ -57,7 +59,8 @@ public class ArticleSidecar {
         Category = SnapshotCategory(sidecar.Category),
         PostId = sidecar.PostId,
         IsPublish = sidecar.IsPublish,
-        LastSyncedAt = sidecar.LastSyncedAt
+        LastSyncedAt = sidecar.LastSyncedAt,
+        Cover = sidecar.Cover
     };
 
     internal static Category? SnapshotCategory(Category? category) {

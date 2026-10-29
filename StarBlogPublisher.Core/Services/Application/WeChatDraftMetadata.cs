@@ -8,4 +8,5 @@ public sealed class WeChatDraftMetadata {
     public bool FansOnlyComment { get; init; }
     public int CoverWidth { get; init; }
     public int CoverHeight { get; init; }
+    public StarBlogPublisher.Models.CoverCropSet? CoverCrops { get; init; }
 }

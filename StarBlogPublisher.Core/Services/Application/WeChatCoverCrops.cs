@@ -8,6 +8,14 @@ namespace StarBlogPublisher.Services.Application;
 /// Center-crop windows for a WeChat draft cover. Coordinates are fractions of the uploaded image.
 /// </summary>
 public static class WeChatCoverCrops {
+    public static WeChatCoverCrop[] From(StarBlogPublisher.Models.CoverCropSet crops, int width, int height) {
+        WeChatCoverCrop Convert(bool headline) {
+            var r = crops.Window(width, height, headline);
+            return new(headline ? HeadlineRatio : SecondaryRatio, Format(r.X / (double)width), Format(r.Y / (double)height),
+                Format(r.Right / (double)width), Format(r.Bottom / (double)height));
+        }
+        return [Convert(true), Convert(false)];
+    }
     public const string HeadlineRatio = "2.35_1";
     public const string SecondaryRatio = "1_1";
 

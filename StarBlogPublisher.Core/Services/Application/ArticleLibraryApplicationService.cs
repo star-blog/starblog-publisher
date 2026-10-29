@@ -96,6 +96,7 @@ public class ArticleLibraryApplicationService {
             if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
 
             var post = result.Post;
+            var existing = await ArticleSidecar.ReadAsync(markdownPath);
             await File.WriteAllTextAsync(markdownPath, post.Content ?? string.Empty);
             await ArticleSidecar.WriteAsync(markdownPath, new ArticleSidecar {
                 Title = post.Title,
@@ -104,7 +105,8 @@ public class ArticleLibraryApplicationService {
                 Category = post.Category ?? new Category { Id = post.CategoryId },
                 PostId = post.Id,
                 IsPublish = post.IsPublish,
-                LastSyncedAt = DateTime.UtcNow
+                LastSyncedAt = DateTime.UtcNow,
+                Cover = existing?.Cover
             });
             return LibraryActionResult.Ok(markdownPath, post);
         }

@@ -75,6 +75,9 @@ public sealed class WeChatDraftPublishApplicationService {
         Action<int, string>? onProgress = null,
         WeChatDraftMetadata? metadata = null) {
         try {
+            if (metadata?.CoverCrops is { IsValid: false }) return WeChatDraftPublishResult.Fail("封面裁切参数无效");
+            if (metadata?.CoverCrops != null && (metadata.CoverWidth < 1 || metadata.CoverHeight < 1))
+                return WeChatDraftPublishResult.Fail("封面裁切需要有效的图片尺寸");
             if (string.IsNullOrWhiteSpace(account.AppId) || string.IsNullOrWhiteSpace(account.AppSecret)) {
                 return WeChatDraftPublishResult.Fail("请先在设置中配置微信公众号 AppId 和 AppSecret");
             }
@@ -110,7 +113,7 @@ public sealed class WeChatDraftPublishApplicationService {
                 openComment,
                 openComment && (metadata?.FansOnlyComment ?? false),
                 metadata?.CoverWidth ?? 0,
-                metadata?.CoverHeight ?? 0);
+                metadata?.CoverHeight ?? 0, metadata?.CoverCrops);
 
             onProgress?.Invoke(96, "正在校验公众号草稿...");
             await VerifyDraftAsync(account, token, draftMediaId);
@@ -423,11 +426,11 @@ public sealed class WeChatDraftPublishApplicationService {
         bool openComment,
         bool fansOnlyComment,
         int coverWidth,
-        int coverHeight) {
+        int coverHeight, CoverCropSet? coverCrops = null) {
         using var client = CreateApiClient(account);
         var normalizedAuthor = TruncateAuthor(author).Trim();
         var digest = TruncateDigest(summary);
-        var crops = WeChatCoverCrops.Center(coverWidth, coverHeight);
+        var crops = coverCrops == null ? WeChatCoverCrops.Center(coverWidth, coverHeight) : WeChatCoverCrops.From(coverCrops, coverWidth, coverHeight);
         var payload = new DraftAddBody {
             articles = [
                 new DraftArticleBody {
