@@ -8,6 +8,8 @@
 
 Core 和 ViewModel 用例覆盖草稿/已应用快照、保存重开、文章隔离、恢复、素材迁移、未知版本保留、长标题溢出，以及预览与草稿上传裁切参数一致性。
 
+画布性能回归验证连续 1000 次拖动更新不增加文章版本、不触发文章修改事件、不替换预览图层；松手一次提交、Esc 丢弃、一步撤销。文字编辑复用已解码背景和上传后的纹理，三种比例共用缓存图层。桌面用例在真实文章工作区外壳中检查 4000×3000 背景、四模板及浅深主题，并生成 `cover-studio-final.png` 供布局检查。
+
 `NavigationMenuIconConverterTests` 会初始化进程级 Avalonia Application；与普通 ViewModel 测试同进程运行可能引起 UI 线程归属错误。可分两个测试进程运行全部用例：先过滤 `FullyQualifiedName!~NavigationMenuIconConverterTests`，再过滤 `FullyQualifiedName~NavigationMenuIconConverterTests`。
 
 ## 日常自动化测试
