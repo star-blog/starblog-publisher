@@ -365,7 +365,7 @@ public partial class PublishViewModel : PageViewModelBase {
     private void RefreshPreview() {
         try {
             Uri? baseUri = null;
-            var directory = string.IsNullOrWhiteSpace(_currentFilePath) ? null : Path.GetDirectoryName(_currentFilePath);
+            var directory = string.IsNullOrWhiteSpace(ArticleSourcePath) ? null : Path.GetDirectoryName(ArticleSourcePath);
             if (!string.IsNullOrWhiteSpace(directory)) {
                 baseUri = new Uri(Path.EndsInDirectorySeparator(directory) ? directory : directory + Path.DirectorySeparatorChar);
             }
@@ -581,31 +581,8 @@ public partial class PublishViewModel : PageViewModelBase {
         IsPublishing = false;
     }
 
-    [RelayCommand]
-    private void ShowCoverPrompt() {
-        var page = new CoverPromptViewModel {
-            ArticleTitle = ArticleTitle,
-            ArticleContent = ArticleContent,
-            ArticleDescription = ArticleDescription
-        };
-        OpenStackPage(page, page.Title);
-    }
-
-    [RelayCommand]
-    private void ShowCoverStudio() {
-        if (string.IsNullOrWhiteSpace(ArticleContent)) {
-            StatusMessage = "请先选择并加载 Markdown 文件";
-            GuiHost.ToastWarning("制作封面", "请先加载文章");
-            return;
-        }
-
-        var page = new CoverStudioViewModel(_shell.HttpClientFactory, ArticleTitle, cover => {
-            NavigateBreadcrumbAt(0);
-            _shell.NavigateToWeChat();
-            _shell.WeChatPage.UsePreparedCover(cover, $"制作封面 · {cover.Width} × {cover.Height}");
-        });
-        OpenStackPage(page, page.Title);
-    }
+    [RelayCommand] private void ShowCoverPrompt() => OpenCoverStudio(true);
+    [RelayCommand] private void ShowCoverStudio() => OpenCoverStudio();
 
     [RelayCommand]
     private void AnalyzeImages() {
@@ -948,6 +925,7 @@ public partial class PublishViewModel : PageViewModelBase {
     }
 
     private void NotifyDocumentState() {
+        ScheduleCoverRecovery();
         OnPropertyChanged(nameof(IsDocumentDirty));
         OnPropertyChanged(nameof(CurrentFilePath));
         OnPropertyChanged(nameof(BreadcrumbText));

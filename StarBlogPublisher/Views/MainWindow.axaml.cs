@@ -148,6 +148,7 @@ public partial class MainWindow : FAAppWindow {
     }
 
     private bool CanEditTarget(string action) {
+        if (CurrentCoverStudio() is { } studio && action is "undo" or "redo") return action == "undo" ? studio.Session.CanUndo : studio.Session.CanRedo;
         if (_editTarget == null || TopLevel.GetTopLevel(_editTarget) != this || !_editTarget.IsEffectivelyVisible) return false;
         if (_editTarget.GetVisualAncestors().OfType<PublishEditorView>().FirstOrDefault()?.DataContext is PublishViewModel { IsWorkspaceBusy: true }) return false;
         return _editTarget switch {
@@ -160,6 +161,10 @@ public partial class MainWindow : FAAppWindow {
     }
 
     private async Task ExecuteEdit(string action) {
+        if (CurrentCoverStudio() is { } studio && action is "undo" or "redo") {
+            if (action == "undo") studio.UndoCommand.Execute(null); else studio.RedoCommand.Execute(null);
+            return;
+        }
         if (!CanEditTarget(action)) return;
         var target = _editTarget!;
         if (action is "find" or "replace") { await ShowFindAsync(target, action == "replace"); return; }
@@ -215,7 +220,7 @@ public partial class MainWindow : FAAppWindow {
         if (_checkingClose) return;
         _checkingClose = true;
         try {
-            if (await vm.CanCloseShellAsync() && await vm.Workspace.CanCloseAllAsync()) { _allowClose = true; Close(); }
+            if (await vm.CanCloseShellAsync() && await vm.Workspace.CanCloseAllAsync()) { vm.Workspace.ReleaseCoverSessions(); _allowClose = true; Close(); }
         }
         catch (Exception ex) {
             _allowClose = false;
@@ -225,6 +230,10 @@ public partial class MainWindow : FAAppWindow {
     }
 
     private void OnWorkspaceKeyDown(object? sender, KeyEventArgs e) {
+        if (CurrentCoverStudio() is { } studio && e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key is Key.Z or Key.Y) {
+            if (e.Key == Key.Z) studio.UndoCommand.Execute(null); else studio.RedoCommand.Execute(null);
+            e.Handled = true; return;
+        }
         if (e.Source is Visual source && source.GetVisualAncestors().Any(ancestor => ancestor is FAContentDialog)) return;
         if (DataContext is not MainWindowViewModel vm) return;
         if (e.Key is Key.LeftAlt or Key.RightAlt) vm.RefreshCommands();
@@ -243,6 +252,8 @@ public partial class MainWindow : FAAppWindow {
             CompactMenu.IsVisible = !MainMenu.IsVisible;
         }
     }
+    private CoverStudioViewModel? CurrentCoverStudio() => this.GetVisualDescendants().OfType<CoverStudioView>()
+        .FirstOrDefault(v => v.IsEffectivelyVisible)?.DataContext as CoverStudioViewModel;
 
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e) {
         if (e.Source != sender) return;

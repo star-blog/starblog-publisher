@@ -38,7 +38,7 @@ public partial class PublishViewModel {
         .Where(line => System.Text.RegularExpressions.Regex.IsMatch(line, @"^#{1,6}\s+"))
         .Select(line => line.TrimEnd('\r')));
     private string MetadataSnapshot() => JsonSerializer.Serialize(new ArticleProperties(
-        ArticleTitle, ArticleDescription, ArticleSlug, ArticleKeywords, SelectedCategory?.Id));
+        ArticleTitle, ArticleDescription, ArticleSlug, ArticleKeywords, SelectedCategory?.Id)) + System.Text.Json.JsonSerializer.Serialize(_coverSession?.State, CoverJsonContext.Default.ArticleCoverState);
 
     public void InitializeNewDocument() {
         HasLoadedArticle = true;
@@ -46,11 +46,13 @@ public partial class PublishViewModel {
         _isNewDocument = true;
         ClearSidecarIdentity();
         _savedMetadata = MetadataSnapshot();
+        _coverBaseline = CoverRecoveryStore.Fingerprint(_currentFilePath);
         NotifyDocumentState();
     }
 
     private async Task LoadPropertiesAsync() {
         ClearSidecarIdentity();
+        CoverSession.Load(null); CoverSession.ArticlePath = ArticleSourcePath;
         try {
             if (!string.IsNullOrEmpty(_currentFilePath)) {
                 var sidecar = await ArticleSidecar.ReadAsync(_currentFilePath);
@@ -63,18 +65,21 @@ public partial class PublishViewModel {
                     _sidecarPostId = sidecar.PostId;
                     _sidecarIsPublish = sidecar.IsPublish;
                     _sidecarLastSyncedAt = sidecar.LastSyncedAt;
+                    CoverSession.Load(sidecar.Cover);
                 }
             }
         }
         catch (Exception ex) { GuiHost.ToastWarning("文章属性未加载", ex.Message); }
         _savedMetadata = MetadataSnapshot();
+        _coverBaseline = CoverRecoveryStore.Fingerprint(_currentFilePath);
         NotifyDocumentState();
     }
 
     [RelayCommand] private Task SaveDocument() => SaveDocumentAsync();
     public async Task<bool> SaveDocumentAsync(bool saveAs = false) {
-        if (!HasLoadedArticle || IsWorkspaceBusy || _isSaving) return false;
+        if (!HasLoadedArticle || IsWorkspaceBusy || _isSaving || CoverSession.IsBusy) return false;
         _isSaving = true;
+        CoverSession.SetBusy(true);
         try {
             var path = _currentFilePath;
             if (saveAs || string.IsNullOrEmpty(path)) {
@@ -101,17 +106,21 @@ public partial class PublishViewModel {
                 Category = SelectedCategory,
                 PostId = keepIdentity ? _sidecarPostId : null,
                 IsPublish = keepIdentity ? _sidecarIsPublish : null,
-                LastSyncedAt = keepIdentity ? _sidecarLastSyncedAt : null
+                LastSyncedAt = keepIdentity ? _sidecarLastSyncedAt : null,
+                Cover = await CoverSession.Assets.PersistAsync(CoverSession.State, ArticleSourcePath, path)
             };
             await WriteFileAtomicallyAsync(path, content);
             await ArticleSidecar.WriteAsync(path, sidecar);
+            CoverSession.Rebase(sidecar.Cover, path);
             _currentFilePath = path;
             _loadedContent = content;
             _sidecarPostId = sidecar.PostId;
             _sidecarIsPublish = sidecar.IsPublish;
             _sidecarLastSyncedAt = sidecar.LastSyncedAt;
-            _savedMetadata = MetadataSnapshot();
+            _savedMetadata = JsonSerializer.Serialize(new ArticleProperties(sidecar.Title, sidecar.Description, sidecar.Slug, sidecar.Keywords, sidecar.Category?.Id))
+                + JsonSerializer.Serialize(sidecar.Cover, CoverJsonContext.Default.ArticleCoverState);
             _isNewDocument = false;
+            _coverBaseline = CoverRecoveryStore.Fingerprint(path); ClearCoverRecovery();
             _shell.Workspace.RememberFile(path);
             NotifyDocumentState();
             RefreshPreview();
@@ -119,7 +128,7 @@ public partial class PublishViewModel {
             return true;
         }
         catch (Exception ex) { GuiHost.ToastError("保存失败", ex.Message); return false; }
-        finally { _isSaving = false; }
+        finally { _isSaving = false; CoverSession.SetBusy(false); }
     }
 
     private static async Task WriteFileAtomicallyAsync(string path, string content) {
@@ -139,7 +148,7 @@ public partial class PublishViewModel {
     }
 
     private async Task<bool> ConfirmCloseAsync() {
-        if (_isSaving || IsWorkspaceBusy || IsPreparingAi || IsRefiningTitle || RegenerateDescriptionCommand.IsRunning
+        if (_isSaving || CoverSession.IsBusy || IsWorkspaceBusy || IsPreparingAi || IsRefiningTitle || RegenerateDescriptionCommand.IsRunning
             || GenerateKeywordsCommand.IsRunning || GenerateSlugCommand.IsRunning || SaveDocumentCommand.IsRunning) {
             GuiHost.ToastWarning("暂时无法关闭", "这篇文章仍有任务正在执行，请完成后再关闭。");
             return false;
@@ -147,7 +156,7 @@ public partial class PublishViewModel {
         if (!IsDocumentDirty) return true;
         var dialog = new FAContentDialog {
             Title = $"保存对 {DocumentFileName} 的修改？",
-            Content = "正文保存到 Markdown 文件，文章属性保存到同目录的 .starblog.json 文件。",
+            Content = "正文、文章属性与封面设计一起保存。",
             PrimaryButtonText = "保存", SecondaryButtonText = "不保存", CloseButtonText = "取消",
             DefaultButton = FAContentDialogButton.Primary
         };

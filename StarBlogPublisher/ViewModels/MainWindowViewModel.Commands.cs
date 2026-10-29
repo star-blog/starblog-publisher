@@ -36,6 +36,7 @@ public partial class MainWindowViewModel {
         Add("file.open", "文件", "打开文章…", "Ctrl+O", () => ShowWorkspace(Workspace.OpenFilesCommand));
         Add("file.quickOpen", "文件", "快速打开…", "Ctrl+P", () => PaletteRequested?.Invoke(false) ?? Task.CompletedTask);
         Add("file.restore", "文件", "恢复上次会话", null, () => ShowWorkspace(Workspace.RestoreSessionCommand), () => Workspace.HasPreviousSession);
+        Add("file.restoreCovers", "文件", "恢复封面编辑", null, () => ShowWorkspace(Workspace.RestoreCoverEditsCommand), () => Workspace.HasCoverRecovery);
         Add("file.save", "文件", "保存", "Ctrl+S", () => Run(Workspace.SaveActiveCommand), DocumentReady);
         Add("file.saveAs", "文件", "另存为…", "Ctrl+Shift+S", () => PublishPage.SaveDocumentAsync(true), DocumentReady);
         Add("file.saveAll", "文件", "全部保存", null, () => Run(Workspace.SaveAllCommand), () => Workspace.HasDocuments);

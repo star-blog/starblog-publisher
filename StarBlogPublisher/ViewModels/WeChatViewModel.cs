@@ -28,6 +28,19 @@ public partial class WeChatViewModel : PageViewModelBase {
     private readonly WeChatFormattingService _formattingService = new();
     private readonly WeChatDraftPublishApplicationService _publishService;
     private readonly WeChatCoverImageService _coverImageService;
+    private PublishViewModel? _coverOwner;
+    private CoverCropSet? _coverCrops;
+    private int _coverLoadVersion;
+    private CoverDocument? _boundApplied;
+    private void OnOwnerCoverChanged() {
+        if (_coverOwner is not { } owner) return;
+        if (owner.CoverSession.IsClosed) { ++_coverLoadVersion; CoverPath = ""; _coverCrops = null; DisposeStackPage(); ActiveStackPage = null; IsStackNavigating = false; return; }
+        if (_boundApplied != owner.CoverSession.State?.Applied) {
+            _boundApplied = owner.CoverSession.State?.Applied;
+            if (_boundApplied == null) { ++_coverLoadVersion; CoverPath = ""; _coverCrops = null; }
+            else _ = LoadAppliedCoverAsync(owner);
+        }
+    }
     private string _markdown = string.Empty;
     private string _sourceFilePath = string.Empty;
     private string _previewPath = string.Empty;
@@ -114,7 +127,7 @@ public partial class WeChatViewModel : PageViewModelBase {
                 return "保留原图比例上传。头条 2.35:1 和次条 1:1 都按居中区域裁剪，上方切换只改变预览。";
             }
 
-            return string.Join(Environment.NewLine, WeChatCoverCrops.Center(CoverPixelWidth, CoverPixelHeight)
+            return string.Join(Environment.NewLine, (_coverCrops == null ? WeChatCoverCrops.Center(CoverPixelWidth, CoverPixelHeight) : WeChatCoverCrops.From(_coverCrops, CoverPixelWidth, CoverPixelHeight))
                 .Select(crop => $"{crop.Label}  {crop.Region}"));
         }
     }
@@ -133,6 +146,12 @@ public partial class WeChatViewModel : PageViewModelBase {
 
     public void SyncFrom(PublishViewModel publish) {
         LoadWeChatAccounts();
+        if (_coverOwner != publish) { DisposeStackPage(); ActiveStackPage = null; IsStackNavigating = false; }
+        if (_coverOwner != null) _coverOwner.CoverSession.Changed -= OnOwnerCoverChanged;
+        _coverOwner = publish; _coverOwner.CoverSession.Changed += OnOwnerCoverChanged;
+        _boundApplied = publish.CoverSession.State?.Applied;
+        CoverPath = ""; _coverCrops = null;
+        _ = LoadAppliedCoverAsync(publish);
         if (!publish.HasLoadedArticle || string.IsNullOrWhiteSpace(publish.CurrentFilePath) ||
             string.IsNullOrWhiteSpace(publish.ArticleContent)) {
             HasArticle = false;
@@ -238,7 +257,8 @@ public partial class WeChatViewModel : PageViewModelBase {
         }
 
         try {
-            CoverPreview = new Bitmap(value);
+            var frame = IsSecondaryCoverSize ? CoverPreviewFrame.Secondary : CoverPreviewFrame.Headline;
+            CoverPreview = new Bitmap(new MemoryStream(new CoverComposer().CreatePreviewPng(value, frame, _coverCrops)));
         }
         catch (Exception ex) {
             StatusMessage = $"无法加载封面预览: {ex.Message}";
@@ -252,6 +272,7 @@ public partial class WeChatViewModel : PageViewModelBase {
     }
 
     partial void OnSelectedCoverSizeChanged(CoverSizePreset? value) {
+        OnCoverPathChanged(CoverPath);
         OnPropertyChanged(nameof(CoverPreviewHeight));
         OnPropertyChanged(nameof(IsHeadlineCoverSize));
         OnPropertyChanged(nameof(IsSecondaryCoverSize));
@@ -264,15 +285,24 @@ public partial class WeChatViewModel : PageViewModelBase {
     [RelayCommand]
     private void ToggleInspector() => IsInspectorOpen = !IsInspectorOpen;
 
-    [RelayCommand]
-    private void ShowCoverStudio() {
-        var page = new CoverStudioViewModel(_httpClientFactory, ArticleTitle, cover => {
-            UsePreparedCover(cover, $"制作封面 · {cover.Width} × {cover.Height}");
-            NavigateBreadcrumbAt(0);
-        }, ArticleImageCatalog.FromHtml(FormattedHtml, _sourceFilePath));
+    private async Task LoadAppliedCoverAsync(PublishViewModel owner) {
+        var version = ++_coverLoadVersion;
+        try {
+            var prepared = await owner.CoverSession.PrepareAppliedAsync();
+            if (version == _coverLoadVersion && _coverOwner == owner && !owner.CoverSession.IsClosed && prepared is { } cover)
+                UsePreparedCover(cover, "文章已应用封面");
+        } catch (Exception ex) { if (version == _coverLoadVersion) StatusMessage = "封面加载失败：" + ex.Message; }
+    }
+    [RelayCommand] private void ShowCoverStudio() {
+        var owner = _coverOwner;
+        var page = new CoverStudioViewModel(_httpClientFactory, owner?.ArticleTitle ?? ArticleTitle, cover => {
+            if (_coverOwner == owner && (owner == null || !owner.CoverSession.IsClosed)) { ++_coverLoadVersion; UsePreparedCover(cover, "文章已应用封面"); }
+        }, ArticleImageCatalog.FromHtml(FormattedHtml, owner?.ArticleSourcePath ?? _sourceFilePath),
+            owner?.CoverSession, owner == null ? null : () => owner.SaveDocumentAsync(),
+            owner == null ? null : () => owner.ArticleTitle, owner == null ? null : () => owner.ArticleDescription,
+            owner == null ? null : () => owner.ArticleContent);
         OpenStackPage(page, page.Title);
     }
-
     public void OpenStackPage(object page, string title) {
         DisposeStackPage();
         ActiveStackPage = page;
@@ -304,11 +334,13 @@ public partial class WeChatViewModel : PageViewModelBase {
     }
 
     public void UsePreparedCover(PreparedWeChatCover prepared, string sourceDescription) {
+        _coverCrops = prepared.Crops;
         CoverPath = prepared.Path;
         CoverPixelWidth = prepared.Width;
         CoverPixelHeight = prepared.Height;
         CoverSourceDescription = sourceDescription;
-        StatusMessage = "已使用制作的封面，将按头条和次条居中裁剪上传";
+        OnPropertyChanged(nameof(CoverCropDetail));
+        StatusMessage = "已使用文章封面，将按预览裁切上传";
     }
 
     private void DisposeStackPage() {
@@ -448,6 +480,7 @@ public partial class WeChatViewModel : PageViewModelBase {
 
     [RelayCommand]
     private async Task UploadDraft() {
+        if (_coverOwner?.CoverSession.IsClosed == true) { StatusMessage = "所属文章已关闭，请重新选择文章"; return; }
         if (IsPublishing) return;
         if (string.IsNullOrWhiteSpace(FormattedHtml)) {
             StatusMessage = "请先生成排版内容";
@@ -495,7 +528,8 @@ public partial class WeChatViewModel : PageViewModelBase {
                     OpenComment = OpenComment,
                     FansOnlyComment = FansOnlyComment,
                     CoverWidth = CoverPixelWidth,
-                    CoverHeight = CoverPixelHeight
+                    CoverHeight = CoverPixelHeight,
+                    CoverCrops = _coverCrops
                 });
             if (result.Success) {
                 DraftMediaId = result.DraftMediaId ?? string.Empty;
@@ -568,9 +602,13 @@ public partial class WeChatViewModel : PageViewModelBase {
         if (IsPreparingCover) return;
 
         IsPreparingCover = true;
+        var owner = _coverOwner;
+        var version = ++_coverLoadVersion;
         try {
             StatusMessage = "正在准备公众号封面图…";
             var prepared = await prepare();
+            if (owner != _coverOwner || version != _coverLoadVersion) return;
+            _coverCrops = prepared.Crops;
             CoverPath = prepared.Path;
             CoverPixelWidth = prepared.Width;
             CoverPixelHeight = prepared.Height;

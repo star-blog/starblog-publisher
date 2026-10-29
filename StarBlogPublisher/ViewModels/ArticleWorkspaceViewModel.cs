@@ -23,6 +23,27 @@ public partial class ArticleWorkspaceViewModel : PageViewModelBase {
     public ObservableCollection<PublishViewModel> Documents { get; } = new();
     public ObservableCollection<RecentArticle> RecentFiles { get; } = new();
     public PublishViewModel EmptyDocument { get; }
+    public string CoverDataDirectory { get; }
+    public CoverRecoveryStore CoverRecovery { get; }
+    public bool HasCoverRecovery => CoverRecovery.Entries.Length > 0;
+    public void RefreshCoverRecovery() => OnPropertyChanged(nameof(HasCoverRecovery));
+    [RelayCommand] private async Task RestoreCoverEdits() {
+        foreach (var path in CoverRecovery.Entries) {
+            try {
+                var recovery = CoverRecovery.Read(path);
+                if (recovery == null) continue;
+                var original = recovery.ArticlePath != null && System.IO.File.Exists(recovery.ArticlePath)
+                    && CoverRecoveryStore.Fingerprint(recovery.ArticlePath) == recovery.Baseline
+                    && !Documents.Any(d => d.CurrentFilePath == recovery.ArticlePath);
+                var document = new PublishViewModel(_shell);
+                if (original) await document.LoadFromPathAsync(recovery.ArticlePath!); else document.InitializeNewDocument();
+                document.RestoreCoverRecovery(recovery, original);
+                Documents.Add(document); ActiveDocument = document;
+                CoverRecovery.Delete(recovery.Id);
+            } catch (Exception ex) { GuiHost.ToastWarning("恢复封面编辑失败", ex.Message); }
+        }
+        RefreshCoverRecovery();
+    }
     [ObservableProperty] private PublishViewModel? _activeDocument;
     [ObservableProperty] private bool _isSidebarOpen = true;
     [ObservableProperty] private bool _isTaskPanelOpen;
@@ -55,6 +76,8 @@ public partial class ArticleWorkspaceViewModel : PageViewModelBase {
 
     public ArticleWorkspaceViewModel(MainWindowViewModel shell, string? historyPath = null) : base("文章", Icon.Pen) {
         _shell = shell;
+        CoverDataDirectory = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(historyPath ?? AppSettings.SettingsFilePath))!, "cover-data");
+        CoverRecovery = new(Path.Combine(CoverDataDirectory, "recovery"));
         _historyStore = new WorkspaceHistoryStore(historyPath ?? Path.Combine(Path.GetDirectoryName(Path.GetFullPath(AppSettings.SettingsFilePath))!, "workspace.json"));
         _previousSession = _historyStore.Load();
         _layout = _previousSession.Layout ?? new();
@@ -210,6 +233,7 @@ public partial class ArticleWorkspaceViewModel : PageViewModelBase {
     [RelayCommand] private async Task CloseDocument(PublishViewModel? document) {
         if (document == null || !Documents.Contains(document) || !await document.CanCloseAsync()) return;
         var index = Documents.IndexOf(document);
+        document.CloseCoverSession();
         var previouslyActive = ActiveDocument;
         Documents.Remove(document);
         ActiveDocument = previouslyActive == document
@@ -224,6 +248,7 @@ public partial class ArticleWorkspaceViewModel : PageViewModelBase {
         }
         return true;
     }
+    public void ReleaseCoverSessions() { foreach (var document in Documents.ToArray()) document.CloseCoverSession(); }
 }
 
 public sealed record RecentArticle(string Path) {

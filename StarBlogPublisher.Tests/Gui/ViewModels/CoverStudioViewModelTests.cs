@@ -17,21 +17,23 @@ public class CoverStudioViewModelTests {
         var factory = Factory((_, token) => { randomToken = token; return pending.Task; });
         PreparedWeChatCover? applied = null;
         using var studio = new CoverStudioViewModel(factory, "", cover => applied = cover,
-            [new ArticleImageSource(path, "文章配图")]) { ShowScrim = false };
+            [new ArticleImageSource(path, "文章配图")]) { Scrim = 0 };
         try {
             studio.Start();
+            var download = studio.PickRandomBackgroundCommand.ExecuteAsync(null);
             await studio.SelectArticleBackgroundCommand.ExecuteAsync(studio.ArticleImages[0]);
             randomToken.IsCancellationRequested.Should().BeTrue();
             studio.IsFetchingRandomBackground.Should().BeFalse();
             studio.IsFetchingArticleBackground.Should().BeFalse();
-            studio.BackgroundDescription.Should().Be("文章图片 · 文章配图");
+            studio.Session.Draft.Background.Should().NotBeNull();
+            await studio.ApplyToWeChatCommand.ExecuteAsync(null);
             var cover = SkiaFixture.Sample(studio.OutputPath, 600, 450);
             cover.Width.Should().Be(1200);
             cover.Height.Should().Be(900);
             cover.G.Should().BeGreaterThan(150);
             cover.R.Should().BeLessThan(20);
 
-            studio.ApplyToWeChatCommand.Execute(null);
+            await studio.ApplyToWeChatCommand.ExecuteAsync(null);
             applied.Should().NotBeNull();
             applied!.Value.Path.Should().Be(studio.OutputPath);
             studio.Dispose();
@@ -57,9 +59,10 @@ public class CoverStudioViewModelTests {
         using var studio = new CoverStudioViewModel(factory, "", _ => { }, [
             new ArticleImageSource("https://images.example/photo?id=1&size=2", "在线配图"),
             new ArticleImageSource("https://images.example/broken", "损坏的图片")
-        ]) { ShowScrim = false };
+        ]) { Scrim = 0 };
         studio.Start();
         await studio.SelectArticleBackgroundCommand.ExecuteAsync(studio.ArticleImages[0]);
+        await studio.ApplyToWeChatCommand.ExecuteAsync(null);
         var previous = studio.OutputPath;
         SkiaFixture.Sample(previous, 600, 450).B.Should().BeGreaterThan(180);
         requested.Should().Contain(new Uri("https://images.example/photo?id=1&size=2"));
@@ -67,7 +70,7 @@ public class CoverStudioViewModelTests {
         await studio.SelectArticleBackgroundCommand.ExecuteAsync(studio.ArticleImages[1]);
 
         studio.OutputPath.Should().Be(previous);
-        studio.BackgroundDescription.Should().Be("文章图片 · 在线配图");
+        studio.Session.Draft.Background.Should().NotBeNull();
         studio.StatusMessage.Should().Contain("读取文章图片失败");
     }
 

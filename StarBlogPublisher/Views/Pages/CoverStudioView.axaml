@@ -1,265 +1,129 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:vm="using:StarBlogPublisher.ViewModels"
-             xmlns:models="using:StarBlogPublisher.Models"
-             xmlns:fi="using:FluentIcons.Avalonia.Fluent"
-             mc:Ignorable="d" d:DesignWidth="980" d:DesignHeight="680"
-             x:Class="StarBlogPublisher.Views.CoverStudioView"
-             x:DataType="vm:CoverStudioViewModel"
-             x:Name="StudioRoot">
-    <UserControl.Styles>
-        <Style Selector="TextBlock.InspectorLabel">
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
-        </Style>
-        <Style Selector="TextBox.InspectorInput">
-            <Setter Property="MinHeight" Value="28" />
-            <Setter Property="Padding" Value="8,4" />
-            <Setter Property="FontSize" Value="12" />
-        </Style>
-        <Style Selector="ComboBox.InspectorInput">
-            <Setter Property="MinHeight" Value="28" />
-            <Setter Property="Padding" Value="8,0" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-        </Style>
-    </UserControl.Styles>
-    <Panel Margin="16">
-        <Grid ColumnDefinitions="*,320">
-            <Grid RowDefinitions="Auto,*">
-                <StackPanel Spacing="8" Margin="0,0,0,12">
-                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
-                        <ToggleButton Classes="EditorMode" HorizontalAlignment="Stretch"
-                                      IsChecked="{Binding IsFullPreview, Mode=OneWay}"
-                                      Command="{Binding SetPreviewModeCommand}" CommandParameter="full">
-                            <TextBlock Text="完整" />
-                        </ToggleButton>
-                        <ToggleButton Grid.Column="1" Classes="EditorMode" HorizontalAlignment="Stretch"
-                                      IsChecked="{Binding IsHeadlinePreview, Mode=OneWay}"
-                                      Command="{Binding SetPreviewModeCommand}" CommandParameter="headline">
-                            <TextBlock Text="头条 2.35:1" />
-                        </ToggleButton>
-                        <ToggleButton Grid.Column="2" Classes="EditorMode" HorizontalAlignment="Stretch"
-                                      IsChecked="{Binding IsSecondaryPreview, Mode=OneWay}"
-                                      Command="{Binding SetPreviewModeCommand}" CommandParameter="secondary">
-                            <TextBlock Text="次条 1:1" />
-                        </ToggleButton>
-                    </Grid>
-                    <TextBlock Text="{Binding PreviewCaption}" FontSize="12" TextWrapping="Wrap"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                </StackPanel>
-
-                <Border Grid.Row="1" CornerRadius="8" ClipToBounds="True"
-                        Background="{DynamicResource ControlFillColorDefaultBrush}">
-                    <Panel>
-                        <Image Source="{Binding Preview}" Stretch="Uniform"
-                               IsVisible="{Binding HasPreview}" />
-                        <StackPanel IsVisible="{Binding !HasPreview}" HorizontalAlignment="Center"
-                                    VerticalAlignment="Center" Spacing="6" Opacity="0.7">
-                            <fi:FluentIcon Icon="Image" IconVariant="Regular" FontSize="28" HorizontalAlignment="Center" />
-                            <TextBlock Text="封面预览会出现在这里" FontSize="12" HorizontalAlignment="Center" />
-                        </StackPanel>
-                        <Border IsVisible="{Binding IsFetchingRandomBackground}"
-                                HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                                Margin="0,0,0,12" Padding="10,4" CornerRadius="4" Background="#CC000000">
-                            <TextBlock Text="正在获取随机背景…" FontSize="12" Foreground="White" />
-                        </Border>
-                        <Border IsVisible="{Binding IsFetchingArticleBackground}"
-                                HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                                Margin="0,0,0,12" Padding="10,4" CornerRadius="4" Background="#CC000000">
-                            <TextBlock Text="正在读取文章图片…" FontSize="12" Foreground="White" />
-                        </Border>
-                    </Panel>
-                </Border>
-            </Grid>
-
-            <Border Grid.Column="1"
-                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="1,0,0,0"
-                    Padding="16,0,0,0">
-            <ScrollViewer>
-                <StackPanel Spacing="14">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="背景" FontWeight="SemiBold" />
-                        <Button Command="{Binding SelectLocalBackgroundCommand}" HorizontalAlignment="Stretch">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
-                                <fi:FluentIcon Icon="FolderOpen" IconVariant="Regular" FontSize="16" />
-                                <TextBlock Text="选择本地图片" />
-                            </StackPanel>
-                        </Button>
-                        <Button Command="{Binding ShowArticleImagesCommand}" HorizontalAlignment="Stretch"
-                                IsEnabled="{Binding HasArticleImages}">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6">
-                                <fi:FluentIcon Icon="Image" IconVariant="Regular" FontSize="16" />
-                                <TextBlock Text="{Binding ArticleImagePickerLabel}" />
-                            </StackPanel>
-                        </Button>
-                        <TextBlock IsVisible="{Binding !HasArticleImages}" Text="文章正文中没有可用图片"
-                                   FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                            <ComboBox Classes="InspectorInput" ItemsSource="{Binding RandomCoverProviders}"
-                                      SelectedItem="{Binding SelectedRandomCoverProvider}"
-                                      DisplayMemberBinding="{Binding Name}"
-                                      HorizontalAlignment="Stretch" />
-                            <Button Grid.Column="1" Command="{Binding PickRandomBackgroundCommand}"
-                                    Classes="Compact" MinHeight="32">
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5">
-                                    <fi:FluentIcon Icon="ArrowShuffle" IconVariant="Regular" FontSize="15" />
-                                    <TextBlock Text="换一张" />
-                                </StackPanel>
-                            </Button>
-                        </Grid>
-                        <TextBlock Text="{Binding BackgroundDescription}" FontSize="11" TextWrapping="Wrap"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    </StackPanel>
-
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="标题" FontWeight="SemiBold" />
-                        <TextBox Classes="InspectorInput" Text="{Binding CoverTitle}" AcceptsReturn="True"
-                                 TextWrapping="Wrap" MinLines="2" MaxLines="4" PlaceholderText="封面标题" />
-                        <TextBlock Text="打开时使用文章标题，可以改成封面里要显示的字。" FontSize="11" TextWrapping="Wrap"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    </StackPanel>
-
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="样式" FontWeight="SemiBold" />
-                        <TextBlock Text="字号" Classes="InspectorLabel" />
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                            <Slider Minimum="28" Maximum="96" TickFrequency="2" IsSnapToTickEnabled="True"
-                                    Value="{Binding FontSize}" />
-                            <TextBlock Grid.Column="1" Width="28" VerticalAlignment="Center"
-                                       Text="{Binding FontSize, StringFormat={}{0:0}}" />
-                        </Grid>
-                        <TextBlock Text="{Binding FontSizeHint}" FontSize="11"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-
-                        <TextBlock Text="颜色" Classes="InspectorLabel" />
-                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
-                            <ToggleButton Classes="EditorMode" HorizontalAlignment="Stretch"
-                                          IsChecked="{Binding IsWhiteColor, Mode=OneWay}"
-                                          Command="{Binding SetTextColorCommand}" CommandParameter="white">
-                                <TextBlock Text="白色" />
-                            </ToggleButton>
-                            <ToggleButton Grid.Column="1" Classes="EditorMode" HorizontalAlignment="Stretch"
-                                          IsChecked="{Binding IsBlackColor, Mode=OneWay}"
-                                          Command="{Binding SetTextColorCommand}" CommandParameter="black">
-                                <TextBlock Text="黑色" />
-                            </ToggleButton>
-                            <ToggleButton Grid.Column="2" Classes="EditorMode" HorizontalAlignment="Stretch"
-                                          IsChecked="{Binding IsCustomColor, Mode=OneWay}"
-                                          Command="{Binding SetTextColorCommand}" CommandParameter="custom">
-                                <TextBlock Text="自定义" />
-                            </ToggleButton>
-                        </Grid>
-                        <TextBox Classes="InspectorInput" Text="{Binding CustomColorHex}"
-                                 IsVisible="{Binding IsCustomColor}" PlaceholderText="#FFFFFF" />
-
-                        <TextBlock Text="粗细" Classes="InspectorLabel" />
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
-                            <ToggleButton Classes="EditorMode" HorizontalAlignment="Stretch"
-                                          IsChecked="{Binding IsRegularWeight, Mode=OneWay}"
-                                          Command="{Binding SetBoldCommand}" CommandParameter="false">
-                                <TextBlock Text="常规" />
-                            </ToggleButton>
-                            <ToggleButton Grid.Column="1" Classes="EditorMode" HorizontalAlignment="Stretch"
-                                          IsChecked="{Binding IsBold, Mode=OneWay}"
-                                          Command="{Binding SetBoldCommand}" CommandParameter="true">
-                                <TextBlock Text="加粗" />
-                            </ToggleButton>
-                        </Grid>
-
-                        <TextBlock Text="对齐" Classes="InspectorLabel" />
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
-                            <ToggleButton Classes="EditorMode" HorizontalAlignment="Stretch"
-                                          IsChecked="{Binding IsLeftAlign, Mode=OneWay}"
-                                          Command="{Binding SetTextAlignCommand}" CommandParameter="left">
-                                <TextBlock Text="左对齐" />
-                            </ToggleButton>
-                            <ToggleButton Grid.Column="1" Classes="EditorMode" HorizontalAlignment="Stretch"
-                                          IsChecked="{Binding IsCenterAlign, Mode=OneWay}"
-                                          Command="{Binding SetTextAlignCommand}" CommandParameter="center">
-                                <TextBlock Text="居中" />
-                            </ToggleButton>
-                        </Grid>
-
-                        <TextBlock Text="位置" Classes="InspectorLabel" />
-                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
-                            <ToggleButton Classes="EditorMode" HorizontalAlignment="Stretch"
-                                          IsChecked="{Binding IsTopPlacement, Mode=OneWay}"
-                                          Command="{Binding SetTextPlacementCommand}" CommandParameter="top">
-                                <TextBlock Text="靠上" />
-                            </ToggleButton>
-                            <ToggleButton Grid.Column="1" Classes="EditorMode" HorizontalAlignment="Stretch"
-                                          IsChecked="{Binding IsCenterPlacement, Mode=OneWay}"
-                                          Command="{Binding SetTextPlacementCommand}" CommandParameter="center">
-                                <TextBlock Text="居中" />
-                            </ToggleButton>
-                            <ToggleButton Grid.Column="2" Classes="EditorMode" HorizontalAlignment="Stretch"
-                                          IsChecked="{Binding IsBottomPlacement, Mode=OneWay}"
-                                          Command="{Binding SetTextPlacementCommand}" CommandParameter="bottom">
-                                <TextBlock Text="靠下" />
-                            </ToggleButton>
-                        </Grid>
-
-                        <CheckBox Content="渐变遮罩" IsChecked="{Binding ShowScrim}" />
-                        <TextBlock Text="压暗标题背后的背景，让字在照片上更清楚。" FontSize="11" TextWrapping="Wrap"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    </StackPanel>
-
-                    <StackPanel Spacing="8">
-                        <Button Command="{Binding SaveImageCommand}" HorizontalAlignment="Stretch">
-                            <TextBlock Text="保存图片" HorizontalAlignment="Center" />
-                        </Button>
-                        <Button Classes="Accent" Command="{Binding ApplyToWeChatCommand}" HorizontalAlignment="Stretch">
-                            <TextBlock Text="用作公众号封面" HorizontalAlignment="Center" />
-                        </Button>
-                        <TextBlock Text="{Binding StatusMessage}" FontSize="11" TextWrapping="Wrap"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    </StackPanel>
-                </StackPanel>
-            </ScrollViewer>
-            </Border>
-        </Grid>
-        <Border IsVisible="{Binding IsArticleImagePickerOpen}" Classes="Card" Padding="20"
-                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
-            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="12">
-                <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Text="选择文章图片作为背景" FontSize="18" FontWeight="SemiBold"
-                               VerticalAlignment="Center" />
-                    <Button Grid.Column="1" Command="{Binding CloseArticleImagesCommand}" Content="关闭" />
-                </Grid>
-                <TextBlock Grid.Row="1" Text="点击图片即可使用；之后仍可调整标题和样式。"
-                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                <ScrollViewer Grid.Row="2">
-                    <ItemsControl ItemsSource="{Binding ArticleImages}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="models:ArticleCoverImage">
-                                <Button Width="180" Margin="0,0,12,12" Padding="8"
-                                        HorizontalContentAlignment="Stretch" ToolTip.Tip="{Binding Source}"
-                                        Command="{Binding #StudioRoot.((vm:CoverStudioViewModel)DataContext).SelectArticleBackgroundCommand}"
-                                        CommandParameter="{Binding}">
-                                    <StackPanel Spacing="6">
-                                        <Border Height="110" CornerRadius="4" ClipToBounds="True"
-                                                Background="{DynamicResource ControlFillColorDefaultBrush}">
-                                            <Panel>
-                                                <Image Source="{Binding Thumbnail}" Stretch="Uniform" />
-                                                <TextBlock Text="{Binding Status}" TextWrapping="Wrap" FontSize="11"
-                                                           HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8" />
-                                            </Panel>
-                                        </Border>
-                                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                                    </StackPanel>
-                                </Button>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-            </Grid>
-        </Border>
-    </Panel>
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:vm="using:StarBlogPublisher.ViewModels" xmlns:models="using:StarBlogPublisher.Models"
+ xmlns:utils="clr-namespace:StarBlogPublisher.Utils;assembly=StarBlogPublisher.Core"
+ xmlns:controls="using:StarBlogPublisher.Views.Controls"
+ x:Class="StarBlogPublisher.Views.CoverStudioView" x:DataType="vm:CoverStudioViewModel" x:Name="StudioRoot">
+ <UserControl.Styles>
+  <Style Selector="TextBox"><Setter Property="MinHeight" Value="32"/></Style>
+  <Style Selector="TextBlock.Hint"><Setter Property="FontSize" Value="11"/><Setter Property="TextWrapping" Value="Wrap"/><Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/></Style>
+ </UserControl.Styles>
+ <Grid RowDefinitions="Auto,*,Auto" Margin="16" RowSpacing="12">
+  <Grid ColumnDefinitions="*,Auto">
+   <StackPanel Orientation="Horizontal" Spacing="6">
+    <Button Content="撤销" Command="{Binding UndoCommand}"/>
+    <Button Content="重做" Command="{Binding RedoCommand}"/>
+    <Button Content="属性" Command="{Binding ToggleInspectorCommand}"/>
+   </StackPanel>
+   <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+    <Button Content="保存文章" Command="{Binding SaveArticleCommand}"/>
+    <Button Content="导出图片" Command="{Binding SaveImageCommand}" IsEnabled="{Binding IsEditable}"/>
+    <Button Content="应用到文章" Classes="Accent" Command="{Binding ApplyToWeChatCommand}" IsEnabled="{Binding IsEditable}"/>
+   </StackPanel>
+  </Grid>
+  <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="16">
+   <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
+    <ItemsControl ItemsSource="{Binding Templates}">
+     <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+     <ItemsControl.ItemTemplate><DataTemplate x:DataType="models:CoverTemplate">
+      <Button Margin="0,0,6,6" Content="{Binding Name}" IsEnabled="{Binding #StudioRoot.((vm:CoverStudioViewModel)DataContext).IsEditable}"
+       Command="{Binding #StudioRoot.((vm:CoverStudioViewModel)DataContext).SelectTemplateCommand}" CommandParameter="{Binding}"/>
+     </DataTemplate></ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
+     <TextBlock Text="拖动调整" VerticalAlignment="Center"/>
+     <ComboBox SelectedItem="{Binding DragTarget}" MinWidth="90">
+      <x:String>背景</x:String><x:String>文字</x:String>
+     </ComboBox>
+     <TextBlock Classes="Hint" Text="1200 × 900 · 滚轮缩放背景" VerticalAlignment="Center"/>
+    </StackPanel>
+    <Border Grid.Row="2" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="8" ClipToBounds="True"><Panel>
+     <Image x:Name="CanvasImage" Source="{Binding Preview}" Stretch="Uniform" PointerPressed="OnCanvasPressed"
+      PointerMoved="OnCanvasMoved" PointerReleased="OnCanvasReleased" PointerWheelChanged="OnCanvasWheel"/>
+      <controls:CoverGuides x:Name="Guides" IsHitTestVisible="False"/>
+    </Panel></Border>
+    <Grid Grid.Row="3" ColumnDefinitions="*,150" ColumnSpacing="12" MaxHeight="170">
+     <StackPanel Spacing="4"><TextBlock Classes="Hint" Text="头条 · 2.35:1"/><Image Source="{Binding HeadlinePreview}" Stretch="Uniform" MaxHeight="140"/></StackPanel>
+     <StackPanel Grid.Column="1" Spacing="4"><TextBlock Classes="Hint" Text="次条 · 1:1"/><Image Source="{Binding SecondaryPreview}" Stretch="Uniform" MaxHeight="140"/></StackPanel>
+    </Grid>
+   </Grid>
+   <Border Grid.Column="1" Width="300" IsVisible="{Binding IsInspectorOpen}" BorderThickness="1,0,0,0"
+    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Padding="12,0,0,0">
+    <TabControl SelectedIndex="{Binding InspectorTab}" IsEnabled="{Binding IsEditable}">
+     <TabItem Header="内容"><ScrollViewer><StackPanel Spacing="10" Margin="0,10,4,0">
+      <TextBlock Text="封面标题" FontWeight="SemiBold"/>
+      <TextBox Text="{Binding CoverTitle}" AcceptsReturn="True" TextWrapping="Wrap" MinLines="2" IsUndoEnabled="False"/>
+      <Button Content="同步文章标题" Command="{Binding SyncTitleCommand}"/>
+      <TextBlock Text="副标题"/><TextBox Text="{Binding Subtitle}" AcceptsReturn="True" TextWrapping="Wrap" IsUndoEnabled="False"/>
+      <TextBlock Text="栏目名"/><TextBox Text="{Binding Column}" IsUndoEnabled="False"/>
+      <Button Content="选择标识图片" Command="{Binding SelectLogoCommand}"/>
+      <Button Content="移除标识" Command="{Binding ClearLogoCommand}"/>
+      <TextBlock Text="导出格式"/><ComboBox SelectedItem="{Binding ExportFormat}" HorizontalAlignment="Stretch"><x:String>JPEG</x:String><x:String>PNG</x:String></ComboBox>
+      <TextBlock Text="导出范围"/><ComboBox SelectedItem="{Binding ExportRange}" HorizontalAlignment="Stretch"><x:String>完整画布</x:String><x:String>头条</x:String><x:String>次条</x:String></ComboBox>
+     </StackPanel></ScrollViewer></TabItem>
+     <TabItem Header="背景"><ScrollViewer><StackPanel Spacing="10" Margin="0,10,4,0">
+      <Button Content="选择本地图片" Command="{Binding SelectLocalBackgroundCommand}" HorizontalAlignment="Stretch"/>
+      <Button Content="{Binding ArticleImagePickerLabel}" Command="{Binding ShowArticleImagesCommand}" IsEnabled="{Binding HasArticleImages}" HorizontalAlignment="Stretch"/>
+      <ComboBox ItemsSource="{Binding RandomCoverProviders}" SelectedItem="{Binding SelectedRandomCoverProvider}" DisplayMemberBinding="{Binding Name}" HorizontalAlignment="Stretch"/>
+      <Button Content="获取随机背景" Command="{Binding PickRandomBackgroundCommand}"/>
+      <TextBlock Classes="Hint" Text="{Binding BackgroundDescription}"/>
+      <TextBlock Text="背景缩放"/><Slider Minimum="1" Maximum="4" Value="{Binding Zoom}" PointerReleased="OnGestureEnd"/>
+      <Button Content="重置构图" Command="{Binding ResetBackgroundCommand}"/>
+      <Button Content="移除背景" Command="{Binding ClearBackgroundCommand}"/>
+      <TextBlock Text="底色"/><TextBox Text="{Binding BackgroundColor}" IsUndoEnabled="False"/>
+      <TextBlock Text="遮罩强度"/><Slider Minimum="0" Maximum="1" Value="{Binding Scrim}" PointerReleased="OnGestureEnd"/>
+     </StackPanel></ScrollViewer></TabItem>
+     <TabItem Header="样式"><ScrollViewer><StackPanel Spacing="10" Margin="0,10,4,0">
+      <TextBlock Text="字号"/><Slider Minimum="24" Maximum="96" Value="{Binding FontSize}" PointerReleased="OnGestureEnd"/>
+      <TextBlock Classes="Hint" Text="{Binding FontSizeHint}"/>
+      <TextBlock Text="文字颜色"/><TextBox Text="{Binding TextColor}" IsUndoEnabled="False"/>
+      <CheckBox Content="加粗" IsChecked="{Binding IsBold}"/><CheckBox Content="水平居中" IsChecked="{Binding Centered}"/>
+      <TextBlock Text="行距"/><Slider Minimum="1" Maximum="2" Value="{Binding LineHeight}" PointerReleased="OnGestureEnd"/>
+      <TextBlock Text="文本框宽度"/><Slider Minimum=".25" Maximum="1" Value="{Binding TextWidth}" PointerReleased="OnGestureEnd"/>
+      <StackPanel Orientation="Horizontal" Spacing="4">
+       <Button Content="靠上" Command="{Binding SetTextPlacementCommand}" CommandParameter="top"/>
+       <Button Content="居中" Command="{Binding SetTextPlacementCommand}" CommandParameter="center"/>
+       <Button Content="靠下" Command="{Binding SetTextPlacementCommand}" CommandParameter="bottom"/>
+      </StackPanel>
+      <CheckBox Content="手动构图" IsChecked="{Binding Manual}"/>
+      <CheckBox Content="显示裁切与安全区参考线" IsChecked="{Binding ShowGuides}"/>
+      <TextBlock Classes="Hint" Text="默认在两种比例共同安全区排字。手动模式允许自由布局，请检查裁切预览。"/>
+      <StackPanel IsVisible="{Binding Manual}" Spacing="8">
+       <TextBlock Text="头条裁切位置"/><Slider Minimum="0" Maximum="1" Value="{Binding HeadlineOffset}" PointerReleased="OnGestureEnd"/>
+       <TextBlock Text="次条裁切位置"/><Slider Minimum="0" Maximum="1" Value="{Binding SecondaryOffset}" PointerReleased="OnGestureEnd"/>
+      </StackPanel>
+     </StackPanel></ScrollViewer></TabItem>
+     <TabItem Header="AI"><ScrollViewer><StackPanel Spacing="10" Margin="0,10,4,0">
+      <TextBlock Classes="Hint" Text="在设置中启用 AI 后，可以构思背景和生成短标题。选中候选才会修改封面。"/>
+      <StackPanel IsEnabled="{Binding IsAIEnabled}" Spacing="10">
+       <Button Content="生成三个短标题" Command="{Binding SuggestTitlesCommand}" IsEnabled="{Binding !IsGeneratingAi}"/>
+       <ItemsControl ItemsSource="{Binding TitleSuggestions}">
+        <ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String">
+         <Button Content="{Binding}" Margin="0,0,0,6" Command="{Binding #StudioRoot.((vm:CoverStudioViewModel)DataContext).ChooseTitleCommand}" CommandParameter="{Binding}"/>
+        </DataTemplate></ItemsControl.ItemTemplate>
+       </ItemsControl>
+       <ComboBox ItemsSource="{Binding PromptStyles}" SelectedItem="{Binding SelectedPromptStyle}" DisplayMemberBinding="{Binding Name}" HorizontalAlignment="Stretch"/>
+       <Button Content="构思背景提示词" Command="{Binding GeneratePromptCommand}" IsEnabled="{Binding !IsGeneratingAi}"/>
+       <Button Content="取消生成" Command="{Binding CancelAiCommand}" IsVisible="{Binding IsGeneratingAi}"/>
+      </StackPanel>
+      <TextBox Text="{Binding GeneratedPrompt}" AcceptsReturn="True" TextWrapping="Wrap" MinLines="8" IsUndoEnabled="False"/>
+      <Button Content="复制提示词" Command="{Binding CopyPromptCommand}"/>
+     </StackPanel></ScrollViewer></TabItem>
+    </TabControl>
+   </Border>
+  </Grid>
+  <StackPanel Grid.Row="2" Spacing="3"><TextBlock Classes="Hint" Text="{Binding SaveHint}"/><TextBlock Classes="Hint" Text="{Binding StatusMessage}"/></StackPanel>
+  <Border Grid.RowSpan="3" IsVisible="{Binding IsArticleImagePickerOpen}" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" Padding="16">
+   <Grid RowDefinitions="Auto,*" RowSpacing="12">
+    <Grid ColumnDefinitions="*,Auto"><TextBlock Text="选择文章图片作为背景" FontSize="18"/><Button Grid.Column="1" Content="关闭" Command="{Binding CloseArticleImagesCommand}"/></Grid>
+    <ScrollViewer Grid.Row="1"><ItemsControl ItemsSource="{Binding ArticleImages}">
+     <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+     <ItemsControl.ItemTemplate><DataTemplate x:DataType="models:ArticleCoverImage">
+      <Button Width="180" Margin="0,0,12,12" Padding="8" Command="{Binding #StudioRoot.((vm:CoverStudioViewModel)DataContext).SelectArticleBackgroundCommand}" CommandParameter="{Binding}">
+       <StackPanel Spacing="6"><Image Source="{Binding Thumbnail}" Height="100" Stretch="Uniform"/><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Status}" TextWrapping="Wrap" FontSize="11"/></StackPanel>
+      </Button>
+     </DataTemplate></ItemsControl.ItemTemplate>
+    </ItemsControl></ScrollViewer>
+   </Grid>
+  </Border>
+ </Grid>
 </UserControl>

@@ -46,6 +46,8 @@
         <Style Selector="ListBox.DocumentTabs ListBoxItem:selected /template/ ContentPresenter"><Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" /><Setter Property="BorderThickness" Value="0,2,0,0" /></Style>
     </UserControl.Styles>
     <DockPanel>
+        <Button DockPanel.Dock="Top" IsVisible="{Binding HasCoverRecovery}" Command="{Binding RestoreCoverEditsCommand}"
+                Content="发现未保存的封面编辑，点击恢复文章与封面" HorizontalAlignment="Stretch" Margin="12,6" />
         <controls:WorkspaceStatusBar DockPanel.Dock="Bottom" DataContext="{Binding CurrentDocument}" />
         <Grid>
             <Grid.ColumnDefinitions>
@@ -65,6 +67,7 @@
                                 <MenuItem Header="保存全部" Command="{Binding SaveAllCommand}" />
                                 <MenuItem Header="关闭全部文章" Command="{Binding CloseAllCommand}" />
                                 <MenuItem Header="恢复上次会话" Command="{Binding RestoreSessionCommand}" />
+                                <MenuItem Header="恢复封面编辑" Command="{Binding RestoreCoverEditsCommand}" IsEnabled="{Binding HasCoverRecovery}" />
                                 <Separator />
                                 <MenuItem Header="收起侧栏" Command="{Binding ToggleSidebarCommand}" />
                             </MenuFlyout></Button.Flyout>

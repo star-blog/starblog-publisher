@@ -302,10 +302,10 @@ public class WeChatViewModelTests : IDisposable {
         viewModel.Breadcrumbs.Select(item => item.Title).Should().Equal("公众号排版", "制作封面");
         var studio = viewModel.ActiveStackPage.Should().BeOfType<CoverStudioViewModel>().Subject;
         studio.CoverTitle.Should().Be("封面标题");
-        studio.ShowScrim.Should().BeTrue();
+        studio.Session.Draft.TemplateId.Should().Be("minimal");
         studio.IsBold.Should().BeTrue();
-        studio.IsBottomPlacement.Should().BeTrue();
-        studio.IsCenterAlign.Should().BeTrue();
+        studio.Session.Draft.Placement.Should().Be("center");
+        studio.Centered.Should().BeTrue();
 
         viewModel.NavigateBreadcrumbAt(0);
 
@@ -350,7 +350,7 @@ public class WeChatViewModelTests : IDisposable {
             viewModel.CoverPixelHeight.Should().Be(900);
             viewModel.HasCover.Should().BeTrue();
             viewModel.CoverSourceDescription.Should().Be("制作封面 · 1200 × 900");
-            viewModel.StatusMessage.Should().Contain("制作的封面");
+            viewModel.StatusMessage.Should().Contain("文章封面");
         }
         finally {
             viewModel.CoverPreview?.Dispose();

@@ -7,560 +7,285 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
+using Avalonia.Input.Platform;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
+using StarBlogPublisher.Utils;
 
 namespace StarBlogPublisher.ViewModels;
 
 public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
-    private const int MaxImageBytes = 10 * 1024 * 1024;
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly CoverComposer _composer = new();
-    private readonly Action<PreparedWeChatCover> _applyToWeChat;
-    private readonly object _gate = new();
-    private CancellationTokenSource? _renderCts;
-    private CancellationTokenSource? _backgroundCts;
-    private readonly CancellationTokenSource _galleryCts = new();
-    private bool _galleryStarted;
-    private int _backgroundRequest;
-    private byte[]? _background;
-    private string? _unappliedPath;
-    private string? _previewFile;
-    private int _renderSerial;
-    private int _disposed;
-    private bool _ready;
-    private bool _started;
-
+    private readonly IHttpClientFactory _factory;
+    private readonly Action<PreparedWeChatCover> _apply;
+    private readonly Func<Task<bool>>? _save;
+    private readonly Func<string> _articleTitle, _summary, _content;
+    private readonly SemaphoreSlim _renderGate = new(1);
+    private readonly CancellationTokenSource _lifetime = new();
+    private CancellationTokenSource? _renderCts, _backgroundCts, _aiCts;
+    private bool _started, _disposed;
+    private int _renderRevision = -1;
+    private int _backgroundWidth, _backgroundHeight;
+    public CoverEditSession Session { get; }
     public CoverStudioViewModel(IHttpClientFactory httpClientFactory, string? articleTitle, Action<PreparedWeChatCover> applyToWeChat,
-        IReadOnlyList<ArticleImageSource>? articleImages = null) {
-        _httpClientFactory = httpClientFactory;
-        _applyToWeChat = applyToWeChat;
-        CoverTitle = articleTitle?.Trim() ?? "";
-        SelectedRandomCoverProvider = RandomCoverProviders[0];
-        ArticleImages = new ObservableCollection<ArticleCoverImage>(
-            (articleImages ?? []).Select(image => new ArticleCoverImage(image)));
+        IReadOnlyList<ArticleImageSource>? articleImages = null, CoverEditSession? session = null, Func<Task<bool>>? save = null,
+        Func<string>? title = null, Func<string>? summary = null, Func<string>? content = null) {
+        _factory = httpClientFactory; _apply = applyToWeChat; _save = save;
+        _articleTitle = title ?? (() => articleTitle ?? ""); _summary = summary ?? (() => ""); _content = content ?? (() => "");
+        Session = session ?? new(Path.Combine(Path.GetTempPath(), "StarBlogPublisher", "cover-assets"), articleTitle ?? "");
+        ArticleImages = new((articleImages ?? []).Select(i => new ArticleCoverImage(i)));
+        Session.Changed += OnSessionChanged;
     }
-
     public string Title => "制作封面";
-
-    public ObservableCollection<RandomCoverProvider> RandomCoverProviders { get; } = new(RandomCoverCatalog.All);
+    public IReadOnlyList<CoverTemplate> Templates => CoverTemplate.All;
     public ObservableCollection<ArticleCoverImage> ArticleImages { get; }
+    public ObservableCollection<RandomCoverProvider> RandomCoverProviders { get; } = new(RandomCoverCatalog.All);
+    public ObservableCollection<PromptTemplate> PromptStyles { get; } = new(PromptTemplates.Cover);
+    public ObservableCollection<string> TitleSuggestions { get; } = new();
     public bool HasArticleImages => ArticleImages.Count > 0;
-    public string ArticleImagePickerLabel => $"选择文章图片（{ArticleImages.Count}）";
-
-    [ObservableProperty] private string _coverTitle = "";
-    [ObservableProperty] private double _fontSize = CoverComposer.DefaultFontSize;
-    [ObservableProperty] private string _textColorId = "white";
-    [ObservableProperty] private string _customColorHex = "#FFFFFF";
-    [ObservableProperty] private bool _isBold = true;
-    [ObservableProperty] private string _textAlignId = "center";
-    [ObservableProperty] private string _textPlacementId = "bottom";
-    [ObservableProperty] private bool _showScrim = true;
-    [ObservableProperty] private string _previewMode = "full";
-    [ObservableProperty] private RandomCoverProvider? _selectedRandomCoverProvider;
-    [ObservableProperty] private string _backgroundDescription = "尚未选择背景，将使用深色底";
-    [ObservableProperty] private string _statusMessage = "选择背景并确认标题";
+    public string ArticleImagePickerLabel => $"文章图片（{ArticleImages.Count}）";
+    public bool IsEditable => Session.IsSupported && !Session.IsBusy && !Session.IsClosed;
+    public bool HasPreview => Preview != null;
+    public string SaveHint => !Session.IsSupported ? "此封面版本暂不可编辑，原始数据会保留" : Session.State?.Applied == null ? "封面草稿 · 尚未应用" :
+        Session.Draft == Session.State.Applied ? "当前设计已应用 · 随文章保存" : "草稿已修改 · 已应用封面保持原样";
+    [ObservableProperty] private Bitmap? _preview;
+    [ObservableProperty] private Bitmap? _headlinePreview;
+    [ObservableProperty] private Bitmap? _secondaryPreview;
+    [ObservableProperty] private string _statusMessage = "选择模板，调整背景和标题";
+    [ObservableProperty] private bool _isArticleImagePickerOpen;
     [ObservableProperty] private bool _isFetchingRandomBackground;
+    [ObservableProperty] private bool _isFetchingArticleBackground;
+    [ObservableProperty] private bool _isGeneratingAi;
+    [ObservableProperty] private bool _isInspectorOpen = true;
+    [ObservableProperty] private int _inspectorTab;
     [ObservableProperty] private string _outputPath = "";
     [ObservableProperty] private int _effectiveFontSize;
-    [ObservableProperty] private Bitmap? _preview;
-    [ObservableProperty] private bool _isArticleImagePickerOpen;
-    [ObservableProperty] private bool _isFetchingArticleBackground;
-
-    public bool HasPreview => Preview != null;
-    public bool IsWhiteColor => TextColorId == "white";
-    public bool IsBlackColor => TextColorId == "black";
-    public bool IsCustomColor => TextColorId == "custom";
-    public bool IsRegularWeight => !IsBold;
-    public bool IsLeftAlign => TextAlignId == "left";
-    public bool IsCenterAlign => TextAlignId == "center";
-    public bool IsTopPlacement => TextPlacementId == "top";
-    public bool IsCenterPlacement => TextPlacementId == "center";
-    public bool IsBottomPlacement => TextPlacementId == "bottom";
-    public bool IsFullPreview => PreviewMode == "full";
-    public bool IsHeadlinePreview => PreviewMode == "headline";
-    public bool IsSecondaryPreview => PreviewMode == "secondary";
-    public string PreviewCaption => PreviewMode switch {
-        "headline" => "公众号头条裁切预览 · 2.35:1",
-        "secondary" => "公众号次条裁切预览 · 1:1",
-        _ => "完整画布 1200×900。标题画在头条和次条都会保留的区域。"
-    };
-    public string FontSizeHint {
-        get {
-            var requested = RequestedFontSize;
-            if (EffectiveFontSize > 0 && EffectiveFontSize < requested) {
-                return $"已按安全区缩小到 {EffectiveFontSize}";
-            }
-
-            return "超出安全区时会自动缩小";
-        }
+    [ObservableProperty] private bool _showGuides = true;
+    public bool IsAIEnabled => AppSettings.Instance.EnableAI;
+    [ObservableProperty] private string _exportFormat = "JPEG";
+    [ObservableProperty] private string _exportRange = "完整画布";
+    [ObservableProperty] private string _dragTarget = "背景";
+    public RandomCoverProvider? SelectedRandomCoverProvider { get; set; } = RandomCoverCatalog.All.FirstOrDefault();
+    public PromptTemplate? SelectedPromptStyle { get; set; } = PromptTemplates.Cover.FirstOrDefault();
+    public string BackgroundDescription => Session.Draft.Background == null ? "无背景图片" : Session.Draft.BackgroundName;
+    public string FontSizeHint => EffectiveFontSize > 0 && EffectiveFontSize < FontSize ? $"已自动缩小至 {EffectiveFontSize}" : "文字超出时自动缩小，并检查溢出";
+    private void Edit(CoverDocument d, string group = "") => Session.Change(d, group);
+    public string CoverTitle { get => Session.Draft.Title; set => Edit(Session.Draft with { Title = value }, "title"); }
+    public string Subtitle { get => Session.Draft.Subtitle; set => Edit(Session.Draft with { Subtitle = value }, "subtitle"); }
+    public string Column { get => Session.Draft.Column; set => Edit(Session.Draft with { Column = value }, "column"); }
+    public string TextColor { get => Session.Draft.Color; set => Edit(Session.Draft with { Color = value }, "color"); }
+    public string BackgroundColor { get => Session.Draft.BackgroundColor; set => Edit(Session.Draft with { BackgroundColor = value }, "backgroundColor"); }
+    public double FontSize { get => Session.Draft.FontSize; set => Edit(Session.Draft with { FontSize = (int)value }, "size"); }
+    public double TextWidth { get => Session.Draft.TextWidth; set => Edit(Session.Draft with { TextWidth = value }, "width"); }
+    public double LineHeight { get => Session.Draft.LineHeight; set => Edit(Session.Draft with { LineHeight = value }, "lineHeight"); }
+    public double Zoom { get => Session.Draft.Zoom; set => Edit(Session.Draft with { Zoom = value }, "zoom"); }
+    public double Scrim { get => Session.Draft.Scrim; set => Edit(Session.Draft with { Scrim = value }, "scrim"); }
+    public bool IsBold { get => Session.Draft.Bold; set => Edit(Session.Draft with { Bold = value }); }
+    public bool Centered { get => Session.Draft.Centered; set => Edit(Session.Draft with { Centered = value }); }
+    public bool Manual { get => Session.Draft.Manual; set => Edit(Session.Draft with { Manual = value }); }
+    public double HeadlineOffset { get => Session.Draft.Crops.HeadlineOffset; set => Edit(Session.Draft with { Crops = Session.Draft.Crops with { HeadlineOffset = value } }, "headline"); }
+    public double SecondaryOffset { get => Session.Draft.Crops.SecondaryOffset; set => Edit(Session.Draft with { Crops = Session.Draft.Crops with { SecondaryOffset = value } }, "secondary"); }
+    public string GeneratedPrompt { get => Session.Draft.Prompt; set => Edit(Session.Draft with { Prompt = value }, "prompt"); }
+    public void Start() { if (_started) return; _started = true; SchedulePreview(); }
+    private void OnSessionChanged() {
+        if (_disposed) return;
+        OnPropertyChanged(string.Empty);
+        UndoCommand.NotifyCanExecuteChanged(); RedoCommand.NotifyCanExecuteChanged();
+        if (_started && Session.Revision != _renderRevision) SchedulePreview();
     }
-
-    public void Start() {
-        if (_started) return;
-        _started = true;
-        _ready = true;
-        _ = RenderNowAsync();
-        _ = PickRandomBackground();
+    private void SchedulePreview() {
+        if (!Session.IsSupported) { StatusMessage = "此封面版本暂不可编辑，保存文章时会保留原始设计"; return; }
+        _renderCts?.Cancel(); _renderCts?.Dispose(); _renderCts = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+        _renderRevision = Session.Revision;
+        _ = PreviewAfterDelayAsync(_renderRevision, Session.Draft, Session.ArticlePath, _renderCts.Token);
     }
-
-    [RelayCommand]
-    private async Task SelectLocalBackground() {
-        var storage = GuiHost.GetTopLevel()?.StorageProvider;
-        if (storage == null) return;
-
-        var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions {
-            Title = "选择封面背景",
-            AllowMultiple = false,
-            FileTypeFilter = [
-                new FilePickerFileType("图片") { Patterns = ["*.jpg", "*.jpeg", "*.png", "*.webp"] }
-            ]
-        });
-        if (files.Count == 0) return;
-
-        string? failure = null;
-        try {
-            await using var stream = await files[0].OpenReadAsync();
-            using var buffer = new MemoryStream();
-            await stream.CopyToAsync(buffer);
-            if (buffer.Length > MaxImageBytes) {
-                throw new InvalidOperationException("本地图片不能超过 10 MB");
-            }
-
-            CancelBackgroundFetch();
-            _background = buffer.ToArray();
-            BackgroundDescription = $"本地图片 · {files[0].Name}";
-        }
-        catch (Exception ex) {
-            failure = ex.Message;
-            GuiHost.ToastError("读取图片失败", ex.Message);
-        }
-
-        if (failure == null || string.IsNullOrWhiteSpace(OutputPath)) await RenderNowAsync();
-        if (failure != null) StatusMessage = failure;
+    private async Task PreviewAfterDelayAsync(int revision, CoverDocument document, string? path, CancellationToken token) {
+        try { await Task.Delay(200, token); await RenderPreviewAsync(revision, document, path, token); }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { if (!_disposed && revision == Session.Revision) StatusMessage = ex.Message; }
     }
-
-    [RelayCommand]
-    private async Task ShowArticleImages() {
-        if (_disposed == 1 || !HasArticleImages) return;
-        IsArticleImagePickerOpen = true;
-        if (_galleryStarted) return;
-        _galleryStarted = true;
-        var token = _galleryCts.Token;
-        using var concurrency = new SemaphoreSlim(4);
-        await Task.WhenAll(ArticleImages.Select(async image => {
-            try {
-                await concurrency.WaitAsync(token);
-                try {
-                    var bytes = await ReadArticleImageAsync(image.Source, token);
-                    var png = ImagePreview.CreatePngThumbnail(bytes, 240, 160);
-                    token.ThrowIfCancellationRequested();
-                    image.Thumbnail = new Bitmap(new MemoryStream(png));
-                    image.Status = "";
-                }
-                finally {
-                    concurrency.Release();
-                }
-            }
-            catch (OperationCanceledException) when (token.IsCancellationRequested) {
-            }
-            catch (Exception) {
-                if (!token.IsCancellationRequested) image.Status = "预览加载失败，点击重试";
-            }
-        }));
-    }
-
-    [RelayCommand]
-    private void CloseArticleImages() => IsArticleImagePickerOpen = false;
-
-    [RelayCommand]
-    private async Task SelectArticleBackground(ArticleCoverImage? image) {
-        if (image == null || !ArticleImages.Contains(image) || _disposed == 1) return;
-        var (request, token) = BeginBackgroundFetch();
-        IsArticleImagePickerOpen = false;
-        IsFetchingArticleBackground = true;
-        StatusMessage = "正在读取文章图片…";
-        try {
-            var bytes = await ReadArticleImageAsync(image.Source, token);
-            // Decode before replacing the background so a broken image preserves the current cover.
-            ImagePreview.EnsureDecodable(bytes);
-            lock (_gate) {
-                if (!IsCurrentBackgroundRequest(request)) return;
-                _background = bytes;
-                BackgroundDescription = $"文章图片 · {image.Name}";
-            }
-            await RenderNowAsync();
-        }
-        catch (OperationCanceledException) when (token.IsCancellationRequested) {
-        }
-        catch (Exception ex) {
-            if (IsCurrentBackgroundRequest(request)) StatusMessage = $"读取文章图片失败: {ex.Message}";
-        }
-        finally {
-            if (IsCurrentBackgroundRequest(request)) IsFetchingArticleBackground = false;
-        }
-    }
-
-    private async Task<byte[]> ReadArticleImageAsync(string source, CancellationToken token) {
-        if (Uri.TryCreate(source, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https") {
-            return await DownloadAsync(uri, token);
-        }
-        await using var stream = File.OpenRead(source);
-        if (stream.Length > MaxImageBytes) throw new InvalidOperationException("文章图片不能超过 10 MB");
-        using var output = new MemoryStream();
-        await stream.CopyToAsync(output, token);
-        if (output.Length > MaxImageBytes) throw new InvalidOperationException("文章图片不能超过 10 MB");
-        return output.ToArray();
-    }
-
-    [RelayCommand]
-    private async Task PickRandomBackground() {
-        var provider = SelectedRandomCoverProvider;
-        if (provider == null || _disposed == 1) return;
-
-        var (request, token) = BeginBackgroundFetch();
-
-        IsFetchingRandomBackground = true;
-        StatusMessage = "正在获取随机背景…";
-        try {
-            var uri = provider.CreateUri(
-                CoverSafeZone.CanvasWidth,
-                CoverSafeZone.CanvasHeight,
-                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-            var bytes = await DownloadAsync(uri, token);
-            lock (_gate) {
-                if (request != _backgroundRequest || _disposed == 1) return;
-                _background = bytes;
-                BackgroundDescription = $"随机图片 · {provider.Name}";
-            }
-
-            await RenderNowAsync();
-        }
-        catch (OperationCanceledException) when (token.IsCancellationRequested) {
-        }
-        catch (Exception ex) {
-            if (!IsCurrentBackgroundRequest(request)) return;
-            if (string.IsNullOrWhiteSpace(OutputPath)) await RenderNowAsync();
-            if (!IsCurrentBackgroundRequest(request)) return;
-            StatusMessage = $"获取随机背景失败: {ex.Message}";
-            GuiHost.ToastError("获取随机背景失败", ex.Message);
-        }
-        finally {
-            if (IsCurrentBackgroundRequest(request)) IsFetchingRandomBackground = false;
-        }
-    }
-
-    [RelayCommand]
-    private void SetPreviewMode(string? mode) {
-        if (mode is "full" or "headline" or "secondary") PreviewMode = mode;
-    }
-
-    [RelayCommand]
-    private void SetTextColor(string? color) {
-        if (color is "white" or "black" or "custom") TextColorId = color;
-    }
-
-    [RelayCommand]
-    private void SetTextAlign(string? align) {
-        if (align is "left" or "center") TextAlignId = align;
-    }
-
-    [RelayCommand]
-    private void SetTextPlacement(string? placement) {
-        if (placement is "top" or "center" or "bottom") TextPlacementId = placement;
-    }
-
-    [RelayCommand]
-    private void SetBold(string? value) {
-        if (bool.TryParse(value, out var bold)) IsBold = bold;
-    }
-
-    [RelayCommand(CanExecute = nameof(HasComposedCover))]
-    private async Task SaveImage() {
-        if (!HasComposedCover()) return;
-        var storage = GuiHost.GetTopLevel()?.StorageProvider;
-        if (storage == null) return;
-
-        var file = await storage.SaveFilePickerAsync(new FilePickerSaveOptions {
-            Title = "保存封面图",
-            SuggestedFileName = SuggestedFileName(),
-            DefaultExtension = "jpg",
-            FileTypeChoices = [new FilePickerFileType("JPEG") { Patterns = ["*.jpg", "*.jpeg"] }]
-        });
-        if (file == null) return;
-
-        try {
-            var destination = file.TryGetLocalPath();
-            if (!string.IsNullOrWhiteSpace(destination)) {
-                File.Copy(OutputPath, destination, overwrite: true);
-            }
-            else {
-                await using var source = File.OpenRead(OutputPath);
-                await using var target = await file.OpenWriteAsync();
-                await source.CopyToAsync(target);
-            }
-
-            StatusMessage = "封面图已保存";
-            GuiHost.ToastSuccess("已保存", "封面图已保存");
-        }
-        catch (Exception ex) {
-            StatusMessage = $"保存封面失败: {ex.Message}";
-            GuiHost.ToastError("保存封面失败", ex.Message);
-        }
-    }
-
-    [RelayCommand(CanExecute = nameof(HasComposedCover))]
-    private void ApplyToWeChat() {
-        if (!HasComposedCover()) return;
-        var path = OutputPath;
-        _unappliedPath = null;
-        _applyToWeChat(new PreparedWeChatCover(path, CoverSafeZone.CanvasWidth, CoverSafeZone.CanvasHeight));
-    }
-
-    public void Dispose() {
-        if (Interlocked.Exchange(ref _disposed, 1) == 1) return;
-        CancelBackgroundFetch();
-        _galleryCts.Cancel();
-        _galleryCts.Dispose();
-        foreach (var image in ArticleImages) image.Dispose();
+    public async Task RenderNowAsync() {
         _renderCts?.Cancel();
         _renderCts?.Dispose();
-        _renderCts = null;
-        var preview = Preview;
-        Preview = null;
-        preview?.Dispose();
-        if (_previewFile != null) TryDelete(_previewFile);
-        if (_unappliedPath != null) TryDelete(_unappliedPath);
+        _renderCts = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+        _renderRevision = Session.Revision;
+        try { await RenderPreviewAsync(_renderRevision, Session.Draft, Session.ArticlePath, _renderCts.Token); }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { if (!_disposed) StatusMessage = ex.Message; }
     }
-
-    partial void OnCoverTitleChanged(string value) => ScheduleRender();
-    partial void OnFontSizeChanged(double value) {
-        OnPropertyChanged(nameof(FontSizeHint));
-        ScheduleRender();
-    }
-    partial void OnTextColorIdChanged(string value) => NotifyStyle(nameof(IsWhiteColor), nameof(IsBlackColor), nameof(IsCustomColor));
-    partial void OnCustomColorHexChanged(string value) => ScheduleRender();
-    partial void OnIsBoldChanged(bool value) {
-        OnPropertyChanged(nameof(IsRegularWeight));
-        ScheduleRender();
-    }
-    partial void OnTextAlignIdChanged(string value) => NotifyStyle(nameof(IsLeftAlign), nameof(IsCenterAlign));
-    partial void OnTextPlacementIdChanged(string value) => NotifyStyle(nameof(IsTopPlacement), nameof(IsCenterPlacement), nameof(IsBottomPlacement));
-    partial void OnShowScrimChanged(bool value) => ScheduleRender();
-    partial void OnPreviewModeChanged(string value) {
-        OnPropertyChanged(nameof(IsFullPreview));
-        OnPropertyChanged(nameof(IsHeadlinePreview));
-        OnPropertyChanged(nameof(IsSecondaryPreview));
-        OnPropertyChanged(nameof(PreviewCaption));
-        if (!string.IsNullOrWhiteSpace(OutputPath)) UpdatePreview(Volatile.Read(ref _renderSerial));
-    }
-    partial void OnPreviewChanged(Bitmap? value) => OnPropertyChanged(nameof(HasPreview));
-    partial void OnEffectiveFontSizeChanged(int value) => OnPropertyChanged(nameof(FontSizeHint));
-    partial void OnOutputPathChanged(string value) {
-        SaveImageCommand.NotifyCanExecuteChanged();
-        ApplyToWeChatCommand.NotifyCanExecuteChanged();
-    }
-
-    private int RequestedFontSize => (int)Math.Round(FontSize);
-
-    private bool HasComposedCover() => !string.IsNullOrWhiteSpace(OutputPath) && File.Exists(OutputPath);
-
-    private void NotifyStyle(params string[] names) {
-        foreach (var name in names) OnPropertyChanged(name);
-        ScheduleRender();
-    }
-
-    private void ScheduleRender() {
-        if (!_ready || _disposed == 1) return;
-        var serial = Interlocked.Increment(ref _renderSerial);
-        var token = ResetRenderCancellation();
-        _ = RenderAfterDelayAsync(serial, token);
-    }
-
-    private async Task RenderAfterDelayAsync(int serial, CancellationToken token) {
+    private async Task RenderPreviewAsync(int revision, CoverDocument document, string? path, CancellationToken token) {
+        await _renderGate.WaitAsync(token);
         try {
-            await Task.Delay(200, token);
-            await RenderCoreAsync(serial, token);
-        }
-        catch (OperationCanceledException) {
-        }
-        catch (ObjectDisposedException) {
-        }
+            var data = await Task.Run(() => {
+                token.ThrowIfCancellationRequested();
+                using var rendered = new CoverRenderer().Render(document, path, token);
+                return (Full: rendered.Bitmap.PreviewPng(), Head: rendered.Bitmap.PreviewPng(document.Crops.Window(1200, 900, true)),
+                    Square: rendered.Bitmap.PreviewPng(document.Crops.Window(1200, 900, false)), rendered.Layout, rendered.BackgroundWidth, rendered.BackgroundHeight);
+            }, token);
+            if (_disposed || revision != Session.Revision || token.IsCancellationRequested) return;
+            var old = Preview; Preview = new Bitmap(new MemoryStream(data.Full)); old?.Dispose();
+            old = HeadlinePreview; HeadlinePreview = new Bitmap(new MemoryStream(data.Head)); old?.Dispose();
+            old = SecondaryPreview; SecondaryPreview = new Bitmap(new MemoryStream(data.Square)); old?.Dispose();
+            EffectiveFontSize = data.Layout.FontSize;
+            _backgroundWidth = data.BackgroundWidth; _backgroundHeight = data.BackgroundHeight;
+            StatusMessage = data.Layout.Diagnostics.Count == 0 ? "预览已更新" : string.Join("；", data.Layout.Diagnostics.Select(d => d.Message));
+            OnPropertyChanged(nameof(HasPreview)); OnPropertyChanged(nameof(FontSizeHint));
+        } finally { _renderGate.Release(); }
     }
-
-    private Task RenderNowAsync() {
-        if (!_ready || _disposed == 1) return Task.CompletedTask;
-        var serial = Interlocked.Increment(ref _renderSerial);
-        var token = ResetRenderCancellation();
-        return RenderCoreAsync(serial, token);
-    }
-
-    private CancellationToken ResetRenderCancellation() {
-        lock (_gate) {
-            _renderCts?.Cancel();
-            _renderCts?.Dispose();
-            _renderCts = new CancellationTokenSource();
-            return _renderCts.Token;
+    [RelayCommand] private void SelectTemplate(CoverTemplate? template) { if (template != null) Edit(template.Apply(Session.Draft)); }
+    [RelayCommand] private void SyncTitle() => CoverTitle = _articleTitle();
+    [RelayCommand] private void SetTextPlacement(string value) => Edit(Session.Draft with { Placement = value, TextY = 0 });
+    [RelayCommand] private void ResetBackground() => Edit(Session.Draft with { BackgroundX = 0, BackgroundY = 0, Zoom = 1 });
+    [RelayCommand] private void ClearBackground() => Edit(Session.Draft with { Background = null });
+    [RelayCommand] private void ClearLogo() => Edit(Session.Draft with { Logo = null });
+    [RelayCommand(CanExecute = nameof(CanUndo))] private void Undo() => Session.Undo();
+    [RelayCommand(CanExecute = nameof(CanRedo))] private void Redo() => Session.Redo();
+    private bool CanUndo() => Session.CanUndo;
+    private bool CanRedo() => Session.CanRedo;
+    public void Drag(double dx, double dy) {
+        var d = Session.Draft;
+        var x = d.BackgroundX + dx; var y = d.BackgroundY + dy;
+        if (_backgroundWidth > 0 && _backgroundHeight > 0) {
+            var width = d.TemplateId == "split" ? 504d : 1200d;
+            var scale = Math.Max(width / _backgroundWidth, 900d / _backgroundHeight) * d.Zoom;
+            var rangeX = Math.Max(0, (_backgroundWidth * scale - width) / 2);
+            var rangeY = Math.Max(0, (_backgroundHeight * scale - 900) / 2);
+            x = Math.Clamp(x, -rangeX, rangeX); y = Math.Clamp(y, -rangeY, rangeY);
         }
+        Edit(DragTarget == "文字" ? d with { TextX = d.TextX + dx, TextY = d.TextY + dy } :
+            d with { BackgroundX = x, BackgroundY = y }, "drag");
     }
-
-    private async Task RenderCoreAsync(int serial, CancellationToken token) {
+    public void EndGesture() => Session.EndGesture();
+    [RelayCommand] private void ToggleInspector() => IsInspectorOpen = !IsInspectorOpen;
+    [RelayCommand] private async Task SaveArticle() { if (_save != null) StatusMessage = await _save() ? "文章与封面设计已保存" : "文章尚未保存"; }
+    [RelayCommand] private async Task ApplyToWeChat() {
         try {
-            var composition = CreateComposition();
-            ComposedCover composed;
-            if (_background == null) {
-                composed = await _composer.ComposeAsync(null, composition, token);
-            }
-            else {
-                await using var stream = new MemoryStream(_background, writable: false);
-                composed = await _composer.ComposeAsync(stream, composition, token);
-            }
-
-            if (!IsCurrent(serial)) {
-                TryDelete(composed.Path);
-                return;
-            }
-
-            RememberOutput(composed);
-            UpdatePreview(serial);
-            StatusMessage = composition.Title.Length == 0
-                ? "封面已更新，还未填写标题"
-                : composed.EffectiveFontSize < RequestedFontSize
-                    ? $"封面已更新，标题已缩小到 {composed.EffectiveFontSize}"
-                    : "封面已更新";
-        }
-        catch (OperationCanceledException) {
-        }
-        catch (ObjectDisposedException) {
-        }
-        catch (Exception ex) {
-            if (!IsCurrent(serial)) return;
-            StatusMessage = ex.Message;
-        }
+            var prepared = await Session.ApplyAsync(_lifetime.Token);
+            if (_disposed) return;
+            OutputPath = prepared.Path; _apply(prepared); StatusMessage = "已应用到文章，保存文章后持久保留";
+        } catch (OperationCanceledException) { }
+        catch (Exception ex) { if (!_disposed) StatusMessage = ex.Message; }
     }
-
-    private bool IsCurrent(int serial) =>
-        serial == Volatile.Read(ref _renderSerial) && Volatile.Read(ref _disposed) == 0;
-
-    private void RememberOutput(ComposedCover composed) {
-        var previous = _unappliedPath;
-        _unappliedPath = composed.Path;
-        OutputPath = composed.Path;
-        EffectiveFontSize = composed.EffectiveFontSize;
-        if (previous != null && !string.Equals(previous, composed.Path, StringComparison.OrdinalIgnoreCase)) {
-            TryDelete(previous);
-        }
-    }
-
-    private void UpdatePreview(int serial) {
-        if (!Avalonia.Threading.Dispatcher.UIThread.CheckAccess()) {
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => UpdatePreview(serial));
-            return;
-        }
-
-        if (!IsCurrent(serial) || string.IsNullOrWhiteSpace(OutputPath) || !File.Exists(OutputPath)) return;
-        var bytes = _composer.CreatePreviewPng(OutputPath, CurrentFrame);
-        var directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "StarBlogPublisher", "cover-studio");
-        Directory.CreateDirectory(directory);
-        var previewPath = System.IO.Path.Combine(directory, $"preview-{Guid.NewGuid():N}.png");
-        File.WriteAllBytes(previewPath, bytes);
-        var bitmap = new Bitmap(previewPath);
-        var previousBitmap = Preview;
-        var previousFile = _previewFile;
-        _previewFile = previewPath;
-        Preview = bitmap;
-        previousBitmap?.Dispose();
-        if (previousFile != null) TryDelete(previousFile);
-    }
-
-    private CoverPreviewFrame CurrentFrame => PreviewMode switch {
-        "headline" => CoverPreviewFrame.Headline,
-        "secondary" => CoverPreviewFrame.Secondary,
-        _ => CoverPreviewFrame.Full
-    };
-
-    private CoverComposition CreateComposition() => new() {
-        Title = CoverTitle,
-        FontSize = RequestedFontSize,
-        Color = TextColorId switch {
-            "black" => CoverTextColor.Black,
-            "custom" => CoverTextColor.Custom,
-            _ => CoverTextColor.White
-        },
-        CustomColorHex = CustomColorHex,
-        Bold = IsBold,
-        Align = TextAlignId == "left" ? CoverTextHorizontalAlign.Left : CoverTextHorizontalAlign.Center,
-        Placement = TextPlacementId switch {
-            "top" => CoverTextVerticalPlacement.Top,
-            "center" => CoverTextVerticalPlacement.Center,
-            _ => CoverTextVerticalPlacement.Bottom
-        },
-        Scrim = ShowScrim
-    };
-
-    private bool IsCurrentBackgroundRequest(int request) =>
-        request == Volatile.Read(ref _backgroundRequest) && Volatile.Read(ref _disposed) == 0;
-
-    private void CancelBackgroundFetch() {
-        lock (_gate) {
-            Interlocked.Increment(ref _backgroundRequest);
-            _backgroundCts?.Cancel();
-            _backgroundCts?.Dispose();
-            _backgroundCts = null;
-        }
-
-        IsFetchingRandomBackground = false;
-        IsFetchingArticleBackground = false;
-    }
-
-    private (int Request, CancellationToken Token) BeginBackgroundFetch() {
-        CancelBackgroundFetch();
-        lock (_gate) {
-            _backgroundCts = new CancellationTokenSource();
-            return (_backgroundRequest, _backgroundCts.Token);
-        }
-    }
-
-    private async Task<byte[]> DownloadAsync(Uri uri, CancellationToken cancellationToken) {
-        using var client = _httpClientFactory.CreateClient(WeChatHttpClientRegistration.ImageDownloadClientName);
-        using var response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        response.EnsureSuccessStatusCode();
-        if (response.Content.Headers.ContentLength is > MaxImageBytes) {
-            throw new InvalidOperationException("在线图片不能超过 10 MB");
-        }
-
-        await using var input = await response.Content.ReadAsStreamAsync(cancellationToken);
-        using var bounded = new MemoryStream();
-        var buffer = new byte[81920];
-        var total = 0;
-        int read;
-        while ((read = await input.ReadAsync(buffer, cancellationToken)) > 0) {
-            total += read;
-            if (total > MaxImageBytes) throw new InvalidOperationException("在线图片不能超过 10 MB");
-            bounded.Write(buffer, 0, read);
-        }
-
-        if (bounded.Length == 0) throw new InvalidOperationException("在线图片是空的");
-        return bounded.ToArray();
-    }
-
-    private string SuggestedFileName() {
-        var invalid = System.IO.Path.GetInvalidFileNameChars();
-        var name = new string(CoverTitle.Trim().Take(24).Select(ch => invalid.Contains(ch) ? '-' : ch).ToArray()).Trim();
-        return string.IsNullOrWhiteSpace(name) ? "cover.jpg" : name + ".jpg";
-    }
-
-    private static void TryDelete(string path) {
+    [RelayCommand] private async Task SaveImage() {
+        var storage = GuiHost.GetTopLevel()?.StorageProvider; if (storage == null) return;
+        var png = ExportFormat == "PNG";
+        var file = await storage.SaveFilePickerAsync(new FilePickerSaveOptions { Title = "导出封面图片", SuggestedFileName = "cover." + (png ? "png" : "jpg"), DefaultExtension = png ? "png" : "jpg",
+            FileTypeChoices = [new FilePickerFileType(png ? "PNG" : "JPEG") { Patterns = [png ? "*.png" : "*.jpg"] }] });
+        if (file == null || _disposed) return;
+        var snapshot = Session.Draft; var path = Session.ArticlePath;
+        var temp = Path.Combine(Session.Assets.CacheDirectory, Guid.NewGuid().ToString("N") + (png ? ".png" : ".jpg"));
+        var frame = ExportRange == "头条" ? CoverPreviewFrame.Headline : ExportRange == "次条" ? CoverPreviewFrame.Secondary : CoverPreviewFrame.Full;
+        if (!IsEditable) return;
+        Session.SetBusy(true);
         try {
-            if (File.Exists(path)) File.Delete(path);
+            await Task.Run(() => new CoverExportService().Export(snapshot, path, temp, png, frame, token: _lifetime.Token), _lifetime.Token);
+            await using var source = File.OpenRead(temp); await using var target = await file.OpenWriteAsync();
+            if (target.CanSeek) target.SetLength(0);
+            await source.CopyToAsync(target, _lifetime.Token); StatusMessage = "封面图片已导出";
+        } catch (OperationCanceledException) { }
+        catch (Exception ex) { StatusMessage = "导出失败：" + ex.Message; }
+        finally { if (File.Exists(temp)) File.Delete(temp); Session.SetBusy(false); }
+    }
+    [RelayCommand] private Task SelectLocalBackground() => SelectLocalAsync(false);
+    [RelayCommand] private Task SelectLogo() => SelectLocalAsync(true);
+    private async Task SelectLocalAsync(bool logo) {
+        var storage = GuiHost.GetTopLevel()?.StorageProvider; if (storage == null) return;
+        var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions { Title = logo ? "选择标识图片" : "选择封面背景", AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType("图片") { Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp"] }] });
+        if (files.Count == 0 || _disposed) return;
+        var token = BeginBackground();
+        try { await using var stream = await files[0].OpenReadAsync(); await ImportAsync(await ReadBoundedAsync(stream, token), logo, token, files[0].Name); }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { StatusMessage = "读取图片失败：" + ex.Message; }
+    }
+    private CancellationToken BeginBackground() {
+        _backgroundCts?.Cancel(); _backgroundCts?.Dispose(); _backgroundCts = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+        IsFetchingRandomBackground = false; IsFetchingArticleBackground = false; return _backgroundCts.Token;
+    }
+    private async Task ImportAsync(byte[] bytes, bool logo, CancellationToken token, string name = "背景图片") {
+        var asset = await Session.Assets.ImportAsync(bytes, token); token.ThrowIfCancellationRequested();
+        if (_disposed || !IsEditable) return;
+        Edit(logo ? Session.Draft with { Logo = asset } : Session.Draft with { Background = asset, BackgroundName = name,
+            TemplateId = Session.Draft.TemplateId == "minimal" ? "photo" : Session.Draft.TemplateId, BackgroundX = 0, BackgroundY = 0, Zoom = 1 });
+        await RenderNowAsync();
+    }
+    [RelayCommand] private async Task ShowArticleImages() {
+        IsArticleImagePickerOpen = true; using var gate = new SemaphoreSlim(4);
+        await Task.WhenAll(ArticleImages.Select(async image => {
+            if (image.Thumbnail != null) return; var entered = false;
+            try {
+                await gate.WaitAsync(_lifetime.Token); entered = true;
+                var bytes = await ReadSourceAsync(image.Source, _lifetime.Token);
+                var png = await Task.Run(() => ImagePreview.CreatePngThumbnail(bytes, 240, 160), _lifetime.Token);
+                if (_disposed) return; image.Thumbnail = new Bitmap(new MemoryStream(png)); image.Status = "";
+            } catch (OperationCanceledException) { }
+            catch (Exception) { if (!_disposed) image.Status = "预览加载失败，点击重试"; }
+            finally { if (entered) gate.Release(); }
+        }));
+    }
+    [RelayCommand] private void CloseArticleImages() => IsArticleImagePickerOpen = false;
+    [RelayCommand] private async Task SelectArticleBackground(ArticleCoverImage? image) {
+        if (image == null || !ArticleImages.Contains(image) || _disposed) return;
+        var token = BeginBackground(); IsFetchingArticleBackground = true; IsArticleImagePickerOpen = false;
+        try { await ImportAsync(await ReadSourceAsync(image.Source, token), false, token, image.Name); }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { if (!token.IsCancellationRequested) StatusMessage = "读取文章图片失败：" + ex.Message; }
+        finally { if (!token.IsCancellationRequested) IsFetchingArticleBackground = false; }
+    }
+    [RelayCommand] private async Task PickRandomBackground() {
+        if (SelectedRandomCoverProvider == null || _disposed) return;
+        var token = BeginBackground(); IsFetchingRandomBackground = true;
+        try { await ImportAsync(await ReadSourceAsync(SelectedRandomCoverProvider.CreateUri(1200, 900, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()).ToString(), token), false, token, SelectedRandomCoverProvider.Name); }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { if (!token.IsCancellationRequested) StatusMessage = "获取随机背景失败：" + ex.Message; }
+        finally { if (!token.IsCancellationRequested) IsFetchingRandomBackground = false; }
+    }
+    private async Task<byte[]> ReadSourceAsync(string source, CancellationToken token) {
+        if (Uri.TryCreate(source, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https") {
+            using var client = _factory.CreateClient(WeChatHttpClientRegistration.ImageDownloadClientName);
+            using var response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, token); response.EnsureSuccessStatusCode();
+            if (response.Content.Headers.ContentLength > 10 * 1024 * 1024) throw new InvalidOperationException("在线图片不能超过 10 MB");
+            await using var stream = await response.Content.ReadAsStreamAsync(token); return await ReadBoundedAsync(stream, token);
         }
-        catch (IOException) {
+        await using var input = File.OpenRead(source); return await ReadBoundedAsync(input, token);
+    }
+    private static async Task<byte[]> ReadBoundedAsync(Stream stream, CancellationToken token) {
+        using var output = new MemoryStream(); var buffer = new byte[81920]; int read;
+        while ((read = await stream.ReadAsync(buffer, token)) != 0) {
+            if (output.Length + read > 10 * 1024 * 1024) throw new InvalidOperationException("图片不能超过 10 MB"); output.Write(buffer, 0, read);
         }
-        catch (UnauthorizedAccessException) {
-        }
+        return output.ToArray();
+    }
+    [RelayCommand] private void CancelAi() => _aiCts?.Cancel();
+    [RelayCommand] private async Task GeneratePrompt() => await GenerateAiAsync(false);
+    [RelayCommand] private async Task SuggestTitles() => await GenerateAiAsync(true);
+    private async Task GenerateAiAsync(bool titles) {
+        if (!IsAIEnabled || IsGeneratingAi) return;
+        _aiCts?.Dispose();
+        _aiCts = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token); var token = _aiCts.Token; IsGeneratingAi = true;
+        try {
+            var ai = new AiApplicationService(AiService.Instance, AppSettings.Instance);
+            if (titles) {
+                var results = await ai.SuggestCoverTitlesAsync(_articleTitle(), _summary(), token); token.ThrowIfCancellationRequested();
+                TitleSuggestions.Clear(); foreach (var result in results) TitleSuggestions.Add(result);
+            } else {
+                var prompt = await ai.GenerateCoverPromptAsync(new CoverPromptRequest(_articleTitle(), _summary(), _content(), SelectedPromptStyle?.Key,
+                    "4:3", Session.Draft.TemplateId == "split" ? "Keep the left half clear for typography" : "Keep the central area clear for typography"), token);
+                token.ThrowIfCancellationRequested(); GeneratedPrompt = prompt;
+            }
+        } catch (OperationCanceledException) { }
+        catch (Exception ex) { if (!_disposed) StatusMessage = "AI 生成失败：" + ex.Message; }
+        finally { if (!_disposed) IsGeneratingAi = false; }
+    }
+    [RelayCommand] private void ChooseTitle(string value) => CoverTitle = value;
+    [RelayCommand] private async Task CopyPrompt() { if (GuiHost.GetTopLevel()?.Clipboard is { } clipboard) await clipboard.SetTextAsync(GeneratedPrompt); }
+    public void Dispose() {
+        if (_disposed) return; _disposed = true; Session.Changed -= OnSessionChanged;
+        _lifetime.Cancel(); _renderCts?.Cancel(); _backgroundCts?.Cancel(); _aiCts?.Cancel();
+        _renderCts?.Dispose(); _backgroundCts?.Dispose(); _aiCts?.Dispose();
+        Preview?.Dispose(); HeadlinePreview?.Dispose(); SecondaryPreview?.Dispose(); foreach (var image in ArticleImages) image.Dispose();
     }
 }
