@@ -26,6 +26,12 @@ public sealed class CoverCanvas : Decorator {
         IsUndoEnabled = false, Padding = new Thickness(0), BorderThickness = new Thickness(0), Background = Brushes.Transparent };
     public int InteractionFrames { get; private set; }
     public CoverCanvas() {
+        // Fluent's focus/pointer states paint PART_BorderElement directly, bypassing
+        // the TextBox.Background value. Scope these resources to the canvas editor.
+        foreach (var key in new[] { "TextControlBackground", "TextControlBackgroundPointerOver", "TextControlBackgroundFocused", "TextControlBackgroundDisabled",
+            "TextControlBorderBrush", "TextControlBorderBrushPointerOver", "TextControlBorderBrushFocused", "TextControlBorderBrushDisabled" })
+            _editor.Resources[key] = Brushes.Transparent;
+        _editor.Resources["TextControlBorderThemeThicknessFocused"] = new Thickness(0);
         Focusable = true; ClipToBounds = true; Child = _editor;
         DataContextChanged += (_, _) => Connect(DataContext as CoverStudioViewModel);
         AttachedToVisualTree += (_, _) => Connect(DataContext as CoverStudioViewModel);
@@ -89,7 +95,7 @@ public sealed class CoverCanvas : Decorator {
             context.DrawImage(layers.Decoration, Map(0, 0, 1200, 900));
             if (layers.Data.ObjectLayers.Count > 0) {
                 foreach (var obj in layers.Data.Layout.Objects) {
-                    if (_vm.EditorMode == CoverEditorMode.Text && obj.Id == _vm.SelectedElement || !layers.Data.ObjectLayers.ContainsKey(obj.Id)) continue;
+                    if ((Frame == CoverPreviewFrame.Full && _vm.EditorMode == CoverEditorMode.Text && obj.Id == _vm.SelectedElement) || !layers.Data.ObjectLayers.ContainsKey(obj.Id)) continue;
                     var delta = Offset(obj.Id); context.DrawImage(layers.Object(obj.Id), Map(delta.X, delta.Y, 1200, 900));
                 }
             } else { var delta = Offset(CoverElementId.Title); context.DrawImage(layers.Text, Map(delta.X, delta.Y, 1200, 900)); }
@@ -194,6 +200,7 @@ public sealed class CoverCanvas : Decorator {
                 _editor.FontSize = Math.Max(8, obj.FontSize * v.Scale); _editor.FontWeight = bold ? FontWeight.Bold : FontWeight.Normal;
                 _editor.LineHeight = _editor.FontSize * (style?.LineHeight ?? _vm.LineHeight) * 1.2;
                 _editor.Foreground = new SolidColorBrush(_vm.SelectedColor);
+                _editor.CaretBrush = _editor.Foreground;
                 _editor.TextAlignment = _vm.Alignment == CoverAlignment.Center ? TextAlignment.Center : _vm.Alignment == CoverAlignment.Right ? TextAlignment.Right : TextAlignment.Left;
                 _editor.FontFamily = new FontFamily(CoverObjectLayout.FontFamily(bold));
                 _editor.Arrange(MasterRect(obj.TextBox ?? obj.Bounds));

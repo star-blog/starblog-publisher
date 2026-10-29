@@ -1,5 +1,10 @@
 using System.Net;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using Avalonia.VisualTree;
 using SkiaSharp;
 using StarBlogPublisher.Models;
@@ -107,6 +112,33 @@ internal sealed partial class WorkspaceScenarios {
         var editorCanvas = view.GetVisualDescendants().OfType<StarBlogPublisher.Views.Controls.CoverCanvas>().Single(c => c.Frame == CoverPreviewFrame.Full);
         var inline = editorCanvas.GetVisualDescendants().OfType<TextBox>().Single();
         if (!inline.IsVisible || inline.Bounds.Width <= 0 || !inline.IsFocused) throw new Exception("Inline text editor did not receive focus or bounds");
+        studio.EndInlineEdit();
+        foreach (var dark in new[] { false, true }) foreach (var lightText in new[] { true, false }) {
+            window.RequestedThemeVariant = dark ? Avalonia.Styling.ThemeVariant.Dark : Avalonia.Styling.ThemeVariant.Light;
+            studio.SelectTemplateCommand.Execute(CoverTemplate.All.Single(t => t.Id == (lightText ? "photo" : "minimal")));
+            studio.CoverTitle = "封面编辑";
+            await studio.RenderNowAsync(); await Task.Delay(60);
+            var textBox = studio.Preview!.Data.Layout.Objects.Single(o => o.Id == CoverElementId.Title).TextBox!.Value;
+            var editorRect = editorCanvas.MasterRect(textBox);
+            var sample = new PixelRect((int)(editorRect.Right - 8), (int)(editorRect.Bottom - 12), 1, 1);
+            var before = CoverPixels(editorCanvas, sample);
+            var cropViews = view.GetVisualDescendants().OfType<StarBlogPublisher.Views.Controls.CoverCanvas>()
+                .Where(c => c.Frame != CoverPreviewFrame.Full && c.IsEffectivelyVisible).ToArray();
+            var cropHashes = cropViews.Select(c => SHA256.HashData(CoverPixels(c))).ToArray();
+            studio.StartInlineEdit(CoverElementId.Title); await Task.Delay(60);
+            var during = CoverPixels(editorCanvas, sample);
+            if (!before.SequenceEqual(during)) throw new Exception($"Focused cover editor painted over the background (dark={dark}, lightText={lightText})");
+            if (inline.Foreground is not ISolidColorBrush ink || ink.Color != studio.SelectedColor) throw new Exception("Inline editor changed the design text color");
+            if (inline.CaretBrush is not ISolidColorBrush caret || caret.Color != studio.SelectedColor) throw new Exception("Inline caret did not follow the design text color");
+            for (var i = 0; i < cropViews.Length; i++)
+                if (!cropHashes[i].SequenceEqual(SHA256.HashData(CoverPixels(cropViews[i])))) throw new Exception("Editing title removed it from a publication preview");
+            Capture(window, Path.Combine(output, $"cover-inline-{(dark ? "dark" : "light")}-{(lightText ? "white" : "ink")}.png"));
+            studio.EndInlineEdit();
+        }
+        window.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
+        studio.SelectTemplateCommand.Execute(CoverTemplate.All.Single(t => t.Id == "photo"));
+        await studio.RenderNowAsync();
+        studio.StartInlineEdit(CoverElementId.Title); await Task.Delay(60);
         inline.Text = "原位编辑：中文标题";
         studio.EndInlineEdit();
         await studio.RenderNowAsync();
@@ -163,6 +195,17 @@ internal sealed partial class WorkspaceScenarios {
         shell.Workspace.IsSidebarOpen = previousSidebar;
         shell.ActivePage = shell.Workspace;
         await Task.Delay(100);
+    }
+
+    private static byte[] CoverPixels(Control control, PixelRect? sample = null) {
+        using var bitmap = new RenderTargetBitmap(new PixelSize((int)Math.Ceiling(control.Bounds.Width), (int)Math.Ceiling(control.Bounds.Height)));
+        bitmap.Render(control);
+        var rect = sample ?? new PixelRect(0, 0, bitmap.PixelSize.Width, bitmap.PixelSize.Height);
+        var bytes = new byte[rect.Width * rect.Height * 4];
+        var pinned = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+        try { bitmap.CopyPixels(rect, pinned.AddrOfPinnedObject(), bytes.Length, rect.Width * 4); }
+        finally { pinned.Free(); }
+        return bytes;
     }
 
     private sealed class CoverImageHttpClientFactory(byte[] bytes) : IHttpClientFactory {
