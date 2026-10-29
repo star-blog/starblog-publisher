@@ -269,7 +269,7 @@ Agent 侧的使用顺序和边界写在 [SKILLS.md](docs/SKILLS.md)，CLI 安装
 * **CLI / MCP**：System.CommandLine 2.0.11、ModelContextProtocol 2.2.0
 * **HTTP / Markdown**：Refit 15.2.0、Markdig 1.3.2、Markdown.ColorCode 3.0.1
 * **AI**：Microsoft.Extensions.AI.OpenAI 10.9.0、Microsoft.Agents.AI.Workflows 1.21.0
-* **图像**：SixLabors.ImageSharp 3.1.12
+* **图像**：SkiaSharp 3.119.4
 * **本机机密**：System.Security.Cryptography.ProtectedData 10.0.11
 * **测试**：xUnit、Moq、FluentAssertions
 

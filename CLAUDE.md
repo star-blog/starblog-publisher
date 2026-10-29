@@ -124,7 +124,7 @@ dotnet run --project StarBlogPublisher.Cli -- mcp
 - **HTTP**: Refit 9.0.2
 - **AI**: Microsoft.Extensions.AI.OpenAI
 - **Markdown**: Markdig 0.44.0
-- **图片处理**: SixLabors.ImageSharp 3.1.12
+- **图片处理**: SkiaSharp 3.119.4
 - **加密**: System.Security.Cryptography.ProtectedData 10.0.1
 
 ## 编码规范
