@@ -55,6 +55,33 @@ internal static class SkiaFixture {
         return new CoverSample(bitmap.Width, bitmap.Height, pixels[index], pixels[index + 1], pixels[index + 2], pixels[index + 3]);
     }
 
+    public static byte[] EncodeTwoFrameGif() {
+        var output = new List<byte>();
+        output.AddRange("GIF89a"u8.ToArray());
+        WriteUInt16(output, 1);
+        WriteUInt16(output, 1);
+        output.Add(0xF0);
+        output.Add(0);
+        output.Add(0);
+        output.AddRange([255, 0, 0, 0, 0, 255]);
+        output.AddRange([
+            0x21, 0xFF, 0x0B,
+            (byte)'N', (byte)'E', (byte)'T', (byte)'S', (byte)'C', (byte)'A', (byte)'P', (byte)'E',
+            (byte)'2', (byte)'.', (byte)'0',
+            3, 1, 0, 0, 0
+        ]);
+        WriteGifFrame(output, [0x02, 0x02, 0x44, 0x01, 0x00]);
+        WriteGifFrame(output, [0x02, 0x02, 0x4C, 0x01, 0x00]);
+        output.Add(0x3B);
+        return output.ToArray();
+    }
+
+    public static int FrameCount(byte[] bytes) {
+        using var stream = new MemoryStream(bytes, writable: false);
+        using var codec = SKCodec.Create(stream) ?? throw new InvalidOperationException("fixture is not an image");
+        return codec.FrameCount;
+    }
+
     public static string Detect(byte[] bytes) {
         if (bytes.Length >= 8 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) return "PNG";
         if (bytes.Length >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) return "JPEG";
@@ -114,6 +141,22 @@ internal static class SkiaFixture {
         }
 
         return bytes;
+    }
+
+    private static void WriteGifFrame(List<byte> output, byte[] lzw) {
+        output.AddRange([0x21, 0xF9, 0x04, 0x00, 0x0A, 0x00, 0x00, 0x00]);
+        output.Add(0x2C);
+        WriteUInt16(output, 0);
+        WriteUInt16(output, 0);
+        WriteUInt16(output, 1);
+        WriteUInt16(output, 1);
+        output.Add(0);
+        output.AddRange(lzw);
+    }
+
+    private static void WriteUInt16(List<byte> output, int value) {
+        output.Add((byte)value);
+        output.Add((byte)(value >> 8));
     }
 
     private static void WriteInt(byte[] bytes, int offset, int value) {
