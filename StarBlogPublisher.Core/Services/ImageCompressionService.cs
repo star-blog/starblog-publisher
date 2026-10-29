@@ -86,7 +86,16 @@ public class ImageCompressionService : IDisposable
             // 生成压缩后的文件路径
             var fileName = Path.GetFileNameWithoutExtension(imagePath);
             var extension = Path.GetExtension(imagePath).ToLower();
-            
+
+            // 动态 GIF 只解首帧会丢掉动画。文章压缩保留原文件；公众号正文仍只取首帧。
+            if (extension == ".gif" && HasMultipleGifFrames(imagePath))
+            {
+                var keptPath = Path.Combine(_tempDirectory, Path.GetFileName(imagePath));
+                File.Copy(imagePath, keptPath, true);
+                _pathMappings[imagePath] = keptPath;
+                return new ImageCompressionResult(true, imagePath, keptPath, originalSize, originalSize, 0);
+            }
+
             using var image = DecodedImage.Decode(imagePath);
             
             // 应用尺寸调整
@@ -153,6 +162,13 @@ public class ImageCompressionService : IDisposable
     public string GetCompressedPath(string originalPath)
     {
         return _pathMappings.TryGetValue(originalPath, out var compressedPath) ? compressedPath : originalPath;
+    }
+
+    private static bool HasMultipleGifFrames(string path)
+    {
+        using var stream = File.OpenRead(path);
+        using var codec = SKCodec.Create(stream);
+        return codec is { FrameCount: > 1 };
     }
 
     /// <summary>
