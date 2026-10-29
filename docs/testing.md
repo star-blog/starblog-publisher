@@ -4,13 +4,32 @@
 
 `dotnet run --project StarBlogPublisher.DesktopTests -- --cover-studio` 单独检查原生封面编辑器，避免依赖公众号 WebView2。覆盖文章图片、本地/在线/损坏素材、四模板、浅深主题、1000/1280 DIP 布局、双比例预览和异步应用后的资源存续；截图保存在本次运行目录。
 
-设置进程环境变量 `STARBLOG_COVER_MANUAL_TEST=1` 后运行该命令，测试会在工作室停留 90 秒，供真实鼠标拖动、滑块和键盘撤销验收。本次重构已通过真实标题拖动、Ctrl+Z 恢复和缩放滑块操作检查。
+设置进程环境变量 `STARBLOG_COVER_MANUAL_TEST=1` 后运行该命令，测试会在工作室停留 180 秒，供真实鼠标、滑块、中文输入法和键盘撤销验收。自动场景中的文字赋值与焦点断言不能替代实际输入法和物理指针验收。
 
 Core 和 ViewModel 用例覆盖草稿/已应用快照、保存重开、文章隔离、恢复、素材迁移、未知版本保留、长标题溢出，以及预览与草稿上传裁切参数一致性。
+
+第二轮新增 Schema 2 的独立文字与标识、四种 V2 模板、旧稿显式升级、缺图和对象级溢出、裁切不重排、个人模板素材独立性、固定背景选择、最近使用上限、未知模板库写保护，以及原位编辑与侧栏共用内容和历史。桌面场景检查模板卡片预览不修改文章、原位编辑焦点和最终文字同步，并保存对象属性与裁切模式截图。
+
+新增模型的源生成 JSON 序列化可在关闭反射回退时检查：
+
+```powershell
+dotnet test StarBlogPublisher.Tests/StarBlogPublisher.Tests.csproj -p:JsonSerializerIsReflectionEnabledByDefault=false --filter FullyQualifiedName~CoverV2Tests
+```
+
+这项检查不等同于完整 NativeAOT 发布。桌面截图来自真实工作区中的 RenderTargetBitmap，不能替代物理指针、中文输入法或系统窗口捕获。
 
 画布性能回归验证连续 1000 次拖动更新不增加文章版本、不触发文章修改事件、不替换预览图层；松手一次提交、Esc 丢弃、一步撤销。文字编辑复用已解码背景和上传后的纹理，三种比例共用缓存图层。桌面用例在真实文章工作区外壳中检查 4000×3000 背景、四模板及浅深主题，并生成 `cover-studio-final.png` 供布局检查。
 
 `NavigationMenuIconConverterTests` 会初始化进程级 Avalonia Application；与普通 ViewModel 测试同进程运行可能引起 UI 线程归属错误。可分两个测试进程运行全部用例：先过滤 `FullyQualifiedName!~NavigationMenuIconConverterTests`，再过滤 `FullyQualifiedName~NavigationMenuIconConverterTests`。
+
+### 第二轮重构验收记录（2026-10-29）
+
+- solution 构建通过，0 警告、0 错误；产物使用独立的 output/cover-v2-build 目录。
+- 全部 445 项 xUnit 用例分进程通过：443 项常规用例与 2 项图标用例。直接同进程运行仍会遇到上述既有 Application 线程归属冲突。
+- 禁用 JSON 反射回退时，15 项 CoverV2Tests 通过，包括升级后的旧布局、Schema 2、模板库和恢复数据往返。
+- --cover-studio 桌面场景通过；已检查四模板、浅深主题、1000/1280 DIP、4K 背景、抽屉不挤压画布、卡片预览不修改文章、原位输入焦点与最后文字同步、个人模板可见可用及一步撤销，并检查生成截图。
+- 物理鼠标、键盘和原生中文输入法的人工操作验收未完成：Computer Use 应用访问授权超时。上述自动控件操作不作为人工验收通过的证据。
+- 未执行完整 NativeAOT 发布、真实公众号上传及在线 AI 服务调用；公众号裁切参数继续由模拟 HTTP 回归覆盖。
 
 ## 日常自动化测试
 
@@ -60,7 +79,7 @@ dotnet run --project StarBlogPublisher.DesktopTests -c Release -- --list
 | theme-and-close | 强制深浅主题截图、跟随系统（`PreferSystemTheme` / `ActualThemeVariant`）、800 DIP 窄窗口菜单、未保存时取消/丢弃/保存、重新打开 |
 | material-shell | 仅 `--material`：浅／深 × 标准／Mica／Acrylic 的主窗口与菜单材质请求、实际结果和背景叠色记录；菜单打开时切换、模拟高对比度、800 DIP 多级子菜单与切回标准；文章侧栏叠色、编辑画布不透明、面板显隐与宽度，截图写入本次运行目录 |
 
-这些阶段是有依赖的端到端工作流，不是彼此独立的单元测试。前一阶段失败后，后续阶段标记为 skipped，避免连锁报错。页面加载和对话框出现采用有超时的条件等待；部分布局、截图和原生焦点仍留有短暂稳定时间。每阶段超时 40 秒，整个进程有 180 秒看门狗。
+这些阶段是有依赖的端到端工作流，不是彼此独立的单元测试。前一阶段失败后，后续阶段标记为 skipped，避免连锁报错。页面加载和对话框出现采用有超时的条件等待；部分布局、截图和原生焦点仍留有短暂稳定时间。普通阶段超时 60 秒，整个进程有 180 秒看门狗；封面人工模式单阶段允许 240 秒，并延长进程看门狗。
 
 每次运行创建唯一的 `output/desktop-tests/<时间-随机ID>/`，其中保存测试文章、独立配置、工作区历史、WebView2 用户数据、截图和 `report.json`。不会读取正常应用的账号配置，也不调用发布或 AI 服务。输出目录被 Git 忽略，保留用于排查；确认不需要后可手动删除对应运行目录。
 

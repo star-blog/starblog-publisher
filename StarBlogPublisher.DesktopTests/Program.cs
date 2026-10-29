@@ -38,10 +38,11 @@ internal static class Program {
         var results = new List<Result>();
         void Report() => File.WriteAllText(Path.Combine(output, "report.json"), JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true }));
         // A watchdog covers UI-thread deadlocks which an awaited task timeout cannot interrupt.
+        var watchdogSeconds = args.Contains("--cover-studio") && Environment.GetEnvironmentVariable("STARBLOG_COVER_MANUAL_TEST") == "1" ? 300 : 180;
         using var watchdog = new System.Threading.Timer(_ => {
-            File.WriteAllText(Path.Combine(output, "timeout.txt"), "Desktop test process exceeded 180 seconds.");
+            File.WriteAllText(Path.Combine(output, "timeout.txt"), $"Desktop test process exceeded {watchdogSeconds} seconds.");
             Environment.Exit(1);
-        }, null, TimeSpan.FromSeconds(180), Timeout.InfiniteTimeSpan);
+        }, null, TimeSpan.FromSeconds(watchdogSeconds), Timeout.InfiniteTimeSpan);
         try {
             Optris.Icons.Avalonia.IconProvider.Current.Register<Optris.Icons.Avalonia.FontAwesome.FontAwesomeIconProvider>();
             var lifetime = new ClassicDesktopStyleApplicationLifetime { ShutdownMode = ShutdownMode.OnExplicitShutdown };
@@ -92,7 +93,7 @@ internal static class Program {
                     var watch = Stopwatch.StartNew();
                     try {
                         var manualCover = name == "cover-studio" && Environment.GetEnvironmentVariable("STARBLOG_COVER_MANUAL_TEST") == "1";
-                        await actions[i]().WaitAsync(TimeSpan.FromSeconds(manualCover ? 140 : dialogCase == null ? 40 : 90));
+                        await actions[i]().WaitAsync(TimeSpan.FromSeconds(manualCover ? 240 : dialogCase == null ? 60 : 90));
                         results.Add(new(name, "passed", watch.ElapsedMilliseconds));
                         Console.WriteLine($"PASS {name}");
                     }

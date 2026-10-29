@@ -43,13 +43,12 @@ internal sealed partial class WorkspaceScenarios {
         shell.Workspace.IsSidebarOpen = false;
         var studio = new CoverStudioViewModel(factory, "从文章图片制作公众号封面：中文标题与裁剪验收", cover => {
             parent.UsePreparedCover(cover, "文章图片制作封面");
-            parent.NavigateBreadcrumbAt(0);
-        }, sources);
+        }, sources) { Library = new CoverTemplateLibrary(Path.Combine(output, "cover-library")) };
         parent.OpenStackPage(studio, studio.Title);
         shell.Workspace.CurrentDocument.OpenStackPage(studio, studio.Title);
         await WaitUntilAsync(() => Task.FromResult(studio.HasPreview), "Cover preview did not load");
         var view = window.GetVisualDescendants().OfType<CoverStudioView>().Single();
-        studio.IsInspectorOpen = true; studio.InspectorTab = 1;
+        studio.IsInspectorOpen = true; studio.SelectObjectCommand.Execute(CoverElementId.Background);
         await Task.Delay(100);
         var picker = view.GetVisualDescendants().OfType<Button>()
             .Single(button => ReferenceEquals(button.Command, studio.ShowArticleImagesCommand));
@@ -75,6 +74,14 @@ internal sealed partial class WorkspaceScenarios {
             window.Width = width; await Task.Delay(100);
             Capture(window, Path.Combine(output, $"cover-editor-{width}.png"));
         }
+        window.Width = 1000; await Task.Delay(100);
+        studio.IsInspectorOpen = false; await Task.Delay(50);
+        var canvasBeforeDrawer = view.GetVisualDescendants().OfType<StarBlogPublisher.Views.Controls.CoverCanvas>().Single(c => c.Frame == CoverPreviewFrame.Full).Bounds.Width;
+        studio.IsInspectorOpen = true; await Task.Delay(50);
+        var canvasWithDrawer = view.GetVisualDescendants().OfType<StarBlogPublisher.Views.Controls.CoverCanvas>().Single(c => c.Frame == CoverPreviewFrame.Full).Bounds.Width;
+        if (!studio.IsNarrow || Math.Abs(canvasBeforeDrawer - canvasWithDrawer) > 1) throw new Exception("Narrow drawer reduced the canvas width");
+        Capture(window, Path.Combine(output, "cover-inspector-drawer.png"));
+        window.Width = 1280; await Task.Delay(100);
         foreach (var dark in new[] { false, true }) {
             window.RequestedThemeVariant = dark ? Avalonia.Styling.ThemeVariant.Dark : Avalonia.Styling.ThemeVariant.Light;
             foreach (var template in CoverTemplate.All) {
@@ -85,21 +92,57 @@ internal sealed partial class WorkspaceScenarios {
             }
         }
         window.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
+        var revision = studio.Session.Revision;
+        await studio.OpenTemplateLibraryCommand.ExecuteAsync(null);
+        if (studio.VisibleTemplateCards.Count != 4 || studio.VisibleTemplateCards.Any(c => c.Thumbnail == null)) throw new Exception("Template gallery did not render four previews");
+        if (studio.Session.Revision != revision) throw new Exception("Opening the template gallery changed the article");
+        Capture(window, Path.Combine(output, "cover-template-gallery.png"));
+        studio.CloseTemplateLibraryCommand.Execute(null);
         studio.SelectTemplateCommand.Execute(CoverTemplate.All.Single(t => t.Id == "photo"));
         studio.CoverTitle = "封面工作室";
         await studio.RenderNowAsync();
         Capture(window, Path.Combine(output, "cover-studio-final.png"));
+        studio.StartInlineEdit(CoverElementId.Title);
+        await Task.Delay(100);
+        var editorCanvas = view.GetVisualDescendants().OfType<StarBlogPublisher.Views.Controls.CoverCanvas>().Single(c => c.Frame == CoverPreviewFrame.Full);
+        var inline = editorCanvas.GetVisualDescendants().OfType<TextBox>().Single();
+        if (!inline.IsVisible || inline.Bounds.Width <= 0 || !inline.IsFocused) throw new Exception("Inline text editor did not receive focus or bounds");
+        inline.Text = "原位编辑：中文标题";
+        studio.EndInlineEdit();
+        await studio.RenderNowAsync();
+        if (studio.CoverTitle != "原位编辑：中文标题") throw new Exception("Inline and sidebar content diverged");
+        studio.SelectObjectCommand.Execute(CoverElementId.Title);
+        Capture(window, Path.Combine(output, "cover-object-properties.png"));
+        await studio.AdjustHeadlineCommand.ExecuteAsync(null);
+        Capture(window, Path.Combine(output, "cover-crop-mode.png"));
+        studio.CancelCompositionCommand.Execute(null);
+        studio.PresetName = "桌面验收栏目"; studio.PresetIsColumn = true; studio.PresetIncludeBackground = true;
+        var beforePreset = studio.Session.Draft; var beforeSaveRevision = studio.Session.Revision;
+        await studio.SavePresetCommand.ExecuteAsync(null);
+        if (studio.Session.Revision != beforeSaveRevision || studio.SelectedTemplateCard?.Preset?.IsColumn != true) throw new Exception("Saving a preset changed the article or did not select the saved entry");
+        studio.IsTemplateLibraryOpen = true;
+        await Task.Delay(150);
+        var savedCard = studio.SelectedTemplateCard!;
+        var savedButton = view.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => ReferenceEquals(b.CommandParameter, savedCard) && b.IsEffectivelyVisible);
+        var useTemplateButton = view.GetVisualDescendants().OfType<Button>().Single(b => ReferenceEquals(b.Command, studio.UseTemplateCommand));
+        if (savedButton == null || !useTemplateButton.IsEnabled) throw new Exception("Saved personal template is not visible or usable in the gallery");
+        Capture(window, Path.Combine(output, "cover-personal-template.png"));
+        await studio.UseTemplateCommand.ExecuteAsync(null);
+        if (studio.CoverTitle != "从文章图片制作公众号封面：中文标题与裁剪验收" || studio.Subtitle != "") throw new Exception("Personal template did not use the destination article title");
+        studio.UndoCommand.Execute(null);
+        if (studio.Session.Draft != beforePreset) throw new Exception("Template use did not undo in one step");
+        studio.SelectObjectCommand.Execute(CoverElementId.None);
         if (Environment.GetEnvironmentVariable("STARBLOG_COVER_MANUAL_TEST") == "1") {
             studio.DragTarget = "文字";
-            Console.WriteLine("Cover studio ready for 90 seconds of manual pointer/keyboard inspection.");
-            await Task.Delay(TimeSpan.FromSeconds(90));
+            Console.WriteLine("Cover studio ready for 180 seconds of manual pointer/keyboard inspection.");
+            await Task.Delay(TimeSpan.FromSeconds(180));
         }
 
         var apply = view.GetVisualDescendants().OfType<Button>()
             .Single(button => ReferenceEquals(button.Command, studio.ApplyToWeChatCommand));
         await studio.ApplyToWeChatCommand.ExecuteAsync(apply.CommandParameter);
         var outputPath = studio.OutputPath;
-        if (parent.IsStackNavigating || parent.CoverPath != outputPath || !File.Exists(outputPath))
+        if (!parent.IsStackNavigating || parent.CoverPath != outputPath || !File.Exists(outputPath))
             throw new Exception("Composed article cover was not applied or was deleted on navigation");
         parent.CoverPreview?.Dispose();
         parent.CoverPreview = null;
@@ -108,7 +151,7 @@ internal sealed partial class WorkspaceScenarios {
         using var empty = new CoverStudioViewModel(factory, "无图文章", _ => { });
         parent.OpenStackPage(empty, empty.Title);
         shell.Workspace.CurrentDocument.OpenStackPage(empty, empty.Title);
-        empty.IsInspectorOpen = true; empty.InspectorTab = 1;
+        empty.IsInspectorOpen = true; empty.SelectObjectCommand.Execute(CoverElementId.Background);
         await Task.Delay(150);
         view = window.GetVisualDescendants().OfType<CoverStudioView>().Single();
         picker = view.GetVisualDescendants().OfType<Button>()
