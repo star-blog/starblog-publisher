@@ -1,9 +1,8 @@
 using System.Net;
 using FluentAssertions;
 using Moq;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using StarBlogPublisher.Services.Application;
+using StarBlogPublisher.Tests.Services.Imaging;
 using StarBlogPublisher.ViewModels;
 
 namespace StarBlogPublisher.Tests.Gui.ViewModels;
@@ -12,7 +11,7 @@ public class CoverStudioViewModelTests {
     [Fact]
     public async Task SelectArticleBackground_ComposesLocalImageAndCancelsPendingRandomBackground() {
         var path = Path.Combine(Path.GetTempPath(), $"article-image-{Guid.NewGuid():N}.png");
-        await File.WriteAllBytesAsync(path, await SolidImageAsync(new Rgba32(0, 170, 0)));
+        await File.WriteAllBytesAsync(path, SkiaFixture.EncodeSolid(48, 32, 0, 170, 0, 255, "png"));
         var pending = new TaskCompletionSource<HttpResponseMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
         CancellationToken randomToken = default;
         var factory = Factory((_, token) => { randomToken = token; return pending.Task; });
@@ -26,12 +25,11 @@ public class CoverStudioViewModelTests {
             studio.IsFetchingRandomBackground.Should().BeFalse();
             studio.IsFetchingArticleBackground.Should().BeFalse();
             studio.BackgroundDescription.Should().Be("文章图片 · 文章配图");
-            using (var cover = Image.Load<Rgba32>(studio.OutputPath)) {
-                cover.Width.Should().Be(1200);
-                cover.Height.Should().Be(900);
-                cover[600, 450].G.Should().BeGreaterThan(150);
-                cover[600, 450].R.Should().BeLessThan(20);
-            }
+            var cover = SkiaFixture.Sample(studio.OutputPath, 600, 450);
+            cover.Width.Should().Be(1200);
+            cover.Height.Should().Be(900);
+            cover.G.Should().BeGreaterThan(150);
+            cover.R.Should().BeLessThan(20);
 
             studio.ApplyToWeChatCommand.Execute(null);
             applied.Should().NotBeNull();
@@ -48,7 +46,7 @@ public class CoverStudioViewModelTests {
 
     [Fact]
     public async Task SelectArticleBackground_DownloadsOnlineImageAndKeepsPreviousCoverOnFailure() {
-        var bytes = await SolidImageAsync(new Rgba32(0, 0, 200));
+        var bytes = SkiaFixture.EncodeSolid(48, 32, 0, 0, 200, 255, "png");
         var requested = new List<Uri>();
         var factory = Factory((request, _) => {
             requested.Add(request.RequestUri!);
@@ -63,7 +61,7 @@ public class CoverStudioViewModelTests {
         studio.Start();
         await studio.SelectArticleBackgroundCommand.ExecuteAsync(studio.ArticleImages[0]);
         var previous = studio.OutputPath;
-        using (var cover = Image.Load<Rgba32>(previous)) cover[600, 450].B.Should().BeGreaterThan(180);
+        SkiaFixture.Sample(previous, 600, 450).B.Should().BeGreaterThan(180);
         requested.Should().Contain(new Uri("https://images.example/photo?id=1&size=2"));
 
         await studio.SelectArticleBackgroundCommand.ExecuteAsync(studio.ArticleImages[1]);
@@ -93,12 +91,5 @@ public class CoverStudioViewModelTests {
 
     private sealed class Handler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send) : HttpMessageHandler {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => send(request, cancellationToken);
-    }
-
-    private static async Task<byte[]> SolidImageAsync(Rgba32 color) {
-        using var image = new Image<Rgba32>(48, 32, color);
-        using var stream = new MemoryStream();
-        await image.SaveAsPngAsync(stream);
-        return stream.ToArray();
     }
 }

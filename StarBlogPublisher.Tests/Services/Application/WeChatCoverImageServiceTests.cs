@@ -4,9 +4,8 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using StarBlogPublisher.Services;
+using StarBlogPublisher.Tests.Services.Imaging;
 using StarBlogPublisher.Services.Application;
 
 namespace StarBlogPublisher.Tests.Services.Application;
@@ -17,9 +16,7 @@ public class WeChatCoverImageServiceTests {
         var sourcePath = Path.Combine(Path.GetTempPath(), $"starblog-cover-source-{Guid.NewGuid():N}.png");
         string? outputPath = null;
         try {
-            using (var source = new Image<Rgba32>(1400, 700)) {
-                await source.SaveAsPngAsync(sourcePath);
-            }
+            await SkiaFixture.SaveAsync(sourcePath, 1400, 700, 20, 40, 60, 255, "png");
 
             var service = new WeChatCoverImageService(new Mock<IHttpClientFactory>().Object);
             var prepared = await service.PrepareLocalAsync(sourcePath);
@@ -28,7 +25,7 @@ public class WeChatCoverImageServiceTests {
             Assert.EndsWith(".jpg", prepared.Path, StringComparison.OrdinalIgnoreCase);
             Assert.Equal(1400, prepared.Width);
             Assert.Equal(700, prepared.Height);
-            using var result = await Image.LoadAsync(prepared.Path);
+            var result = SkiaFixture.SizeOfFile(prepared.Path);
             Assert.Equal(1400, result.Width);
             Assert.Equal(700, result.Height);
         }

@@ -1,7 +1,6 @@
 using FluentAssertions;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using StarBlogPublisher.Services.Application;
+using StarBlogPublisher.Tests.Services.Imaging;
 
 namespace StarBlogPublisher.Tests.Services.Application;
 
@@ -32,7 +31,7 @@ public class CoverComposerTests {
 
     [Fact]
     public async Task RenderAsync_CoverFitsASolidBackground() {
-        await using var background = await SolidPngAsync(new Rgba32(0, 170, 0));
+        await using var background = new MemoryStream(SkiaFixture.EncodeSolid(100, 50, 0, 170, 0, 255, "png"));
 
         using var rendered = await _composer.RenderAsync(background, new CoverComposition { Title = "", Scrim = false });
 
@@ -118,13 +117,12 @@ public class CoverComposerTests {
     public async Task ComposeAsync_WritesAJpegAndCanFrameTheHeadlineCrop() {
         var composed = await _composer.ComposeAsync(null, new CoverComposition { Title = "" });
         try {
-            using (var image = await Image.LoadAsync(composed.Path)) {
-                image.Width.Should().Be(CoverComposer.CanvasWidth);
-                image.Height.Should().Be(CoverComposer.CanvasHeight);
-            }
+            var image = SkiaFixture.SizeOfFile(composed.Path);
+            image.Width.Should().Be(CoverComposer.CanvasWidth);
+            image.Height.Should().Be(CoverComposer.CanvasHeight);
 
             var png = _composer.CreatePreviewPng(composed.Path, CoverPreviewFrame.Headline);
-            using var preview = Image.Load(new MemoryStream(png));
+            var preview = SkiaFixture.Size(png);
             ((double)preview.Width / preview.Height).Should().BeApproximately(2.35, 0.05);
         }
         finally {
@@ -132,62 +130,47 @@ public class CoverComposerTests {
         }
     }
 
-    private static async Task<MemoryStream> SolidPngAsync(Rgba32 color) {
-        using var image = new Image<Rgba32>(100, 50, color);
-        var stream = new MemoryStream();
-        await image.SaveAsPngAsync(stream);
-        stream.Position = 0;
-        return stream;
-    }
-
-    private static void AssertInkInsideIntersection(Image<Rgba32> image) {
+    private static void AssertInkInsideIntersection(CoverBitmap image) {
         var intersection = CoverSafeZone.Intersection(image.Width, image.Height);
         var found = false;
-        image.ProcessPixelRows(accessor => {
-            for (var y = 0; y < accessor.Height; y++) {
-                var row = accessor.GetRowSpan(y);
-                for (var x = 0; x < row.Length; x++) {
-                    if (!IsLightInk(row[x])) continue;
-                    found = true;
-                    x.Should().BeGreaterThanOrEqualTo(intersection.X);
-                    y.Should().BeGreaterThanOrEqualTo(intersection.Y);
-                    x.Should().BeLessThan(intersection.Right);
-                    y.Should().BeLessThan(intersection.Bottom);
-                }
+        for (var y = 0; y < image.Height; y++) {
+            for (var x = 0; x < image.Width; x++) {
+                if (!IsLightInk(image[x, y])) continue;
+                found = true;
+                x.Should().BeGreaterThanOrEqualTo(intersection.X);
+                y.Should().BeGreaterThanOrEqualTo(intersection.Y);
+                x.Should().BeLessThan(intersection.Right);
+                y.Should().BeLessThan(intersection.Bottom);
             }
-        });
+        }
         found.Should().BeTrue();
     }
 
-    private static double AverageInkX(Image<Rgba32> image) {
+    private static double AverageInkX(CoverBitmap image) {
         long sum = 0;
         var count = 0;
-        image.ProcessPixelRows(accessor => {
-            for (var y = 0; y < accessor.Height; y++) {
-                var row = accessor.GetRowSpan(y);
-                for (var x = 0; x < row.Length; x++) {
-                    if (!IsLightInk(row[x])) continue;
-                    sum += x;
-                    count++;
-                }
+        for (var y = 0; y < image.Height; y++) {
+            for (var x = 0; x < image.Width; x++) {
+                if (!IsLightInk(image[x, y])) continue;
+                sum += x;
+                count++;
             }
-        });
+        }
+
         count.Should().BeGreaterThan(10);
         return sum / (double)count;
     }
 
-    private static int CountInk(Image<Rgba32> image, Func<Rgba32, bool> match) {
+    private static int CountInk(CoverBitmap image, Func<CoverPixel, bool> match) {
         var count = 0;
-        image.ProcessPixelRows(accessor => {
-            for (var y = 0; y < accessor.Height; y++) {
-                var row = accessor.GetRowSpan(y);
-                for (var x = 0; x < row.Length; x++) {
-                    if (match(row[x])) count++;
-                }
+        for (var y = 0; y < image.Height; y++) {
+            for (var x = 0; x < image.Width; x++) {
+                if (match(image[x, y])) count++;
             }
-        });
+        }
+
         return count;
     }
 
-    private static bool IsLightInk(Rgba32 pixel) => pixel.R > 230 && pixel.G > 230 && pixel.B > 230;
+    private static bool IsLightInk(CoverPixel pixel) => pixel.R > 230 && pixel.G > 230 && pixel.B > 230;
 }

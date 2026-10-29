@@ -2,9 +2,8 @@ using System.Net;
 using System.Text;
 using FluentAssertions;
 using Moq;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using StarBlogPublisher.Models;
+using StarBlogPublisher.Tests.Services.Imaging;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
 
@@ -290,10 +289,7 @@ public class WeChatDraftPublishApplicationServiceTests {
         var fileName = webp ? "pic.webp" : "pic.png";
         var contentImagePath = Path.Combine(imageDir, fileName);
         await File.WriteAllBytesAsync(coverPath, [0xFF, 0xD8, 0xFF, 0xD9]);
-        using (var image = new Image<Rgba32>(30, 20, new Rgba32(40, 80, 120))) {
-            if (webp) await image.SaveAsWebpAsync(contentImagePath);
-            else await image.SaveAsPngAsync(contentImagePath);
-        }
+        await SkiaFixture.SaveAsync(contentImagePath, 30, 20, 40, 80, 120, 255, webp ? "webp" : "png");
         try {
             var handler = new SequencingHandler([
                 (HttpMethod.Get, "cgi-bin/token", """{"access_token":"tok","expires_in":7200}"""),
@@ -337,20 +333,10 @@ public class WeChatDraftPublishApplicationServiceTests {
         var coverPath = Path.Combine(Path.GetTempPath(), $"starblog-cover-{Guid.NewGuid():N}.jpg");
         await File.WriteAllBytesAsync(coverPath, [0xFF, 0xD8, 0xFF, 0xD9]);
         try {
-            using var image = new Image<Rgba32>(oversized ? 900 : 30, oversized ? 900 : 20);
-            var random = new Random(42);
-            image.ProcessPixelRows(accessor => {
-                for (var y = 0; y < accessor.Height; y++) {
-                    var row = accessor.GetRowSpan(y);
-                    for (var x = 0; x < row.Length; x++) {
-                        row[x] = new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256));
-                    }
-                }
-            });
-            using var source = new MemoryStream();
-            if (oversized) await image.SaveAsPngAsync(source);
-            else await image.SaveAsWebpAsync(source);
-            if (oversized) source.Length.Should().BeGreaterThan(1024 * 1024);
+            var encoded = oversized
+                ? SkiaFixture.EncodeRandom(900, 900, false, 42, "png")
+                : SkiaFixture.EncodeSolid(30, 20, 40, 80, 120, 255, "webp");
+            if (oversized) encoded.Length.Should().BeGreaterThan(1024 * 1024);
             var handler = new SequencingHandler([
                 (HttpMethod.Get, "cgi-bin/token", """{"access_token":"tok","expires_in":7200}"""),
                 (HttpMethod.Get, "images.example", ""),
@@ -358,7 +344,7 @@ public class WeChatDraftPublishApplicationServiceTests {
                 (HttpMethod.Post, "cgi-bin/material/add_material", """{"media_id":"cover"}"""),
                 (HttpMethod.Post, "cgi-bin/draft/add", """{"media_id":"draft"}"""),
                 (HttpMethod.Post, "cgi-bin/draft/get", """{"news_item":[{"title":"Hello"}]}""")
-            ]) { RemoteImageBytes = source.ToArray() };
+            ]) { RemoteImageBytes = encoded };
             var service = CreateService(handler, out var settings);
             settings.WeChatAppId = $"app-remote-{Guid.NewGuid():N}";
             settings.WeChatAppSecret = "secret";
@@ -375,9 +361,8 @@ public class WeChatDraftPublishApplicationServiceTests {
             var footerSize = Encoding.UTF8.GetByteCount($"\r\n--{boundary}--\r\n");
             var imageBytes = upload.BodyBytes[headerEnd..^footerSize];
             imageBytes.Length.Should().BeLessThanOrEqualTo(1024 * 1024);
-            Image.DetectFormat(imageBytes).Name.Should().Be("JPEG");
-            using var decoded = Image.Load(imageBytes);
-            decoded.Width.Should().BeGreaterThan(0);
+            SkiaFixture.Detect(imageBytes).Should().Be("JPEG");
+            SkiaFixture.Size(imageBytes).Width.Should().BeGreaterThan(0);
         }
         finally { File.Delete(coverPath); }
     }

@@ -1,8 +1,7 @@
 using System.Net;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using SkiaSharp;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services.Application;
 using StarBlogPublisher.ViewModels;
@@ -14,12 +13,16 @@ internal sealed partial class WorkspaceScenarios {
     public async Task CoverStudio() {
         var sources = new List<ArticleImageSource>();
         foreach (var (name, color) in new[] {
-                     ("绿色的本地配图", new Rgba32(20, 160, 80)),
-                     ("蓝色的在线配图", new Rgba32(40, 80, 190))
+                     ("绿色的本地配图", new SKColor(20, 160, 80)),
+                     ("蓝色的在线配图", new SKColor(40, 80, 190))
                  }) {
             var path = Path.Combine(output, name + ".png");
-            using var image = new Image<Rgba32>(600, 400, color);
-            await image.SaveAsPngAsync(path);
+            using var bitmap = new SKBitmap(new SKImageInfo(600, 400, SKColorType.Rgba8888, SKAlphaType.Opaque));
+            bitmap.Erase(color);
+            using var image = SKImage.FromBitmap(bitmap);
+            using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+            await using var file = File.Create(path);
+            data.SaveTo(file);
             sources.Add(new ArticleImageSource(path, name));
         }
         var onlineBytes = await File.ReadAllBytesAsync(sources[1].Source);
