@@ -1,4 +1,5 @@
 using FluentAssertions;
+using SkiaSharp;
 using StarBlogPublisher.Services.Application;
 using StarBlogPublisher.Tests.Services.Imaging;
 
@@ -41,6 +42,21 @@ public class CoverComposerTests {
         pixel.G.Should().BeGreaterThan(150);
         pixel.R.Should().BeLessThan(20);
         rendered.Image[8, 8].G.Should().Be(pixel.G);
+    }
+
+    [Fact]
+    public async Task RenderAsync_BlendsAScaledTwoToneBackground() {
+        await using var background = new MemoryStream(SplitPng(20, 10));
+
+        using var rendered = await _composer.RenderAsync(background, new CoverComposition { Title = "", Scrim = false });
+
+        var left = rendered.Image[8, CoverComposer.CanvasHeight / 2];
+        var right = rendered.Image[CoverComposer.CanvasWidth - 8, CoverComposer.CanvasHeight / 2];
+        left.R.Should().BeGreaterThan(200);
+        left.B.Should().BeLessThan(30);
+        right.B.Should().BeGreaterThan(200);
+        right.R.Should().BeLessThan(30);
+        CountInk(rendered.Image, pixel => pixel.R > 20 && pixel.B > 20).Should().BeGreaterThan(8);
     }
 
     [Fact]
@@ -173,4 +189,23 @@ public class CoverComposerTests {
     }
 
     private static bool IsLightInk(CoverPixel pixel) => pixel.R > 230 && pixel.G > 230 && pixel.B > 230;
+
+    private static byte[] SplitPng(int width, int height) {
+        using var bitmap = new SKBitmap(new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Opaque));
+        var pixels = bitmap.GetPixelSpan();
+        for (var y = 0; y < height; y++) {
+            for (var x = 0; x < width; x++) {
+                var index = y * bitmap.RowBytes + x * 4;
+                var left = x < width / 2;
+                pixels[index] = left ? (byte)255 : (byte)0;
+                pixels[index + 1] = 0;
+                pixels[index + 2] = left ? (byte)0 : (byte)255;
+                pixels[index + 3] = 255;
+            }
+        }
+
+        using var image = SKImage.FromBitmap(bitmap);
+        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+        return (data ?? throw new InvalidOperationException("cannot encode png")).ToArray();
+    }
 }
