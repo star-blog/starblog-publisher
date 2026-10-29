@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -193,7 +194,8 @@ public sealed class CoverComposer {
             font = new SKFont(typeface, size) { Edging = SKFontEdging.Antialias };
             lines = Wrap(font, title, textArea.Width);
             blockHeight = Math.Max(1f, lines.Length * font.Spacing);
-            if (blockHeight <= textArea.Height + 0.5f || size <= MinFontSize) break;
+            var fitsWidth = Array.TrueForAll(lines, line => font.MeasureText(line) <= textArea.Width + 0.5f);
+            if ((blockHeight <= textArea.Height + 0.5f && fitsWidth) || size <= MinFontSize) break;
             font.Dispose();
             size -= 2;
         }
@@ -272,7 +274,7 @@ public sealed class CoverComposer {
         canvas.DrawRect(new SKRect(0, top, CanvasWidth, bottom), paint);
     }
 
-    private static string[] Wrap(SKFont font, string title, int maxWidth) {
+    internal static string[] Wrap(SKFont font, string title, int maxWidth) {
         var lines = new System.Collections.Generic.List<string>();
         foreach (var paragraph in title.Split('\n')) {
             if (paragraph.Length == 0) {
@@ -280,18 +282,45 @@ public sealed class CoverComposer {
                 continue;
             }
 
+            // Only break at text-element boundaries (including surrogate pairs and emoji sequences).
+            var elements = StringInfo.ParseCombiningCharacters(paragraph);
+            var boundaries = new int[elements.Length + 1];
+            elements.CopyTo(boundaries, 0);
+            boundaries[^1] = paragraph.Length;
             var start = 0;
-            for (var index = 1; index <= paragraph.Length; index++) {
-                if (font.MeasureText(paragraph.AsSpan(start, index - start)) <= maxWidth) continue;
-                if (index - 1 == start) continue;
-                lines.Add(paragraph[start..(index - 1)]);
-                start = index - 1;
-            }
+            while (start < elements.Length) {
+                var end = start + 1;
+                while (end < elements.Length &&
+                       font.MeasureText(paragraph.AsSpan(boundaries[start], boundaries[end + 1] - boundaries[start])) <= maxWidth) {
+                    end++;
+                }
 
-            lines.Add(paragraph[start..]);
+                var fittingEnd = end;
+                while (end > start && !CanBreakTitle(paragraph, boundaries, end)) end--;
+                if (end == start) {
+                    // An indivisible punctuation group may exceed the width; let layout shrink it.
+                    end = fittingEnd;
+                    while (end < elements.Length && !CanBreakTitle(paragraph, boundaries, end)) end++;
+                }
+
+                lines.Add(paragraph[boundaries[start]..boundaries[end]]);
+                start = end;
+            }
         }
 
         return lines.ToArray();
+    }
+
+    private static bool CanBreakTitle(string paragraph, int[] boundaries, int end) {
+        if (end == boundaries.Length - 1) return true;
+        var previous = paragraph[boundaries[end - 1]];
+        var next = paragraph[boundaries[end]];
+        // Common Chinese punctuation rules; explicit paragraph breaks remain author-controlled.
+        var opens = char.GetUnicodeCategory(previous) is UnicodeCategory.OpenPunctuation or UnicodeCategory.InitialQuotePunctuation
+                    || "‘“".Contains(previous);
+        var closes = char.GetUnicodeCategory(next) is UnicodeCategory.ClosePunctuation or UnicodeCategory.FinalQuotePunctuation
+                     || "，。、；：？！,.!?;:%％…’”".Contains(next);
+        return !opens && !closes;
     }
 
     private static bool TryMatch(SKFontManager manager, string family, bool bold, out SKTypeface typeface) {
