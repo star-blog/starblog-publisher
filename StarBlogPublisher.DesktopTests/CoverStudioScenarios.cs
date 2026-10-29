@@ -31,7 +31,7 @@ internal sealed partial class WorkspaceScenarios {
         var factory = new CoverImageHttpClientFactory(onlineBytes);
         var parent = new WeChatViewModel(factory);
         shell.ActivePage = parent;
-        var studio = new CoverStudioViewModel(factory, "从文章图片制作公众号封面", cover => {
+        var studio = new CoverStudioViewModel(factory, "从文章图片制作公众号封面：中文标题与裁剪验收", cover => {
             parent.UsePreparedCover(cover, "文章图片制作封面");
             parent.NavigateBreadcrumbAt(0);
         }, sources);
