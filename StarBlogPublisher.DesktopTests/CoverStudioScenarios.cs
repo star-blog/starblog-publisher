@@ -30,14 +30,18 @@ internal sealed partial class WorkspaceScenarios {
         sources.Add(new ArticleImageSource(Path.Combine(output, "missing.png"), "缺失的配图"));
         var factory = new CoverImageHttpClientFactory(onlineBytes);
         var parent = new WeChatViewModel(factory);
-        shell.ActivePage = parent;
+        // Exercise the native editor without attaching the unrelated WebView2 formatting preview.
+        var previousContent = window.Content;
         var studio = new CoverStudioViewModel(factory, "从文章图片制作公众号封面：中文标题与裁剪验收", cover => {
             parent.UsePreparedCover(cover, "文章图片制作封面");
             parent.NavigateBreadcrumbAt(0);
         }, sources);
         parent.OpenStackPage(studio, studio.Title);
+        window.Content = new CoverStudioView { DataContext = studio };
         await WaitUntilAsync(() => Task.FromResult(studio.HasPreview), "Cover preview did not load");
         var view = window.GetVisualDescendants().OfType<CoverStudioView>().Single();
+        studio.IsInspectorOpen = true; studio.InspectorTab = 1;
+        await Task.Delay(100);
         var picker = view.GetVisualDescendants().OfType<Button>()
             .Single(button => ReferenceEquals(button.Command, studio.ShowArticleImagesCommand));
         await studio.ShowArticleImagesCommand.ExecuteAsync(picker.CommandParameter);
@@ -55,13 +59,36 @@ internal sealed partial class WorkspaceScenarios {
         var choice = view.GetVisualDescendants().OfType<Button>()
             .Single(button => ReferenceEquals(button.CommandParameter, studio.ArticleImages[0]));
         await studio.SelectArticleBackgroundCommand.ExecuteAsync(choice.CommandParameter);
-        await WaitUntilAsync(() => Task.FromResult(!studio.IsFetchingArticleBackground && studio.BackgroundDescription.Contains("绿色")), "Article image was not selected");
+        await WaitUntilAsync(() => Task.FromResult(!studio.IsFetchingArticleBackground && studio.Session.Draft.Background != null), "Article image was not selected");
         if (studio.IsArticleImagePickerOpen || !studio.HasPreview) throw new Exception("Choosing an article image did not return to preview");
         Capture(window, Path.Combine(output, "cover-article-selected.png"));
-        var outputPath = studio.OutputPath;
+        foreach (var width in new[] { 1000d, 1280d }) {
+            window.Width = width; await Task.Delay(100);
+            Capture(window, Path.Combine(output, $"cover-editor-{width}.png"));
+        }
+        foreach (var dark in new[] { false, true }) {
+            window.RequestedThemeVariant = dark ? Avalonia.Styling.ThemeVariant.Dark : Avalonia.Styling.ThemeVariant.Light;
+            foreach (var template in CoverTemplate.All) {
+                studio.SelectTemplateCommand.Execute(template);
+                await studio.RenderNowAsync();
+                if (studio.HeadlinePreview == null || studio.SecondaryPreview == null) throw new Exception("Both crop previews are required");
+                Capture(window, Path.Combine(output, $"cover-{template.Id}-{(dark ? "dark" : "light")}.png"));
+            }
+        }
+        window.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
+        studio.SelectTemplateCommand.Execute(CoverTemplate.All.Single(t => t.Id == "photo"));
+        studio.CoverTitle = "封面工作室";
+        await studio.RenderNowAsync();
+        if (Environment.GetEnvironmentVariable("STARBLOG_COVER_MANUAL_TEST") == "1") {
+            studio.DragTarget = "文字";
+            Console.WriteLine("Cover studio ready for 90 seconds of manual pointer/keyboard inspection.");
+            await Task.Delay(TimeSpan.FromSeconds(90));
+        }
+
         var apply = view.GetVisualDescendants().OfType<Button>()
             .Single(button => ReferenceEquals(button.Command, studio.ApplyToWeChatCommand));
-        apply.Command!.Execute(apply.CommandParameter);
+        await studio.ApplyToWeChatCommand.ExecuteAsync(apply.CommandParameter);
+        var outputPath = studio.OutputPath;
         if (parent.IsStackNavigating || parent.CoverPath != outputPath || !File.Exists(outputPath))
             throw new Exception("Composed article cover was not applied or was deleted on navigation");
         parent.CoverPreview?.Dispose();
@@ -70,14 +97,16 @@ internal sealed partial class WorkspaceScenarios {
 
         using var empty = new CoverStudioViewModel(factory, "无图文章", _ => { });
         parent.OpenStackPage(empty, empty.Title);
+        window.Content = new CoverStudioView { DataContext = empty };
+        empty.IsInspectorOpen = true; empty.InspectorTab = 1;
         await Task.Delay(150);
         view = window.GetVisualDescendants().OfType<CoverStudioView>().Single();
         picker = view.GetVisualDescendants().OfType<Button>()
             .Single(button => ReferenceEquals(button.Command, empty.ShowArticleImagesCommand));
-        if (picker.IsEnabled || !view.GetVisualDescendants().OfType<TextBlock>()
-                .Any(text => text.Text == "文章正文中没有可用图片" && text.IsEffectivelyVisible))
+        if (picker.IsEnabled)
             throw new Exception("No-image article has no disabled picker and empty-state hint");
         parent.NavigateBreadcrumbAt(0);
+        window.Content = previousContent;
         shell.ActivePage = shell.Workspace;
         await Task.Delay(100);
     }

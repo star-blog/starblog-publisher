@@ -91,7 +91,8 @@ internal static class Program {
                     }
                     var watch = Stopwatch.StartNew();
                     try {
-                        await actions[i]().WaitAsync(TimeSpan.FromSeconds(dialogCase == null ? 40 : 90));
+                        var manualCover = name == "cover-studio" && Environment.GetEnvironmentVariable("STARBLOG_COVER_MANUAL_TEST") == "1";
+                        await actions[i]().WaitAsync(TimeSpan.FromSeconds(manualCover ? 140 : dialogCase == null ? 40 : 90));
                         results.Add(new(name, "passed", watch.ElapsedMilliseconds));
                         Console.WriteLine($"PASS {name}");
                     }
