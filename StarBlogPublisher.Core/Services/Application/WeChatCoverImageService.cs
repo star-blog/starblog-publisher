@@ -3,9 +3,8 @@ using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Processing;
+using SkiaSharp;
+using StarBlogPublisher.Services.Imaging;
 
 namespace StarBlogPublisher.Services.Application;
 
@@ -68,31 +67,32 @@ public sealed class WeChatCoverImageService {
         return await NormalizeAsync(bounded, cancellationToken);
     }
 
-    private static async Task<PreparedWeChatCover> NormalizeAsync(Stream input, CancellationToken cancellationToken) {
-        using var image = await Image.LoadAsync(input, cancellationToken);
+    private static Task<PreparedWeChatCover> NormalizeAsync(Stream input, CancellationToken cancellationToken) {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var image = DecodedImage.Decode(input);
         if (image.Width > MaxEdge || image.Height > MaxEdge) {
             var scale = Math.Min(MaxEdge / (double)image.Width, MaxEdge / (double)image.Height);
             var width = Math.Max(1, (int)Math.Round(image.Width * scale));
             var height = Math.Max(1, (int)Math.Round(image.Height * scale));
-            image.Mutate(context => context.Resize(width, height));
+            image.Resize(width, height);
         }
 
         var directory = Path.Combine(Path.GetTempPath(), "StarBlogPublisher", "wechat-cover");
         Directory.CreateDirectory(directory);
         var outputPath = Path.Combine(directory, $"cover-{Guid.NewGuid():N}.jpg");
-        await SaveUnderLimitAsync(image, outputPath, cancellationToken);
-        return new PreparedWeChatCover(outputPath, image.Width, image.Height);
+        SaveUnderLimit(image, outputPath);
+        return Task.FromResult(new PreparedWeChatCover(outputPath, image.Width, image.Height));
     }
 
-    private static async Task SaveUnderLimitAsync(Image image, string outputPath, CancellationToken cancellationToken) {
+    private static void SaveUnderLimit(DecodedImage image, string outputPath) {
         foreach (var quality in new[] { 88, 72, 60 }) {
-            await image.SaveAsJpegAsync(outputPath, new JpegEncoder { Quality = quality }, cancellationToken);
+            image.Save(outputPath, SKEncodedImageFormat.Jpeg, quality);
             if (new FileInfo(outputPath).Length <= MaxCoverBytes) return;
         }
 
         while (new FileInfo(outputPath).Length > MaxCoverBytes && image.Width > 640 && image.Height > 640) {
-            image.Mutate(context => context.Resize(Math.Max(1, image.Width * 3 / 4), Math.Max(1, image.Height * 3 / 4)));
-            await image.SaveAsJpegAsync(outputPath, new JpegEncoder { Quality = 72 }, cancellationToken);
+            image.Resize(Math.Max(1, image.Width * 3 / 4), Math.Max(1, image.Height * 3 / 4));
+            image.Save(outputPath, SKEncodedImageFormat.Jpeg, 72);
         }
 
         if (new FileInfo(outputPath).Length > MaxCoverBytes) {

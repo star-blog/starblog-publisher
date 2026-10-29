@@ -2,10 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Formats.Webp;
+using SkiaSharp;
+using StarBlogPublisher.Services.Imaging;
 
 namespace StarBlogPublisher.Services;
 
@@ -89,7 +87,7 @@ public class ImageCompressionService : IDisposable
             var fileName = Path.GetFileNameWithoutExtension(imagePath);
             var extension = Path.GetExtension(imagePath).ToLower();
             
-            using var image = await Image.LoadAsync(imagePath);
+            using var image = DecodedImage.Decode(imagePath);
             
             // 应用尺寸调整
             if (_config.EnableResize && ShouldResize(image))
@@ -169,7 +167,7 @@ public class ImageCompressionService : IDisposable
     /// <summary>
     /// 判断是否需要调整尺寸
     /// </summary>
-    private bool ShouldResize(Image image)
+    private bool ShouldResize(DecodedImage image)
     {
         return image.Width > _config.MaxWidth || image.Height > _config.MaxHeight;
     }
@@ -177,7 +175,7 @@ public class ImageCompressionService : IDisposable
     /// <summary>
     /// 应用尺寸调整
     /// </summary>
-    private void ApplyResize(Image image)
+    private void ApplyResize(DecodedImage image)
     {
         var scaleX = (double)_config.MaxWidth / image.Width;
         var scaleY = (double)_config.MaxHeight / image.Height;
@@ -185,16 +183,16 @@ public class ImageCompressionService : IDisposable
 
         if (scale >= 1.0) return;
 
-        var newWidth = (int)(image.Width * scale);
-        var newHeight = (int)(image.Height * scale);
+        var newWidth = Math.Max(1, (int)(image.Width * scale));
+        var newHeight = Math.Max(1, (int)(image.Height * scale));
 
-        image.Mutate(x => x.Resize(newWidth, newHeight));
+        image.Resize(newWidth, newHeight);
     }
 
     /// <summary>
     /// 获取最优输出路径和格式
     /// </summary>
-    private (string outputPath, string format) GetOptimalOutputPath(string fileName, string originalExtension, Image image)
+    private (string outputPath, string format) GetOptimalOutputPath(string fileName, string originalExtension, DecodedImage image)
     {
         // GIF 保持原格式
         if (originalExtension == ".gif")
@@ -223,37 +221,24 @@ public class ImageCompressionService : IDisposable
     /// <summary>
     /// 保存压缩后的图片
     /// </summary>
-    private async Task SaveCompressedImageAsync(Image image, string outputPath, string format)
+    private Task SaveCompressedImageAsync(DecodedImage image, string outputPath, string format)
     {
-        switch (format.ToLower())
+        var encoded = format.ToLower() switch
         {
-            case "webp":
-                var webpEncoder = new WebpEncoder { Quality = _config.Quality };
-                await image.SaveAsWebpAsync(outputPath, webpEncoder);
-                break;
-            case "jpeg":
-            case "jpg":
-                var jpegEncoder = new JpegEncoder { Quality = _config.Quality };
-                await image.SaveAsJpegAsync(outputPath, jpegEncoder);
-                break;
-            case "gif":
-                await image.SaveAsGifAsync(outputPath);
-                break;
-            default:
-                await image.SaveAsPngAsync(outputPath);
-                break;
-        }
+            "webp" => SKEncodedImageFormat.Webp,
+            "jpeg" or "jpg" => SKEncodedImageFormat.Jpeg,
+            "gif" => SKEncodedImageFormat.Gif,
+            _ => SKEncodedImageFormat.Png
+        };
+        var quality = encoded is SKEncodedImageFormat.Jpeg or SKEncodedImageFormat.Webp ? _config.Quality : 100;
+        image.Save(outputPath, encoded, quality);
+        return Task.CompletedTask;
     }
 
     /// <summary>
-    /// 检测图片是否有透明度
+    /// 检测图片是否有透明度。Skia 常把 JPEG 解成 32 位，所以只看源文件有没有 alpha，不看位深。
     /// </summary>
-    private static bool HasTransparency(Image image)
-    {
-        var pixelType = image.PixelType;
-        return pixelType?.BitsPerPixel == 32 ||
-               pixelType?.ToString()?.Contains("Rgba", StringComparison.OrdinalIgnoreCase) == true;
-    }
+    private static bool HasTransparency(DecodedImage image) => image.HasAlphaChannel;
 
     /// <summary>
     /// 清理临时文件

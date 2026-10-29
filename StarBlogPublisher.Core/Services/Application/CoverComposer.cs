@@ -1,16 +1,9 @@
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using SixLabors.Fonts;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Drawing;
-using SixLabors.ImageSharp.Drawing.Processing;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Formats.Png;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
+using SkiaSharp;
+using StarBlogPublisher.Services.Imaging;
 
 namespace StarBlogPublisher.Services.Application;
 
@@ -52,13 +45,13 @@ public sealed record CoverComposition {
 public readonly record struct ComposedCover(string Path, int Width, int Height, int EffectiveFontSize, string FontFamily);
 
 public sealed class RenderedCover : IDisposable {
-    public RenderedCover(Image<Rgba32> image, int effectiveFontSize, string fontFamily) {
+    public RenderedCover(CoverBitmap image, int effectiveFontSize, string fontFamily) {
         Image = image;
         EffectiveFontSize = effectiveFontSize;
         FontFamily = fontFamily;
     }
 
-    public Image<Rgba32> Image { get; }
+    public CoverBitmap Image { get; }
     public int EffectiveFontSize { get; }
     public string FontFamily { get; }
 
@@ -76,7 +69,7 @@ public sealed class CoverComposer {
     public const int MaxFontSize = 96;
     public const int DefaultFontSize = 64;
     private const int MaxJpegBytes = 2 * 1024 * 1024;
-    private static readonly Color FallbackColor = Color.ParseHex("1F2933");
+    private static readonly SKColor FallbackColor = new(0x1F, 0x29, 0x33);
     private static readonly string[] PreferredFontFamilies = [
         "Microsoft YaHei",
         "Microsoft YaHei UI",
@@ -89,221 +82,269 @@ public sealed class CoverComposer {
         "WenQuanYi Micro Hei"
     ];
 
-    public async Task<ComposedCover> ComposeAsync(Stream? background, CoverComposition composition, CancellationToken cancellationToken = default) {
-        using var rendered = await RenderAsync(background, composition, cancellationToken);
-        var directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "StarBlogPublisher", "cover-studio");
+    public Task<ComposedCover> ComposeAsync(Stream? background, CoverComposition composition, CancellationToken cancellationToken = default) {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var rendered = Render(background, composition);
+        var directory = Path.Combine(Path.GetTempPath(), "StarBlogPublisher", "cover-studio");
         Directory.CreateDirectory(directory);
-        var path = System.IO.Path.Combine(directory, $"{Guid.NewGuid():N}.jpg");
-        await SaveJpegAsync(rendered.Image, path, cancellationToken);
-        return new ComposedCover(path, CanvasWidth, CanvasHeight, rendered.EffectiveFontSize, rendered.FontFamily);
+        var path = Path.Combine(directory, $"{Guid.NewGuid():N}.jpg");
+        SaveJpeg(rendered.Image, path);
+        return Task.FromResult(new ComposedCover(path, CanvasWidth, CanvasHeight, rendered.EffectiveFontSize, rendered.FontFamily));
     }
 
-    public async Task<RenderedCover> RenderAsync(Stream? background, CoverComposition composition, CancellationToken cancellationToken = default) {
-        var canvas = new Image<Rgba32>(CanvasWidth, CanvasHeight, FallbackColor);
-        try {
-            if (background != null) {
-                await DrawBackgroundAsync(canvas, background, cancellationToken);
-            }
-
-            var title = NormalizeTitle(composition.Title);
-            var effectiveSize = 0;
-            var fontFamily = "";
-            if (title.Length > 0) {
-                if (!TryResolveFont(out var family, out fontFamily)) {
-                    throw new InvalidOperationException("找不到可用的中文字体。Windows 需要微软雅黑，macOS 需要苹方，Linux 需要 Noto Sans CJK。");
-                }
-
-                var layout = LayoutTitle(family, title, composition);
-                effectiveSize = layout.FontSize;
-                canvas.Mutate(ctx => DrawTitle(ctx, layout, composition));
-            }
-
-            return new RenderedCover(canvas, effectiveSize, fontFamily);
-        }
-        catch {
-            canvas.Dispose();
-            throw;
-        }
+    public Task<RenderedCover> RenderAsync(Stream? background, CoverComposition composition, CancellationToken cancellationToken = default) {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(Render(background, composition));
     }
 
     public byte[] CreatePreviewPng(string composedPath, CoverPreviewFrame frame) {
-        using var image = Image.Load<Rgba32>(composedPath);
+        using var image = DecodedImage.Decode(composedPath);
         var crop = frame switch {
             CoverPreviewFrame.Headline => CoverSafeZone.Headline(image.Width, image.Height),
             CoverPreviewFrame.Secondary => CoverSafeZone.Secondary(image.Width, image.Height),
             _ => new CoverPixelRect(0, 0, image.Width, image.Height)
         };
-        using var framed = image.Clone(ctx => ctx.Crop(new Rectangle(crop.X, crop.Y, crop.Width, crop.Height)));
-        using var stream = new MemoryStream();
-        framed.Save(stream, new PngEncoder());
-        return stream.ToArray();
+        using var framed = image.Crop(crop.X, crop.Y, crop.Width, crop.Height);
+        return framed.EncodePng();
     }
 
-    internal static bool TryResolveFont(out FontFamily family, out string familyName) {
-        family = default;
+    private static RenderedCover Render(Stream? background, CoverComposition composition) {
+        var bitmap = new SKBitmap(new SKImageInfo(CanvasWidth, CanvasHeight, SKColorType.Rgba8888, SKAlphaType.Opaque));
+        try {
+            using var canvas = new SKCanvas(bitmap);
+            canvas.Clear(FallbackColor);
+            if (background != null) DrawBackground(canvas, background);
+
+            var title = NormalizeTitle(composition.Title);
+            var effectiveSize = 0;
+            var fontFamily = "";
+            if (title.Length > 0) {
+                if (!TryResolveFont(composition.Bold, out var typeface, out fontFamily)) {
+                    throw new InvalidOperationException("找不到可用的中文字体。Windows 需要微软雅黑，macOS 需要苹方，Linux 需要 Noto Sans CJK。");
+                }
+
+                using (typeface) {
+                    var layout = LayoutTitle(typeface, title, composition);
+                    effectiveSize = layout.FontSize;
+                    DrawTitle(canvas, layout, composition);
+                }
+            }
+
+            return new RenderedCover(new CoverBitmap(bitmap), effectiveSize, fontFamily);
+        }
+        catch {
+            bitmap.Dispose();
+            throw;
+        }
+    }
+
+    internal static bool TryResolveFont(bool bold, out SKTypeface typeface, out string familyName) {
+        typeface = null!;
         familyName = "";
         try {
+            var manager = SKFontManager.Default;
             foreach (var name in PreferredFontFamilies) {
-                if (SystemFonts.TryGet(name, out family)) {
-                    familyName = family.Name;
+                if (TryMatch(manager, name, bold, out typeface)) {
+                    familyName = typeface.FamilyName;
                     return true;
                 }
             }
 
-            foreach (var candidate in SystemFonts.Families) {
-                var name = candidate.Name;
-                if (name.Contains("YaHei", StringComparison.OrdinalIgnoreCase) ||
-                    name.Contains("PingFang", StringComparison.OrdinalIgnoreCase) ||
-                    name.Contains("Noto Sans CJK", StringComparison.OrdinalIgnoreCase) ||
-                    name.Contains("Noto Sans SC", StringComparison.OrdinalIgnoreCase) ||
-                    name.Contains("Source Han Sans", StringComparison.OrdinalIgnoreCase) ||
-                    name.Contains("WenQuanYi", StringComparison.OrdinalIgnoreCase)) {
-                    family = candidate;
-                    familyName = name;
+            foreach (var candidate in manager.FontFamilies) {
+                if (!IsPreferredFamily(candidate)) continue;
+                if (TryMatch(manager, candidate, bold, out typeface)) {
+                    familyName = typeface.FamilyName;
                     return true;
                 }
             }
         }
         catch (Exception) {
+            typeface?.Dispose();
+            typeface = null!;
             return false;
         }
 
         return false;
     }
 
-    private static async Task DrawBackgroundAsync(Image<Rgba32> canvas, Stream background, CancellationToken cancellationToken) {
-        Image<Rgba32> source;
+    private static void DrawBackground(SKCanvas canvas, Stream background) {
+        DecodedImage source;
         try {
-            source = await Image.LoadAsync<Rgba32>(background, cancellationToken);
+            source = DecodedImage.Decode(background);
         }
-        catch (UnknownImageFormatException ex) {
-            throw new InvalidOperationException("无法读取背景图片", ex);
-        }
-        catch (InvalidImageContentException ex) {
+        catch (ImageDecodeException ex) {
             throw new InvalidOperationException("无法读取背景图片", ex);
         }
 
         using (source) {
-            source.Mutate(ctx => ctx
-                .AutoOrient()
-                .Resize(new ResizeOptions {
-                    Size = new Size(CanvasWidth, CanvasHeight),
-                    Mode = ResizeMode.Crop,
-                    Position = AnchorPositionMode.Center
-                }));
-            canvas.Mutate(ctx => ctx.DrawImage(source, new Point(0, 0), 1f));
+            source.Cover(CanvasWidth, CanvasHeight);
+            source.DrawOnto(canvas, FallbackColor);
         }
     }
 
-    private static TitleLayout LayoutTitle(FontFamily family, string title, CoverComposition composition) {
+    private static TitleLayout LayoutTitle(SKTypeface typeface, string title, CoverComposition composition) {
         var textArea = CoverSafeZone.TextArea();
         var requested = Math.Clamp(composition.FontSize, MinFontSize, MaxFontSize);
         var size = requested;
-        FontRectangle measured = default;
-        Font font = default!;
+        SKFont font;
+        string[] lines;
+        float blockHeight;
         while (true) {
-            font = CreateFont(family, size, composition.Bold);
-            measured = TextMeasurer.MeasureAdvance(title, MeasureOptions(font, textArea.Width));
-            if (measured.Height <= textArea.Height + 0.5f || size <= MinFontSize) break;
+            font = new SKFont(typeface, size) { Edging = SKFontEdging.Antialias };
+            lines = Wrap(font, title, textArea.Width);
+            blockHeight = Math.Max(1f, lines.Length * font.Spacing);
+            if (blockHeight <= textArea.Height + 0.5f || size <= MinFontSize) break;
+            font.Dispose();
             size -= 2;
         }
 
-        var blockHeight = Math.Max(1f, measured.Height);
         var y = composition.Placement switch {
             CoverTextVerticalPlacement.Top => textArea.Y,
             CoverTextVerticalPlacement.Center => textArea.Y + (textArea.Height - blockHeight) / 2f,
             _ => textArea.Y + textArea.Height - blockHeight
         };
-        var centered = composition.Align == CoverTextHorizontalAlign.Center;
-        var options = new RichTextOptions(font) {
-            WrappingLength = textArea.Width,
-            HorizontalAlignment = centered ? HorizontalAlignment.Center : HorizontalAlignment.Left,
-            VerticalAlignment = VerticalAlignment.Top,
-            Origin = new PointF(centered ? textArea.X + textArea.Width / 2f : textArea.X, y),
-            Dpi = 72
-        };
-        return new TitleLayout(title, font, size, options, ResolveColor(composition), y, blockHeight);
+        return new TitleLayout(title, font, lines, size, y, blockHeight, ResolveColor(composition));
     }
 
-    private static void DrawTitle(IImageProcessingContext ctx, TitleLayout layout, CoverComposition composition) {
-        if (composition.Scrim) DrawScrim(ctx, composition.Placement, layout.Top, layout.Height);
-        var clip = CoverSafeZone.Intersection();
-        ctx.Clip(new RectangularPolygon(clip.X, clip.Y, clip.Width, clip.Height), textCtx => {
-            textCtx.DrawText(layout.Options, layout.Text, layout.Color);
-        });
+    private static void DrawTitle(SKCanvas canvas, TitleLayout layout, CoverComposition composition) {
+        using (layout.Font) {
+            if (composition.Scrim) DrawScrim(canvas, composition.Placement, layout.Top, layout.Height);
+            var clip = CoverSafeZone.Intersection();
+            canvas.Save();
+            canvas.ClipRect(new SKRect(clip.X, clip.Y, clip.Right, clip.Bottom));
+            using var paint = new SKPaint {
+                Color = layout.Color,
+                IsAntialias = true,
+                Style = SKPaintStyle.Fill
+            };
+            var textArea = CoverSafeZone.TextArea();
+            var centered = composition.Align == CoverTextHorizontalAlign.Center;
+            var metrics = layout.Font.Metrics;
+            var y = layout.Top;
+            foreach (var line in layout.Lines) {
+                var width = layout.Font.MeasureText(line);
+                var x = centered ? textArea.X + (textArea.Width - width) / 2f : textArea.X;
+                canvas.DrawText(line, x, y - metrics.Ascent, layout.Font, paint);
+                y += layout.Font.Spacing;
+            }
+
+            canvas.Restore();
+        }
     }
 
-    private static void DrawScrim(IImageProcessingContext ctx, CoverTextVerticalPlacement placement, float textTop, float textHeight) {
+    private static void DrawScrim(SKCanvas canvas, CoverTextVerticalPlacement placement, float textTop, float textHeight) {
         const byte alpha = 176;
-        var dark = Color.FromRgba(0, 0, 0, alpha);
-        var clear = Color.Transparent;
+        var dark = new SKColor(0, 0, 0, alpha);
+        var clear = SKColors.Transparent;
         float top;
         float bottom;
-        ColorStop[] stops;
+        SKColor[] colors;
+        float[] positions;
         switch (placement) {
             case CoverTextVerticalPlacement.Top:
                 top = 0;
                 bottom = Math.Min(CanvasHeight, textTop + textHeight + 80);
-                stops = [new ColorStop(0, dark), new ColorStop(1, clear)];
+                colors = [dark, clear];
+                positions = [0, 1];
                 break;
             case CoverTextVerticalPlacement.Center:
                 top = Math.Max(0, textTop - 48);
                 bottom = Math.Min(CanvasHeight, textTop + textHeight + 48);
-                stops = [
-                    new ColorStop(0, clear),
-                    new ColorStop(0.35f, dark),
-                    new ColorStop(0.65f, dark),
-                    new ColorStop(1, clear)
-                ];
+                colors = [clear, dark, dark, clear];
+                positions = [0, 0.35f, 0.65f, 1];
                 break;
             default:
                 top = Math.Max(0, textTop - 100);
                 bottom = CanvasHeight;
-                stops = [new ColorStop(0, clear), new ColorStop(1, dark)];
+                colors = [clear, dark];
+                positions = [0, 1];
                 break;
         }
 
         if (bottom - top < 1) return;
-        var brush = new LinearGradientBrush(
-            new PointF(0, top),
-            new PointF(0, bottom),
-            GradientRepetitionMode.None,
-            stops);
-        ctx.Fill(brush, new RectangleF(0, top, CanvasWidth, bottom - top));
+        using var shader = SKShader.CreateLinearGradient(
+            new SKPoint(0, top),
+            new SKPoint(0, bottom),
+            colors,
+            positions,
+            SKShaderTileMode.Clamp);
+        using var paint = new SKPaint { Shader = shader, IsAntialias = true };
+        canvas.DrawRect(new SKRect(0, top, CanvasWidth, bottom), paint);
     }
 
-    private static RichTextOptions MeasureOptions(Font font, int wrappingWidth) => new(font) {
-        WrappingLength = wrappingWidth,
-        HorizontalAlignment = HorizontalAlignment.Left,
-        VerticalAlignment = VerticalAlignment.Top,
-        Dpi = 72
-    };
+    private static string[] Wrap(SKFont font, string title, int maxWidth) {
+        var lines = new System.Collections.Generic.List<string>();
+        foreach (var paragraph in title.Split('\n')) {
+            if (paragraph.Length == 0) {
+                lines.Add("");
+                continue;
+            }
 
-    private static Font CreateFont(FontFamily family, float size, bool bold) {
-        var styles = family.GetAvailableStyles().ToArray();
-        var style = bold && styles.Contains(FontStyle.Bold)
-            ? FontStyle.Bold
-            : styles.Contains(FontStyle.Regular)
-                ? FontStyle.Regular
-                : styles.FirstOrDefault();
-        return family.CreateFont(size, style);
+            var start = 0;
+            for (var index = 1; index <= paragraph.Length; index++) {
+                if (font.MeasureText(paragraph.AsSpan(start, index - start)) <= maxWidth) continue;
+                if (index - 1 == start) continue;
+                lines.Add(paragraph[start..(index - 1)]);
+                start = index - 1;
+            }
+
+            lines.Add(paragraph[start..]);
+        }
+
+        return lines.ToArray();
     }
 
-    private static Color ResolveColor(CoverComposition composition) {
-        if (composition.Color == CoverTextColor.Black) return Color.Black;
+    private static bool TryMatch(SKFontManager manager, string family, bool bold, out SKTypeface typeface) {
+        typeface = manager.MatchFamily(family, bold ? SKFontStyle.Bold : SKFontStyle.Normal);
+        if (!IsRequestedFamily(typeface, family)) {
+            typeface?.Dispose();
+            typeface = null!;
+            return false;
+        }
+
+        if (bold && typeface.FontStyle.Weight < (int)SKFontStyleWeight.SemiBold) {
+            typeface.Dispose();
+            typeface = manager.MatchFamily(family, SKFontStyle.Normal);
+            if (!IsRequestedFamily(typeface, family)) {
+                typeface?.Dispose();
+                typeface = null!;
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsRequestedFamily(SKTypeface? typeface, string requested) {
+        if (typeface == null) return false;
+        var actual = typeface.FamilyName;
+        return actual.Contains(requested, StringComparison.OrdinalIgnoreCase) ||
+               requested.Contains(actual, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsPreferredFamily(string name) =>
+        name.Contains("YaHei", StringComparison.OrdinalIgnoreCase) ||
+        name.Contains("PingFang", StringComparison.OrdinalIgnoreCase) ||
+        name.Contains("Noto Sans CJK", StringComparison.OrdinalIgnoreCase) ||
+        name.Contains("Noto Sans SC", StringComparison.OrdinalIgnoreCase) ||
+        name.Contains("Source Han Sans", StringComparison.OrdinalIgnoreCase) ||
+        name.Contains("WenQuanYi", StringComparison.OrdinalIgnoreCase);
+
+    private static SKColor ResolveColor(CoverComposition composition) {
+        if (composition.Color == CoverTextColor.Black) return SKColors.Black;
         if (composition.Color == CoverTextColor.Custom && TryParseHex(composition.CustomColorHex, out var custom)) {
             return custom;
         }
 
-        return Color.White;
+        return SKColors.White;
     }
 
-    private static bool TryParseHex(string hex, out Color color) {
+    private static bool TryParseHex(string hex, out SKColor color) {
         color = default;
         if (string.IsNullOrWhiteSpace(hex)) return false;
         var text = hex.Trim();
         if (!text.StartsWith('#')) text = "#" + text;
-        return Color.TryParseHex(text, out color);
+        return SKColor.TryParse(text, out color);
     }
 
     private static string NormalizeTitle(string? title) {
@@ -311,10 +352,10 @@ public sealed class CoverComposer {
         return title.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Trim();
     }
 
-    private static async Task SaveJpegAsync(Image image, string path, CancellationToken cancellationToken) {
+    private static void SaveJpeg(CoverBitmap image, string path) {
         var quality = 90;
         while (true) {
-            await image.SaveAsJpegAsync(path, new JpegEncoder { Quality = quality }, cancellationToken);
+            File.WriteAllBytes(path, image.EncodeJpeg(quality));
             if (new FileInfo(path).Length <= MaxJpegBytes || quality <= 60) return;
             quality -= 10;
         }
@@ -322,10 +363,10 @@ public sealed class CoverComposer {
 
     private readonly record struct TitleLayout(
         string Text,
-        Font Font,
+        SKFont Font,
+        string[] Lines,
         int FontSize,
-        RichTextOptions Options,
-        Color Color,
         float Top,
-        float Height);
+        float Height,
+        SKColor Color);
 }

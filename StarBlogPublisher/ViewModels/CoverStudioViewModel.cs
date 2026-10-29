@@ -10,7 +10,6 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using SixLabors.ImageSharp.Processing;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
@@ -158,15 +157,9 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
                 await concurrency.WaitAsync(token);
                 try {
                     var bytes = await ReadArticleImageAsync(image.Source, token);
-                    using var decoded = SixLabors.ImageSharp.Image.Load(bytes);
-                    decoded.Mutate(context => context.AutoOrient().Resize(new ResizeOptions {
-                        Size = new SixLabors.ImageSharp.Size(240, 160), Mode = ResizeMode.Max
-                    }));
-                    using var thumbnail = new MemoryStream();
-                    await SixLabors.ImageSharp.ImageExtensions.SaveAsPngAsync(decoded, thumbnail, token);
+                    var png = ImagePreview.CreatePngThumbnail(bytes, 240, 160);
                     token.ThrowIfCancellationRequested();
-                    thumbnail.Position = 0;
-                    image.Thumbnail = new Bitmap(thumbnail);
+                    image.Thumbnail = new Bitmap(new MemoryStream(png));
                     image.Status = "";
                 }
                 finally {
@@ -194,7 +187,7 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
         try {
             var bytes = await ReadArticleImageAsync(image.Source, token);
             // Decode before replacing the background so a broken image preserves the current cover.
-            using var decoded = SixLabors.ImageSharp.Image.Load(bytes);
+            ImagePreview.EnsureDecodable(bytes);
             lock (_gate) {
                 if (!IsCurrentBackgroundRequest(request)) return;
                 _background = bytes;
