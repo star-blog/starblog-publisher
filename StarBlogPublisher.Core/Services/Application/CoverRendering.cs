@@ -9,15 +9,32 @@ using StarBlogPublisher.Services.Imaging;
 
 namespace StarBlogPublisher.Services.Application;
 
-public sealed record CoverDiagnostic(string Message, bool IsError);
-public sealed record CoverTextLine(string Text, float X, float Baseline, int Size, bool Bold);
+public sealed record CoverDiagnostic(string Message, bool IsError) {
+    public CoverElementId Element { get; init; }
+    public CoverPreviewFrame? Frame { get; init; }
+}
+public sealed record CoverTextLine(string Text, float X, float Baseline, int Size, bool Bold) {
+    public CoverElementId Element { get; init; } = CoverElementId.Title;
+    public string? Color { get; init; }
+}
+public sealed record CoverLayoutObject(CoverElementId Id, CoverPixelRect Bounds, int FontSize) {
+    public CoverPixelRect? TextBox { get; init; }
+}
 public sealed record CoverLayout(CoverPixelRect TextArea, IReadOnlyList<CoverTextLine> Lines, IReadOnlyList<CoverDiagnostic> Diagnostics, int FontSize) {
     public double EffectiveTextX { get; init; }
     public double EffectiveTextY { get; init; }
+    public IReadOnlyList<CoverLayoutObject> Objects { get; init; } = [];
+    public CoverPixelRect BackgroundArea { get; init; } = new(0, 0, 1200, 900);
 }
 
 public static class CoverLayoutService {
     public static CoverLayout Measure(CoverDocument d, CancellationToken token = default) {
+        if (d.Elements != null) return CoverObjectLayout.Measure(d, token) with { BackgroundArea = CoverTemplateCatalog.BackgroundArea(d) };
+        var legacy = CoverObjectLayout.WithObjects(MeasureLegacy(d, token));
+        legacy = legacy with { BackgroundArea = CoverTemplateCatalog.BackgroundArea(d) };
+        return d.Logo == null ? legacy : legacy with { Objects = [.. legacy.Objects, new(CoverElementId.Logo, new(legacy.TextArea.Right - 64, legacy.TextArea.Y, 64, 40), 0)] };
+    }
+    private static CoverLayout MeasureLegacy(CoverDocument d, CancellationToken token) {
         if (d.Width != 1200 || d.Height != 900 || !d.Crops.IsValid || !double.IsFinite(d.Zoom) || d.Zoom < 1 || d.Zoom > 4
             || !double.IsFinite(d.TextWidth) || d.TextWidth < .25 || d.TextWidth > 1
             || !double.IsFinite(d.LineHeight) || d.LineHeight < 1 || d.LineHeight > 2
@@ -37,19 +54,19 @@ public static class CoverLayoutService {
         if (!CoverComposer.TryResolveFont(d.Bold, out var face, out _)) throw new InvalidOperationException("找不到可用的中文字体，请安装微软雅黑、苹方或 Noto Sans CJK");
         using (face) {
             var size = Math.Clamp(d.FontSize, 24, 96);
-            var lines = new List<(string Text, int Size, bool Bold)>();
+            var lines = new List<(string Text, int Size, bool Bold, CoverElementId Element)>();
             float height;
             while (true) {
                 token.ThrowIfCancellationRequested();
                 lines.Clear();
-                void Add(string text, int s, bool bold) {
+                void Add(string text, int s, bool bold, CoverElementId element) {
                     if (string.IsNullOrWhiteSpace(text)) return;
                     using var font = new SKFont(face, s);
-                    lines.AddRange(CoverComposer.Wrap(font, text.Replace("\r", ""), width).Select(t => (t, s, bold)));
+                    lines.AddRange(CoverComposer.Wrap(font, text.Replace("\r", ""), width).Select(t => (t, s, bold, element)));
                 }
-                Add(d.Column, Math.Max(20, size / 2), false);
-                Add(d.Title, size, d.Bold);
-                Add(d.Subtitle, Math.Max(20, size / 2), false);
+                Add(d.Column, Math.Max(20, size / 2), false, CoverElementId.Column);
+                Add(d.Title, size, d.Bold, CoverElementId.Title);
+                Add(d.Subtitle, Math.Max(20, size / 2), false, CoverElementId.Subtitle);
                 height = lines.Sum(l => l.Size * (float)d.LineHeight * 1.2f);
                 var fits = lines.All(l => { using var f = new SKFont(face, l.Size); return f.MeasureText(l.Text) <= width + .5; });
                 if (height <= area.Height && fits) break;
@@ -65,7 +82,7 @@ public static class CoverLayoutService {
             foreach (var l in lines) {
                 using var f = new SKFont(face, l.Size);
                 var lx = d.Centered ? area.X + (width - f.MeasureText(l.Text)) / 2 : area.X;
-                output.Add(new(l.Text, lx, top - f.Metrics.Ascent, l.Size, l.Bold));
+                output.Add(new(l.Text, lx, top - f.Metrics.Ascent, l.Size, l.Bold) { Element = l.Element });
                 top += l.Size * (float)d.LineHeight * 1.2f;
             }
             if (output.Count > 0) {
@@ -94,8 +111,8 @@ public sealed class CoverRenderResult(CoverBitmap bitmap, CoverLayout layout) : 
 
 public enum CoverRenderLayer { Full, Text, Decoration }
 public sealed class CoverRenderer {
-    public CoverRenderResult Render(CoverDocument d, string? articlePath, CancellationToken token = default, CoverRenderLayer layer = CoverRenderLayer.Full) {
-        var layout = CoverLayoutService.Measure(d, token);
+    public CoverRenderResult Render(CoverDocument d, string? articlePath, CancellationToken token = default, CoverRenderLayer layer = CoverRenderLayer.Full, CoverElementId? element = null, CoverLayout? measured = null) {
+        var layout = measured ?? CoverLayoutService.Measure(d, token);
         if (!SKColor.TryParse(d.Color, out var textColor) || !SKColor.TryParse(d.BackgroundColor, out var backgroundColor))
             throw new InvalidOperationException("请输入有效的十六进制颜色");
         var bitmap = new SKBitmap(new SKImageInfo(d.Width, d.Height, SKColorType.Rgba8888, layer == CoverRenderLayer.Full ? SKAlphaType.Opaque : SKAlphaType.Unpremul));
@@ -107,15 +124,12 @@ public sealed class CoverRenderer {
                 using var decoded = DecodedImage.Decode(CoverAssetService.Resolve(d.Background, articlePath));
                 using var source = decoded.DetachCover();
                 backgroundWidth = source.Width; backgroundHeight = source.Height;
-                var target = d.TemplateId == "split" ? new SKRect(696, 0, 1200, 900) : new SKRect(0, 0, 1200, 900);
-                var scale = Math.Max(target.Width / source.Width, target.Height / source.Height) * (float)d.Zoom;
-                var w = source.Width * scale; var h = source.Height * scale;
-                var left = target.Left + (target.Width - w) / 2 + (float)d.BackgroundX;
-                var top = target.Top + (target.Height - h) / 2 + (float)d.BackgroundY;
-                left = Math.Clamp(left, target.Right - w, target.Left); top = Math.Clamp(top, target.Bottom - h, target.Top);
+                var imageArea = layout.BackgroundArea;
+                var target = new SKRect(imageArea.X, imageArea.Y, imageArea.Right, imageArea.Bottom);
+                var placement = CoverImageGeometry.Place(d, imageArea, source.Width, source.Height);
                 canvas.Save(); canvas.ClipRect(target);
                 using var image = SKImage.FromBitmap(source.Native);
-                canvas.DrawImage(image, new SKRect(0, 0, source.Width, source.Height), new SKRect(left, top, left + w, top + h),
+                canvas.DrawImage(image, new SKRect(0, 0, source.Width, source.Height), new SKRect(placement.X, placement.Y, placement.X + placement.Width, placement.Y + placement.Height),
                     new SKSamplingOptions(SKCubicResampler.Mitchell));
                 canvas.Restore();
             }
@@ -124,21 +138,32 @@ public sealed class CoverRenderer {
                     [SKColors.Transparent, new SKColor(0, 0, 0, (byte)(Math.Clamp(d.Scrim, 0, 1) * 255))], SKShaderTileMode.Clamp);
                 using var scrim = new SKPaint { Shader = shader }; canvas.DrawRect(0, 0, d.Width, d.Height, scrim);
             }
-            if (layer != CoverRenderLayer.Text && d.TemplateId is "minimal" or "column") {
+            if (layer != CoverRenderLayer.Text && element != CoverElementId.Logo && d.TemplateVersion == 1 && d.TemplateId is "minimal" or "column") {
                 using var accent = new SKPaint { Color = SKColor.Parse("#52D6B0"), IsAntialias = true };
-                canvas.DrawRoundRect(layout.TextArea.X, layout.TextArea.Y - 16, 80, 6, 3, 3, accent);
+                var decorationArea = d.Elements?.LegacyDecorationArea ?? layout.TextArea;
+                canvas.DrawRoundRect(decorationArea.X, decorationArea.Y - 16, 80, 6, 3, 3, accent);
+            }
+            if (layer != CoverRenderLayer.Text && element != CoverElementId.Logo && d.TemplateVersion == 2) {
+                using var accent = new SKPaint { Color = SKColor.Parse(d.TemplateId == "minimal" ? "#B65D3A" : d.TemplateId == "split" ? "#4169B3" : "#D7B477"), IsAntialias = true };
+                if (d.TemplateId == "minimal") canvas.DrawRect(216, 286, 72, 5, accent);
+                if (d.TemplateId == "split") canvas.DrawRect(184, 250, 4, 406, accent);
+                if (d.TemplateId == "column") canvas.DrawRect(0, 416, 1200, 4, accent);
             }
             token.ThrowIfCancellationRequested();
             foreach (var line in layer == CoverRenderLayer.Decoration ? [] : layout.Lines) {
+                if (element != null && line.Element != element) continue;
                 if (!CoverComposer.TryResolveFont(line.Bold, out var face, out _)) throw new InvalidOperationException("找不到封面字体");
                 using (face) using (var font = new SKFont(face, line.Size) { Edging = SKFontEdging.Antialias })
-                using (var paint = new SKPaint { Color = textColor, IsAntialias = true }) canvas.DrawText(line.Text, line.X, line.Baseline, font, paint);
+                using (var paint = new SKPaint { Color = line.Color == null ? textColor : SKColor.Parse(line.Color), IsAntialias = true }) canvas.DrawText(line.Text, line.X, line.Baseline, font, paint);
             }
-            if (layer != CoverRenderLayer.Text && d.Logo != null) {
+            if (layer != CoverRenderLayer.Text && d.Logo != null && (element == null || element == CoverElementId.Logo)) {
                 using var decoded = DecodedImage.Decode(CoverAssetService.Resolve(d.Logo, articlePath));
                 using var logo = decoded.DetachCover();
-                var scale = Math.Min(64f / logo.Width, 40f / logo.Height);
-                canvas.DrawBitmap(logo.Native, new SKRect(layout.TextArea.Right - logo.Width * scale, layout.TextArea.Y, layout.TextArea.Right, layout.TextArea.Y + logo.Height * scale));
+                var box = d.Elements?.Logo ?? new(layout.TextArea.Right - 64, layout.TextArea.Y, 64, 40);
+                if (d.Elements != null && layout.Objects.FirstOrDefault(o => o.Id == CoverElementId.Logo) is { } item) box = box with { X = item.Bounds.X, Y = item.Bounds.Y, Width = item.Bounds.Width, Height = item.Bounds.Height };
+                var scale = (float)Math.Min(box.Width / logo.Width, box.Height / logo.Height);
+                var left = d.Elements == null ? layout.TextArea.Right - logo.Width * scale : box.AlignRight ? box.X + box.Width - logo.Width * scale : box.X;
+                canvas.DrawBitmap(logo.Native, new SKRect((float)left, (float)box.Y, (float)left + logo.Width * scale, (float)box.Y + logo.Height * scale));
             }
             return new(new CoverBitmap(bitmap), layout) { BackgroundWidth = backgroundWidth, BackgroundHeight = backgroundHeight };
         } catch { bitmap.Dispose(); throw; }

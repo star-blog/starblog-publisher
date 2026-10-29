@@ -12,6 +12,8 @@ public sealed record CoverDocument {
     public string TemplateId { get; init; } = "minimal";
     [JsonIgnore] public bool UsesBackgroundImage => TemplateId is "photo" or "split" or "column";
     public int TemplateVersion { get; init; } = 1;
+    public CoverElements? Elements { get; init; }
+    [JsonIgnore] public bool IsSupported => CoverTemplateCatalog.IsSupported(TemplateId, TemplateVersion) && (TemplateVersion == 1 || Elements != null);
     public int Width { get; init; } = 1200;
     public int Height { get; init; } = 900;
     public string? Background { get; init; }
@@ -45,7 +47,7 @@ public sealed record ArticleCoverState {
     public CoverDocument Draft { get; init; } = new();
     public CoverDocument? Applied { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; init; }
-    [JsonIgnore] public bool IsSupported => SchemaVersion == 1;
+    [JsonIgnore] public bool IsSupported => Original == null && (SchemaVersion is 1 or 2) && Draft.IsSupported && (Applied?.IsSupported ?? true);
     [JsonIgnore] public JsonElement? Original { get; init; }
 }
 
@@ -54,14 +56,16 @@ public sealed class ArticleCoverStateConverter : JsonConverter<ArticleCoverState
         using var json = JsonDocument.ParseValue(ref reader);
         var root = json.RootElement;
         var version = root.TryGetProperty("SchemaVersion", out var v) && v.TryGetInt32(out var number) ? number : 1;
-        if (version != 1) return new() { SchemaVersion = version, Original = root.Clone() };
+        if (version is not (1 or 2)) return new() { SchemaVersion = version, Original = root.Clone() };
         try {
-            return new() {
-                SchemaVersion = 1,
+            var state = new ArticleCoverState {
+                SchemaVersion = version,
                 Draft = root.GetProperty("Draft").Deserialize(CoverJsonContext.Default.CoverDocument) ?? throw new JsonException("封面草稿缺失"),
                 Applied = root.TryGetProperty("Applied", out var applied) && applied.ValueKind != JsonValueKind.Null
-                    ? applied.Deserialize(CoverJsonContext.Default.CoverDocument) : null
+                    ? applied.Deserialize(CoverJsonContext.Default.CoverDocument) : null,
+                Extra = System.Linq.Enumerable.ToDictionary(System.Linq.Enumerable.Where(root.EnumerateObject(), p => p.Name is not ("SchemaVersion" or "Draft" or "Applied")), p => p.Name, p => p.Value.Clone())
             };
+            return state.IsSupported ? state : state with { Original = root.Clone() };
         } catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException) {
             return new() { SchemaVersion = -1, Original = root.Clone() };
         }
@@ -71,6 +75,7 @@ public sealed class ArticleCoverStateConverter : JsonConverter<ArticleCoverState
         writer.WriteStartObject(); writer.WriteNumber("SchemaVersion", value.SchemaVersion);
         writer.WritePropertyName("Draft"); JsonSerializer.Serialize(writer, value.Draft, CoverJsonContext.Default.CoverDocument);
         if (value.Applied != null) { writer.WritePropertyName("Applied"); JsonSerializer.Serialize(writer, value.Applied, CoverJsonContext.Default.CoverDocument); }
+        if (value.Extra != null) foreach (var pair in value.Extra) { writer.WritePropertyName(pair.Key); pair.Value.WriteTo(writer); }
         writer.WriteEndObject();
     }
 }
@@ -108,4 +113,5 @@ public sealed record CoverTemplate(string Id, string Name) {
 [JsonSerializable(typeof(ArticleCoverState))]
 [JsonSerializable(typeof(CoverDocument))]
 [JsonSerializable(typeof(ArticleSidecar))]
+[JsonSerializable(typeof(CoverElements))]
 public partial class CoverJsonContext : JsonSerializerContext;
