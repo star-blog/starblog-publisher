@@ -10,6 +10,23 @@ namespace StarBlogPublisher.Tests.Services.Application;
 public class CoverWorkflowTests : IDisposable {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "cover-workflow", Guid.NewGuid().ToString("N"));
     public CoverWorkflowTests() => Directory.CreateDirectory(_directory);
+    [Fact]
+    public async Task ColumnTemplate_ShowsSelectedBackgroundInRenderAndExport_AndFallsBackWithoutImage() {
+        var assets = new CoverAssetService(Path.Combine(_directory, "assets"));
+        var source = await assets.ImportAsync(SkiaFixture.EncodeSolid(600, 450, 20, 80, 200, 255, "png"));
+        var document = CoverTemplate.All.Single(t => t.Id == "column").Apply(new() { Background = source });
+        document.UsesBackgroundImage.Should().BeTrue();
+        using var rendered = new CoverRenderer().Render(document, null);
+        rendered.Bitmap[50, 50].B.Should().BeGreaterThan(150);
+        rendered.Bitmap[50, 50].R.Should().BeLessThan(50);
+        var path = Path.Combine(_directory, "column.jpg");
+        new CoverExportService().Export(document, null, path);
+        var exported = SkiaFixture.Sample(path, 50, 50);
+        exported.B.Should().BeGreaterThan(150);
+        exported.R.Should().BeLessThan(50);
+        using var fallback = new CoverRenderer().Render(document with { Background = null }, null);
+        fallback.Bitmap[50, 50].B.Should().BeLessThan(150);
+    }
     [Theory]
     [InlineData("minimal")][InlineData("photo")][InlineData("split")][InlineData("column")]
     public void Templates_RenderBothCropsAndRetainText(string id) {

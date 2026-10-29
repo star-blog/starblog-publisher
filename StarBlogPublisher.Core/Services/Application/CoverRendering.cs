@@ -95,7 +95,7 @@ public sealed class CoverRenderer {
             var backgroundWidth = 0; var backgroundHeight = 0;
             using var canvas = new SKCanvas(bitmap);
             canvas.Clear(backgroundColor);
-            if (d.Background != null && d.TemplateId is "photo" or "split") {
+            if (d.Background != null && d.UsesBackgroundImage) {
                 using var decoded = DecodedImage.Decode(CoverAssetService.Resolve(d.Background, articlePath));
                 using var source = decoded.DetachCover();
                 backgroundWidth = source.Width; backgroundHeight = source.Height;

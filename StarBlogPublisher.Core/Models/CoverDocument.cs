@@ -10,6 +10,7 @@ namespace StarBlogPublisher.Models;
 public sealed record CoverDocument {
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
     public string TemplateId { get; init; } = "minimal";
+    [JsonIgnore] public bool UsesBackgroundImage => TemplateId is "photo" or "split" or "column";
     public int TemplateVersion { get; init; } = 1;
     public int Width { get; init; } = 1200;
     public int Height { get; init; } = 900;
@@ -100,7 +101,7 @@ public sealed record CoverTemplate(string Id, string Name) {
         TemplateId = Id, TemplateVersion = 1, FontSize = Id == "column" ? 60 : 64,
         Centered = Id != "split", Placement = Id == "photo" ? "bottom" : "center",
         TextWidth = Id == "split" ? .52 : 1, TextX = 0, TextY = 0,
-        Color = "#FFFFFF", BackgroundColor = Id == "column" ? "#41335B" : "#17263C", Scrim = Id == "photo" ? .65 : 0
+        Color = "#FFFFFF", BackgroundColor = Id == "column" ? "#41335B" : "#17263C", Scrim = Id is "photo" or "column" ? .65 : 0
     };
 }
 
