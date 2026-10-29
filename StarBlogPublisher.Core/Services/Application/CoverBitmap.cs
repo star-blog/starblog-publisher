@@ -17,6 +17,7 @@ public sealed class CoverBitmap : IDisposable {
     public int Width => _bitmap.Width;
     public int Height => _bitmap.Height;
     internal SKBitmap Native => _bitmap;
+    public CoverRawImage CopyPixels() => new(Width, Height, _bitmap.RowBytes, _bitmap.GetPixelSpan().ToArray());
     public byte[] PreviewPng(CoverPixelRect? crop = null) {
         using var image = SKImage.FromBitmap(_bitmap);
         using var framed = crop is { } r ? image.Subset(new SKRectI(r.X, r.Y, r.Right, r.Bottom)) : SKImage.FromBitmap(_bitmap);

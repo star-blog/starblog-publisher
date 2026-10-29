@@ -28,7 +28,32 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
     private CancellationTokenSource? _renderCts, _backgroundCts, _aiCts;
     private bool _started, _disposed;
     private int _renderRevision = -1;
-    private int _backgroundWidth, _backgroundHeight;
+    private string? _backgroundCacheKey;
+    private CoverRawImage? _backgroundCache;
+    private CoverDocument? _interactionDocument;
+    public CoverDocument LiveDocument => _interactionDocument ?? Session.Draft;
+    public event Action? LiveChanged;
+    public bool IsInteracting => _interactionDocument != null;
+    public bool BeginInteraction() {
+        if (!IsEditable || Preview == null || Preview.Data.Document != Session.Draft) return false;
+        _interactionDocument = Session.Draft; return true;
+    }
+    public void UpdateInteraction(CoverDocument document) { if (_interactionDocument != null) { _interactionDocument = document; LiveChanged?.Invoke(); } }
+    public void EndInteraction(bool commit) {
+        if (_interactionDocument == null) return;
+        var document = _interactionDocument; _interactionDocument = null;
+        if (commit) Session.Change(document); LiveChanged?.Invoke();
+    }
+    public string TemplateName => Templates.FirstOrDefault(t => t.Id == Session.Draft.TemplateId)?.Name ?? "封面模板";
+    public CoverTemplate? SelectedCoverTemplate { get => Templates.FirstOrDefault(t => t.Id == Session.Draft.TemplateId); set { if (value != null && value.Id != Session.Draft.TemplateId) Edit(value.Apply(Session.Draft)); } }
+    public bool IsAiExpanded { get => InspectorTab == 3; set { InspectorTab = value ? 3 : 0; OnPropertyChanged(); } }
+    public bool HasBackground => Session.Draft.Background != null;
+    public bool IsTextTarget => DragTarget == "文字";
+    public bool IsBackgroundTarget => DragTarget == "背景";
+    [RelayCommand] private void SetDragTarget(string target) { EndInteraction(true); DragTarget = target; }
+    partial void OnDragTargetChanged(string value) { OnPropertyChanged(nameof(IsTextTarget)); OnPropertyChanged(nameof(IsBackgroundTarget)); }
+    [RelayCommand] private void ToggleGuides() => ShowGuides = !ShowGuides;
+    [RelayCommand] private void ResetText() => Edit(Session.Draft with { TextX = 0, TextY = 0 });
     public CoverEditSession Session { get; }
     public CoverStudioViewModel(IHttpClientFactory httpClientFactory, string? articleTitle, Action<PreparedWeChatCover> applyToWeChat,
         IReadOnlyList<ArticleImageSource>? articleImages = null, CoverEditSession? session = null, Func<Task<bool>>? save = null,
@@ -51,9 +76,9 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
     public bool HasPreview => Preview != null;
     public string SaveHint => !Session.IsSupported ? "此封面版本暂不可编辑，原始数据会保留" : Session.State?.Applied == null ? "封面草稿 · 尚未应用" :
         Session.Draft == Session.State.Applied ? "当前设计已应用 · 随文章保存" : "草稿已修改 · 已应用封面保持原样";
-    [ObservableProperty] private Bitmap? _preview;
-    [ObservableProperty] private Bitmap? _headlinePreview;
-    [ObservableProperty] private Bitmap? _secondaryPreview;
+    [ObservableProperty] private CoverPreviewLayers? _preview;
+    public CoverPreviewLayers? HeadlinePreview => Preview;
+    public CoverPreviewLayers? SecondaryPreview => Preview;
     [ObservableProperty] private string _statusMessage = "选择模板，调整背景和标题";
     [ObservableProperty] private bool _isArticleImagePickerOpen;
     [ObservableProperty] private bool _isFetchingRandomBackground;
@@ -63,7 +88,7 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
     [ObservableProperty] private int _inspectorTab;
     [ObservableProperty] private string _outputPath = "";
     [ObservableProperty] private int _effectiveFontSize;
-    [ObservableProperty] private bool _showGuides = true;
+    [ObservableProperty] private bool _showGuides;
     public bool IsAIEnabled => AppSettings.Instance.EnableAI;
     [ObservableProperty] private string _exportFormat = "JPEG";
     [ObservableProperty] private string _exportRange = "完整画布";
@@ -92,7 +117,10 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
     public void Start() { if (_started) return; _started = true; SchedulePreview(); }
     private void OnSessionChanged() {
         if (_disposed) return;
-        OnPropertyChanged(string.Empty);
+        foreach (var name in new[] { nameof(CoverTitle), nameof(Subtitle), nameof(Column), nameof(TextColor), nameof(BackgroundColor),
+            nameof(FontSize), nameof(TextWidth), nameof(LineHeight), nameof(Zoom), nameof(Scrim), nameof(IsBold), nameof(Centered), nameof(Manual),
+            nameof(HeadlineOffset), nameof(SecondaryOffset), nameof(GeneratedPrompt), nameof(IsEditable), nameof(SaveHint), nameof(BackgroundDescription),
+            nameof(TemplateName), nameof(HasBackground), nameof(SelectedCoverTemplate) }) OnPropertyChanged(name);
         UndoCommand.NotifyCanExecuteChanged(); RedoCommand.NotifyCanExecuteChanged();
         if (_started && Session.Revision != _renderRevision) SchedulePreview();
     }
@@ -103,7 +131,7 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
         _ = PreviewAfterDelayAsync(_renderRevision, Session.Draft, Session.ArticlePath, _renderCts.Token);
     }
     private async Task PreviewAfterDelayAsync(int revision, CoverDocument document, string? path, CancellationToken token) {
-        try { await Task.Delay(200, token); await RenderPreviewAsync(revision, document, path, token); }
+        try { await Task.Delay(60, token); await RenderPreviewAsync(revision, document, path, token); }
         catch (OperationCanceledException) { }
         catch (Exception ex) { if (!_disposed && revision == Session.Revision) StatusMessage = ex.Message; }
     }
@@ -119,19 +147,19 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
     private async Task RenderPreviewAsync(int revision, CoverDocument document, string? path, CancellationToken token) {
         await _renderGate.WaitAsync(token);
         try {
+            var assetKey = document.Background == null ? null : CoverAssetService.Resolve(document.Background, path);
             var data = await Task.Run(() => {
-                token.ThrowIfCancellationRequested();
-                using var rendered = new CoverRenderer().Render(document, path, token);
-                return (Full: rendered.Bitmap.PreviewPng(), Head: rendered.Bitmap.PreviewPng(document.Crops.Window(1200, 900, true)),
-                    Square: rendered.Bitmap.PreviewPng(document.Crops.Window(1200, 900, false)), rendered.Layout, rendered.BackgroundWidth, rendered.BackgroundHeight);
+                if (_backgroundCacheKey != assetKey) { _backgroundCacheKey = assetKey; _backgroundCache = null; }
+                var layers = CoverPreviewLayerData.Create(document, path, _backgroundCache, token);
+                _backgroundCache = layers.Background;
+                return layers;
             }, token);
             if (_disposed || revision != Session.Revision || token.IsCancellationRequested) return;
-            var old = Preview; Preview = new Bitmap(new MemoryStream(data.Full)); old?.Dispose();
-            old = HeadlinePreview; HeadlinePreview = new Bitmap(new MemoryStream(data.Head)); old?.Dispose();
-            old = SecondaryPreview; SecondaryPreview = new Bitmap(new MemoryStream(data.Square)); old?.Dispose();
+            var next = new CoverPreviewLayers(data, Preview);
+            var old = Preview; Preview = next; old?.Dispose();
             EffectiveFontSize = data.Layout.FontSize;
-            _backgroundWidth = data.BackgroundWidth; _backgroundHeight = data.BackgroundHeight;
-            StatusMessage = data.Layout.Diagnostics.Count == 0 ? "预览已更新" : string.Join("；", data.Layout.Diagnostics.Select(d => d.Message));
+            StatusMessage = data.Layout.Diagnostics.Count == 0 ? "" : string.Join("；", data.Layout.Diagnostics.Select(d => d.Message));
+            OnPropertyChanged(nameof(HeadlinePreview)); OnPropertyChanged(nameof(SecondaryPreview));
             OnPropertyChanged(nameof(HasPreview)); OnPropertyChanged(nameof(FontSizeHint));
         } finally { _renderGate.Release(); }
     }
@@ -141,27 +169,15 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
     [RelayCommand] private void ResetBackground() => Edit(Session.Draft with { BackgroundX = 0, BackgroundY = 0, Zoom = 1 });
     [RelayCommand] private void ClearBackground() => Edit(Session.Draft with { Background = null });
     [RelayCommand] private void ClearLogo() => Edit(Session.Draft with { Logo = null });
-    [RelayCommand(CanExecute = nameof(CanUndo))] private void Undo() => Session.Undo();
-    [RelayCommand(CanExecute = nameof(CanRedo))] private void Redo() => Session.Redo();
+    [RelayCommand(CanExecute = nameof(CanUndo))] private void Undo() { EndInteraction(false); Session.Undo(); }
+    [RelayCommand(CanExecute = nameof(CanRedo))] private void Redo() { EndInteraction(false); Session.Redo(); }
     private bool CanUndo() => Session.CanUndo;
     private bool CanRedo() => Session.CanRedo;
-    public void Drag(double dx, double dy) {
-        var d = Session.Draft;
-        var x = d.BackgroundX + dx; var y = d.BackgroundY + dy;
-        if (_backgroundWidth > 0 && _backgroundHeight > 0) {
-            var width = d.TemplateId == "split" ? 504d : 1200d;
-            var scale = Math.Max(width / _backgroundWidth, 900d / _backgroundHeight) * d.Zoom;
-            var rangeX = Math.Max(0, (_backgroundWidth * scale - width) / 2);
-            var rangeY = Math.Max(0, (_backgroundHeight * scale - 900) / 2);
-            x = Math.Clamp(x, -rangeX, rangeX); y = Math.Clamp(y, -rangeY, rangeY);
-        }
-        Edit(DragTarget == "文字" ? d with { TextX = d.TextX + dx, TextY = d.TextY + dy } :
-            d with { BackgroundX = x, BackgroundY = y }, "drag");
-    }
     public void EndGesture() => Session.EndGesture();
     [RelayCommand] private void ToggleInspector() => IsInspectorOpen = !IsInspectorOpen;
     [RelayCommand] private async Task SaveArticle() { if (_save != null) StatusMessage = await _save() ? "文章与封面设计已保存" : "文章尚未保存"; }
     [RelayCommand] private async Task ApplyToWeChat() {
+        EndInteraction(true);
         try {
             var prepared = await Session.ApplyAsync(_lifetime.Token);
             if (_disposed) return;
@@ -283,9 +299,10 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
     [RelayCommand] private void ChooseTitle(string value) => CoverTitle = value;
     [RelayCommand] private async Task CopyPrompt() { if (GuiHost.GetTopLevel()?.Clipboard is { } clipboard) await clipboard.SetTextAsync(GeneratedPrompt); }
     public void Dispose() {
-        if (_disposed) return; _disposed = true; Session.Changed -= OnSessionChanged;
+        if (_disposed) return; EndInteraction(false); _disposed = true; Session.Changed -= OnSessionChanged;
         _lifetime.Cancel(); _renderCts?.Cancel(); _backgroundCts?.Cancel(); _aiCts?.Cancel();
         _renderCts?.Dispose(); _backgroundCts?.Dispose(); _aiCts?.Dispose();
-        Preview?.Dispose(); HeadlinePreview?.Dispose(); SecondaryPreview?.Dispose(); foreach (var image in ArticleImages) image.Dispose();
+        var preview = Preview; Preview = null; preview?.Dispose(); _backgroundCache = null;
+        foreach (var image in ArticleImages) image.Dispose();
     }
 }

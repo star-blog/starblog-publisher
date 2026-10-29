@@ -11,7 +11,10 @@ namespace StarBlogPublisher.Services.Application;
 
 public sealed record CoverDiagnostic(string Message, bool IsError);
 public sealed record CoverTextLine(string Text, float X, float Baseline, int Size, bool Bold);
-public sealed record CoverLayout(CoverPixelRect TextArea, IReadOnlyList<CoverTextLine> Lines, IReadOnlyList<CoverDiagnostic> Diagnostics, int FontSize);
+public sealed record CoverLayout(CoverPixelRect TextArea, IReadOnlyList<CoverTextLine> Lines, IReadOnlyList<CoverDiagnostic> Diagnostics, int FontSize) {
+    public double EffectiveTextX { get; init; }
+    public double EffectiveTextY { get; init; }
+}
 
 public static class CoverLayoutService {
     public static CoverLayout Measure(CoverDocument d, CancellationToken token = default) {
@@ -54,8 +57,11 @@ public static class CoverLayoutService {
                 size -= 2;
             }
             var top = d.Placement == "top" ? area.Y : d.Placement == "bottom" ? area.Bottom - height : area.Y + (area.Height - height) / 2;
+            var anchorTop = top;
             top = Math.Clamp(top + (float)d.TextY, area.Y, Math.Max(area.Y, area.Bottom - height));
             var output = new List<CoverTextLine>();
+            var effectiveY = top - anchorTop;
+            float effectiveX = 0;
             foreach (var l in lines) {
                 using var f = new SKFont(face, l.Size);
                 var lx = d.Centered ? area.X + (width - f.MeasureText(l.Text)) / 2 : area.X;
@@ -66,13 +72,14 @@ public static class CoverLayoutService {
                 var left = output.Min(l => l.X);
                 var right = output.Max(l => { using var f = new SKFont(face, l.Size); return l.X + f.MeasureText(l.Text); });
                 var dx = Math.Clamp((float)d.TextX, bounds.X - left, Math.Max(bounds.X - left, bounds.Right - right));
+                effectiveX = dx;
                 for (var i = 0; i < output.Count; i++) output[i] = output[i] with { X = output[i].X + dx };
             }
             if (d.Manual && output.Any(l => {
                 using var f = new SKFont(face, l.Size);
                 return l.X < shared.X || l.X + f.MeasureText(l.Text) > shared.Right || l.Baseline + f.Metrics.Ascent < shared.Y || l.Baseline + f.Metrics.Descent > shared.Bottom;
             })) diagnostics.Add(new("手动构图中的文字会在部分封面比例中被裁掉，请检查下方预览", false));
-            return new(area, output, diagnostics, size);
+            return new(area, output, diagnostics, size) { EffectiveTextX = effectiveX, EffectiveTextY = effectiveY };
         }
     }
 }
@@ -85,17 +92,18 @@ public sealed class CoverRenderResult(CoverBitmap bitmap, CoverLayout layout) : 
     public void Dispose() => Bitmap.Dispose();
 }
 
+public enum CoverRenderLayer { Full, Text, Decoration }
 public sealed class CoverRenderer {
-    public CoverRenderResult Render(CoverDocument d, string? articlePath, CancellationToken token = default) {
+    public CoverRenderResult Render(CoverDocument d, string? articlePath, CancellationToken token = default, CoverRenderLayer layer = CoverRenderLayer.Full) {
         var layout = CoverLayoutService.Measure(d, token);
         if (!SKColor.TryParse(d.Color, out var textColor) || !SKColor.TryParse(d.BackgroundColor, out var backgroundColor))
             throw new InvalidOperationException("请输入有效的十六进制颜色");
-        var bitmap = new SKBitmap(new SKImageInfo(d.Width, d.Height, SKColorType.Rgba8888, SKAlphaType.Opaque));
+        var bitmap = new SKBitmap(new SKImageInfo(d.Width, d.Height, SKColorType.Rgba8888, layer == CoverRenderLayer.Full ? SKAlphaType.Opaque : SKAlphaType.Unpremul));
         try {
             var backgroundWidth = 0; var backgroundHeight = 0;
             using var canvas = new SKCanvas(bitmap);
-            canvas.Clear(backgroundColor);
-            if (d.Background != null && d.UsesBackgroundImage) {
+            canvas.Clear(layer == CoverRenderLayer.Full ? backgroundColor : SKColors.Transparent);
+            if (layer == CoverRenderLayer.Full && d.Background != null && d.UsesBackgroundImage) {
                 using var decoded = DecodedImage.Decode(CoverAssetService.Resolve(d.Background, articlePath));
                 using var source = decoded.DetachCover();
                 backgroundWidth = source.Width; backgroundHeight = source.Height;
@@ -111,22 +119,22 @@ public sealed class CoverRenderer {
                     new SKSamplingOptions(SKCubicResampler.Mitchell));
                 canvas.Restore();
             }
-            if (d.Scrim > 0) {
+            if (layer == CoverRenderLayer.Full && d.Scrim > 0) {
                 using var shader = SKShader.CreateLinearGradient(new(0, 0), new(0, d.Height),
                     [SKColors.Transparent, new SKColor(0, 0, 0, (byte)(Math.Clamp(d.Scrim, 0, 1) * 255))], SKShaderTileMode.Clamp);
                 using var scrim = new SKPaint { Shader = shader }; canvas.DrawRect(0, 0, d.Width, d.Height, scrim);
             }
-            if (d.TemplateId is "minimal" or "column") {
+            if (layer != CoverRenderLayer.Text && d.TemplateId is "minimal" or "column") {
                 using var accent = new SKPaint { Color = SKColor.Parse("#52D6B0"), IsAntialias = true };
                 canvas.DrawRoundRect(layout.TextArea.X, layout.TextArea.Y - 16, 80, 6, 3, 3, accent);
             }
             token.ThrowIfCancellationRequested();
-            foreach (var line in layout.Lines) {
+            foreach (var line in layer == CoverRenderLayer.Decoration ? [] : layout.Lines) {
                 if (!CoverComposer.TryResolveFont(line.Bold, out var face, out _)) throw new InvalidOperationException("找不到封面字体");
                 using (face) using (var font = new SKFont(face, line.Size) { Edging = SKFontEdging.Antialias })
                 using (var paint = new SKPaint { Color = textColor, IsAntialias = true }) canvas.DrawText(line.Text, line.X, line.Baseline, font, paint);
             }
-            if (d.Logo != null) {
+            if (layer != CoverRenderLayer.Text && d.Logo != null) {
                 using var decoded = DecodedImage.Decode(CoverAssetService.Resolve(d.Logo, articlePath));
                 using var logo = decoded.DetachCover();
                 var scale = Math.Min(64f / logo.Width, 40f / logo.Height);
