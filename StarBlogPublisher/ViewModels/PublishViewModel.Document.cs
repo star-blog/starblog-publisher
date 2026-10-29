@@ -77,6 +77,7 @@ public partial class PublishViewModel {
 
     [RelayCommand] private Task SaveDocument() => SaveDocumentAsync();
     public async Task<bool> SaveDocumentAsync(bool saveAs = false) {
+        CoverSession.PrepareToSave();
         if (!HasLoadedArticle || IsWorkspaceBusy || _isSaving || CoverSession.IsBusy) return false;
         _isSaving = true;
         CoverSession.SetBusy(true);

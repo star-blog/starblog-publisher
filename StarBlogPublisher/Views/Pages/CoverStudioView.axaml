@@ -1,7 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
  xmlns:vm="using:StarBlogPublisher.ViewModels" xmlns:models="using:StarBlogPublisher.Models"
  xmlns:fi="using:FluentIcons.Avalonia.Fluent" xmlns:controls="using:StarBlogPublisher.Views.Controls"
- x:Class="StarBlogPublisher.Views.CoverStudioView" x:DataType="vm:CoverStudioViewModel" x:Name="StudioRoot">
+ xmlns:cover="using:StarBlogPublisher.Services.Application"
+ x:Class="StarBlogPublisher.Views.CoverStudioView" x:DataType="vm:CoverStudioViewModel" x:Name="StudioRoot" KeyDown="OnStudioKeyDown">
  <UserControl.Styles>
   <Style Selector="TextBlock.Label"><Setter Property="FontSize" Value="12"/><Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/><Setter Property="VerticalAlignment" Value="Center"/></Style>
   <Style Selector="TextBlock.Hint"><Setter Property="FontSize" Value="11"/><Setter Property="TextWrapping" Value="Wrap"/><Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/></Style>
@@ -9,27 +10,34 @@
   <Style Selector="ComboBox"><Setter Property="MinHeight" Value="28"/><Setter Property="Padding" Value="8,0"/><Setter Property="FontSize" Value="12"/><Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="VerticalContentAlignment" Value="Center"/></Style>
   <Style Selector="Button.Action"><Setter Property="MinHeight" Value="28"/><Setter Property="Padding" Value="8,4"/><Setter Property="FontSize" Value="12"/></Style>
   <Style Selector="Button.Tool"><Setter Property="Width" Value="28"/><Setter Property="Height" Value="28"/><Setter Property="MinHeight" Value="0"/><Setter Property="Padding" Value="0"/></Style>
-  <Style Selector="ToggleButton.Tool"><Setter Property="MinHeight" Value="28"/><Setter Property="Padding" Value="8,3"/><Setter Property="FontSize" Value="12"/></Style>
+  <Style Selector="Button.Quick"><Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="HorizontalContentAlignment" Value="Left"/><Setter Property="Padding" Value="10,10"/></Style>
+  <Style Selector="Button.Template"><Setter Property="Width" Value="172"/><Setter Property="Height" Value="190"/><Setter Property="Padding" Value="6"/><Setter Property="Margin" Value="0,0,10,10"/></Style>
+  <Style Selector="Button.Template.selected"><Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}"/><Setter Property="BorderThickness" Value="2"/></Style>
   <Style Selector="Expander"><Setter Property="FontSize" Value="12"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
-  <Style Selector="Expander /template/ ToggleButton"><Setter Property="MinHeight" Value="28"/><Setter Property="Padding" Value="8,4"/><Setter Property="FontSize" Value="12"/></Style>
   <Style Selector="Slider"><Setter Property="Height" Value="28"/><Setter Property="MinHeight" Value="24"/></Style>
  </UserControl.Styles>
+ <UserControl.Resources>
+  <DataTemplate x:Key="TemplateCard" x:DataType="models:CoverTemplateCard">
+   <Button Classes="Template" Classes.selected="{Binding IsSelected}" Command="{Binding #StudioRoot.((vm:CoverStudioViewModel)DataContext).ChooseTemplateCardCommand}" CommandParameter="{Binding}">
+    <StackPanel Spacing="6"><Image Source="{Binding Thumbnail}" Height="116" Stretch="Uniform"/><TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold"/><TextBlock Text="{Binding Description}" Classes="Hint"/></StackPanel>
+   </Button>
+  </DataTemplate>
+ </UserControl.Resources>
  <DockPanel>
-  <Border DockPanel.Dock="Top" Height="44" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Background="{DynamicResource WorkspaceChromeBrush}">
-   <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="8" Margin="12,0">
+  <Border DockPanel.Dock="Top" MinHeight="44" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Background="{DynamicResource WorkspaceChromeBrush}">
+   <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="8" Margin="12,6">
     <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
      <Button Classes="Tool" Command="{Binding UndoCommand}" ToolTip.Tip="撤销 · Ctrl+Z" AutomationProperties.Name="撤销"><fi:FluentIcon Icon="ArrowUndo" FontSize="15"/></Button>
      <Button Classes="Tool" Command="{Binding RedoCommand}" ToolTip.Tip="重做 · Ctrl+Y" AutomationProperties.Name="重做"><fi:FluentIcon Icon="ArrowRedo" FontSize="15"/></Button>
     </StackPanel>
-    <Border Grid.Column="1" Width="1" Height="18" Background="{DynamicResource CardStrokeColorDefaultBrush}"/>
-    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-     <ToggleButton Classes="Tool" Content="文字" IsChecked="{Binding IsTextTarget, Mode=OneWay}" Command="{Binding SetDragTargetCommand}" CommandParameter="文字" ToolTip.Tip="点击文字后拖动"/>
-     <ToggleButton Classes="Tool" Content="背景" IsChecked="{Binding IsBackgroundTarget, Mode=OneWay}" Command="{Binding SetDragTargetCommand}" CommandParameter="背景" ToolTip.Tip="拖动背景，滚轮缩放"/>
-     <ToggleButton Classes="Tool" IsChecked="{Binding ShowGuides}" ToolTip.Tip="显示裁切参考线" AutomationProperties.Name="裁切参考线"><fi:FluentIcon Icon="Grid" FontSize="15"/></ToggleButton>
+    <Button Grid.Column="1" Classes="Action" Command="{Binding OpenTemplateLibraryCommand}" ToolTip.Tip="选择可视模板" Content="{Binding TemplateName}"/>
+    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+     <TextBlock Text="{Binding ModeHint}" Classes="Hint" VerticalAlignment="Center"/>
+     <Button Classes="Action" Content="完成" Command="{Binding FinishCompositionCommand}" IsVisible="{Binding IsComposing}"/>
+     <Button Classes="Action" Content="取消" Command="{Binding CancelCompositionCommand}" IsVisible="{Binding IsComposing}"/>
     </StackPanel>
-    <TextBlock Grid.Column="3" Text="{Binding TemplateName}" Classes="Hint" VerticalAlignment="Center" Margin="8,0"/>
-    <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-     <Button Classes="Action" Command="{Binding SaveArticleCommand}" Content="保存" ToolTip.Tip="保存文章与封面设计 · Ctrl+S"/>
+    <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+     <Button Classes="Action" Command="{Binding SaveArticleCommand}" Content="保存" ToolTip.Tip="保存文章与封面 · Ctrl+S"/>
      <Button Classes="Action" Content="导出" IsEnabled="{Binding IsEditable}">
       <Button.Flyout><Flyout><StackPanel Width="230" Spacing="10">
        <TextBlock Text="导出封面" FontSize="13" FontWeight="SemiBold"/>
@@ -39,133 +47,167 @@
       </StackPanel></Flyout></Button.Flyout>
      </Button>
      <Button Classes="Accent Action" Content="应用到文章" Command="{Binding ApplyToWeChatCommand}" IsEnabled="{Binding IsEditable}"/>
-     <Button Classes="Tool" Command="{Binding ToggleInspectorCommand}" ToolTip.Tip="封面设置" AutomationProperties.Name="封面设置"><fi:FluentIcon Icon="PanelRight" FontSize="16"/></Button>
+     <Button Classes="Tool" Command="{Binding ToggleInspectorCommand}" ToolTip.Tip="对象属性" AutomationProperties.Name="对象属性"><fi:FluentIcon Icon="PanelRight" FontSize="16"/></Button>
     </StackPanel>
    </Grid>
   </Border>
-  <Border DockPanel.Dock="Bottom" Classes="StatusBar">
-   <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
-    <TextBlock Text="{Binding SaveHint}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-    <TextBlock Grid.Column="1" Text="{Binding StatusMessage}" FontSize="11" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-    <TextBlock Grid.Column="2" Text="1200 × 900" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-   </Grid>
-  </Border>
-  <Grid ColumnDefinitions="*,Auto">
-   <Grid RowDefinitions="*,Auto" Background="{DynamicResource WorkspaceChromeBrush}">
-    <Border Margin="24,20,24,12" ClipToBounds="True">
-     <controls:CoverCanvas x:Name="CanvasImage" AutomationProperties.Name="封面编辑画布"/>
-    </Border>
-    <StackPanel Grid.Row="1" Margin="20,0,20,16" Spacing="8">
-     <TextBlock Classes="Hint" Text="发布预览" HorizontalAlignment="Center"/>
+  <Border DockPanel.Dock="Bottom" Classes="StatusBar"><Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+   <TextBlock Text="{Binding SaveHint}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+   <TextBlock Grid.Column="1" Text="{Binding StatusMessage}" FontSize="11" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+   <TextBlock Grid.Column="2" Text="1200 × 900" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+  </Grid></Border>
+  <Grid x:Name="EditorGrid" ColumnDefinitions="*,Auto">
+   <Grid x:Name="CanvasRegion" RowDefinitions="*,Auto" Background="{DynamicResource WorkspaceChromeBrush}">
+    <Border Margin="24,20,24,12" ClipToBounds="True"><controls:CoverCanvas x:Name="CanvasImage" AutomationProperties.Name="封面编辑画布"/></Border>
+    <StackPanel Grid.Row="1" Margin="16,0,16,12" Spacing="6">
+     <TextBlock Classes="Hint" Text="发布预览 · 同一张母图，两组裁切" HorizontalAlignment="Center"/>
      <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
-      <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="4" Padding="5" Background="{DynamicResource InspectorBackgroundBrush}">
-       <Grid RowDefinitions="Auto,*" RowSpacing="4"><TextBlock Classes="Hint" Text="头条 · 2.35:1"/><controls:CoverCanvas Grid.Row="1" Frame="Headline" Width="235" Height="100" IsHitTestVisible="False"/></Grid>
-      </Border>
-      <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="4" Padding="5" Background="{DynamicResource InspectorBackgroundBrush}">
-       <Grid RowDefinitions="Auto,*" RowSpacing="4"><TextBlock Classes="Hint" Text="次条 · 1:1"/><controls:CoverCanvas Grid.Row="1" Frame="Secondary" Width="100" Height="100" IsHitTestVisible="False"/></Grid>
-      </Border>
+      <Button Classes="Action" Padding="6" Command="{Binding AdjustHeadlineCommand}" ToolTip.Tip="调整头条裁切">
+       <StackPanel Spacing="4"><TextBlock Classes="Hint" Text="头条 · 2.35:1"/><controls:CoverCanvas Frame="Headline" Width="235" Height="100" IsHitTestVisible="False"/><TextBlock Classes="Hint" Text="{Binding HeadlineWarning}"/></StackPanel>
+      </Button>
+      <Button Classes="Action" Padding="6" Command="{Binding AdjustSecondaryCommand}" ToolTip.Tip="调整次条裁切">
+       <StackPanel Spacing="4"><TextBlock Classes="Hint" Text="次条 · 1:1"/><controls:CoverCanvas Frame="Secondary" Width="100" Height="100" IsHitTestVisible="False"/><TextBlock Classes="Hint" Text="{Binding SecondaryWarning}"/></StackPanel>
+      </Button>
+      <Button Classes="Tool" Command="{Binding ToggleGuidesCommand}" ToolTip.Tip="裁切参考线"><fi:FluentIcon Icon="Grid" FontSize="15"/></Button>
+      <Button Classes="Tool" Command="{Binding ExpandPreviewCommand}" CommandParameter="{x:Static cover:CoverPreviewFrame.Headline}" ToolTip.Tip="放大发布预览"><fi:FluentIcon Icon="ArrowExpand" FontSize="15"/></Button>
      </StackPanel>
     </StackPanel>
    </Grid>
-   <Border Grid.Column="1" Width="320" IsVisible="{Binding IsInspectorOpen}" Background="{DynamicResource InspectorBackgroundBrush}"
-    BorderThickness="1,0,0,0" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+   <Border x:Name="DrawerScrim" Grid.ColumnSpan="2" IsVisible="False" Background="#44000000" PointerPressed="OnDrawerDismiss"/>
+   <Border x:Name="Inspector" Grid.Column="1" Width="320" HorizontalAlignment="Right" IsVisible="{Binding IsInspectorOpen}" Background="{DynamicResource InspectorBackgroundBrush}" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
     <DockPanel>
      <Border DockPanel.Dock="Top" Height="40" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
-      <Grid ColumnDefinitions="*,Auto" Margin="12,0,8,0">
-       <TextBlock Text="封面设置" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
-       <Button Grid.Column="1" Classes="Tool" Command="{Binding ToggleInspectorCommand}" ToolTip.Tip="收起设置"><fi:FluentIcon Icon="Dismiss" FontSize="14"/></Button>
-      </Grid>
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="8,0"><Button Classes="Tool" Command="{Binding ClearSelectionCommand}" ToolTip.Tip="返回快速替换"><fi:FluentIcon Icon="ArrowLeft" FontSize="14"/></Button><TextBlock Grid.Column="1" Text="{Binding SelectionName}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="6,0"/><Button Grid.Column="2" Classes="Tool" Command="{Binding ToggleInspectorCommand}"><fi:FluentIcon Icon="Dismiss" FontSize="14"/></Button></Grid>
      </Border>
      <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-      <StackPanel IsEnabled="{Binding IsEditable}">
-       <ToggleButton Classes="SectionHeader" Content="模板" IsChecked="True" x:Name="TemplateSection"/>
-       <StackPanel Margin="12,8,12,14" Spacing="8" IsVisible="{Binding #TemplateSection.IsChecked}">
-        <ComboBox ItemsSource="{Binding Templates}" SelectedItem="{Binding SelectedCoverTemplate}" DisplayMemberBinding="{Binding Name}"/>
+      <StackPanel Margin="12" Spacing="12" IsEnabled="{Binding IsEditable}">
+       <StackPanel Spacing="8" IsVisible="{Binding IsLegacy}">
+        <TextBlock Classes="Hint" Text="旧版封面继续使用原排版。升级后可分别调整标题、副标题、栏目和标识。"/>
+        <Button Classes="Action" Content="升级为独立对象" Command="{Binding UpgradeObjectsCommand}"/>
        </StackPanel>
-       <ToggleButton Classes="SectionHeader" Content="背景" IsChecked="True" x:Name="BackgroundSection"/>
-       <StackPanel Margin="12,8,12,14" Spacing="8" IsVisible="{Binding #BackgroundSection.IsChecked}">
-        <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
-         <Button Classes="Action" Command="{Binding SelectLocalBackgroundCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"><StackPanel Orientation="Horizontal" Spacing="5"><fi:FluentIcon Icon="FolderOpen" FontSize="14"/><TextBlock Text="本地图片"/></StackPanel></Button>
-         <Button Grid.Column="1" Classes="Action" Content="{Binding ArticleImagePickerLabel}" Command="{Binding ShowArticleImagesCommand}" IsEnabled="{Binding HasArticleImages}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-        </Grid>
-        <TextBlock Classes="Hint" Text="{Binding BackgroundDescription}" TextTrimming="CharacterEllipsis"/>
-        <StackPanel Spacing="6" IsVisible="{Binding HasBackground}">
-         <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="Label" Text="缩放"/><TextBlock Grid.Column="1" Classes="Hint" Text="{Binding Zoom, StringFormat={}{0:0.0}×}"/></Grid>
-         <Slider Minimum="1" Maximum="4" Value="{Binding Zoom}" PointerReleased="OnGestureEnd"/>
-         <StackPanel Orientation="Horizontal" Spacing="6"><Button Classes="Action" Content="重置位置" Command="{Binding ResetBackgroundCommand}"/><Button Classes="Action" Content="移除" Command="{Binding ClearBackgroundCommand}"/></StackPanel>
-        </StackPanel>
-        <Expander Header="在线图片"><StackPanel Spacing="8" Margin="0,8,0,0">
-         <ComboBox ItemsSource="{Binding RandomCoverProviders}" SelectedItem="{Binding SelectedRandomCoverProvider}" DisplayMemberBinding="{Binding Name}"/>
-         <Button Classes="Action" Content="换一张随机图" Command="{Binding PickRandomBackgroundCommand}" IsEnabled="{Binding !IsFetchingRandomBackground}"/>
-        </StackPanel></Expander>
+       <StackPanel Spacing="10" IsVisible="{Binding IsCropping}">
+        <TextBlock Classes="Hint" Text="在母版上移动当前裁切窗口，文字位置保持不变。两种比例仍使用同一张母图。"/>
+        <Button Classes="Action" Content="居中裁切" Command="{Binding ResetCompositionCommand}"/>
+        <Button Classes="Accent Action" Content="完成裁切" Command="{Binding FinishCompositionCommand}"/>
+        <Button Classes="Action" Content="取消" Command="{Binding CancelCompositionCommand}"/>
        </StackPanel>
-       <ToggleButton Classes="SectionHeader" Content="文字" IsChecked="True" x:Name="TextSection"/>
-       <StackPanel Margin="12,8,12,14" Spacing="8" IsVisible="{Binding #TextSection.IsChecked}">
-        <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="Label" Text="封面标题"/><Button Grid.Column="1" Classes="Tool" Command="{Binding SyncTitleCommand}" ToolTip.Tip="从文章同步标题"><fi:FluentIcon Icon="ArrowSync" FontSize="14"/></Button></Grid>
-        <TextBox Text="{Binding CoverTitle}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" MaxHeight="112" IsUndoEnabled="False"/>
+       <StackPanel Spacing="8" IsVisible="{Binding IsOverview}">
+        <TextBlock Text="替换内容，保持完整排版" Classes="Hint"/>
+        <Button Classes="Quick" Command="{Binding SelectObjectCommand}" CommandParameter="{x:Static models:CoverElementId.Title}"><StackPanel><TextBlock Text="标题" FontSize="12" FontWeight="SemiBold"/><TextBlock Text="{Binding CoverTitle}" Classes="Hint" MaxWidth="260" MaxHeight="38" TextTrimming="CharacterEllipsis"/></StackPanel></Button>
+        <Button Classes="Quick" Content="副标题" Command="{Binding SelectObjectCommand}" CommandParameter="{x:Static models:CoverElementId.Subtitle}"/>
+        <Button Classes="Quick" Content="栏目名" Command="{Binding SelectObjectCommand}" CommandParameter="{x:Static models:CoverElementId.Column}"/>
+        <Button Classes="Quick" Command="{Binding SelectObjectCommand}" CommandParameter="{x:Static models:CoverElementId.Background}"><StackPanel><TextBlock Text="背景" FontSize="12"/><TextBlock Text="{Binding BackgroundDescription}" Classes="Hint"/></StackPanel></Button>
+        <Button Classes="Quick" Content="标识图片" Command="{Binding SelectObjectCommand}" CommandParameter="{x:Static models:CoverElementId.Logo}"/>
+        <Button Classes="Action" Content="更换模板…" Command="{Binding OpenTemplateLibraryCommand}"/>
+        <CheckBox Content="文字保持在共同安全区" IsChecked="{Binding !Manual}" FontSize="12"/>
+       </StackPanel>
+       <StackPanel Spacing="10" IsVisible="{Binding IsTextSelection}">
+        <Grid ColumnDefinitions="*,Auto"><TextBlock Text="文案" Classes="Label"/><Button Grid.Column="1" Classes="Tool" Command="{Binding SyncTitleCommand}" IsVisible="{Binding IsTitleSelection}" ToolTip.Tip="同步文章标题"><fi:FluentIcon Icon="ArrowSync" FontSize="14"/></Button></Grid>
+        <TextBox x:Name="ContentEditor" Text="{Binding SelectedContent}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="80" MaxHeight="180" IsUndoEnabled="False"/>
         <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="Label" Text="字号"/><TextBlock Grid.Column="1" Classes="Hint" Text="{Binding FontSize, StringFormat={}{0:0}}"/></Grid>
-        <Slider Minimum="24" Maximum="96" Value="{Binding FontSize}" PointerReleased="OnGestureEnd"/>
-        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
-         <TextBox Text="{Binding TextColor}" PlaceholderText="#FFFFFF" IsUndoEnabled="False"/>
-         <ToggleButton Grid.Column="1" Classes="Tool" Content="B" FontWeight="Bold" IsChecked="{Binding IsBold}" ToolTip.Tip="加粗"/>
-         <ToggleButton Grid.Column="2" Classes="Tool" Content="居中" IsChecked="{Binding Centered}" ToolTip.Tip="水平居中"/>
-        </Grid>
-        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
-         <Button Classes="Action" Content="靠上" Command="{Binding SetTextPlacementCommand}" CommandParameter="top" HorizontalAlignment="Stretch"/>
-         <Button Grid.Column="1" Classes="Action" Content="居中" Command="{Binding SetTextPlacementCommand}" CommandParameter="center" HorizontalAlignment="Stretch"/>
-         <Button Grid.Column="2" Classes="Action" Content="靠下" Command="{Binding SetTextPlacementCommand}" CommandParameter="bottom" HorizontalAlignment="Stretch"/>
-        </Grid>
-        <Expander Header="更多文字设置"><StackPanel Spacing="8" Margin="0,8,0,0">
-         <TextBlock Classes="Label" Text="副标题"/><TextBox Text="{Binding Subtitle}" TextWrapping="Wrap" AcceptsReturn="True" IsUndoEnabled="False"/>
-         <TextBlock Classes="Label" Text="栏目"/><TextBox Text="{Binding Column}" IsUndoEnabled="False"/>
+        <Slider Minimum="{Binding FontMinimum}" Maximum="96" Value="{Binding FontSize}" PointerReleased="OnGestureEnd"/>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+         <ColorPicker Color="{Binding SelectedColor}" Width="84" ToolTip.Tip="文字颜色"/>
+         <ToggleButton Content="B" FontWeight="Bold" IsChecked="{Binding IsBold}" Width="32"/>
+         <ComboBox ItemsSource="{Binding AlignmentChoices}" SelectedItem="{Binding SelectedAlignmentChoice}" DisplayMemberBinding="{Binding Name}" Width="136"/>
+        </StackPanel>
+        <Expander Header="更多排版设置"><StackPanel Spacing="8" Margin="0,8,0,0">
          <TextBlock Classes="Label" Text="行距"/><Slider Minimum="1" Maximum="2" Value="{Binding LineHeight}" PointerReleased="OnGestureEnd"/>
-         <TextBlock Classes="Label" Text="文字区域宽度"/><Slider Minimum=".25" Maximum="1" Value="{Binding TextWidth}" PointerReleased="OnGestureEnd"/>
-         <Button Classes="Action" Content="重置文字位置" Command="{Binding ResetTextCommand}"/>
-         <StackPanel Orientation="Horizontal" Spacing="6"><Button Classes="Action" Content="添加标识" Command="{Binding SelectLogoCommand}"/><Button Classes="Action" Content="移除标识" Command="{Binding ClearLogoCommand}"/></StackPanel>
+         <TextBlock Classes="Label" Text="文本框宽度"/><Slider Minimum="{Binding WidthMinimum}" Maximum="{Binding WidthMaximum}" Value="{Binding TextWidth}" PointerReleased="OnGestureEnd"/>
+         <Grid ColumnDefinitions="24,*,24,*" ColumnSpacing="6"><TextBlock Classes="Label" Text="X"/><TextBox Grid.Column="1" Text="{Binding SelectedX}"/><TextBlock Grid.Column="2" Classes="Label" Text="Y"/><TextBox Grid.Column="3" Text="{Binding SelectedY}"/></Grid>
+        </StackPanel></Expander>
+        <TextBlock Text="{Binding SelectionError}" Classes="Hint"/>
+        <StackPanel Spacing="8" IsVisible="{Binding IsTitleSelection}">
+         <Button Classes="Action" Content="AI 短标题候选" Command="{Binding SuggestTitlesCommand}" IsEnabled="{Binding IsAIEnabled}"/>
+         <ItemsControl ItemsSource="{Binding TitleSuggestions}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String"><Button Classes="Quick" Margin="0,0,0,6" Command="{Binding #StudioRoot.((vm:CoverStudioViewModel)DataContext).ChooseTitleCommand}" CommandParameter="{Binding}"><TextBlock Text="{Binding}" TextWrapping="Wrap"/></Button></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+        </StackPanel>
+       </StackPanel>
+       <StackPanel Spacing="10" IsVisible="{Binding IsBackgroundSelection}">
+        <TextBlock Classes="Label" Text="底色"/><ColorPicker Color="{Binding CanvasColor}" HorizontalAlignment="Left"/>
+        <TextBlock Classes="Hint" IsVisible="{Binding !CanUseBackground}" Text="此模板只使用底色；已选图片会保留，可在图片模板中继续使用。"/>
+        <StackPanel Spacing="10" IsVisible="{Binding CanUseBackground}">
+         <Image Source="{Binding BackgroundThumbnail}" Height="108" Stretch="UniformToFill" IsVisible="{Binding HasBackground}"/>
+         <TextBlock Text="{Binding BackgroundDescription}" Classes="Hint"/>
+         <Grid ColumnDefinitions="*,*" ColumnSpacing="6"><Button Classes="Action" Content="本地图片" Command="{Binding SelectLocalBackgroundCommand}"/><Button Grid.Column="1" Classes="Action" Content="{Binding ArticleImagePickerLabel}" Command="{Binding ShowArticleImagesCommand}" IsEnabled="{Binding HasArticleImages}"/></Grid>
+         <Button Classes="Action" Content="调整背景构图" Command="{Binding AdjustBackgroundCommand}" IsEnabled="{Binding HasBackground}"/>
+         <StackPanel Spacing="6" IsVisible="{Binding IsComposing}">
+          <TextBlock Classes="Label" Text="缩放"/><Slider Minimum="1" Maximum="4" Value="{Binding Zoom}"/>
+          <Button Classes="Action" Content="重置构图" Command="{Binding ResetCompositionCommand}"/>
+         </StackPanel>
+         <TextBlock Classes="Label" Text="遮罩强度"/><Slider Minimum="0" Maximum="1" Value="{Binding Scrim}" PointerReleased="OnGestureEnd"/>
+         <Button Classes="Action" Content="移除背景图片" Command="{Binding ClearBackgroundCommand}" IsEnabled="{Binding HasBackground}"/>
+         <Expander Header="在线图片"><StackPanel Spacing="8" Margin="0,8,0,0"><ComboBox ItemsSource="{Binding RandomCoverProviders}" SelectedItem="{Binding SelectedRandomCoverProvider}" DisplayMemberBinding="{Binding Name}"/><Button Classes="Action" Content="换一张随机图" Command="{Binding PickRandomBackgroundCommand}" IsEnabled="{Binding !IsFetchingRandomBackground}"/></StackPanel></Expander>
+        </StackPanel>
+        <Expander Header="AI 背景提示词" IsExpanded="{Binding IsAiExpanded}"><StackPanel Spacing="8" Margin="0,8,0,0">
+         <TextBlock Classes="Hint" Text="图片在外部生成后，通过本地图片导入。"/>
+         <ComboBox ItemsSource="{Binding PromptStyles}" SelectedItem="{Binding SelectedPromptStyle}" DisplayMemberBinding="{Binding Name}"/>
+         <Button Classes="Action" Content="生成背景提示词" Command="{Binding GeneratePromptCommand}" IsEnabled="{Binding IsAIEnabled}"/>
+         <TextBox Text="{Binding GeneratedPrompt}" AcceptsReturn="True" TextWrapping="Wrap" MinLines="4" MaxLines="8" IsUndoEnabled="False"/>
+         <Button Classes="Action" Content="复制提示词" Command="{Binding CopyPromptCommand}"/>
         </StackPanel></Expander>
        </StackPanel>
-       <ToggleButton Classes="SectionHeader" Content="底色与裁切" IsChecked="False" x:Name="CropSection"/>
-       <StackPanel Margin="12,8,12,14" Spacing="8" IsVisible="{Binding #CropSection.IsChecked}">
-        <Grid ColumnDefinitions="*,110" ColumnSpacing="8"><TextBlock Classes="Label" Text="底色"/><TextBox Grid.Column="1" Text="{Binding BackgroundColor}" IsUndoEnabled="False"/></Grid>
-        <TextBlock Classes="Label" Text="背景遮罩"/><Slider Minimum="0" Maximum="1" Value="{Binding Scrim}" PointerReleased="OnGestureEnd"/>
-        <CheckBox Content="显示裁切参考线" IsChecked="{Binding ShowGuides}" FontSize="12"/>
-        <CheckBox Content="手动调整裁切" IsChecked="{Binding Manual}" FontSize="12"/>
-        <StackPanel IsVisible="{Binding Manual}" Spacing="8">
-         <TextBlock Classes="Label" Text="头条裁切位置"/><Slider Minimum="0" Maximum="1" Value="{Binding HeadlineOffset}" PointerReleased="OnGestureEnd"/>
-         <TextBlock Classes="Label" Text="次条裁切位置"/><Slider Minimum="0" Maximum="1" Value="{Binding SecondaryOffset}" PointerReleased="OnGestureEnd"/>
-        </StackPanel>
+       <StackPanel Spacing="10" IsVisible="{Binding IsLogoSelection}">
+        <TextBlock Classes="Hint" Text="保持图片比例，拖动标识调整位置。"/>
+        <Button Classes="Action" Content="更换标识…" Command="{Binding SelectLogoCommand}"/>
+        <TextBlock Classes="Label" Text="标识大小"/><Slider Minimum="24" Maximum="160" Value="{Binding LogoSize}" PointerReleased="OnGestureEnd"/>
+        <Button Classes="Action" Content="移除标识" Command="{Binding ClearLogoCommand}"/>
        </StackPanel>
-       <ToggleButton Classes="SectionHeader" Content="AI 辅助" IsChecked="{Binding IsAiExpanded}" x:Name="AiSection"/>
-       <StackPanel Margin="12,8,12,14" Spacing="8" IsVisible="{Binding #AiSection.IsChecked}">
-        <TextBlock Classes="Hint" Text="在设置中启用 AI 后，可生成短标题和背景提示词。" IsVisible="{Binding !IsAIEnabled}"/>
-        <StackPanel IsEnabled="{Binding IsAIEnabled}" Spacing="8">
-         <Button Classes="Action" Content="生成短标题候选" Command="{Binding SuggestTitlesCommand}" IsEnabled="{Binding !IsGeneratingAi}"/>
-         <ItemsControl ItemsSource="{Binding TitleSuggestions}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String">
-          <Button Classes="Action" Margin="0,0,0,4" Content="{Binding}" Command="{Binding #StudioRoot.((vm:CoverStudioViewModel)DataContext).ChooseTitleCommand}" CommandParameter="{Binding}"/>
-         </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
-         <ComboBox ItemsSource="{Binding PromptStyles}" SelectedItem="{Binding SelectedPromptStyle}" DisplayMemberBinding="{Binding Name}"/>
-         <Button Classes="Action" Content="生成背景提示词" Command="{Binding GeneratePromptCommand}" IsEnabled="{Binding !IsGeneratingAi}"/>
-         <Button Classes="Action" Content="取消生成" Command="{Binding CancelAiCommand}" IsVisible="{Binding IsGeneratingAi}"/>
-        </StackPanel>
-        <TextBox Text="{Binding GeneratedPrompt}" AcceptsReturn="True" TextWrapping="Wrap" MinLines="4" MaxLines="8" IsUndoEnabled="False"/>
-        <Button Classes="Action" Content="复制提示词" Command="{Binding CopyPromptCommand}"/>
-       </StackPanel>
+       <Button Classes="Action" Content="取消 AI 生成" Command="{Binding CancelAiCommand}" IsVisible="{Binding IsGeneratingAi}"/>
       </StackPanel>
      </ScrollViewer>
     </DockPanel>
    </Border>
-   <Border Grid.ColumnSpan="2" IsVisible="{Binding IsArticleImagePickerOpen}" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" Margin="16" Padding="16" CornerRadius="6" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-    <Grid RowDefinitions="Auto,*" RowSpacing="12">
-     <Grid ColumnDefinitions="*,Auto"><TextBlock Text="选择文章图片" FontSize="14" FontWeight="SemiBold"/><Button Grid.Column="1" Classes="Tool" Command="{Binding CloseArticleImagesCommand}"><fi:FluentIcon Icon="Dismiss" FontSize="14"/></Button></Grid>
-     <ScrollViewer Grid.Row="1"><ItemsControl ItemsSource="{Binding ArticleImages}">
-      <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-      <ItemsControl.ItemTemplate><DataTemplate x:DataType="models:ArticleCoverImage">
-       <Button Width="180" Margin="0,0,12,12" Padding="8" Command="{Binding #StudioRoot.((vm:CoverStudioViewModel)DataContext).SelectArticleBackgroundCommand}" CommandParameter="{Binding}">
-        <StackPanel Spacing="6"><Image Source="{Binding Thumbnail}" Height="100" Stretch="Uniform"/><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" FontSize="12"/><TextBlock Text="{Binding Status}" TextWrapping="Wrap" FontSize="11"/></StackPanel>
-       </Button>
-      </DataTemplate></ItemsControl.ItemTemplate>
-     </ItemsControl></ScrollViewer>
+   <Border x:Name="ImagePickerSurface" Focusable="True" KeyboardNavigation.TabNavigation="Cycle" Grid.ColumnSpan="2" IsVisible="{Binding IsArticleImagePickerOpen}" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" Margin="24" Padding="16" CornerRadius="6" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+    <Grid RowDefinitions="Auto,*" RowSpacing="12"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="选择文章图片" FontSize="14" FontWeight="SemiBold"/><Button Grid.Column="1" Classes="Tool" Command="{Binding CloseArticleImagesCommand}"><fi:FluentIcon Icon="Dismiss" FontSize="14"/></Button></Grid>
+     <ScrollViewer Grid.Row="1"><ItemsControl ItemsSource="{Binding ArticleImages}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate x:DataType="models:ArticleCoverImage">
+      <Button Width="180" Margin="0,0,12,12" Padding="8" Command="{Binding #StudioRoot.((vm:CoverStudioViewModel)DataContext).SelectArticleBackgroundCommand}" CommandParameter="{Binding}"><StackPanel Spacing="6"><Image Source="{Binding Thumbnail}" Height="100" Stretch="Uniform"/><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" FontSize="12"/><TextBlock Text="{Binding Status}" Classes="Hint"/></StackPanel></Button>
+     </DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer>
     </Grid>
+   </Border>
+   <Border x:Name="PreviewSurface" Focusable="True" KeyboardNavigation.TabNavigation="Cycle" Grid.ColumnSpan="2" IsVisible="{Binding IsPreviewExpanded}" Background="#66000000" Padding="24">
+    <Border Padding="16" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" CornerRadius="6">
+     <Grid RowDefinitions="Auto,*" RowSpacing="16"><Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="8">
+      <Button Classes="Action" Content="头条 · 2.35:1" Command="{Binding ExpandPreviewCommand}" CommandParameter="{x:Static cover:CoverPreviewFrame.Headline}"/>
+      <Button Grid.Column="1" Classes="Action" Content="次条 · 1:1" Command="{Binding ExpandPreviewCommand}" CommandParameter="{x:Static cover:CoverPreviewFrame.Secondary}"/>
+      <Button Grid.Column="3" Classes="Tool" Command="{Binding CloseExpandedPreviewCommand}"><fi:FluentIcon Icon="Dismiss" FontSize="14"/></Button>
+     </Grid><controls:CoverCanvas Grid.Row="1" Frame="{Binding ExpandedFrame}" IsHitTestVisible="False"/></Grid>
+    </Border>
+   </Border>
+   <Border x:Name="TemplateSurface" Focusable="True" KeyboardNavigation.TabNavigation="Cycle" Grid.ColumnSpan="2" IsVisible="{Binding IsTemplateLibraryOpen}" Background="#66000000">
+    <Border Margin="24" Padding="20" MaxWidth="940" MaxHeight="700" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8">
+     <Grid RowDefinitions="Auto,Auto,*" RowSpacing="14">
+      <Grid ColumnDefinitions="*,Auto"><TextBlock Text="选择封面模板" FontSize="16" FontWeight="SemiBold"/><Button Grid.Column="1" Classes="Tool" Command="{Binding CloseTemplateLibraryCommand}"><fi:FluentIcon Icon="Dismiss" FontSize="15"/></Button></Grid>
+      <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8"><ToggleButton Content="内置模板" IsChecked="{Binding IsBuiltInGroup, Mode=OneWay}" Command="{Binding SetTemplateGroupCommand}" CommandParameter="内置模板"/><ToggleButton Content="我的模板" IsChecked="{Binding IsMyTemplateGroup, Mode=OneWay}" Command="{Binding SetTemplateGroupCommand}" CommandParameter="我的模板"/><ToggleButton Content="栏目预设" IsChecked="{Binding IsColumnTemplateGroup, Mode=OneWay}" Command="{Binding SetTemplateGroupCommand}" CommandParameter="栏目预设"/></StackPanel>
+      <Grid Grid.Row="2" ColumnDefinitions="*,280" ColumnSpacing="16">
+       <ScrollViewer><StackPanel Spacing="8">
+        <TextBlock Text="最近使用" Classes="Hint" IsVisible="{Binding HasRecentTemplates}"/>
+        <ItemsControl ItemsSource="{Binding RecentTemplateCards}" ItemTemplate="{StaticResource TemplateCard}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel></ItemsControl>
+        <ItemsControl ItemsSource="{Binding VisibleTemplateCards}" ItemTemplate="{StaticResource TemplateCard}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel></ItemsControl>
+        <TextBlock Classes="Hint" IsVisible="{Binding !HasVisibleTemplates}" Text="这里还没有模板。可将当前设计保存为个人模板或栏目预设。"/>
+       </StackPanel></ScrollViewer>
+       <ScrollViewer Grid.Column="1"><StackPanel Spacing="12">
+        <TextBlock Text="{Binding LibraryMessage}" Classes="Hint"/>
+        <Image Source="{Binding CandidatePreview}" Height="210" Stretch="Uniform"/>
+        <TextBlock Text="{Binding SelectedTemplateCard.Name}" FontSize="14" FontWeight="SemiBold"/>
+        <TextBlock Text="{Binding SelectedTemplateCard.Description}" Classes="Hint"/>
+        <Button Classes="Accent Action" Content="使用模板" Command="{Binding UseTemplateCommand}" IsEnabled="{Binding HasSelectedTemplate}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+        <Button Classes="Action" Content="将当前设计保存为模板…" Command="{Binding ShowPresetSaveCommand}"/>
+        <StackPanel Spacing="8" IsVisible="{Binding IsPresetSaveOpen}">
+         <TextBox Text="{Binding PresetName}" PlaceholderText="模板名称"/>
+         <CheckBox Content="归入栏目预设" IsChecked="{Binding PresetIsColumn}" FontSize="12"/>
+         <CheckBox Content="保留固定背景" IsChecked="{Binding PresetIncludeBackground}" FontSize="12"/>
+         <Button Classes="Action" Content="保存到我的模板" Command="{Binding SavePresetCommand}"/>
+        </StackPanel>
+        <StackPanel Spacing="8" IsVisible="{Binding IsPersonalTemplate}">
+         <TextBox Text="{Binding PresetName}"/>
+         <StackPanel Orientation="Horizontal" Spacing="6"><Button Classes="Action" Content="改名" Command="{Binding RenamePresetCommand}"/><Button Classes="Action" Content="删除" Command="{Binding DeletePresetCommand}"/></StackPanel>
+         <Button Classes="Action" Content="用当前设计更新此模板" Command="{Binding UpdatePresetCommand}"/>
+         <TextBlock Classes="Hint" Text="使用时替换为当前文章标题，副标题清空；栏目、标识和样式保留。"/>
+        </StackPanel>
+       </StackPanel></ScrollViewer>
+      </Grid>
+     </Grid>
+    </Border>
    </Border>
   </Grid>
  </DockPanel>

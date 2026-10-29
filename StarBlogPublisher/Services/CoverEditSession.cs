@@ -20,7 +20,7 @@ public sealed class CoverEditSession {
     private PreparedWeChatCover? _prepared;
     public CoverEditSession(string cacheDirectory, string title = "") {
         Assets = new(cacheDirectory);
-        Initial = new() { Title = title };
+        Initial = CoverTemplateCatalog.Create(title);
     }
     public CoverAssetService Assets { get; }
     public CoverDocument Initial { get; set; }
@@ -35,6 +35,8 @@ public sealed class CoverEditSession {
     public bool CanUndo => _undo.Count > 0 && IsSupported && !IsBusy;
     public bool CanRedo => _redo.Count > 0 && IsSupported && !IsBusy;
     public event Action? Changed;
+    public event Action? BeforeSave;
+    public void PrepareToSave() => BeforeSave?.Invoke();
     public void Load(ArticleCoverState? state) { State = state; _undo.Clear(); _redo.Clear(); Revision++; Changed?.Invoke(); }
     public void Rebase(ArticleCoverState? state, string path) {
         CoverDocument Absolute(CoverDocument d) => d with {
@@ -54,7 +56,7 @@ public sealed class CoverEditSession {
             _undo.Add(State); if (_undo.Count > 100) _undo.RemoveAt(0);
         }
         _lastGroup = group; _lastChange = DateTime.UtcNow; _redo.Clear();
-        State = (State ?? new()) with { Draft = draft }; Revision++; Changed?.Invoke();
+        State = (State ?? new()) with { SchemaVersion = draft.Elements != null ? 2 : State?.SchemaVersion ?? 1, Draft = draft }; Revision++; Changed?.Invoke();
     }
     public void BeginGesture() { _lastGroup = null; _gesture = true; }
     public void EndGesture() { _lastGroup = null; _gesture = false; }
@@ -66,6 +68,7 @@ public sealed class CoverEditSession {
     public void Undo() { if (!CanUndo) return; _redo.Add(State); RestoreDraft(_undo[^1]); _undo.RemoveAt(_undo.Count - 1); Revision++; EndGesture(); Changed?.Invoke(); }
     public void Redo() { if (!CanRedo) return; _undo.Add(State); RestoreDraft(_redo[^1]); _redo.RemoveAt(_redo.Count - 1); Revision++; EndGesture(); Changed?.Invoke(); }
     public async Task<PreparedWeChatCover> ApplyAsync(CancellationToken token = default) {
+        PrepareToSave();
         if (IsBusy || IsClosed || !IsSupported) throw new InvalidOperationException("当前无法应用封面");
         var snapshot = Draft; var revision = Revision;
         IsBusy = true; Changed?.Invoke();
@@ -73,7 +76,7 @@ public sealed class CoverEditSession {
             var path = Path.Combine(Assets.CacheDirectory, "applied-" + Guid.NewGuid().ToString("N") + ".jpg");
             var prepared = await Task.Run(() => new CoverExportService().Export(snapshot, ArticlePath, path, weChat: true, token: token), token);
             if (IsClosed || Revision != revision) { File.Delete(path); throw new InvalidOperationException("封面已变化，请重新应用"); }
-            State = (State ?? new() { Draft = snapshot }) with { Applied = snapshot };
+            State = (State ?? new() { Draft = snapshot, SchemaVersion = snapshot.Elements != null ? 2 : 1 }) with { Applied = snapshot };
             _outputs.Add(prepared.Path); _prepared = prepared; _preparedDesign = snapshot;
             Revision++; Changed?.Invoke(); return prepared;
         } finally { IsBusy = false; Changed?.Invoke(); }

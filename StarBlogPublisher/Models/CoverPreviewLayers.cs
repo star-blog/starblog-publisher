@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Media.Imaging;
@@ -14,11 +15,13 @@ public sealed class CoverPreviewLayers : IDisposable {
         public int Users = 1;
     }
     private readonly SharedImage? _background;
+    private readonly Dictionary<CoverElementId, SharedImage> _objects = new();
     private bool _disposed;
     public CoverPreviewLayerData Data { get; }
     public Bitmap? Background => _background?.Image;
     public Bitmap Decoration { get; }
     public Bitmap Text { get; }
+    public Bitmap Object(CoverElementId id) => _objects[id].Image;
     public CoverPreviewLayers(CoverPreviewLayerData data, CoverPreviewLayers? previous = null) {
         Data = data;
         if (data.Background != null) {
@@ -26,6 +29,11 @@ public sealed class CoverPreviewLayers : IDisposable {
             else _background = new(Upload(data.Background));
         }
         Decoration = Upload(data.Decoration); Text = Upload(data.Text);
+        foreach (var pair in data.ObjectLayers) {
+            if (previous != null && previous._objects.TryGetValue(pair.Key, out var shared) &&
+                previous.Data.ObjectLayers.TryGetValue(pair.Key, out var raw) && ReferenceEquals(raw, pair.Value)) { shared.Users++; _objects[pair.Key] = shared; }
+            else _objects[pair.Key] = new(Upload(pair.Value));
+        }
     }
     private static Bitmap Upload(CoverRawImage data) {
         var bitmap = new WriteableBitmap(new PixelSize(data.Width, data.Height), new Vector(96, 96), PixelFormat.Rgba8888, AlphaFormat.Unpremul);
@@ -33,5 +41,5 @@ public sealed class CoverPreviewLayers : IDisposable {
         for (var row = 0; row < data.Height; row++) Marshal.Copy(data.Pixels, row * data.Stride, buffer.Address + row * buffer.RowBytes, data.Width * 4);
         return bitmap;
     }
-    public void Dispose() { if (_disposed) return; _disposed = true; if (_background != null && --_background.Users == 0) _background.Image.Dispose(); Decoration.Dispose(); Text.Dispose(); }
+    public void Dispose() { if (_disposed) return; _disposed = true; if (_background != null && --_background.Users == 0) _background.Image.Dispose(); foreach (var shared in _objects.Values) if (--shared.Users == 0) shared.Image.Dispose(); Decoration.Dispose(); Text.Dispose(); }
 }

@@ -38,7 +38,7 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
         if (!IsEditable || Preview == null || Preview.Data.Document != Session.Draft) return false;
         _interactionDocument = Session.Draft; return true;
     }
-    public void UpdateInteraction(CoverDocument document) { if (_interactionDocument != null) { _interactionDocument = document; LiveChanged?.Invoke(); } }
+    public void UpdateInteraction(CoverDocument document) { if (_interactionDocument != null) { _interactionDocument = document; LiveChanged?.Invoke(); OnPropertyChanged(nameof(HeadlineWarning)); OnPropertyChanged(nameof(SecondaryWarning)); } }
     public void EndInteraction(bool commit) {
         if (_interactionDocument == null) return;
         var document = _interactionDocument; _interactionDocument = null;
@@ -63,6 +63,8 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
         Session = session ?? new(Path.Combine(Path.GetTempPath(), "StarBlogPublisher", "cover-assets"), articleTitle ?? "");
         ArticleImages = new((articleImages ?? []).Select(i => new ArticleCoverImage(i)));
         Session.Changed += OnSessionChanged;
+        Session.BeforeSave += CompleteEditing;
+        Library = new CoverTemplateLibrary(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(AppSettings.SettingsFilePath))!, "cover-library"));
     }
     public string Title => "制作封面";
     public IReadOnlyList<CoverTemplate> Templates => CoverTemplate.All;
@@ -97,18 +99,18 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
     public PromptTemplate? SelectedPromptStyle { get; set; } = PromptTemplates.Cover.FirstOrDefault();
     public string BackgroundDescription => Session.Draft.Background == null ? "无背景图片" : Session.Draft.BackgroundName;
     public string FontSizeHint => EffectiveFontSize > 0 && EffectiveFontSize < FontSize ? $"已自动缩小至 {EffectiveFontSize}" : "文字超出时自动缩小，并检查溢出";
-    private void Edit(CoverDocument d, string group = "") => Session.Change(d, group);
+    private void Edit(CoverDocument d, string group = "") { if (IsComposing) CancelComposition(); Session.Change(d, group); }
     public string CoverTitle { get => Session.Draft.Title; set => Edit(Session.Draft with { Title = value }, "title"); }
     public string Subtitle { get => Session.Draft.Subtitle; set => Edit(Session.Draft with { Subtitle = value }, "subtitle"); }
     public string Column { get => Session.Draft.Column; set => Edit(Session.Draft with { Column = value }, "column"); }
-    public string TextColor { get => Session.Draft.Color; set => Edit(Session.Draft with { Color = value }, "color"); }
-    public string BackgroundColor { get => Session.Draft.BackgroundColor; set => Edit(Session.Draft with { BackgroundColor = value }, "backgroundColor"); }
-    public double FontSize { get => Session.Draft.FontSize; set => Edit(Session.Draft with { FontSize = (int)value }, "size"); }
-    public double TextWidth { get => Session.Draft.TextWidth; set => Edit(Session.Draft with { TextWidth = value }, "width"); }
-    public double LineHeight { get => Session.Draft.LineHeight; set => Edit(Session.Draft with { LineHeight = value }, "lineHeight"); }
-    public double Zoom { get => Session.Draft.Zoom; set => Edit(Session.Draft with { Zoom = value }, "zoom"); }
-    public double Scrim { get => Session.Draft.Scrim; set => Edit(Session.Draft with { Scrim = value }, "scrim"); }
-    public bool IsBold { get => Session.Draft.Bold; set => Edit(Session.Draft with { Bold = value }); }
+    public string TextColor { get => SelectedTextStyle?.Color ?? Session.Draft.Color; set { if (SelectedTextStyle is { } s) EditTextStyle(s with { Color = value }, "color"); else Edit(Session.Draft with { Color = value }, "color"); } }
+    public string BackgroundColor { get => LiveDocument.BackgroundColor; set { if (IsComposing) UpdateInteraction(LiveDocument with { BackgroundColor = value }); else Edit(Session.Draft with { BackgroundColor = value }, "backgroundColor"); OnPropertyChanged(); OnPropertyChanged(nameof(CanvasColor)); } }
+    public double FontSize { get => SelectedTextStyle?.FontSize ?? Session.Draft.FontSize; set { if (SelectedTextStyle is { } s) EditTextStyle(s with { FontSize = (int)value }, "size"); else Edit(Session.Draft with { FontSize = (int)value }, "size"); } }
+    public double TextWidth { get => SelectedTextStyle?.Width ?? Session.Draft.TextWidth; set { if (SelectedTextStyle is { } s) EditTextStyle(s with { Width = value }, "width"); else Edit(Session.Draft with { TextWidth = value }, "width"); } }
+    public double LineHeight { get => SelectedTextStyle?.LineHeight ?? Session.Draft.LineHeight; set { if (SelectedTextStyle is { } s) EditTextStyle(s with { LineHeight = value }, "lineHeight"); else Edit(Session.Draft with { LineHeight = value }, "lineHeight"); } }
+    public double Zoom { get => LiveDocument.Zoom; set { var d = LiveDocument with { Zoom = value }; if (IsComposing) UpdateInteraction(d); else Edit(d, "zoom"); OnPropertyChanged(); } }
+    public double Scrim { get => LiveDocument.Scrim; set { if (IsComposing) UpdateInteraction(LiveDocument with { Scrim = value }); else Edit(Session.Draft with { Scrim = value }, "scrim"); OnPropertyChanged(); } }
+    public bool IsBold { get => SelectedTextStyle?.Bold ?? Session.Draft.Bold; set { if (SelectedTextStyle is { } s) EditTextStyle(s with { Bold = value }); else Edit(Session.Draft with { Bold = value }); } }
     public bool Centered { get => Session.Draft.Centered; set => Edit(Session.Draft with { Centered = value }); }
     public bool Manual { get => Session.Draft.Manual; set => Edit(Session.Draft with { Manual = value }); }
     public double HeadlineOffset { get => Session.Draft.Crops.HeadlineOffset; set => Edit(Session.Draft with { Crops = Session.Draft.Crops with { HeadlineOffset = value } }, "headline"); }
@@ -117,11 +119,13 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
     public void Start() { if (_started) return; _started = true; SchedulePreview(); }
     private void OnSessionChanged() {
         if (_disposed) return;
+        _templateCts?.Cancel();
         foreach (var name in new[] { nameof(CoverTitle), nameof(Subtitle), nameof(Column), nameof(TextColor), nameof(BackgroundColor),
             nameof(FontSize), nameof(TextWidth), nameof(LineHeight), nameof(Zoom), nameof(Scrim), nameof(IsBold), nameof(Centered), nameof(Manual),
             nameof(HeadlineOffset), nameof(SecondaryOffset), nameof(GeneratedPrompt), nameof(IsEditable), nameof(SaveHint), nameof(BackgroundDescription),
             nameof(TemplateName), nameof(HasBackground), nameof(SelectedCoverTemplate) }) OnPropertyChanged(name);
         UndoCommand.NotifyCanExecuteChanged(); RedoCommand.NotifyCanExecuteChanged();
+        NotifyEditor();
         if (_started && Session.Revision != _renderRevision) SchedulePreview();
     }
     private void SchedulePreview() {
@@ -150,27 +154,30 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
             var assetKey = document.Background == null ? null : CoverAssetService.Resolve(document.Background, path);
             var data = await Task.Run(() => {
                 if (_backgroundCacheKey != assetKey) { _backgroundCacheKey = assetKey; _backgroundCache = null; }
-                var layers = CoverPreviewLayerData.Create(document, path, _backgroundCache, token);
+                var layers = CoverPreviewLayerData.Create(document, path, _backgroundCache, token, _previousPreviewData);
                 _backgroundCache = layers.Background;
                 return layers;
             }, token);
             if (_disposed || revision != Session.Revision || token.IsCancellationRequested) return;
             var next = new CoverPreviewLayers(data, Preview);
+            _previousPreviewData = data;
             var old = Preview; Preview = next; old?.Dispose();
             EffectiveFontSize = data.Layout.FontSize;
             StatusMessage = data.Layout.Diagnostics.Count == 0 ? "" : string.Join("；", data.Layout.Diagnostics.Select(d => d.Message));
             OnPropertyChanged(nameof(HeadlinePreview)); OnPropertyChanged(nameof(SecondaryPreview));
             OnPropertyChanged(nameof(HasPreview)); OnPropertyChanged(nameof(FontSizeHint));
+            OnPropertyChanged(nameof(BackgroundThumbnail));
+            NotifyEditor();
         } finally { _renderGate.Release(); }
     }
-    [RelayCommand] private void SelectTemplate(CoverTemplate? template) { if (template != null) Edit(template.Apply(Session.Draft)); }
+    [RelayCommand] private void SelectTemplate(CoverTemplate? template) { if (template != null) { CancelComposition(); Edit(CoverTemplateCatalog.ApplyLatest(template, Session.Draft)); SelectedElement = CoverElementId.None; } }
     [RelayCommand] private void SyncTitle() => CoverTitle = _articleTitle();
     [RelayCommand] private void SetTextPlacement(string value) => Edit(Session.Draft with { Placement = value, TextY = 0 });
     [RelayCommand] private void ResetBackground() => Edit(Session.Draft with { BackgroundX = 0, BackgroundY = 0, Zoom = 1 });
     [RelayCommand] private void ClearBackground() => Edit(Session.Draft with { Background = null });
     [RelayCommand] private void ClearLogo() => Edit(Session.Draft with { Logo = null });
-    [RelayCommand(CanExecute = nameof(CanUndo))] private void Undo() { EndInteraction(false); Session.Undo(); }
-    [RelayCommand(CanExecute = nameof(CanRedo))] private void Redo() { EndInteraction(false); Session.Redo(); }
+    [RelayCommand(CanExecute = nameof(CanUndo))] private void Undo() { CancelComposition(); EndInlineEdit(); Session.Undo(); }
+    [RelayCommand(CanExecute = nameof(CanRedo))] private void Redo() { CancelComposition(); EndInlineEdit(); Session.Redo(); }
     private bool CanUndo() => Session.CanUndo;
     private bool CanRedo() => Session.CanRedo;
     public void EndGesture() => Session.EndGesture();
@@ -186,6 +193,10 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
         catch (Exception ex) { if (!_disposed) StatusMessage = ex.Message; }
     }
     [RelayCommand] private async Task SaveImage() {
+        CompleteEditing();
+        await RenderNowAsync();
+        if (Preview?.Data.Document != Session.Draft) return;
+        if (Preview?.Data.Layout.Diagnostics.FirstOrDefault(d => d.IsError) is { } diagnostic) { SelectObject(diagnostic.Element); StatusMessage = diagnostic.Message; return; }
         var storage = GuiHost.GetTopLevel()?.StorageProvider; if (storage == null) return;
         var png = ExportFormat == "PNG";
         var file = await storage.SaveFilePickerAsync(new FilePickerSaveOptions { Title = "导出封面图片", SuggestedFileName = "cover." + (png ? "png" : "jpg"), DefaultExtension = png ? "png" : "jpg",
@@ -224,8 +235,9 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
     private async Task ImportAsync(byte[] bytes, bool logo, CancellationToken token, string name = "背景图片") {
         var asset = await Session.Assets.ImportAsync(bytes, token); token.ThrowIfCancellationRequested();
         if (_disposed || !IsEditable) return;
-        Edit(logo ? Session.Draft with { Logo = asset } : Session.Draft with { Background = asset, BackgroundName = name,
-            TemplateId = Session.Draft.TemplateId == "minimal" ? "photo" : Session.Draft.TemplateId, BackgroundX = 0, BackgroundY = 0, Zoom = 1 });
+        var current = Session.Draft;
+        if (!logo && current.TemplateId == "minimal") current = current.Elements == null ? current with { TemplateId = "photo" } : CoverTemplateCatalog.ApplyLatest(Templates.First(t => t.Id == "photo"), current) with { Scrim = current.Scrim };
+        Edit(logo ? current with { Logo = asset } : current with { Background = asset, BackgroundName = name, BackgroundX = 0, BackgroundY = 0, Zoom = 1 });
         await RenderNowAsync();
     }
     [RelayCommand] private async Task ShowArticleImages() {
@@ -282,15 +294,19 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
         if (!IsAIEnabled || IsGeneratingAi) return;
         _aiCts?.Dispose();
         _aiCts = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token); var token = _aiCts.Token; IsGeneratingAi = true;
+        var requestRevision = Session.Revision; var requestDesign = Session.Draft;
         try {
             var ai = new AiApplicationService(AiService.Instance, AppSettings.Instance);
             if (titles) {
                 var results = await ai.SuggestCoverTitlesAsync(_articleTitle(), _summary(), token); token.ThrowIfCancellationRequested();
+                if (_disposed || Session.IsClosed || Session.Revision != requestRevision) { StatusMessage = "封面已变化，请重新生成标题候选"; return; }
                 TitleSuggestions.Clear(); foreach (var result in results) TitleSuggestions.Add(result);
             } else {
                 var prompt = await ai.GenerateCoverPromptAsync(new CoverPromptRequest(_articleTitle(), _summary(), _content(), SelectedPromptStyle?.Key,
-                    "4:3", Session.Draft.TemplateId == "split" ? "Keep the left half clear for typography" : "Keep the central area clear for typography"), token);
-                token.ThrowIfCancellationRequested(); GeneratedPrompt = prompt;
+                    "4:3", CoverTemplateCatalog.PromptContext(requestDesign)), token);
+                token.ThrowIfCancellationRequested();
+                if (_disposed || Session.IsClosed || Session.Revision != requestRevision) { StatusMessage = "封面已变化，请重新生成背景提示词"; return; }
+                GeneratedPrompt = prompt;
             }
         } catch (OperationCanceledException) { }
         catch (Exception ex) { if (!_disposed) StatusMessage = "AI 生成失败：" + ex.Message; }
@@ -299,7 +315,8 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
     [RelayCommand] private void ChooseTitle(string value) => CoverTitle = value;
     [RelayCommand] private async Task CopyPrompt() { if (GuiHost.GetTopLevel()?.Clipboard is { } clipboard) await clipboard.SetTextAsync(GeneratedPrompt); }
     public void Dispose() {
-        if (_disposed) return; EndInteraction(false); _disposed = true; Session.Changed -= OnSessionChanged;
+        if (_disposed) return; EndInlineEdit(); CancelComposition(); EndInteraction(false); _disposed = true; Session.Changed -= OnSessionChanged; Session.BeforeSave -= CompleteEditing;
+        DisposeTemplateCards();
         _lifetime.Cancel(); _renderCts?.Cancel(); _backgroundCts?.Cancel(); _aiCts?.Cancel();
         _renderCts?.Dispose(); _backgroundCts?.Dispose(); _aiCts?.Dispose();
         var preview = Preview; Preview = null; preview?.Dispose(); _backgroundCache = null;

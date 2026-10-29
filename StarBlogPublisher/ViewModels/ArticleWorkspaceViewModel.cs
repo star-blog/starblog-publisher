@@ -101,6 +101,7 @@ public partial class ArticleWorkspaceViewModel : PageViewModelBase {
     }
 
     partial void OnActiveDocumentChanging(PublishViewModel? value) {
+        if (ActiveDocument?.ActiveStackPage is CoverStudioViewModel studio) { studio.EndInlineEdit(); studio.CancelCompositionCommand.Execute(null); }
         if (ActiveDocument != null) ActiveDocument.PropertyChanged -= OnDocumentLayoutChanged;
     }
     partial void OnIsSidebarOpenChanged(bool value) { OnPropertyChanged(nameof(SidebarMinimumWidth)); OnPropertyChanged(nameof(SidebarColumnWidth)); if (!IsFocusMode) SaveHistory(); }
@@ -217,6 +218,7 @@ public partial class ArticleWorkspaceViewModel : PageViewModelBase {
     [RelayCommand] private Task SaveActive() => CurrentDocument.SaveDocumentAsync();
     [RelayCommand] private async Task SaveAll() {
         foreach (var document in Documents.ToArray()) {
+            document.CoverSession.PrepareToSave();
             if (document.IsDocumentDirty && !await document.SaveDocumentAsync()) break;
         }
     }

@@ -148,7 +148,7 @@ public partial class MainWindow : FAAppWindow {
     }
 
     private bool CanEditTarget(string action) {
-        if (CurrentCoverStudio() is { } studio && action is "undo" or "redo") return action == "undo" ? studio.Session.CanUndo : studio.Session.CanRedo;
+        if (CurrentCoverStudio() is { IsTemplateLibraryOpen: false, IsPreviewExpanded: false } studio && action is "undo" or "redo") return action == "undo" ? studio.Session.CanUndo : studio.Session.CanRedo;
         if (_editTarget == null || TopLevel.GetTopLevel(_editTarget) != this || !_editTarget.IsEffectivelyVisible) return false;
         if (_editTarget.GetVisualAncestors().OfType<PublishEditorView>().FirstOrDefault()?.DataContext is PublishViewModel { IsWorkspaceBusy: true }) return false;
         return _editTarget switch {
@@ -161,7 +161,7 @@ public partial class MainWindow : FAAppWindow {
     }
 
     private async Task ExecuteEdit(string action) {
-        if (CurrentCoverStudio() is { } studio && action is "undo" or "redo") {
+        if (CurrentCoverStudio() is { IsTemplateLibraryOpen: false, IsPreviewExpanded: false } studio && action is "undo" or "redo") {
             if (action == "undo") studio.UndoCommand.Execute(null); else studio.RedoCommand.Execute(null);
             return;
         }
@@ -230,6 +230,8 @@ public partial class MainWindow : FAAppWindow {
     }
 
     private void OnWorkspaceKeyDown(object? sender, KeyEventArgs e) {
+        if (e.Source is Visual modalSource && modalSource.GetVisualAncestors().Any(ancestor => ancestor is FAContentDialog)) return;
+        if (CurrentCoverStudio() is { IsTemplateLibraryOpen: true }) return;
         if (CurrentCoverStudio() is { } studio && e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key is Key.Z or Key.Y) {
             if (e.Key == Key.Z) studio.UndoCommand.Execute(null); else studio.RedoCommand.Execute(null);
             e.Handled = true; return;
