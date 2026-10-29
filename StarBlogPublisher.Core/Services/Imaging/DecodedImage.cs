@@ -94,12 +94,14 @@ internal sealed class DecodedImage : IDisposable {
         var left = (width - drawnWidth) / 2f;
         var top = (height - drawnHeight) / 2f;
         var destination = new SKBitmap(NewInfo(width, height, _bitmap.AlphaType));
-        using (var canvas = new SKCanvas(destination)) {
-            using var paint = new SKPaint { IsAntialias = true };
-            canvas.DrawBitmap(
-                _bitmap,
+        using (var canvas = new SKCanvas(destination))
+        using (var image = SKImage.FromBitmap(_bitmap))
+        using (var paint = new SKPaint { IsAntialias = true }) {
+            canvas.DrawImage(
+                image,
                 new SKRect(0, 0, _bitmap.Width, _bitmap.Height),
                 new SKRect(left, top, left + drawnWidth, top + drawnHeight),
+                Sampling,
                 paint);
         }
 
