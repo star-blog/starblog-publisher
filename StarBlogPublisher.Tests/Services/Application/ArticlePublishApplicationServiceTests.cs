@@ -44,12 +44,13 @@ public class ArticlePublishApplicationServiceTests {
     private const string OriginalMarkdown = "# Test\nNo images here.";
     private const string ServerRewrittenContent = "# Test\n![cover](https://blog.example.com/media/cover.png)";
 
-    private async Task<PublishResult> PublishMarkdownAsync(string markdown, bool publish = true) {
+    private async Task<PublishResult> PublishMarkdownAsync(string markdown, bool publish = true,
+        Action<int, string>? onProgress = null) {
         var tempFile = Path.GetTempFileName();
         File.WriteAllText(tempFile, markdown);
         try {
             return await _publishService.PublishAsync(
-                tempFile, "Title", markdown, "summary", 1, publish: publish);
+                tempFile, "Title", markdown, "summary", 1, publish: publish, onProgress: onProgress);
         }
         finally {
             File.Delete(tempFile);
@@ -100,6 +101,44 @@ public class ArticlePublishApplicationServiceTests {
         result.Success.Should().BeTrue();
         result.PostUrl.Should().Be("https://example.com/p/article");
         result.MarkdownContent.Should().Be("# Published article");
+    }
+
+    [Fact]
+    public async Task PublishAsync_ReportsProgressBeforeSlowCreateCompletes() {
+        SetupLoggedIn();
+        var pending = new TaskCompletionSource<ApiResponse<BlogPost>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _mockBlogPost.Setup(x => x.Add(It.IsAny<PostCreationDto>())).Returns(pending.Task);
+        var progress = new List<(int Value, string Message)>();
+
+        var publishing = PublishMarkdownAsync(OriginalMarkdown,
+            onProgress: (value, message) => progress.Add((value, message)));
+
+        publishing.IsCompleted.Should().BeFalse();
+        progress.Select(p => p.Value).Should().Equal(0, 10);
+        progress.Last().Message.Should().Contain("创建文章");
+        pending.SetResult(new ApiResponse<BlogPost> { Message = "模拟创建失败" });
+        (await publishing).Success.Should().BeFalse();
+        progress.Should().NotContain(p => p.Value == 100);
+    }
+
+    [Fact]
+    public async Task PublishAsync_ReportsImageTotalBeforeProcessingFirstImage() {
+        SetupLoggedIn();
+        // A missing local image exercises initial counting without using the real upload API.
+        var markdown = $"# Test\n\n![local]({Guid.NewGuid():N}.png)\n\n![remote](https://example.com/remote.png)";
+        SetupCreatedPost(markdown);
+        SetupUpdateAndCapture();
+        _mockBlogPost.Setup(x => x.Get(It.IsAny<string>()))
+            .ReturnsAsync(new ApiResponse<BlogPost> { Data = new BlogPost { Id = "post-1", Content = markdown } });
+        var progress = new List<(int Value, string Message)>();
+
+        var result = await PublishMarkdownAsync(markdown,
+            onProgress: (value, message) => progress.Add((value, message)));
+
+        result.Success.Should().BeTrue();
+        progress.Should().Contain(p => p.Value == 30 && p.Message.Contains("0/1"));
+        progress.Select(p => p.Value).Should().BeInAscendingOrder();
+        progress.Last().Value.Should().Be(100);
     }
 
     // === PublishAsync validation ===

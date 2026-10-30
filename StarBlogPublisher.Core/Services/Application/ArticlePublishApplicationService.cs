@@ -43,6 +43,7 @@ public class ArticlePublishApplicationService {
         Action<int, string>? onProgress = null) {
 
         // 验证前置条件
+        onProgress?.Invoke(0, "正在检查登录状态...");
         var authCheck = await _authService.EnsureLoggedInAsync();
         if (!authCheck.Success) return PublishResult.Fail(authCheck.ErrorMessage!);
 
@@ -71,7 +72,7 @@ public class ArticlePublishApplicationService {
             var processor = new MarkdownProcessor(filePath, blogPost);
             processor.ImageUploadProgress += (uploaded, total) => {
                 var progress = 30 + (int)(uploaded * 50.0 / total);
-                onProgress?.Invoke(progress, $"正在上传图片 ({uploaded}/{total})...");
+                onProgress?.Invoke(progress, $"正在上传图片（已完成 {uploaded}/{total}）...");
             };
 
             var compressionConfig = new ImageCompressionConfig(

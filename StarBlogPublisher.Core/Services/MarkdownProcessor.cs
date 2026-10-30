@@ -52,6 +52,9 @@ public class MarkdownProcessor(string filepath, BlogPost post, ILogger? logger =
                 }
             }
 
+            // 首张图片压缩和上传之前就展示总数，避免长时间停留在笼统的“处理图片”。
+            if (totalImages > 0) ImageUploadProgress?.Invoke(0, totalImages);
+
             // 重新解析文档处理图片上传
             document = Markdig.Markdown.Parse(post.Content);
 
