@@ -97,6 +97,11 @@ public partial class PublishViewModel : PageViewModelBase {
     public bool IsWorkspaceBusy => IsPublishing || IsLoadingDocument;
     public bool IsWorkspaceBusyIndeterminate => IsLoadingDocument && !IsPublishing;
     public string WorkspaceBusyMessage => IsPublishing ? StatusMessage : "正在打开文件...";
+    public string PublishStageText => PublishProgress switch {
+        < 30 => "步骤 1/3 · 创建文章",
+        < 80 => "步骤 2/3 · 处理并上传图片",
+        _ => "步骤 3/3 · 完成发布"
+    };
     public bool IsDocumentDirty => HasLoadedArticle && (_isNewDocument || !string.Equals(ArticleContent, _loadedContent, StringComparison.Ordinal)
         || !string.Equals(MetadataSnapshot(), _savedMetadata, StringComparison.Ordinal));
     public string DocumentFileName => string.IsNullOrWhiteSpace(_currentFilePath)
@@ -151,6 +156,7 @@ public partial class PublishViewModel : PageViewModelBase {
     public bool NeedsLoginToPublish => HasLoadedArticle && !IsLoggedIn;
     public string PublishReadinessText {
         get {
+            if (IsPublishing) return "正在发布，请稍候…";
             if (!HasLoadedArticle) {
                 return "未打开文件";
             }
@@ -243,6 +249,8 @@ public partial class PublishViewModel : PageViewModelBase {
     partial void OnArticleTitleChanged(string value) => NotifyDocumentState();
 
     partial void OnIsLoadingDocumentChanged(bool value) => NotifyWorkspaceBusy();
+
+    partial void OnPublishProgressChanged(double value) => OnPropertyChanged(nameof(PublishStageText));
 
     partial void OnIsPreparingAiChanged(bool value) => OnPropertyChanged(nameof(SaveStatusText));
 
@@ -527,6 +535,7 @@ public partial class PublishViewModel : PageViewModelBase {
 
     [RelayCommand]
     private async Task Publish() {
+        if (IsWorkspaceBusy) return;
         if (!_shell.IsUserLoggedIn) {
             StatusMessage = "请先登录";
             if (await GuiHost.ConfirmAsync("登录提示", "您需要先登录才能发布文章。")) {
@@ -552,33 +561,36 @@ public partial class PublishViewModel : PageViewModelBase {
             return;
         }
 
-        IsPublishing = true;
         PublishProgress = 0;
-        StatusMessage = "正在发布...";
+        StatusMessage = "正在准备发布...";
+        IsPublishing = true;
 
-        var result = await _publishService.PublishAsync(
-            _currentFilePath, ArticleTitle, ArticleContent, ArticleDescription,
-            SelectedCategory.Id, ArticleSlug, true,
-            onProgress: (step, msg) => {
-                PublishProgress = step;
-                StatusMessage = msg;
-            });
+        try {
+            var result = await _publishService.PublishAsync(
+                _currentFilePath, ArticleTitle, ArticleContent, ArticleDescription,
+                SelectedCategory.Id, ArticleSlug, true,
+                onProgress: (step, msg) => {
+                    PublishProgress = step;
+                    StatusMessage = msg;
+                });
 
-        if (result.Success && result.Post != null) {
-            PublishProgress = 100;
-            LastPublishResult = result;
-            StatusMessage = "发布完成";
-            if (Result != null) {
-                OpenStackPage(Result, "发布结果");
+            if (result.Success && result.Post != null) {
+                PublishProgress = 100;
+                LastPublishResult = result;
+                StatusMessage = "发布完成";
+                if (Result != null) {
+                    OpenStackPage(Result, "发布结果");
+                }
+                GuiHost.ToastSuccess("发布完成", result.Post.Title ?? ArticleTitle);
             }
-            GuiHost.ToastSuccess("发布完成", result.Post.Title ?? ArticleTitle);
+            else {
+                StatusMessage = result.ErrorMessage ?? "发布失败";
+                GuiHost.ToastError("发布失败", result.ErrorMessage ?? "发布失败");
+            }
         }
-        else {
-            StatusMessage = result.ErrorMessage ?? "发布失败";
-            GuiHost.ToastError("发布失败", result.ErrorMessage ?? "发布失败");
+        finally {
+            IsPublishing = false;
         }
-
-        IsPublishing = false;
     }
 
     [RelayCommand] private void ShowCoverPrompt() => OpenCoverStudio(true);

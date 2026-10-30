@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:StarBlogPublisher.ViewModels"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             x:Class="StarBlogPublisher.Views.Controls.PublishProgressView"
+             x:DataType="vm:PublishViewModel"
+             IsVisible="{Binding IsPublishing}">
+    <Border Padding="20,14" BorderThickness="0,0,0,1"
+            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+            Background="{DynamicResource WorkspaceChromeBrush}">
+        <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto"
+              ColumnSpacing="12" RowSpacing="6">
+            <ui:FAProgressRing Width="20" Height="20" IsActive="{Binding IsPublishing}" />
+            <TextBlock Grid.Column="1" Text="正在发布到 StarBlog" FontWeight="SemiBold"
+                       VerticalAlignment="Center" />
+            <TextBlock x:Name="PublishPercentage" Grid.Column="2"
+                       Text="{Binding PublishProgress, StringFormat={}{0:0}%}"
+                       FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"
+                       Foreground="{DynamicResource AccentFillColorDefaultBrush}" />
+            <TextBlock x:Name="PublishStatus" Grid.Row="1" Grid.ColumnSpan="3"
+                       Text="{Binding StatusMessage}" TextWrapping="Wrap"
+                       AutomationProperties.LiveSetting="Polite" />
+            <ProgressBar x:Name="PublishProgressBar" Grid.Row="2" Grid.ColumnSpan="3"
+                         Minimum="0" Maximum="100" Value="{Binding PublishProgress}" Height="4"
+                         AutomationProperties.Name="文章发布进度" />
+            <Grid Grid.Row="3" Grid.ColumnSpan="3" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <TextBlock Text="{Binding PublishStageText}" FontSize="11" TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <TextBlock Grid.Column="1" Text="完成后自动显示发布结果" FontSize="11"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

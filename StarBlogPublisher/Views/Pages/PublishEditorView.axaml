@@ -41,6 +41,8 @@
 
         <DockPanel Classes="WorkspaceLoaded"
                    IsVisible="{Binding HasLoadedArticle}">
+            <!-- Reserve layout space above the native preview: WebView cannot cover this feedback. -->
+            <controls:PublishProgressView DockPanel.Dock="Top" />
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" MinWidth="220" />
@@ -56,7 +58,7 @@
                             <controls:MarkdownEditorToolbar Grid.Column="1" />
                         </Grid>
                     </Border>
-                    <controls:MarkdownEditorView x:Name="EditorCanvas" />
+                    <controls:MarkdownEditorView x:Name="EditorCanvas" IsReadOnly="{Binding IsPublishing}" />
                 </DockPanel>
                 <GridSplitter Grid.Column="1" Width="4" ResizeDirection="Columns" IsVisible="{Binding IsInspectorOpen}" />
                 <Border x:Name="ArticleInspectorPane" Grid.Column="2"
@@ -65,16 +67,15 @@
                         BorderThickness="1,0,0,0"
                         Background="{DynamicResource InspectorBackgroundBrush}">
                     <Panel>
-                        <controls:ArticleInspectorView IsVisible="{Binding IsInspectorOpen}" />
+                        <controls:ArticleInspectorView IsVisible="{Binding IsInspectorOpen}"
+                                                       IsEnabled="{Binding !IsPublishing}" />
                     </Panel>
                 </Border>
             </Grid>
         </DockPanel>
 
-        <controls:BusyOverlay IsBusy="{Binding IsWorkspaceBusy}"
-                              Message="{Binding WorkspaceBusyMessage}"
-                              Progress="{Binding PublishProgress}"
-                              IsIndeterminate="{Binding IsWorkspaceBusyIndeterminate}"
+        <controls:BusyOverlay IsBusy="{Binding IsLoadingDocument}"
+                              Message="正在打开文件..."
                               ZIndex="10" />
     </Panel>
 </UserControl>

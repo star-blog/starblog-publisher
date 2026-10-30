@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:StarBlogPublisher.ViewModels"
              xmlns:ae="https://github.com/avaloniaui/avaloniaedit"
+             x:Name="EditorRoot"
              x:Class="StarBlogPublisher.Views.Controls.MarkdownEditorView"
              x:DataType="vm:IMarkdownEditorContext"
              Background="{DynamicResource WorkspaceCanvasBrush}"
@@ -13,6 +14,7 @@
             <ColumnDefinition Width="{Binding PreviewColumnWidth}" />
         </Grid.ColumnDefinitions>
         <ae:TextEditor x:Name="Editor"
+                       IsReadOnly="{Binding IsReadOnly, ElementName=EditorRoot}"
                        ShowLineNumbers="{Binding EditorShowLineNumbers}"
                        WordWrap="{Binding EditorWordWrap}"
                        FontFamily="Cascadia Code, Consolas, Menlo, monospace"

@@ -18,6 +18,14 @@ using StarBlogPublisher.ViewModels;
 namespace StarBlogPublisher.Views.Controls;
 
 public partial class MarkdownEditorView : UserControl {
+    public static readonly StyledProperty<bool> IsReadOnlyProperty =
+        AvaloniaProperty.Register<MarkdownEditorView, bool>(nameof(IsReadOnly));
+
+    public bool IsReadOnly {
+        get => GetValue(IsReadOnlyProperty);
+        set => SetValue(IsReadOnlyProperty, value);
+    }
+
     private IMarkdownEditorContext? _viewModel;
     private SearchPanel? _searchPanel;
     private MarkdownSyntaxColorizer? _colorizer;
