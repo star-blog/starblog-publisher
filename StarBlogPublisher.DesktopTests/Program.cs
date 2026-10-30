@@ -11,13 +11,13 @@ using StarBlogPublisher.Views;
 namespace StarBlogPublisher.DesktopTests;
 
 internal static class Program {
-    private static readonly string[] Names = ["workspace-state", "sidebar-and-menus", "focus-and-palette", "preview-navigation", "settings-layout", "site-posts-layout", "site-posts-preview", "cover-studio", "theme-and-close", "material-shell"];
+    private static readonly string[] Names = ["workspace-state", "sidebar-and-menus", "focus-and-palette", "preview-navigation", "settings-layout", "site-posts-layout", "site-posts-preview", "cover-studio", "theme-and-close", "publish-progress", "material-shell"];
     private sealed record Result(string Name, string Status, long DurationMs, string? Error = null);
 
     [STAThread]
     public static int Main(string[] args) {
         if (args.Contains("--help")) {
-            Console.WriteLine("DesktopTests [--webview] [--settings] [--site-posts] [--cover-studio] [--material] [--dialogs] [--list]. Windows desktop required. Reports: output/desktop-tests/<run>/report.json");
+            Console.WriteLine("DesktopTests [--webview] [--settings] [--site-posts] [--cover-studio] [--publish-progress] [--material] [--dialogs] [--list]. Windows desktop required. Reports: output/desktop-tests/<run>/report.json");
             return 0;
         }
         if (args.Contains("--list")) { foreach (var name in Names.Concat(DialogScenarios.Cases.Select(c => "dialogs-" + c))) Console.WriteLine(name); return 0; }
@@ -26,7 +26,7 @@ internal static class Program {
         var dialogCase = args.Length == 1 && args[0].StartsWith("--dialog-case=", StringComparison.Ordinal)
             ? args[0]["--dialog-case=".Length..] : null;
         if (dialogCase != null ? !DialogScenarios.Cases.Contains(dialogCase)
-            : args.Any(a => a != "--webview" && a != "--settings" && a != "--site-posts" && a != "--cover-studio" && a != "--material")) {
+            : args.Any(a => a != "--webview" && a != "--settings" && a != "--site-posts" && a != "--cover-studio" && a != "--publish-progress" && a != "--material")) {
             Console.Error.WriteLine("Unknown argument; use --help."); return 2;
         }
         var output = Path.GetFullPath(Path.Combine("output", "desktop-tests", $"{DateTime.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}"));
@@ -54,12 +54,17 @@ internal static class Program {
             var scenarios = new WorkspaceScenarios(window, shell, output);
             var names = dialogCase == null ? Names : ["dialogs-" + dialogCase];
             Func<Task>[] actions = dialogCase == null
-                ? [scenarios.WorkspaceState, scenarios.SidebarAndMenus, scenarios.FocusAndPalette, scenarios.PreviewNavigation, scenarios.SettingsLayout, scenarios.SitePostsLayout, scenarios.SitePostsPreview, scenarios.CoverStudio, scenarios.ThemeAndClose, scenarios.MaterialShell]
+                ? [scenarios.WorkspaceState, scenarios.SidebarAndMenus, scenarios.FocusAndPalette, scenarios.PreviewNavigation, scenarios.SettingsLayout, scenarios.SitePostsLayout, scenarios.SitePostsPreview, scenarios.CoverStudio, scenarios.ThemeAndClose, scenarios.PublishProgress, scenarios.MaterialShell]
                 : [() => new DialogScenarios(window, shell, output).RunAsync(dialogCase)];
             Dispatcher.UIThread.Post(async () => {
                 var failed = false;
                 for (var i = 0; i < names.Length; i++) {
                     var name = names[i];
+                    if (args.Contains("--publish-progress") && name != "publish-progress") {
+                        results.Add(new(name, "skipped", 0, "Publish-progress-only run"));
+                        Report();
+                        continue;
+                    }
                     if (args.Contains("--cover-studio") && name != "cover-studio") {
                         results.Add(new(name, "skipped", 0, "Cover-studio-only run"));
                         Report();

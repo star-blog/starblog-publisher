@@ -33,6 +33,18 @@ dotnet test StarBlogPublisher.Tests/StarBlogPublisher.Tests.csproj -p:JsonSerial
 - 物理鼠标、键盘和原生中文输入法的人工操作验收未完成：Computer Use 应用访问授权超时。上述自动控件操作不作为人工验收通过的证据。
 - 未执行完整 NativeAOT 发布、真实公众号上传及在线 AI 服务调用；公众号裁切参数继续由模拟 HTTP 回归覆盖。
 
+## 发布进度回归
+
+```powershell
+dotnet run --project StarBlogPublisher.DesktopTests -c Release -- --publish-progress --webview
+```
+
+使用隔离文章和模拟进度，不调用真实发布接口。检查源码／分栏／预览、800／1280 DIP、浅深主题下的百分比、阶段、图片数量，确认固定进度区与原生 WebView 的布局不重叠、发布时锁定编辑、结束后恢复编辑，以及切换文章不串进度。不加 `--webview` 时仅检查源码模式，并明确跳过原生预览检查。截图与报告保存在本次 `output/desktop-tests/` 目录。
+
+设置 `STARBLOG_PUBLISH_PROGRESS_MANUAL_TEST=1` 后运行带 `--webview` 的命令，可在 1280 DIP 浅色预览中停留 45 秒，用系统窗口截图核对进度区与原生网页同屏，并滚动正文检查进度固定可见。`RenderTargetBitmap` 截图不包含原生网页，不能独立证明层叠正确；自动场景另行检查已加载网页及实际布局边界。请通过 `dotnet run` 或生成的 `.exe` 启动；直接用 `dotnet <测试程序集.dll>` 在本机可能导致 WebView2 初始化拒绝访问。
+
+本次修复通过 44 项发布服务、文章工作区、命令及结果相关 xUnit 测试，解决方案构建无警告、无错误；带真实 WebView 的发布进度矩阵通过，已用系统窗口截图检查同屏显示，并通过实际滚动确认顶部进度保持可见。未向真实站点发布测试文章。
+
 ## 日常自动化测试
 
 在仓库根目录运行：
