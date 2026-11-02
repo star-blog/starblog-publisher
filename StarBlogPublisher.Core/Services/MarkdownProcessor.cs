@@ -38,7 +38,8 @@ public class MarkdownProcessor(string filepath, BlogPost post, ILogger? logger =
 
         try {
             // 先统计需要上传的图片总数
-            var document = Markdig.Markdown.Parse(post.Content);
+            var content = MarkdownFrontMatter.Remove(post.Content);
+            var document = Markdig.Markdown.Parse(content);
             var totalImages = 0;
             var uploadedImages = 0;
 
@@ -56,7 +57,7 @@ public class MarkdownProcessor(string filepath, BlogPost post, ILogger? logger =
             if (totalImages > 0) ImageUploadProgress?.Invoke(0, totalImages);
 
             // 重新解析文档处理图片上传
-            document = Markdig.Markdown.Parse(post.Content);
+            document = Markdig.Markdown.Parse(content);
 
             foreach (var node in document.AsEnumerable()) {
                 if (node is not ParagraphBlock { Inline: { } } paragraphBlock) continue;
@@ -140,7 +141,7 @@ public class MarkdownProcessor(string filepath, BlogPost post, ILogger? logger =
     public string GetSummary(int length) {
         return post.Content == null
             ? string.Empty
-            : Markdig.Markdown.ToPlainText(post.Content).Limit(length);
+            : Markdig.Markdown.ToPlainText(MarkdownFrontMatter.Remove(post.Content)).Limit(length);
     }
     
     /// <summary>
@@ -152,7 +153,8 @@ public class MarkdownProcessor(string filepath, BlogPost post, ILogger? logger =
             return Array.Empty<string>();
         }
 
-        var document = Markdig.Markdown.Parse(post.Content);
+        var content = MarkdownFrontMatter.Remove(post.Content);
+        var document = Markdig.Markdown.Parse(content);
         var imagePaths = new List<string>();
         var baseDir = Path.GetDirectoryName(filepath) ?? "";
 
@@ -181,7 +183,7 @@ public class MarkdownProcessor(string filepath, BlogPost post, ILogger? logger =
         if (AppSettings.Instance.EnableRegexImageParsing) {
             // 添加自定义解析逻辑处理带空格的图片路径
             // Markdig 无法正确解析带空格的图片路径，需要手动处理
-            var customPaths = ExtractImagePathsWithSpaces(post.Content, baseDir);
+            var customPaths = ExtractImagePathsWithSpaces(content, baseDir);
             imagePaths.AddRange(customPaths);
         }
         

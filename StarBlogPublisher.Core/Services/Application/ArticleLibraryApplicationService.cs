@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Models.Dtos;
+using StarBlogPublisher.Utils;
 
 namespace StarBlogPublisher.Services.Application;
 
@@ -56,6 +57,7 @@ public class ArticleLibraryApplicationService {
         if (!authCheck.Success) return PublishResult.Fail(authCheck.ErrorMessage!);
         if (string.IsNullOrWhiteSpace(id)) return PublishResult.Fail("文章 ID 不能为空");
         if (string.IsNullOrWhiteSpace(dto.Title)) return PublishResult.Fail("标题不能为空");
+        dto.Content = MarkdownFrontMatter.Remove(dto.Content ?? string.Empty);
         if (string.IsNullOrWhiteSpace(dto.Content)) return PublishResult.Fail("文章内容为空");
         if (dto.CategoryId <= 0) return PublishResult.Fail("请选择文章分类");
 

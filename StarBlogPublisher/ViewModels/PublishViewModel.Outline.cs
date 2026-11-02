@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using StarBlogPublisher.Utils;
 
 namespace StarBlogPublisher.ViewModels;
 
@@ -30,7 +31,8 @@ public partial class PublishViewModel {
 
     private void UpdateOutline() {
         OutlineEntries.Clear();
-        foreach (var heading in Markdig.Markdown.Parse(ArticleContent).Descendants<HeadingBlock>()) {
+        var content = MarkdownFrontMatter.Remove(ArticleContent, preserveSourcePositions: true);
+        foreach (var heading in Markdig.Markdown.Parse(content).Descendants<HeadingBlock>()) {
             var title = string.Concat(heading.Inline?.Descendants().Select(part => part switch {
                 LiteralInline literal => literal.Content.ToString(), CodeInline code => code.Content,
                 LineBreakInline => " ", _ => ""

@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using Markdig;
 using Markdown.ColorCode;
 using StarBlogPublisher.Models;
+using StarBlogPublisher.Utils;
 
 namespace StarBlogPublisher.Services.Application;
 
@@ -47,7 +48,7 @@ public sealed class WeChatFormattingService {
     }
 
     private static string PrepareMarkdown(string markdown) {
-        var source = Regex.Replace(markdown, @"\A---\s*\r?\n.*?\r?\n---\s*\r?\n", string.Empty, RegexOptions.Singleline);
+        var source = MarkdownFrontMatter.Remove(markdown);
         return FixCjkSpacing(source);
     }
 

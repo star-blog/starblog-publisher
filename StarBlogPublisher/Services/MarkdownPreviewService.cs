@@ -5,12 +5,14 @@ using System.Text;
 using Markdig;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
+using StarBlogPublisher.Utils;
 
 namespace StarBlogPublisher.Services;
 
 internal static class MarkdownPreviewService {
     public static Uri? Render(string content, string previewId, Uri? baseUri, bool isDark) {
         if (string.IsNullOrWhiteSpace(content)) return null;
+        content = MarkdownFrontMatter.Remove(content, preserveSourcePositions: true);
         var previewDirectory = Path.Combine(Path.GetTempPath(), "StarBlogPublisher", "markdown-preview");
         Directory.CreateDirectory(previewDirectory);
         var previewPath = Path.Combine(previewDirectory, previewId + ".html");

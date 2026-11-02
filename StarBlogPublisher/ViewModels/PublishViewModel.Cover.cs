@@ -7,6 +7,7 @@ using StarBlogPublisher.Models;
 using StarBlogPublisher.Services;
 using StarBlogPublisher.Services.Application;
 using Markdig;
+using StarBlogPublisher.Utils;
 
 namespace StarBlogPublisher.ViewModels;
 
@@ -33,7 +34,7 @@ public partial class PublishViewModel {
     };
     private void OpenCoverStudio(bool ai = false) {
         CoverSession.Initial = CoverSession.Initial with { Title = ArticleTitle };
-        var html = Markdig.Markdown.ToHtml(ArticleContent, new Markdig.MarkdownPipelineBuilder().UseAdvancedExtensions().Build());
+        var html = Markdig.Markdown.ToHtml(MarkdownFrontMatter.Remove(ArticleContent), new Markdig.MarkdownPipelineBuilder().UseAdvancedExtensions().Build());
         var studio = new CoverStudioViewModel(_shell.HttpClientFactory, ArticleTitle, _ => { },
             ArticleImageCatalog.FromHtml(html, ArticleSourcePath), CoverSession, () => SaveDocumentAsync(),
             () => ArticleTitle, () => ArticleDescription, () => ArticleContent) { InspectorTab = ai ? 3 : 0 };

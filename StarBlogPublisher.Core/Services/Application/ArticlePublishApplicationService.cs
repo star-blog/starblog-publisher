@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using StarBlogPublisher.Models;
 using StarBlogPublisher.Models.Dtos;
+using StarBlogPublisher.Utils;
 
 namespace StarBlogPublisher.Services.Application;
 
@@ -47,6 +48,7 @@ public class ArticlePublishApplicationService {
         var authCheck = await _authService.EnsureLoggedInAsync();
         if (!authCheck.Success) return PublishResult.Fail(authCheck.ErrorMessage!);
 
+        content = MarkdownFrontMatter.Remove(content ?? string.Empty);
         if (string.IsNullOrWhiteSpace(content)) return PublishResult.Fail("文章内容为空");
         if (categoryId <= 0) return PublishResult.Fail("请选择文章分类");
 
