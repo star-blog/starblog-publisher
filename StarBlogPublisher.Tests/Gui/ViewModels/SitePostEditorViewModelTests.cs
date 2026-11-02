@@ -12,6 +12,17 @@ namespace StarBlogPublisher.Tests.Gui.ViewModels;
 [Collection("AppSettings")]
 public class SitePostEditorViewModelTests {
     [Fact]
+    public async Task Publish_FiltersFrontMatterFromSiteUpdate() {
+        var (vm, posts, _) = CreateEditor();
+        await vm.LoadAsync();
+        vm.Content = "---\ntypora-copy-images-to: ${filename}.assets\n---\n# Body";
+
+        await vm.PublishCommand.ExecuteAsync(null);
+
+        posts.Verify(p => p.Update("site-post", It.Is<PostUpdateDto>(dto => dto.Content == "# Body" && dto.IsPublish)), Times.Once);
+    }
+
+    [Fact]
     public async Task SharedEditor_PreviewsUnsavedContentAndSavesThroughUpdate() {
         var (vm, posts, _) = CreateEditor();
         await vm.LoadAsync();

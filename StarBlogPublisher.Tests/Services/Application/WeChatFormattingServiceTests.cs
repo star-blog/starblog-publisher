@@ -74,6 +74,21 @@ public class WeChatFormattingServiceTests {
         result.Html.Should().NotContain("title: 前言标题");
     }
 
+    [Theory]
+    [InlineData("---\ntypora-copy-images-to: ${filename}.assets\n---\n")]
+    [InlineData("\uFEFF---\r\ntypora-copy-images-to: ${filename}.assets\r\n---\r\n")]
+    [InlineData("---\ntypora-copy-images-to: ${filename}.assets\n...\n")]
+    public void Format_IgnoresFrontMatterInHtmlAndWordCount(string header) {
+        var service = new WeChatFormattingService();
+        var body = "## 前言\n\n正文内容";
+        var expected = service.Format(body, "文件标题");
+
+        var result = service.Format(header + body, "文件标题");
+
+        result.Html.Should().Be(expected.Html);
+        result.WordCount.Should().Be(expected.WordCount);
+    }
+
     [Fact]
     public void Format_ConvertsExternalLinksToNumberedReferencesInReadingOrder() {
         var markdown = """

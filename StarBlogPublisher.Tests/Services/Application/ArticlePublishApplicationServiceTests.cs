@@ -143,6 +143,35 @@ public class ArticlePublishApplicationServiceTests {
 
     // === PublishAsync validation ===
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task PublishAsync_FrontMatter_IsExcludedFromCreateAndUpdate(bool publish) {
+        SetupLoggedIn();
+        const string body = "# Test\n\nBody";
+        const string markdown = "---\ntypora-copy-images-to: ${filename}.assets\n---\n" + body;
+        SetupCreatedPost(markdown);
+        var updated = SetupUpdateAndCapture();
+
+        var result = await PublishMarkdownAsync(markdown, publish);
+
+        result.Success.Should().BeTrue();
+        _mockBlogPost.Verify(x => x.Add(It.Is<PostCreationDto>(dto => dto.Content == body)), Times.Once);
+        updated.Value.Should().NotContain("typora-copy-images-to");
+        result.MarkdownContent.Should().Contain("Body").And.NotContain("typora-copy-images-to");
+    }
+
+    [Fact]
+    public async Task PublishAsync_OnlyFrontMatter_ReturnsFailWithoutCreatingPost() {
+        SetupLoggedIn();
+
+        var result = await PublishMarkdownAsync("---\ntitle: Metadata\n---");
+
+        result.Success.Should().BeFalse();
+        result.ErrorMessage.Should().Contain("文章内容为空");
+        _mockBlogPost.Verify(x => x.Add(It.IsAny<PostCreationDto>()), Times.Never);
+    }
+
     [Fact]
     public async Task PublishAsync_EmptyContent_ReturnsFail() {
         SetupLoggedIn();

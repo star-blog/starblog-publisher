@@ -20,6 +20,24 @@ public class ArticleWorkspaceViewModelTests : IDisposable {
     }
 
     [Fact]
+    public async Task FrontMatter_IsHiddenFromPreviewAndOutline_WhileSourcePositionsArePreserved() {
+        const string markdown = "---\r\ntypora-copy-images-to: ${filename}.assets\r\n---\r\n\r\n## 前言\r\n\r\n正文";
+        var workspace = CreateShell().Workspace;
+        var path = await Article("front-matter.md", markdown);
+        await workspace.OpenPathAsync(path);
+        var document = workspace.CurrentDocument;
+
+        var html = await File.ReadAllTextAsync(document.PreviewUri!.LocalPath);
+
+        html.Should().NotContain("typora-copy-images-to");
+        html.Should().Contain("data-outline-line=\"5\"").And.Contain("data-source-line=\"7\"");
+        document.OutlineEntries.Should().ContainSingle().Which.Should().Be(new ArticleHeading("前言", 5, 2));
+        document.ArticleContent.Should().Be(markdown);
+        (await File.ReadAllTextAsync(path)).Should().Be(markdown);
+        document.IsDocumentDirty.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task OpeningAndSwitching_PreservesIndependentDocumentState_AndDeduplicatesPaths() {
         var workspace = CreateShell().Workspace;
         var firstPath = await Article("first.md", "# First");
