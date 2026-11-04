@@ -33,7 +33,7 @@ public class PostCreationDto {
     public int CategoryId { get; set; }
 
     /// <summary>
-    /// ZIP编码
+    /// 是否发表（默认先保存为草稿，图片上传完成后再发布）
     /// </summary>
-    public string ZipEncoding { get; set; } = "utf-8";
+    public bool IsPublish { get; set; }
 }

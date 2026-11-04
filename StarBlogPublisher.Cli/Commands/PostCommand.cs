@@ -137,8 +137,8 @@ public static class PostCommand {
 
                 if (result.Success && result.Post != null) {
                     Console.WriteLine($"发布成功! 文章 ID: {result.Post.Id}");
-                    if (!string.IsNullOrEmpty(result.Post.Slug)) {
-                        Console.WriteLine($"URL: {AppSettings.Instance.BackendUrl}/p/{result.Post.Slug}");
+                    if (!string.IsNullOrEmpty(result.PostUrl)) {
+                        Console.WriteLine($"URL: {result.PostUrl}");
                     }
                 }
                 else {
@@ -169,7 +169,7 @@ public static class PostCommand {
                     Console.WriteLine($"ID:       {post.Id}");
                     Console.WriteLine($"标题:     {post.Title}");
                     Console.WriteLine($"Slug:     {post.Slug}");
-                    Console.WriteLine($"分类:     {post.Category?.Text ?? "未分类"}");
+                    Console.WriteLine($"分类:     {post.Category?.DisplayName ?? "未分类"}");
                     Console.WriteLine($"状态:     {(post.IsPublish ? "已发布" : "草稿")}");
                     Console.WriteLine($"创建时间: {post.CreationTime}");
                     Console.WriteLine($"更新时间: {post.LastUpdateTime}");
@@ -278,7 +278,6 @@ public static class PostCommand {
                 var publish = !parseResult.GetValue(draftOpt);
                 var library = CreateLibrary();
                 var result = await library.UpdateAsync(id, new PostUpdateDto {
-                    Id = id,
                     Title = parseResult.GetValue(titleOpt) ?? sidecar?.Title ?? Path.GetFileNameWithoutExtension(file),
                     Summary = parseResult.GetValue(summaryOpt) ?? sidecar?.Description ?? "",
                     Slug = parseResult.GetValue(slugOpt) ?? sidecar?.Slug,

@@ -7,30 +7,21 @@ using StarBlogPublisher.Models.Dtos;
 namespace StarBlogPublisher.Services.StarBlogApi;
 
 public interface ICategory {
-    [Get("/Api/Category/Nodes")]
-    Task<StarBlogPublisher.Models.ApiResponse<List<Category>>> GetNodes();
+    [Get("/api/v1/categories/tree")]
+    Task<List<Category>?> GetNodes();
     
-    [Get("/Api/Category/WordCloud")]
-    Task<StarBlogPublisher.Models.ApiResponse<List<WordCloud>>> GetWordCloud();
+    [Get("/api/v1/categories/word-cloud")]
+    Task<List<WordCloud>> GetWordCloud();
 
-    [Get("/Api/Category/All")]
-    Task<StarBlogPublisher.Models.ApiResponse<List<Category>>> GetAll();
+    [Get("/api/v1/categories")]
+    Task<PageResult<Category>> GetList(int page = 1, int pageSize = 100);
 
-    [Get("/Api/Category/{id}")]
-    Task<StarBlogPublisher.Models.ApiResponse<Category>> Get(int id);
+    [Post("/api/v1/categories")]
+    Task<Category> Add([Body] CategoryCreationDto dto);
 
-    [Post("/Api/Category")]
-    Task<StarBlogPublisher.Models.ApiResponse<Category>> Add(CategoryCreationDto dto);
+    [Put("/api/v1/categories/{id}")]
+    Task<Category> Update(int id, [Body] CategoryCreationDto dto);
 
-    [Put("/Api/Category/{id}")]
-    Task<StarBlogPublisher.Models.ApiResponse<Category>> Update(int id, CategoryCreationDto dto);
-
-    [Delete("/Api/Category/{id}")]
-    Task<StarBlogPublisher.Models.ApiResponse<object>> Delete(int id);
-
-    [Post("/Api/Category/{id}/SetVisible")]
-    Task<StarBlogPublisher.Models.ApiResponse<object>> SetVisible(int id);
-
-    [Post("/Api/Category/{id}/SetInvisible")]
-    Task<StarBlogPublisher.Models.ApiResponse<object>> SetInvisible(int id);
+    [Delete("/api/v1/categories/{id}")]
+    Task Delete(int id);
 }

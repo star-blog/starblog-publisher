@@ -1,13 +1,6 @@
-using System.Collections.Generic;
-
 namespace StarBlogPublisher.Models;
 
-/// <summary>Paged StarBlog API envelope used by article and category list endpoints.</summary>
-public class ApiResponsePaged<T> : ApiResponse<List<T>> {
-    public PaginationMetadata? Pagination { get; set; }
-}
-
-/// <summary>Matches CodeLab.Share pagination metadata from web-legacy.</summary>
+/// <summary>Pagination information used by the article library UI and CLI.</summary>
 public class PaginationMetadata {
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 10;

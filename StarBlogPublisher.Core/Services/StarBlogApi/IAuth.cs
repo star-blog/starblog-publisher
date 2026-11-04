@@ -2,11 +2,10 @@
 using StarBlogPublisher.Models;
 using Refit;
 using StarBlogPublisher.Models.Dtos;
-using LoginResp = StarBlogPublisher.Models.ApiResponse<StarBlogPublisher.Models.LoginToken>;
 
 namespace StarBlogPublisher.Services.StarBlogApi;
 
 public interface IAuth {
-    [Post("/Api/Auth/Login")]
-    Task<LoginResp> Login([Body] LoginUser login);
+    [Post("/api/v1/auth/tokens")]
+    Task<LoginToken> Login([Body] LoginUser login);
 }

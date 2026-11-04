@@ -5,13 +5,15 @@ using Avalonia.Controls.Notifications;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StarBlogPublisher.Models;
-using StarBlogPublisher.Models.Dtos;
 using StarBlogPublisher.Services;
+using StarBlogPublisher.Services.Application;
 
 namespace StarBlogPublisher.ViewModels;
 
 public partial class AddCategoryViewModel : ViewModelBase, IDialogHostAware {
     private readonly Action _onAdded;
+    private readonly CategoryApplicationService _categoryService = new(ApiService.Instance,
+        new AuthApplicationService(AppSettings.Instance, GlobalState.Instance, ApiService.Instance));
 
     public event Action? CloseRequested;
 
@@ -28,9 +30,10 @@ public partial class AddCategoryViewModel : ViewModelBase, IDialogHostAware {
 
     private async Task InitializeCategories() {
         try {
-            var resp = await ApiService.Instance.Categories.GetNodes();
-            if (resp.Data != null) {
-                foreach (var category in resp.Data) {
+            var resp = await _categoryService.GetCategoriesAsync();
+            if (!resp.Success) throw new Exception(resp.ErrorMessage);
+            if (resp.Categories != null) {
+                foreach (var category in resp.Categories) {
                     Categories.Add(category);
                 }
             }
@@ -48,13 +51,10 @@ public partial class AddCategoryViewModel : ViewModelBase, IDialogHostAware {
         }
 
         try {
-            var resp = await ApiService.Instance.Categories.Add(new CategoryCreationDto {
-                Name = CategoryName,
-                ParentId = SelectedParentCategory?.Id ?? 0
-            });
+            var resp = await _categoryService.CreateCategoryAsync(CategoryName, SelectedParentCategory?.Id ?? 0);
 
-            if (!resp.Successful || resp.Data == null) {
-                throw new Exception(resp.Message ?? "未知错误");
+            if (!resp.Success) {
+                throw new Exception(resp.ErrorMessage ?? "未知错误");
             }
 
             _onAdded();

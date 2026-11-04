@@ -14,7 +14,7 @@ public static class RefitTypeRegistration {
     public static void RegisterTypes() {
         // 注册常用的响应类型
         JsonConvert.DefaultSettings = () => new JsonSerializerSettings {
-            TypeNameHandling = TypeNameHandling.Auto,
+            TypeNameHandling = TypeNameHandling.None,
             // 添加自定义转换器如果需要
             Converters = new List<JsonConverter> {
                 // 可以添加自定义转换器
@@ -23,11 +23,12 @@ public static class RefitTypeRegistration {
 
         // 预热类型 - 确保这些类型在AOT编译时被包含
         var types = new[] {
-            typeof(ApiResponse<>),
-            typeof(ApiResponse<List<Category>>),
-            typeof(ApiResponse<List<WordCloud>>),
-            typeof(ApiResponsePaged<BlogPost>),
-            typeof(ApiResponse<object>),
+            typeof(PageResult<BlogPost>),
+            typeof(PageResult<Category>),
+            typeof(LoginToken),
+            typeof(BlogPost),
+            typeof(UploadImageResult),
+            typeof(SitePhoto),
             typeof(PaginationMetadata),
             typeof(List<Category>),
             typeof(Category),

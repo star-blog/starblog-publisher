@@ -24,16 +24,16 @@ public class ArticleLibraryApplicationServiceTests {
         _settings.Username = "user";
         _settings.Password = "pass";
         mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
-            .ReturnsAsync(new ApiResponse<LoginToken> { Data = new LoginToken { Token = "token" } });
+            .ReturnsAsync(new LoginToken { Token = "token" });
         authService.LoginAsync("user", "pass").Wait();
     }
 
     [Fact]
     public async Task ListAsync_ReturnsPagedPosts() {
         _mockBlogPost.Setup(x => x.GetList(It.IsAny<PostListQuery>()))
-            .ReturnsAsync(new ApiResponsePaged<BlogPost> {
-                Data = [new BlogPost { Id = "p1", Title = "Hello", IsPublish = true }],
-                Pagination = new PaginationMetadata { PageNumber = 1, PageSize = 20, TotalItemCount = 1, PageCount = 1 }
+            .ReturnsAsync(new PageResult<BlogPost> {
+                Items = [new BlogPost { Id = "p1", Title = "Hello", IsPublish = true }],
+                Page = 1, PageSize = 20, TotalCount = 1, TotalPages = 1
             });
 
         var result = await _library.ListAsync(new PostListQuery { Page = 1 });
@@ -58,9 +58,7 @@ public class ArticleLibraryApplicationServiceTests {
     [Fact]
     public async Task UpdateAsync_CallsApiAndReturnsPost() {
         _mockBlogPost.Setup(x => x.Update("p1", It.IsAny<PostUpdateDto>()))
-            .ReturnsAsync((string id, PostUpdateDto dto) => new ApiResponse<BlogPost> {
-                Data = new BlogPost { Id = id, Title = dto.Title, Content = dto.Content, IsPublish = dto.IsPublish }
-            });
+            .ReturnsAsync((string id, PostUpdateDto dto) => new BlogPost { Id = id, Title = dto.Title, Content = dto.Content, IsPublish = dto.IsPublish });
 
         var result = await _library.UpdateAsync("p1", new PostUpdateDto {
             Title = "Updated",
@@ -75,21 +73,20 @@ public class ArticleLibraryApplicationServiceTests {
     }
 
     [Fact]
-    public async Task DeleteAsync_UsesApiMessage() {
+    public async Task DeleteAsync_NoContent_ReturnsSuccess() {
         _mockBlogPost.Setup(x => x.Delete("p1"))
-            .ReturnsAsync(new ApiResponse<object> { Successful = true, StatusCode = 200, Message = "deleted 1" });
+            .Returns(Task.CompletedTask);
 
         var result = await _library.DeleteAsync("p1");
 
         result.Success.Should().BeTrue();
-        result.Message.Should().Contain("deleted");
+        result.Message.Should().Be("已删除");
     }
 
     [Fact]
     public async Task PullAsync_WritesMarkdownAndSidecar() {
         _mockBlogPost.Setup(x => x.Get("p1"))
-            .ReturnsAsync(new ApiResponse<BlogPost> {
-                Data = new BlogPost {
+            .ReturnsAsync(new BlogPost {
                     Id = "p1",
                     Title = "Pulled",
                     Summary = "sum",
@@ -98,8 +95,7 @@ public class ArticleLibraryApplicationServiceTests {
                     CategoryId = 3,
                     Category = new Category { Id = 3, Text = "Notes" },
                     IsPublish = true
-                }
-            });
+                });
         var directory = Path.Combine(Path.GetTempPath(), "starblog-pull-tests", Guid.NewGuid().ToString("N"));
         var path = Path.Combine(directory, "pulled.md");
 

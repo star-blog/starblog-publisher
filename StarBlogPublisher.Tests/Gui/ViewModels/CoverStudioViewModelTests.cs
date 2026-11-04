@@ -63,7 +63,10 @@ public class CoverStudioViewModelTests {
         var factory = Factory((_, token) => { randomToken = token; return pending.Task; });
         PreparedWeChatCover? applied = null;
         using var studio = new CoverStudioViewModel(factory, "", cover => applied = cover,
-            [new ArticleImageSource(path, "文章配图")]) { Scrim = 0 };
+            [new ArticleImageSource(path, "文章配图")]) {
+                Scrim = 0,
+                SelectedRandomCoverProvider = new RandomCoverProvider("Test", "https://images.example/{0}/{1}?random={2}")
+            };
         try {
             studio.Start();
             var download = studio.PickRandomBackgroundCommand.ExecuteAsync(null);

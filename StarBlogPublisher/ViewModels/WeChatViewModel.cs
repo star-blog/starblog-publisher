@@ -425,9 +425,10 @@ public partial class WeChatViewModel : PageViewModelBase {
         if (provider == null) return;
 
         SelectedCoverSource = CoverSources[2];
-        var uri = provider.CreateUri(WeChatCoverImageService.RandomSourceWidth, WeChatCoverImageService.RandomSourceHeight, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         await PrepareCoverAsync(
-            () => _coverImageService.DownloadAndPrepareAsync(uri),
+            async () => await _coverImageService.DownloadAndPrepareAsync(await provider.ResolveUriAsync(
+                WeChatCoverImageService.RandomSourceWidth, WeChatCoverImageService.RandomSourceHeight,
+                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())),
             $"随机图片 · {provider.Name}");
     }
 
@@ -715,14 +716,19 @@ public sealed record CoverSourceOption(string Id, string Name);
 
 public sealed record CoverSizePreset(string Id, string Name, int Width, int Height, string Hint);
 
-public sealed record RandomCoverProvider(string Name, string UrlTemplate) {
+public sealed record RandomCoverProvider(string Name, string UrlTemplate, bool UsesStarBlogApi = false) {
     public Uri CreateUri(int width, int height, long nonce) =>
         new(string.Format(UrlTemplate, width, height, nonce));
+
+    public Task<Uri> ResolveUriAsync(int width, int height, long nonce,
+        System.Threading.CancellationToken cancellationToken = default) => UsesStarBlogApi
+        ? new SitePhotoApplicationService(ApiService.Instance).GetRandomImageUriAsync(cancellationToken)
+        : Task.FromResult(CreateUri(width, height, nonce));
 }
 
 public static class RandomCoverCatalog {
     public static IReadOnlyList<RandomCoverProvider> All { get; } = [
-        new("StarBlog PicLib", "https://blog.sblt.deali.cn:9000/Api/PicLib/Random/{0}/{1}?random={2}"),
+        new("StarBlog 摄影", "", UsesStarBlogApi: true),
         new("Lorem Picsum", "https://picsum.photos/{0}/{1}.jpg?random={2}"),
         new("LoremFlickr", "https://loremflickr.com/{0}/{1}?random={2}")
     ];

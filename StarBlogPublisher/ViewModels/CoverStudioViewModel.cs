@@ -266,7 +266,10 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
     [RelayCommand] private async Task PickRandomBackground() {
         if (SelectedRandomCoverProvider == null || _disposed) return;
         var token = BeginBackground(); IsFetchingRandomBackground = true;
-        try { await ImportAsync(await ReadSourceAsync(SelectedRandomCoverProvider.CreateUri(1200, 900, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()).ToString(), token), false, token, SelectedRandomCoverProvider.Name); }
+        try {
+            var uri = await SelectedRandomCoverProvider.ResolveUriAsync(1200, 900, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), token);
+            await ImportAsync(await ReadSourceAsync(uri.ToString(), token), false, token, SelectedRandomCoverProvider.Name);
+        }
         catch (OperationCanceledException) { }
         catch (Exception ex) { if (!token.IsCancellationRequested) StatusMessage = "获取随机背景失败：" + ex.Message; }
         finally { if (!token.IsCancellationRequested) IsFetchingRandomBackground = false; }

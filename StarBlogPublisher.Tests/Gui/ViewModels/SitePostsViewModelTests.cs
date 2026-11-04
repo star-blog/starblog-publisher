@@ -46,7 +46,7 @@ public class SitePostsViewModelTests {
     [Fact]
     public async Task FilterChangedDuringLoad_UsesLatestQueryAndSkipsStaleRows() {
         var posts = new Mock<IBlogPost>();
-        var first = new TaskCompletionSource<ApiResponsePaged<BlogPost>>();
+        var first = new TaskCompletionSource<PageResult<BlogPost>>();
         posts.SetupSequence(x => x.GetList(It.IsAny<PostListQuery>()))
             .Returns(first.Task)
             .ReturnsAsync(PageResult("draft", 1, 1));
@@ -123,7 +123,7 @@ public class SitePostsViewModelTests {
         var child = new Category { Id = 2, Text = "Child" };
         var root = new Category { Id = 1, Text = "Root", Nodes = [child] };
         var categories = new Mock<ICategory>();
-        categories.Setup(x => x.GetNodes()).ReturnsAsync(new ApiResponse<List<Category>> { Data = [root] });
+        categories.Setup(x => x.GetNodes()).ReturnsAsync([root]);
         var vm = LoggedInLibrary(new Mock<IBlogPost>(), categories);
         try {
             vm.SelectedCategoryFilter = new Category { Id = 2, Text = "Old child" };
@@ -147,9 +147,9 @@ public class SitePostsViewModelTests {
         return new SitePostsViewModel(shell, new ArticleLibraryApplicationService(api, auth), new CategoryApplicationService(api, auth));
     }
 
-    private static ApiResponsePaged<BlogPost> PageResult(string? id, int total, int pages) => new() {
-        Data = id == null ? [] : [new BlogPost { Id = id, Title = id }],
-        Pagination = new PaginationMetadata { TotalItemCount = total, PageCount = pages, PageNumber = 1, PageSize = 20 }
+    private static PageResult<BlogPost> PageResult(string? id, int total, int pages) => new() {
+        Items = id == null ? [] : [new BlogPost { Id = id, Title = id }],
+        TotalCount = total, TotalPages = pages, Page = 1, PageSize = 20
     };
 
     [Fact]

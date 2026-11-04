@@ -28,13 +28,10 @@ public class CategoryApplicationService {
 
         try {
             var resp = await _api.Categories.GetNodes();
-            if (resp.Data == null) {
-                return CategoryResult.Fail(resp.Message ?? "分类列表为空");
-            }
-            return CategoryResult.Ok(resp.Data);
+            return CategoryResult.Ok(resp ?? []);
         }
         catch (Exception ex) {
-            return CategoryResult.Fail($"获取分类失败: {ex.Message}");
+            return CategoryResult.Fail($"获取分类失败: {ApiError.Describe(ex)}");
         }
     }
 
@@ -50,13 +47,13 @@ public class CategoryApplicationService {
                 Name = name,
                 ParentId = parentId
             });
-            if (resp.Data == null) {
-                return CategoryResult.Fail(resp.Message ?? "创建分类失败");
+            if (resp == null) {
+                return CategoryResult.Fail("创建分类失败");
             }
-            return CategoryResult.Ok(new List<Category> { resp.Data });
+            return CategoryResult.Ok(new List<Category> { resp });
         }
         catch (Exception ex) {
-            return CategoryResult.Fail($"创建分类失败: {ex.Message}");
+            return CategoryResult.Fail($"创建分类失败: {ApiError.Describe(ex)}");
         }
     }
 
@@ -68,14 +65,19 @@ public class CategoryApplicationService {
         if (!authCheck.Success) return CategoryResult.Fail(authCheck.ErrorMessage!);
 
         try {
-            var resp = await _api.Categories.GetAll();
-            if (resp.Data is { Count: > 0 }) return CategoryResult.Ok(resp.Data);
+            var categories = new List<Category>();
+            var page = 1;
+            while (true) {
+                var resp = await _api.Categories.GetList(page, 100);
+                categories.AddRange(resp.Items);
+                if (page >= resp.TotalPages) break;
+                page++;
+            }
+            return CategoryResult.Ok(categories);
         }
-        catch {
-            // GetAll 若未被 ApiResponse 包装，回退到分类树。
+        catch (Exception ex) {
+            return CategoryResult.Fail($"获取分类失败: {ApiError.Describe(ex)}");
         }
-
-        return await GetCategoriesAsync();
     }
 
     public async Task<CategoryMutationResult> UpdateCategoryAsync(int id, string name, int parentId, bool visible) {
@@ -90,11 +92,11 @@ public class CategoryApplicationService {
                 ParentId = parentId,
                 Visible = visible
             });
-            if (resp.Data == null) return CategoryMutationResult.Fail(resp.Message ?? "更新分类失败");
-            return CategoryMutationResult.Ok(resp.Data);
+            if (resp == null) return CategoryMutationResult.Fail("更新分类失败");
+            return CategoryMutationResult.Ok(resp);
         }
         catch (Exception ex) {
-            return CategoryMutationResult.Fail($"更新分类失败: {ex.Message}");
+            return CategoryMutationResult.Fail($"更新分类失败: {ApiError.Describe(ex)}");
         }
     }
 
@@ -104,12 +106,11 @@ public class CategoryApplicationService {
         if (id <= 0) return CategoryMutationResult.Fail("分类 ID 无效");
 
         try {
-            var resp = await _api.Categories.Delete(id);
-            if (!resp.IsOk) return CategoryMutationResult.Fail(resp.Message ?? "删除分类失败");
-            return CategoryMutationResult.Ok(null, resp.Message ?? "已删除");
+            await _api.Categories.Delete(id);
+            return CategoryMutationResult.Ok(null, "已删除");
         }
         catch (Exception ex) {
-            return CategoryMutationResult.Fail($"删除分类失败: {ex.Message}");
+            return CategoryMutationResult.Fail($"删除分类失败: {ApiError.Describe(ex)}");
         }
     }
 
@@ -119,14 +120,18 @@ public class CategoryApplicationService {
         if (id <= 0) return CategoryMutationResult.Fail("分类 ID 无效");
 
         try {
-            var resp = visible
-                ? await _api.Categories.SetVisible(id)
-                : await _api.Categories.SetInvisible(id);
-            if (!resp.IsOk) return CategoryMutationResult.Fail(resp.Message ?? "更新可见性失败");
-            return CategoryMutationResult.Ok(null, resp.Message ?? (visible ? "已设为可见" : "已设为隐藏"));
+            // v1 的分类树不包含隐藏分类，也不返回 ParentId；从完整列表读取后再更新。
+            var all = await GetAllAsync();
+            if (!all.Success) return CategoryMutationResult.Fail(all.ErrorMessage!);
+            var category = all.Categories?.FirstOrDefault(item => item.Id == id);
+            if (category == null) return CategoryMutationResult.Fail("分类不存在");
+            var result = await UpdateCategoryAsync(id, category.DisplayName, category.ParentId, visible);
+            return result.Success
+                ? CategoryMutationResult.Ok(result.Category, visible ? "已设为可见" : "已设为隐藏")
+                : result;
         }
         catch (Exception ex) {
-            return CategoryMutationResult.Fail($"更新可见性失败: {ex.Message}");
+            return CategoryMutationResult.Fail($"更新可见性失败: {ApiError.Describe(ex)}");
         }
     }
 

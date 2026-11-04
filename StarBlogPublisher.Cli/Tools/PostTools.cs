@@ -62,7 +62,7 @@ public static class PostTools {
                 post.Id,
                 post.Title,
                 post.Slug,
-                post.Category?.Text,
+                post.Category?.DisplayName,
                 post.IsPublish ? "已发布" : "草稿",
                 post.Summary,
                 post.CreationTime,
@@ -121,7 +121,6 @@ public static class PostTools {
         if (resolvedCategory <= 0) return "错误: 请提供分类 ID";
 
         var result = await CreateLibrary().UpdateAsync(postId, new PostUpdateDto {
-            Id = postId,
             Title = title ?? sidecar?.Title ?? Path.GetFileNameWithoutExtension(filePath),
             Summary = summary ?? sidecar?.Description ?? "",
             Slug = slug ?? sidecar?.Slug,

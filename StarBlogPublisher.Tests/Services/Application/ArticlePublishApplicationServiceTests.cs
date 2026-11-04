@@ -35,9 +35,7 @@ public class ArticlePublishApplicationServiceTests {
         _settings.Username = "user";
         _settings.Password = "pass";
         _mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
-            .ReturnsAsync(new ApiResponse<LoginToken> {
-                Data = new LoginToken { Token = "test-token" }
-            });
+            .ReturnsAsync(new LoginToken { Token = "test-token" });
         _authService.LoginAsync("user", "pass").Wait();
     }
 
@@ -59,15 +57,13 @@ public class ArticlePublishApplicationServiceTests {
 
     private void SetupCreatedPost(string content, bool isPublish = true, string id = "post-1") {
         _mockBlogPost.Setup(x => x.Add(It.IsAny<PostCreationDto>()))
-            .ReturnsAsync(new ApiResponse<BlogPost> {
-                Data = new BlogPost {
+            .ReturnsAsync(new BlogPost {
                     Id = id,
                     Title = "Title",
                     Content = content,
                     IsPublish = isPublish,
                     CategoryId = 1
-                }
-            });
+                });
     }
 
     private sealed class CapturedContent {
@@ -78,8 +74,7 @@ public class ArticlePublishApplicationServiceTests {
         var captured = new CapturedContent();
         _mockBlogPost.Setup(x => x.Update(It.IsAny<string>(), It.IsAny<PostUpdateDto>()))
             .Callback<string, PostUpdateDto>((_, dto) => captured.Value = dto.Content)
-            .ReturnsAsync((string _, PostUpdateDto dto) => new ApiResponse<BlogPost> {
-                Data = new BlogPost {
+            .ReturnsAsync((string _, PostUpdateDto dto) => new BlogPost {
                     Id = id,
                     Title = dto.Title,
                     Content = "from-update-response",
@@ -87,8 +82,7 @@ public class ArticlePublishApplicationServiceTests {
                     CategoryId = dto.CategoryId,
                     Slug = dto.Slug,
                     Status = dto.Status
-                }
-            });
+                });
         return captured;
     }
 
@@ -106,7 +100,7 @@ public class ArticlePublishApplicationServiceTests {
     [Fact]
     public async Task PublishAsync_ReportsProgressBeforeSlowCreateCompletes() {
         SetupLoggedIn();
-        var pending = new TaskCompletionSource<ApiResponse<BlogPost>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var pending = new TaskCompletionSource<BlogPost>(TaskCreationOptions.RunContinuationsAsynchronously);
         _mockBlogPost.Setup(x => x.Add(It.IsAny<PostCreationDto>())).Returns(pending.Task);
         var progress = new List<(int Value, string Message)>();
 
@@ -116,7 +110,7 @@ public class ArticlePublishApplicationServiceTests {
         publishing.IsCompleted.Should().BeFalse();
         progress.Select(p => p.Value).Should().Equal(0, 10);
         progress.Last().Message.Should().Contain("创建文章");
-        pending.SetResult(new ApiResponse<BlogPost> { Message = "模拟创建失败" });
+        pending.SetException(new Exception("模拟创建失败"));
         (await publishing).Success.Should().BeFalse();
         progress.Should().NotContain(p => p.Value == 100);
     }
@@ -129,7 +123,7 @@ public class ArticlePublishApplicationServiceTests {
         SetupCreatedPost(markdown);
         SetupUpdateAndCapture();
         _mockBlogPost.Setup(x => x.Get(It.IsAny<string>()))
-            .ReturnsAsync(new ApiResponse<BlogPost> { Data = new BlogPost { Id = "post-1", Content = markdown } });
+            .ReturnsAsync(new BlogPost { Id = "post-1", Content = markdown });
         var progress = new List<(int Value, string Message)>();
 
         var result = await PublishMarkdownAsync(markdown,
@@ -220,10 +214,7 @@ public class ArticlePublishApplicationServiceTests {
         SetupLoggedIn();
 
         _mockBlogPost.Setup(x => x.Add(It.IsAny<PostCreationDto>()))
-            .ReturnsAsync(new ApiResponse<BlogPost> {
-                Data = null,
-                Message = "Server error"
-            });
+            .ReturnsAsync((BlogPost)null!);
 
         // Need a temp file for MarkdownProcessor
         var tempFile = Path.GetTempFileName();
@@ -254,17 +245,13 @@ public class ArticlePublishApplicationServiceTests {
         };
 
         _mockBlogPost.Setup(x => x.Add(It.IsAny<PostCreationDto>()))
-            .ReturnsAsync(new ApiResponse<BlogPost> { Data = blogPost });
+            .ReturnsAsync(blogPost);
 
         _mockBlogPost.Setup(x => x.Update(It.IsAny<string>(), It.IsAny<PostUpdateDto>()))
-            .ReturnsAsync(new ApiResponse<BlogPost> {
-                Data = new BlogPost { Id = "post-1", Content = "# Test\nNo images.", IsPublish = false }
-            });
+            .ReturnsAsync(new BlogPost { Id = "post-1", Content = "# Test\nNo images.", IsPublish = false });
 
         _mockBlogPost.Setup(x => x.Get(It.IsAny<string>()))
-            .ReturnsAsync(new ApiResponse<BlogPost> {
-                Data = new BlogPost { Id = "post-1", Content = "# Test\nNo images.", IsPublish = false }
-            });
+            .ReturnsAsync(new BlogPost { Id = "post-1", Content = "# Test\nNo images.", IsPublish = false });
 
         var tempFile = Path.GetTempFileName();
         File.WriteAllText(tempFile, "# Test\nNo images here.");
@@ -292,14 +279,12 @@ public class ArticlePublishApplicationServiceTests {
         SetupCreatedPost(OriginalMarkdown);
         SetupUpdateAndCapture();
         _mockBlogPost.Setup(x => x.Get("post-1"))
-            .ReturnsAsync(new ApiResponse<BlogPost> {
-                Data = new BlogPost {
+            .ReturnsAsync(new BlogPost {
                     Id = "post-1",
                     Title = "Title",
                     Content = ServerRewrittenContent,
                     IsPublish = true
-                }
-            });
+                });
 
         var result = await PublishMarkdownAsync(OriginalMarkdown);
 
@@ -332,9 +317,7 @@ public class ArticlePublishApplicationServiceTests {
         SetupCreatedPost(OriginalMarkdown, isPublish: true);
         var captured = SetupUpdateAndCapture();
         _mockBlogPost.Setup(x => x.Get("post-1"))
-            .ReturnsAsync(new ApiResponse<BlogPost> {
-                Data = new BlogPost { Id = "post-1", Content = "   ", IsPublish = false }
-            });
+            .ReturnsAsync(new BlogPost { Id = "post-1", Content = "   ", IsPublish = false });
 
         var result = await PublishMarkdownAsync(OriginalMarkdown, publish: false);
 
@@ -349,7 +332,7 @@ public class ArticlePublishApplicationServiceTests {
         SetupCreatedPost(OriginalMarkdown, isPublish: true);
         var captured = SetupUpdateAndCapture();
         _mockBlogPost.Setup(x => x.Get("post-1"))
-            .ReturnsAsync(new ApiResponse<BlogPost> { Data = null, Message = "unavailable" });
+            .ReturnsAsync((BlogPost)null!);
 
         var result = await PublishMarkdownAsync(OriginalMarkdown, publish: false);
 
@@ -364,9 +347,7 @@ public class ArticlePublishApplicationServiceTests {
         SetupCreatedPost(OriginalMarkdown, isPublish: true);
         SetupUpdateAndCapture();
         _mockBlogPost.Setup(x => x.Get("post-1"))
-            .ReturnsAsync(new ApiResponse<BlogPost> {
-                Data = new BlogPost { Id = "post-1", Content = ServerRewrittenContent, IsPublish = true }
-            });
+            .ReturnsAsync(new BlogPost { Id = "post-1", Content = ServerRewrittenContent, IsPublish = true });
 
         var result = await PublishMarkdownAsync(OriginalMarkdown, publish: true);
 
@@ -382,7 +363,7 @@ public class ArticlePublishApplicationServiceTests {
 
         var post = new BlogPost { Id = "123", Title = "Test Post" };
         _mockBlogPost.Setup(x => x.Get("123"))
-            .ReturnsAsync(new ApiResponse<BlogPost> { Data = post });
+            .ReturnsAsync(post);
 
         var result = await _publishService.GetPostAsync("123");
 
@@ -395,12 +376,12 @@ public class ArticlePublishApplicationServiceTests {
         SetupLoggedIn();
 
         _mockBlogPost.Setup(x => x.Get("999"))
-            .ReturnsAsync(new ApiResponse<BlogPost> { Data = null, Message = "Not found" });
+            .ReturnsAsync((BlogPost)null!);
 
         var result = await _publishService.GetPostAsync("999");
 
         result.Success.Should().BeFalse();
-        result.ErrorMessage.Should().Contain("Not found");
+        result.ErrorMessage.Should().Contain("文章不存在");
     }
 
     [Fact]

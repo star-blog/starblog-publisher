@@ -4,6 +4,7 @@ using System;
 using System.Net;
 using System.Net.Http;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace StarBlogPublisher.Services;
 
@@ -21,6 +22,8 @@ public class ApiService {
     private IAuth? _mockAuth;
     private IBlogPost? _mockBlogPost;
     private ICategory? _mockCategories;
+    private ISite? _site;
+    private readonly string? _baseUrlOverride;
 
     internal ApiService(IAuth auth, IBlogPost blogPost, ICategory categories) {
         _mockAuth = auth;
@@ -28,23 +31,32 @@ public class ApiService {
         _mockCategories = categories;
     }
 
+    internal ApiService(HttpClient client) : this(
+        RestService.For<IAuth>(client, CreateRefitSettings()),
+        RestService.For<IBlogPost>(client, CreateRefitSettings()),
+        RestService.For<ICategory>(client, CreateRefitSettings())) {
+        _site = RestService.For<ISite>(client, CreateRefitSettings());
+        _baseUrlOverride = client.BaseAddress?.ToString();
+    }
+
     private ApiService() {
         // 确保类型被注册
         RefitTypeRegistration.RegisterTypes();
 
         // 配置Refit设置
-        _refitSettings = new RefitSettings(new NewtonsoftJsonContentSerializer(
+        _refitSettings = CreateRefitSettings();
+    }
+
+    private static RefitSettings CreateRefitSettings() => new(new NewtonsoftJsonContentSerializer(
             new JsonSerializerSettings {
-                TypeNameHandling = TypeNameHandling.Auto,
-                // 禁用反射优化，这在AOT环境中很重要
-                TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple
+                TypeNameHandling = TypeNameHandling.None,
+                ContractResolver = new CamelCasePropertyNamesContractResolver()
             }
         ));
-    }
 
     public string BaseUrl {
         get {
-            var backendUrl = AppSettings.Instance.BackendUrl;
+            var backendUrl = _baseUrlOverride ?? AppSettings.Instance.BackendUrl;
             return string.IsNullOrWhiteSpace(backendUrl) ? "https://blog.deali.cn/" : backendUrl;
         }
     }
@@ -78,4 +90,5 @@ public class ApiService {
     public IAuth Auth => _mockAuth ?? RestService.For<IAuth>(ApiHttpClient, _refitSettings!);
     public ICategory Categories => _mockCategories ?? RestService.For<ICategory>(ApiHttpClient, _refitSettings!);
     public IBlogPost BlogPost => _mockBlogPost ?? RestService.For<IBlogPost>(ApiHttpClient, _refitSettings!);
+    public ISite Site => _site ?? RestService.For<ISite>(ApiHttpClient, _refitSettings!);
 }

@@ -90,13 +90,13 @@ public class AuthApplicationService {
                 Password = password
             });
 
-            if (string.IsNullOrWhiteSpace(resp.Data?.Token)) {
-                return AuthResult.Fail(resp.Message ?? "登录失败，未获取到令牌");
+            if (string.IsNullOrWhiteSpace(resp?.Token)) {
+                return AuthResult.Fail("登录失败，未获取到令牌");
             }
 
-            _globalState.SetLoggedIn(resp.Data.Token);
+            _globalState.SetLoggedIn(resp.Token);
             _userExplicitlyLoggedOut = false;
-            return AuthResult.Ok(resp.Data.Token);
+            return AuthResult.Ok(resp.Token);
         }
         catch (ApiException ex) {
             return AuthResult.Fail(BuildApiErrorMessage(ex));
@@ -107,30 +107,8 @@ public class AuthApplicationService {
     }
 
     private string BuildApiErrorMessage(ApiException ex) {
-        var targetUri = ex.Uri?.ToString() ?? $"{BackendUrl.TrimEnd('/')}/Api/Auth/Login";
-        var statusCode = (int)ex.StatusCode;
-        var reasonPhrase = string.IsNullOrWhiteSpace(ex.ReasonPhrase)
-            ? ex.StatusCode.ToString()
-            : ex.ReasonPhrase;
-
-        var message = $"登录失败: 请求 {targetUri} 返回 {statusCode} ({reasonPhrase})";
-
-        if (!string.IsNullOrWhiteSpace(ex.Content)) {
-            message += $"，响应内容: {SanitizeErrorContent(ex.Content)}";
-        }
-
-        return message;
-    }
-
-    private static string SanitizeErrorContent(string content) {
-        var flattened = content
-            .Replace("\r", " ")
-            .Replace("\n", " ")
-            .Trim();
-
-        return flattened.Length <= 300
-            ? flattened
-            : $"{flattened[..300]}...";
+        var targetUri = ex.Uri?.ToString() ?? $"{BackendUrl.TrimEnd('/')}/api/v1/auth/tokens";
+        return $"登录失败: 请求 {targetUri} 返回 {ApiError.Describe(ex)}";
     }
 
     /// <summary>

@@ -61,9 +61,7 @@ public class AuthApplicationServiceTests {
         _settings.Username = "user";
         _settings.Password = "pass";
         _mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
-            .ReturnsAsync(new ApiResponse<LoginToken> {
-                Data = new LoginToken { Token = "test-token" }
-            });
+            .ReturnsAsync(new LoginToken { Token = "test-token" });
 
         await _service.LoginAsync("user", "pass");
         _service.GetStatusMessage().Should().Be("已登录");
@@ -74,9 +72,7 @@ public class AuthApplicationServiceTests {
         _settings.Username = "user";
         _settings.Password = "pass";
         _mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
-            .ReturnsAsync(new ApiResponse<LoginToken> {
-                Data = new LoginToken { Token = "test-token" }
-            });
+            .ReturnsAsync(new LoginToken { Token = "test-token" });
 
         await _service.LoginAsync("user", "pass");
 
@@ -92,9 +88,7 @@ public class AuthApplicationServiceTests {
     [Fact]
     public async Task LoginAsync_Success_SetsLoggedIn() {
         _mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
-            .ReturnsAsync(new ApiResponse<LoginToken> {
-                Data = new LoginToken { Token = "jwt-token" }
-            });
+            .ReturnsAsync(new LoginToken { Token = "jwt-token" });
 
         var result = await _service.LoginAsync("user", "pass");
 
@@ -106,9 +100,7 @@ public class AuthApplicationServiceTests {
     [Fact]
     public async Task LoginAsync_NoToken_ReturnsFail() {
         _mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
-            .ReturnsAsync(new ApiResponse<LoginToken> {
-                Data = new LoginToken { Token = "" }
-            });
+            .ReturnsAsync(new LoginToken { Token = "" });
 
         var result = await _service.LoginAsync("user", "pass");
 
@@ -117,9 +109,9 @@ public class AuthApplicationServiceTests {
     }
 
     [Fact]
-    public async Task LoginAsync_NullData_ReturnsFail() {
+    public async Task LoginAsync_InvalidCredentials_ReturnsFail() {
         _mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
-            .ReturnsAsync(new ApiResponse<LoginToken> { Data = null, Message = "Invalid credentials" });
+            .ThrowsAsync(new Exception("Invalid credentials"));
 
         var result = await _service.LoginAsync("user", "pass");
 
@@ -145,9 +137,7 @@ public class AuthApplicationServiceTests {
 
         _mockAuth.Setup(x => x.Login(It.Is<LoginUser>(
                 l => l.Username == "saved-user" && l.Password == "saved-pass")))
-            .ReturnsAsync(new ApiResponse<LoginToken> {
-                Data = new LoginToken { Token = "token" }
-            });
+            .ReturnsAsync(new LoginToken { Token = "token" });
 
         var result = await _service.LoginAsync();
 
@@ -168,9 +158,7 @@ public class AuthApplicationServiceTests {
     public async Task Logout_ClearsLoginState() {
         // First login
         _mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
-            .ReturnsAsync(new ApiResponse<LoginToken> {
-                Data = new LoginToken { Token = "token" }
-            });
+            .ReturnsAsync(new LoginToken { Token = "token" });
         await _service.LoginAsync("user", "pass");
 
         _service.Logout();
@@ -183,9 +171,7 @@ public class AuthApplicationServiceTests {
     [Fact]
     public async Task EnsureLoggedInAsync_AlreadyLoggedIn_ReturnsOk() {
         _mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
-            .ReturnsAsync(new ApiResponse<LoginToken> {
-                Data = new LoginToken { Token = "token" }
-            });
+            .ReturnsAsync(new LoginToken { Token = "token" });
         await _service.LoginAsync("user", "pass");
 
         var result = await _service.EnsureLoggedInAsync();
@@ -197,9 +183,7 @@ public class AuthApplicationServiceTests {
     public async Task EnsureLoggedInAsync_ExplicitlyLoggedOut_DoesNotAutoLogin() {
         // Login then logout
         _mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
-            .ReturnsAsync(new ApiResponse<LoginToken> {
-                Data = new LoginToken { Token = "token" }
-            });
+            .ReturnsAsync(new LoginToken { Token = "token" });
         await _service.LoginAsync("user", "pass");
         _service.Logout();
 
@@ -223,9 +207,7 @@ public class AuthApplicationServiceTests {
         _settings.Password = "pass";
 
         _mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
-            .ReturnsAsync(new ApiResponse<LoginToken> {
-                Data = new LoginToken { Token = "auto-token" }
-            });
+            .ReturnsAsync(new LoginToken { Token = "auto-token" });
 
         var result = await _service.EnsureLoggedInAsync();
 
@@ -239,9 +221,7 @@ public class AuthApplicationServiceTests {
         _settings.Password = "pass";
 
         _mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
-            .ReturnsAsync(new ApiResponse<LoginToken> {
-                Data = new LoginToken { Token = "token" }
-            });
+            .ReturnsAsync(new LoginToken { Token = "token" });
 
         // Login, logout, then login again
         await _service.LoginAsync("user", "pass");
@@ -258,9 +238,7 @@ public class AuthApplicationServiceTests {
         _settings.Username = "user";
         _settings.Password = "pass";
         _mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
-            .ReturnsAsync(new ApiResponse<LoginToken> {
-                Data = new LoginToken { Token = "token" }
-            });
+            .ReturnsAsync(new LoginToken { Token = "token" });
         await _service.LoginAsync("user", "pass");
 
         _service.LogoutAndClearCredentials();

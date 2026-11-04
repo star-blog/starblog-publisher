@@ -21,7 +21,7 @@ public class CategoryApplicationServiceMutationTests {
         var authService = new AuthApplicationService(settings, globalState, api);
         _service = new CategoryApplicationService(api, authService);
         mockAuth.Setup(x => x.Login(It.IsAny<LoginUser>()))
-            .ReturnsAsync(new ApiResponse<LoginToken> { Data = new LoginToken { Token = "token" } });
+            .ReturnsAsync(new LoginToken { Token = "token" });
         authService.LoginAsync("user", "pass").Wait();
     }
 
@@ -34,7 +34,7 @@ public class CategoryApplicationServiceMutationTests {
     [Fact]
     public async Task UpdateCategoryAsync_ReturnsUpdatedCategory() {
         _mockCategories.Setup(x => x.Update(2, It.IsAny<CategoryCreationDto>()))
-            .ReturnsAsync(new ApiResponse<Category> { Data = new Category { Id = 2, Name = "Renamed" } });
+            .ReturnsAsync(new Category { Id = 2, Name = "Renamed" });
 
         var result = await _service.UpdateCategoryAsync(2, "Renamed", 0, true);
 
@@ -45,7 +45,7 @@ public class CategoryApplicationServiceMutationTests {
     [Fact]
     public async Task DeleteCategoryAsync_SurfacesApiFailure() {
         _mockCategories.Setup(x => x.Delete(3))
-            .ReturnsAsync(new ApiResponse<object> { Successful = false, StatusCode = 400, Message = "所选分类下有文章，不能删除！" });
+            .ThrowsAsync(new Exception("所选分类下有文章，不能删除！"));
 
         var result = await _service.DeleteCategoryAsync(3);
 

@@ -1,8 +1,6 @@
 ﻿namespace StarBlogPublisher.Models.Dtos;
 
 public class PostUpdateDto {
-    public string Id { get; set; } = string.Empty;
-
     /// <summary>
     /// 标题
     /// </summary>

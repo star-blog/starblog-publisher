@@ -25,11 +25,11 @@ public partial class WordCloudViewModel : ViewModelBase {
     private async Task<List<WordScore>?> GetWordScores() {
         try {
             var response = await ApiService.Instance.Categories.GetWordCloud();
-            if (response.Data == null) {
+            if (response == null) {
                 throw new Exception("获取词云数据失败：服务器返回数据为空");
             }
 
-            var originalScores = response.Data.Select(e => new WordScore(Score: e.Value, Word: e.Name)).ToList();
+            var originalScores = response.Select(e => new WordScore(Score: e.Count, Word: e.Name)).ToList();
             var extendedScores = new List<WordScore>();
             foreach (var score in originalScores) {
                 for (var i = 0; i < 10; i++) {

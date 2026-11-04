@@ -69,15 +69,11 @@ public class SitePostEditorViewModelTests {
             workspaceHistoryPath: Path.Combine(Path.GetTempPath(), "starblog-site-editor-tests", Guid.NewGuid() + ".json"));
         var child = new Category { Id = 2, Text = "Child" };
         var categories = new Mock<ICategory>();
-        categories.Setup(c => c.GetNodes()).ReturnsAsync(new ApiResponse<List<Category>> {
-            Data = [new Category { Id = 1, Text = "Root", Nodes = [child] }]
-        });
+        categories.Setup(c => c.GetNodes()).ReturnsAsync([new Category { Id = 1, Text = "Root", Nodes = [child] }]);
         var posts = new Mock<IBlogPost>();
-        posts.Setup(p => p.Get("site-post")).ReturnsAsync(new ApiResponse<BlogPost> {
-            Data = new BlogPost { Id = "site-post", Title = "Site post", Content = "# 原始正文", CategoryId = 2, IsPublish = true }
-        });
+        posts.Setup(p => p.Get("site-post")).ReturnsAsync(new BlogPost { Id = "site-post", Title = "Site post", Content = "# 原始正文", CategoryId = 2, IsPublish = true });
         posts.Setup(p => p.Update("site-post", It.IsAny<PostUpdateDto>())).ReturnsAsync((string id, PostUpdateDto dto) =>
-            new ApiResponse<BlogPost> { Data = new BlogPost { Id = id, Title = dto.Title, Content = dto.Content, CategoryId = dto.CategoryId, IsPublish = dto.IsPublish } });
+            new BlogPost { Id = id, Title = dto.Title, Content = dto.Content, CategoryId = dto.CategoryId, IsPublish = dto.IsPublish });
         var api = new ApiService(Mock.Of<IAuth>(), posts.Object, categories.Object);
         var state = new GlobalState();
         state.SetLoggedIn("test-token");

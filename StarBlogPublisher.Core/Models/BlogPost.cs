@@ -64,10 +64,18 @@ public class BlogPost {
     /// </summary>
     public int CategoryId { get; set; }
 
+    public string? CategoryName { get; set; }
+
     /// <summary>
     /// 分类
     /// </summary>
-    public Category? Category { get; set; }
+    private Category? _category;
+    public Category? Category {
+        get => _category ?? (CategoryId > 0
+            ? new Category { Id = CategoryId, Name = CategoryName }
+            : null);
+        set => _category = value;
+    }
 
     /// <summary>
     /// 文章的分类层级, 其内容类似这样 `1,2,3` , 用逗号分隔开分类ID

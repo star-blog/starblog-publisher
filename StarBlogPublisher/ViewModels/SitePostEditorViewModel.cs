@@ -200,7 +200,6 @@ public partial class SitePostEditorViewModel : ViewModelBase {
         StatusMessage = publish ? "正在发布…" : "正在保存草稿…";
         try {
             var result = await _library.UpdateAsync(PostId, new PostUpdateDto {
-                Id = PostId,
                 Title = Title.Trim(),
                 Summary = Summary,
                 Slug = string.IsNullOrWhiteSpace(Slug) ? null : Slug.Trim(),

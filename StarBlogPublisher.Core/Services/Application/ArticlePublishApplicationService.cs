@@ -63,15 +63,15 @@ public class ArticlePublishApplicationService {
                 Slug = string.IsNullOrWhiteSpace(slug) ? null : slug
             });
 
-            if (createResp?.Data == null) {
-                return PublishResult.Fail($"创建文章失败: {createResp?.Message ?? "未知错误"}");
+            if (createResp == null) {
+                return PublishResult.Fail("创建文章失败: 服务器未返回文章");
             }
 
-            var blogPost = createResp.Data;
+            var blogPost = createResp;
             onProgress?.Invoke(30, "文章已创建，正在处理图片...");
 
             // 第二步：处理 Markdown 中的图片
-            var processor = new MarkdownProcessor(filePath, blogPost);
+            var processor = new MarkdownProcessor(filePath, blogPost, api: _api);
             processor.ImageUploadProgress += (uploaded, total) => {
                 var progress = 30 + (int)(uploaded * 50.0 / total);
                 onProgress?.Invoke(progress, $"正在上传图片（已完成 {uploaded}/{total}）...");
@@ -94,7 +94,6 @@ public class ArticlePublishApplicationService {
             if (needsContentUpdate || needsStatusUpdate) {
                 onProgress?.Invoke(85, needsContentUpdate ? "正在更新文章内容..." : "正在更新发布状态...");
                 var updateDto = new PostUpdateDto {
-                    Id = blogPost.Id,
                     Title = title,
                     Content = processedContent,
                     Summary = summary,
@@ -105,11 +104,11 @@ public class ArticlePublishApplicationService {
                 };
 
                 var updateResp = await _api.BlogPost.Update(blogPost.Id, updateDto);
-                if (!updateResp.Successful || updateResp.Data == null) {
-                    return PublishResult.Fail($"更新文章失败: {updateResp?.Message ?? "未知错误"}");
+                if (updateResp == null) {
+                    return PublishResult.Fail("更新文章失败: 服务器未返回文章");
                 }
 
-                blogPost = updateResp.Data;
+                blogPost = updateResp;
             }
 
             // 以服务端正文为准（图片链接等可能被改写）；GET 失败则回退到本地处理后的内容
@@ -119,7 +118,7 @@ public class ArticlePublishApplicationService {
             return PublishResult.Ok(blogPost, BuildPostUrl(blogPost), processedContent);
         }
         catch (Exception ex) {
-            return PublishResult.Fail($"发布失败: {ex.Message}");
+            return PublishResult.Fail($"发布失败: {ApiError.Describe(ex)}");
         }
     }
 
@@ -133,8 +132,8 @@ public class ArticlePublishApplicationService {
         onProgress?.Invoke(90, "正在获取文章详情...");
         try {
             var detailResp = await _api.BlogPost.Get(blogPost.Id);
-            if (!string.IsNullOrWhiteSpace(detailResp?.Data?.Content)) {
-                return detailResp.Data;
+            if (!string.IsNullOrWhiteSpace(detailResp?.Content)) {
+                return detailResp;
             }
         }
         catch {
@@ -170,19 +169,19 @@ public class ArticlePublishApplicationService {
 
         try {
             var resp = await _api.BlogPost.Get(id);
-            if (resp.Data == null) return PublishResult.Fail(resp.Message ?? "文章不存在");
-            return PublishResult.Ok(resp.Data, BuildPostUrl(resp.Data), resp.Data.Content);
+            if (resp == null) return PublishResult.Fail("文章不存在");
+            return PublishResult.Ok(resp, BuildPostUrl(resp), resp.Content);
         }
         catch (Exception ex) {
-            return PublishResult.Fail($"获取文章失败: {ex.Message}");
+            return PublishResult.Fail($"获取文章失败: {ApiError.Describe(ex)}");
         }
     }
 
     private string BuildPostUrl(BlogPost post) {
         var baseUrl = _api.BaseUrl.TrimEnd('/');
         return !string.IsNullOrWhiteSpace(post.Slug)
-            ? $"{baseUrl}/p/{post.Slug}"
-            : $"{baseUrl}/Blog/Post/{post.Id}";
+            ? $"{baseUrl}/p/{Uri.EscapeDataString(post.Slug)}"
+            : $"{baseUrl}/blog/{Uri.EscapeDataString(post.Id)}";
     }
 }
 

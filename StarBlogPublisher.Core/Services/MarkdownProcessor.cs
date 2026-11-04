@@ -15,7 +15,7 @@ using StarBlogPublisher.Utils;
 
 namespace StarBlogPublisher.Services;
 
-public class MarkdownProcessor(string filepath, BlogPost post, ILogger? logger = null) {
+public class MarkdownProcessor(string filepath, BlogPost post, ILogger? logger = null, ApiService? api = null) {
     private readonly ILogger _logger = logger ?? NullLogger.Instance;
     public event Action<int, int>? ImageUploadProgress;
 
@@ -101,18 +101,18 @@ public class MarkdownProcessor(string filepath, BlogPost post, ILogger? logger =
                         // 上传图片到后端（使用压缩后的图片或原图）
                         await using var fileStream = File.OpenRead(actualImagePath);
                         var streamPart = new StreamPart(fileStream, actualImageFilename);
-                        var response = await ApiService.Instance.BlogPost.UploadImage(post.Id, streamPart);
+                        var response = await (api ?? ApiService.Instance).BlogPost.UploadImage(post.Id, streamPart);
 
-                        if (response is { Successful: true, Data: not null }) {
+                        if (!string.IsNullOrWhiteSpace(response?.Url)) {
                             // 替换图片链接为后端返回的URL
-                            linkInline.Url = response.Data.ImgUrl;
-                            _logger.LogInformation("上传图片 {Filename} 成功，URL: {Url}", actualImageFilename, response.Data.ImgUrl);
+                            linkInline.Url = response.Url;
+                            _logger.LogInformation("上传图片 {Filename} 成功，URL: {Url}", actualImageFilename, response.Url);
                             uploadedImages++;
                             ImageUploadProgress?.Invoke(uploadedImages, totalImages);
                         }
                         else {
                             // 上传失败，保留原始链接
-                            _logger.LogWarning("上传图片 {Filename} 失败: {Message}", actualImageFilename, response.Message);
+                            _logger.LogWarning("上传图片 {Filename} 失败：服务器未返回图片 URL", actualImageFilename);
                         }
                     }
                     catch (Exception ex) {

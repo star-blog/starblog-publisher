@@ -26,15 +26,11 @@ public class ArticleLibraryApplicationService {
 
         try {
             var resp = await _api.BlogPost.GetList(query);
-            if (resp.Data == null) return PostListResult.Fail(resp.Message ?? "文章列表为空");
-            return PostListResult.Ok(resp.Data, resp.Pagination ?? new PaginationMetadata {
-                PageNumber = query.Page,
-                PageSize = query.PageSize,
-                TotalItemCount = resp.Data.Count
-            });
+            if (resp == null) return PostListResult.Fail("文章列表为空");
+            return PostListResult.Ok(resp.Items, resp.ToPagination());
         }
         catch (Exception ex) {
-            return PostListResult.Fail($"获取文章列表失败: {ex.Message}");
+            return PostListResult.Fail($"获取文章列表失败: {ApiError.Describe(ex)}");
         }
     }
 
@@ -44,11 +40,11 @@ public class ArticleLibraryApplicationService {
 
         try {
             var resp = await _api.BlogPost.Get(id);
-            if (resp.Data == null) return PublishResult.Fail(resp.Message ?? "文章不存在");
-            return PublishResult.Ok(resp.Data, BuildPostUrl(resp.Data), resp.Data.Content);
+            if (resp == null) return PublishResult.Fail("文章不存在");
+            return PublishResult.Ok(resp, BuildPostUrl(resp), resp.Content);
         }
         catch (Exception ex) {
-            return PublishResult.Fail($"获取文章失败: {ex.Message}");
+            return PublishResult.Fail($"获取文章失败: {ApiError.Describe(ex)}");
         }
     }
 
@@ -62,13 +58,12 @@ public class ArticleLibraryApplicationService {
         if (dto.CategoryId <= 0) return PublishResult.Fail("请选择文章分类");
 
         try {
-            dto.Id = id;
             var resp = await _api.BlogPost.Update(id, dto);
-            if (resp.Data == null) return PublishResult.Fail(resp.Message ?? "更新文章失败");
-            return PublishResult.Ok(resp.Data, BuildPostUrl(resp.Data), resp.Data.Content);
+            if (resp == null) return PublishResult.Fail("更新文章失败");
+            return PublishResult.Ok(resp, BuildPostUrl(resp), resp.Content);
         }
         catch (Exception ex) {
-            return PublishResult.Fail($"更新文章失败: {ex.Message}");
+            return PublishResult.Fail($"更新文章失败: {ApiError.Describe(ex)}");
         }
     }
 
@@ -78,12 +73,11 @@ public class ArticleLibraryApplicationService {
         if (string.IsNullOrWhiteSpace(id)) return LibraryActionResult.Fail("文章 ID 不能为空");
 
         try {
-            var resp = await _api.BlogPost.Delete(id);
-            if (!resp.IsOk) return LibraryActionResult.Fail(resp.Message ?? "删除文章失败");
-            return LibraryActionResult.Ok(resp.Message ?? "已删除");
+            await _api.BlogPost.Delete(id);
+            return LibraryActionResult.Ok("已删除");
         }
         catch (Exception ex) {
-            return LibraryActionResult.Fail($"删除文章失败: {ex.Message}");
+            return LibraryActionResult.Fail($"删除文章失败: {ApiError.Describe(ex)}");
         }
     }
 
@@ -113,15 +107,15 @@ public class ArticleLibraryApplicationService {
             return LibraryActionResult.Ok(markdownPath, post);
         }
         catch (Exception ex) {
-            return LibraryActionResult.Fail($"保存本地文件失败: {ex.Message}");
+            return LibraryActionResult.Fail($"保存本地文件失败: {ApiError.Describe(ex)}");
         }
     }
 
     public string BuildPostUrl(BlogPost post) {
         var baseUrl = _api.BaseUrl.TrimEnd('/');
         return !string.IsNullOrWhiteSpace(post.Slug)
-            ? $"{baseUrl}/p/{post.Slug}"
-            : $"{baseUrl}/Blog/Post/{post.Id}";
+            ? $"{baseUrl}/p/{Uri.EscapeDataString(post.Slug)}"
+            : $"{baseUrl}/blog/{Uri.EscapeDataString(post.Id)}";
     }
 }
 
