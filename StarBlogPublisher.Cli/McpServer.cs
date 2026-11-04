@@ -18,17 +18,20 @@ public static class McpServer {
             consoleLogOptions.LogToStandardErrorThreshold = LogLevel.Trace;
         });
 
-        builder.Services
+        RegisterTools(builder.Services
             .AddMcpServer()
-            .WithStdioServerTransport()
-            .WithTools(new[] {
+            .WithStdioServerTransport());
+
+        await builder.Build().RunAsync();
+        return 0;
+    }
+
+    internal static IMcpServerBuilder RegisterTools(IMcpServerBuilder builder) =>
+        // Name the argument so the SDK selects the type-list overload, rather than treating Type[] as one tool instance.
+        builder.WithTools(toolTypes: new[] {
                 typeof(AuthTools),
                 typeof(CategoryTools),
                 typeof(PostTools),
                 typeof(AiTools)
             }, serializerOptions: null);
-
-        await builder.Build().RunAsync();
-        return 0;
-    }
 }
