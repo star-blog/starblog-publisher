@@ -79,6 +79,8 @@ dotnet run --project StarBlogPublisher
 
 首次打开后进入「设置」，填写博客后端地址并登录。要用 AI、公众号或代理，在对应分区里配置。
 
+当前版本对接新版 StarBlog `apps/api` 的 `/api/v1` 接口。后端地址填写站点根地址，不追加 `/api/v1`；接口变更与验证说明见 [API v1 适配](docs/starblog-api-v1.md)。
+
 ### 命令行
 
 命令名是 `starblog`。

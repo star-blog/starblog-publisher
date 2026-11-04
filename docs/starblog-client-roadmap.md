@@ -12,6 +12,8 @@
 
 ## API 约束
 
+2026-11-04 更新：线上已切换到新版 `apps/api`，Publisher 现有接口已统一适配 `/api/v1`，详见 [API v1 适配](starblog-api-v1.md)。下表保留迁移前后的契约对照。
+
 线上仍跑 web-legacy 时，路径是 `/Api/*`，响应包在 `ApiResponse<T>` 里。新栈已经改成 `/api/v1/*`，成功体是裸 JSON，错误是 `ProblemDetails`；登录变成 `POST /api/v1/auth/tokens`。
 
 | | 线上 web-legacy | 新 API |
@@ -24,7 +26,7 @@ web-legacy 仍更宽的部分：访问统计（日/时趋势、地理、UA、跳
 
 新 `/api/v1` 多出来的部分：`GET /users/me`、站点初始化、按 slug 读已发布文章、`POST /posts/imports`、发布渠道与投递。
 
-P0 先对接线上 web-legacy。GUI / CLI / MCP 只打 Application 服务，不直接绑路径，后续再加 V1 适配。
+GUI / CLI / MCP 共用 Application 服务与新版 API 契约。后续功能按 `/api/v1` 扩展。
 
 ## 能力对照
 
@@ -42,7 +44,7 @@ P0 先对接线上 web-legacy。GUI / CLI / MCP 只打 Application 服务，不�
 | 英文翻译 | 无 | 已有 | P2 |
 | 分类树 / 新建 | 已有 | 已有 | 保留 |
 | 分类改名 / 删除 / 显隐 | 无 | 已有 | P0 分类管理（新页面） |
-| 分类词云 | 已有 | 仅 web-legacy | 新 API 需补或本地算 |
+| 分类词云 | 已适配 v1 | `/categories/word-cloud` | 保留 |
 | 评论审核 | 无 | 通过 / 拒绝 | P1 评论箱 |
 | 摄影作品库 | 无（仅本地配图） | 上传 + EXIF + 精选 | P2 |
 | 访问统计 | 无 | web-legacy 很全；新 API 较瘦 | P2 |
