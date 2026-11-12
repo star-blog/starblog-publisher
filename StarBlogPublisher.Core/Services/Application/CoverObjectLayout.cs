@@ -38,7 +38,7 @@ public static class CoverObjectLayout {
             new[] { d.BackgroundX, d.BackgroundY, d.Scrim }.Any(v => !double.IsFinite(v))) throw new InvalidOperationException("封面布局参数无效");
         var area = Safe(d); var output = new List<CoverTextLine>(); var diagnostics = new List<CoverDiagnostic>();
         var boxes = new Dictionary<CoverElementId, CoverPixelRect>();
-        if (d.TemplateVersion == 2 && d.TemplateId is "photo" or "split" && d.Background == null)
+        if (CoverTemplateCatalog.RequiresBackground(d) && d.Background == null)
             diagnostics.Add(new("此模板需要背景图片，请选择文章图片或本地图片", true) { Element = CoverElementId.Background });
         foreach (var id in TextIds) {
             var style = d.Elements!.Text(id); var content = d.Content(id);

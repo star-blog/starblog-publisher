@@ -143,10 +143,13 @@ public sealed class CoverRenderer {
                 var decorationArea = d.Elements?.LegacyDecorationArea ?? layout.TextArea;
                 canvas.DrawRoundRect(decorationArea.X, decorationArea.Y - 16, 80, 6, 3, 3, accent);
             }
-            if (layer != CoverRenderLayer.Text && element != CoverElementId.Logo && d.TemplateVersion == 2) {
+            if (layer != CoverRenderLayer.Text && element != CoverElementId.Logo && d.TemplateVersion >= 2) {
                 using var accent = new SKPaint { Color = SKColor.Parse(d.TemplateId == "minimal" ? "#B65D3A" : d.TemplateId == "split" ? "#4169B3" : "#D7B477"), IsAntialias = true };
                 if (d.TemplateId == "minimal") canvas.DrawRect(216, 286, 72, 5, accent);
-                if (d.TemplateId == "split") canvas.DrawRect(184, 250, 4, 406, accent);
+                if (d.TemplateId == "split") {
+                    var bar = CoverTemplateCatalog.SplitAccent(d, layout);
+                    canvas.DrawRect(bar.X, bar.Y, bar.Width, bar.Height, accent);
+                }
                 if (d.TemplateId == "column") canvas.DrawRect(0, 416, 1200, 4, accent);
             }
             token.ThrowIfCancellationRequested();

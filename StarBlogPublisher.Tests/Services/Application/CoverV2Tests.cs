@@ -17,7 +17,7 @@ public sealed class CoverV2Tests : IDisposable {
         var d = CoverTemplateCatalog.ApplyLatest(CoverTemplate.All.Single(t => t.Id == id),
             new() { Title = "重新设计封面：清晰的操作与稳定的预览", Subtitle = "预览与导出使用同一份排版", Column = "设计笔记", Background = await Image() });
         using var render = new CoverRenderer().Render(d, null);
-        d.TemplateVersion.Should().Be(2);
+        d.TemplateVersion.Should().Be(id == "split" ? 3 : 2);
         render.Layout.Diagnostics.Should().NotContain(x => x.IsError);
         render.Layout.Objects.Select(o => o.Id).Should().Contain([CoverElementId.Title, CoverElementId.Subtitle, CoverElementId.Column]);
         foreach (var frame in new[] { CoverPreviewFrame.Headline, CoverPreviewFrame.Secondary }) {
@@ -33,6 +33,52 @@ public sealed class CoverV2Tests : IDisposable {
             output.Width.Should().Be(crop.Width); output.Height.Should().Be(crop.Height);
             output.Crops.Should().Be(d.Crops);
         }
+    }
+    [Fact] public async Task SplitTemplate_KeepsEqualPanelsAndTextInBothDefaultCrops() {
+        var image = await Image();
+        var d = CoverTemplateCatalog.ApplyLatest(CoverTemplate.All.Single(t => t.Id == "split"), new() {
+            Title = "又买了一个充电器", Subtitle = "Thinkbook16+ 的原装245w充电器", Column = "充电器",
+            Background = image, Logo = image
+        });
+        using var render = new CoverRenderer().Render(d, null);
+        var seam = render.Layout.BackgroundArea.X;
+        seam.Should().Be(d.Width / 2);
+        render.Layout.Diagnostics.Should().BeEmpty();
+        render.Layout.Objects.Should().HaveCount(4);
+        foreach (var headline in new[] { true, false }) {
+            var crop = d.Crops.Window(d.Width, d.Height, headline);
+            (seam - crop.X).Should().Be(crop.Right - seam);
+            render.Layout.Objects.Should().OnlyContain(o => o.Bounds.X >= crop.X && o.Bounds.Right <= seam &&
+                o.Bounds.Y >= crop.Y && o.Bounds.Bottom <= crop.Bottom);
+        }
+        render.Bitmap[seam - 1, 450].Should().Be(new CoverPixel(0xED, 0xF2, 0xFA, 255));
+        render.Bitmap[seam, 450].Should().Be(new CoverPixel(30, 90, 200, 255));
+    }
+    [Fact] public async Task SplitAccent_FollowsTheRenderedTextWhenMovedLeft() {
+        var d = CoverTemplateCatalog.ApplyLatest(CoverTemplate.All.Single(t => t.Id == "split"), new() {
+            Title = "Thinkbook16+充电器", Background = await Image()
+        });
+        d = d with { Elements = d.Elements! with { Title = d.Elements.Title with { X = 160 } } };
+        var safe = CoverLayoutService.Measure(d);
+        safe.Objects.Single().Bounds.X.Should().Be(198);
+        CoverTemplateCatalog.SplitAccent(d, safe).X.Should().Be(174);
+
+        d = d with { Manual = true, Crops = new() { SecondaryOffset = .4 } };
+        using var render = new CoverRenderer().Render(d, null);
+        render.Layout.Objects.Single().Bounds.X.Should().Be(160);
+        render.Layout.Diagnostics.Should().BeEmpty();
+        render.Bitmap[136, 280].Should().Be(new CoverPixel(0x41, 0x69, 0xB3, 255));
+        render.Bitmap[180, 280].Should().Be(new CoverPixel(0xED, 0xF2, 0xFA, 255));
+        d.Crops.Window(d.Width, d.Height, headline: false).X.Should().BeLessThan(136);
+    }
+    [Theory][InlineData(1)][InlineData(2)]
+    public async Task SavedSplitTemplates_RetainTheirOriginalImageBoundary(int version) {
+        var d = new CoverDocument { TemplateId = "split", TemplateVersion = version, Scrim = 0,
+            Elements = version == 2 ? new CoverElements() : null, Background = await Image() };
+        using var render = new CoverRenderer().Render(d, null);
+        render.Layout.BackgroundArea.Should().Be(new CoverPixelRect(696, 0, 504, 900));
+        render.Bitmap[695, 450].Should().Be(new CoverPixel(0x17, 0x26, 0x3C, 255));
+        render.Bitmap[696, 450].Should().Be(new CoverPixel(30, 90, 200, 255));
     }
     [Theory][InlineData("photo")][InlineData("split")]
     public void ImageTemplates_RequireAnImage_AndIdentifyDiagnosticObject(string id) {

@@ -92,7 +92,15 @@ public sealed class CoverCanvas : Decorator {
                 brush.GradientStops.Add(new GradientStop(Colors.Transparent, 0)); brush.GradientStops.Add(new GradientStop(Color.FromArgb((byte)(Math.Clamp(d.Scrim, 0, 1) * 255), 0, 0, 0), 1));
                 context.FillRectangle(brush, Map(0, 0, 1200, 900));
             }
-            context.DrawImage(layers.Decoration, Map(0, 0, 1200, 900));
+            var decorationX = 0;
+            var rendered = layers.Data.Document;
+            if (rendered.TemplateId == "split" && d.Elements != rendered.Elements) {
+                // The split decoration layer contains only the accent, so dragging can reuse its texture.
+                var accent = CoverTemplateCatalog.SplitAccent(rendered, layers.Data.Layout);
+                var movedAccent = CoverTemplateCatalog.SplitAccent(rendered, layers.Data.Layout, id => Offset(id).X);
+                decorationX = movedAccent.X - accent.X;
+            }
+            context.DrawImage(layers.Decoration, Map(decorationX, 0, 1200, 900));
             if (layers.Data.ObjectLayers.Count > 0) {
                 foreach (var obj in layers.Data.Layout.Objects) {
                     if ((Frame == CoverPreviewFrame.Full && _vm.EditorMode == CoverEditorMode.Text && obj.Id == _vm.SelectedElement) || !layers.Data.ObjectLayers.ContainsKey(obj.Id)) continue;
@@ -116,7 +124,7 @@ public sealed class CoverCanvas : Decorator {
                     context.DrawRectangle(null, new Pen((IBrush?)this.FindResource("AccentFillColorDefaultBrush") ?? Brushes.CornflowerBlue, 1), Map(b.X + delta.X - 5, b.Y + delta.Y - 5, b.Width + 10, b.Height + 10), 2, 2);
                 }
             }
-            if (d.TemplateVersion == 2 && d.TemplateId is "photo" or "split" && layers.Background == null) {
+            if (CoverTemplateCatalog.RequiresBackground(d) && layers.Background == null) {
                 var target = MasterRect(layers.Data.Layout.BackgroundArea);
                 var text = new FormattedText("双击此处添加背景图片", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(FontFamily.Default), 14, Brushes.Gray);
                 context.DrawText(text, new Point(target.Center.X - text.Width / 2, target.Center.Y - text.Height / 2));
