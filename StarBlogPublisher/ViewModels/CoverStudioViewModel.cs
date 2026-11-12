@@ -61,6 +61,7 @@ public partial class CoverStudioViewModel : ViewModelBase, IDisposable {
         _factory = httpClientFactory; _apply = applyToWeChat; _save = save;
         _articleTitle = title ?? (() => articleTitle ?? ""); _summary = summary ?? (() => ""); _content = content ?? (() => "");
         Session = session ?? new(Path.Combine(Path.GetTempPath(), "StarBlogPublisher", "cover-assets"), articleTitle ?? "");
+        session?.SetInitialTitle(articleTitle ?? "");
         ArticleImages = new((articleImages ?? []).Select(i => new ArticleCoverImage(i)));
         Session.Changed += OnSessionChanged;
         Session.BeforeSave += CompleteEditing;

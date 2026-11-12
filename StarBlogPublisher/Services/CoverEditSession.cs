@@ -23,7 +23,7 @@ public sealed class CoverEditSession {
         Initial = CoverTemplateCatalog.Create(title);
     }
     public CoverAssetService Assets { get; }
-    public CoverDocument Initial { get; set; }
+    private CoverDocument Initial { get; set; }
     public ArticleCoverState? State { get; private set; }
     public CoverDocument Draft => State?.Draft ?? Initial;
     public string? ArticlePath { get; set; }
@@ -36,6 +36,13 @@ public sealed class CoverEditSession {
     public bool CanRedo => _redo.Count > 0 && IsSupported && !IsBusy;
     public event Action? Changed;
     public event Action? BeforeSave;
+    public void SetInitialTitle(string title) {
+        if (Initial.Title == title) return;
+        Initial = Initial with { Title = title };
+        if (State != null) return;
+        Revision++;
+        Changed?.Invoke();
+    }
     public void PrepareToSave() => BeforeSave?.Invoke();
     public void Load(ArticleCoverState? state) { State = state; _undo.Clear(); _redo.Clear(); Revision++; Changed?.Invoke(); }
     public void Rebase(ArticleCoverState? state, string path) {

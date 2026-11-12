@@ -295,11 +295,11 @@ public partial class WeChatViewModel : PageViewModelBase {
     }
     [RelayCommand] private void ShowCoverStudio() {
         var owner = _coverOwner;
-        var page = new CoverStudioViewModel(_httpClientFactory, owner?.ArticleTitle ?? ArticleTitle, cover => {
+        var page = new CoverStudioViewModel(_httpClientFactory, ArticleTitle, cover => {
             if (_coverOwner == owner && (owner == null || !owner.CoverSession.IsClosed)) { ++_coverLoadVersion; UsePreparedCover(cover, "文章已应用封面"); }
         }, ArticleImageCatalog.FromHtml(FormattedHtml, owner?.ArticleSourcePath ?? _sourceFilePath),
             owner?.CoverSession, owner == null ? null : () => owner.SaveDocumentAsync(),
-            owner == null ? null : () => owner.ArticleTitle, owner == null ? null : () => owner.ArticleDescription,
+            () => ArticleTitle, owner == null ? null : () => owner.ArticleDescription,
             owner == null ? null : () => owner.ArticleContent);
         OpenStackPage(page, page.Title);
     }
