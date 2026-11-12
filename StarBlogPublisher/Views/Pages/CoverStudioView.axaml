@@ -68,7 +68,7 @@
       <Button Classes="Action" Padding="6" Command="{Binding AdjustSecondaryCommand}" ToolTip.Tip="调整次条裁切">
        <StackPanel Spacing="4"><TextBlock Classes="Hint" Text="次条 · 1:1"/><controls:CoverCanvas Frame="Secondary" Width="100" Height="100" IsHitTestVisible="False"/><TextBlock Classes="Hint" Text="{Binding SecondaryWarning}"/></StackPanel>
       </Button>
-      <Button Classes="Tool" Command="{Binding ToggleGuidesCommand}" ToolTip.Tip="裁切参考线"><fi:FluentIcon Icon="Grid" FontSize="15"/></Button>
+      <Button Classes="Tool" Command="{Binding ToggleGuidesCommand}" ToolTip.Tip="显示裁切与共同安全区参考线"><fi:FluentIcon Icon="Grid" FontSize="15"/></Button>
       <Button Classes="Tool" Command="{Binding ExpandPreviewCommand}" CommandParameter="{x:Static cover:CoverPreviewFrame.Headline}" ToolTip.Tip="放大发布预览"><fi:FluentIcon Icon="ArrowExpand" FontSize="15"/></Button>
      </StackPanel>
     </StackPanel>

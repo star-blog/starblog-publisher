@@ -94,6 +94,17 @@ internal sealed partial class WorkspaceScenarios {
                 await studio.RenderNowAsync();
                 if (studio.HeadlinePreview == null || studio.SecondaryPreview == null) throw new Exception("Both crop previews are required");
                 Capture(window, Path.Combine(output, $"cover-{template.Id}-{(dark ? "dark" : "light")}.png"));
+                if (!dark && template.Id == "split") {
+                    var canvas = view.GetVisualDescendants().OfType<StarBlogPublisher.Views.Controls.CoverCanvas>()
+                        .Single(c => c.Frame == CoverPreviewFrame.Full);
+                    var safe = canvas.MasterRect(CoverObjectLayout.Safe(studio.LiveDocument));
+                    var sample = new PixelRect((int)safe.X - 1, (int)safe.Center.Y, 3, 1);
+                    var before = CoverPixels(canvas, sample);
+                    studio.ToggleGuidesCommand.Execute(null);
+                    if (before.SequenceEqual(CoverPixels(canvas, sample))) throw new Exception("Crop guides did not mark the common safe area");
+                    Capture(window, Path.Combine(output, "cover-split-guides.png"));
+                    studio.ToggleGuidesCommand.Execute(null);
+                }
             }
         }
         window.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;

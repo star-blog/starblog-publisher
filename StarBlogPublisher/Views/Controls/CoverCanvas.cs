@@ -113,6 +113,10 @@ public sealed class CoverCanvas : Decorator {
             } else if (_vm.ShowGuides) {
                 var pen = new Pen(new SolidColorBrush(Colors.White, .6), 1, new DashStyle([4, 4], 0));
                 foreach (var r in new[] { d.Crops.Window(1200, 900, true), d.Crops.Window(1200, 900, false) }) context.DrawRectangle(null, pen, MasterRect(r));
+                if (!d.Manual) {
+                    var brush = (IBrush?)this.FindResource("AccentFillColorDefaultBrush") ?? Brushes.CornflowerBlue;
+                    context.DrawRectangle(null, new Pen(brush, 1), MasterRect(CoverObjectLayout.Safe(d)));
+                }
             }
             if (!_vm.IsComposing && _vm.SelectedElement != CoverElementId.None) {
                 var selected = layers.Data.Layout.Objects.FirstOrDefault(o => o.Id == _vm.SelectedElement);
