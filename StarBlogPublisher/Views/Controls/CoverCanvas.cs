@@ -79,7 +79,7 @@ public sealed class CoverCanvas : Decorator {
     }
     public override void Render(DrawingContext context) {
         if (_vm?.Preview is not { } layers) return;
-        var d = _vm.LiveDocument; if (Viewport().Scale <= 0) return;
+        var d = _vm.LiveDocument; var viewport = Viewport(); if (viewport.Scale <= 0) return;
         using (context.PushClip(MasterRect(Viewport().Crop))) {
             context.FillRectangle(new SolidColorBrush(Color.TryParse(d.BackgroundColor, out var c) ? c : Colors.Black), Map(0, 0, 1200, 900));
             if (layers.Background is { } bg && d.UsesBackgroundImage) {
@@ -92,15 +92,12 @@ public sealed class CoverCanvas : Decorator {
                 brush.GradientStops.Add(new GradientStop(Colors.Transparent, 0)); brush.GradientStops.Add(new GradientStop(Color.FromArgb((byte)(Math.Clamp(d.Scrim, 0, 1) * 255), 0, 0, 0), 1));
                 context.FillRectangle(brush, Map(0, 0, 1200, 900));
             }
-            var decorationX = 0;
-            var rendered = layers.Data.Document;
-            if (rendered.TemplateId == "split" && d.Elements != rendered.Elements) {
-                // The split decoration layer contains only the accent, so dragging can reuse its texture.
-                var accent = CoverTemplateCatalog.SplitAccent(rendered, layers.Data.Layout);
-                var movedAccent = CoverTemplateCatalog.SplitAccent(rendered, layers.Data.Layout, id => Offset(id).X);
-                decorationX = movedAccent.X - accent.X;
+            Func<CoverElementId, double>? offsetX = d.Elements != layers.Data.Document.Elements ? id => Offset(id).X : null;
+            foreach (var decoration in layers.Data.Layout.Decorations) {
+                var bounds = offsetX == null ? decoration.Bounds : decoration.ResolveBounds(layers.Data.Layout.Objects, offsetX);
+                var radius = decoration.CornerRadius * viewport.Scale;
+                context.DrawRectangle(new SolidColorBrush(Color.Parse(decoration.Color)), null, MasterRect(bounds), radius, radius);
             }
-            context.DrawImage(layers.Decoration, Map(decorationX, 0, 1200, 900));
             if (layers.Data.ObjectLayers.Count > 0) {
                 foreach (var obj in layers.Data.Layout.Objects) {
                     if ((Frame == CoverPreviewFrame.Full && _vm.EditorMode == CoverEditorMode.Text && obj.Id == _vm.SelectedElement) || !layers.Data.ObjectLayers.ContainsKey(obj.Id)) continue;

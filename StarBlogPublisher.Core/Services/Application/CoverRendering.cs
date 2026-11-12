@@ -25,14 +25,22 @@ public sealed record CoverLayout(CoverPixelRect TextArea, IReadOnlyList<CoverTex
     public double EffectiveTextY { get; init; }
     public IReadOnlyList<CoverLayoutObject> Objects { get; init; } = [];
     public CoverPixelRect BackgroundArea { get; init; } = new(0, 0, 1200, 900);
+    public IReadOnlyList<CoverDecoration> Decorations { get; init; } = [];
 }
 
 public static class CoverLayoutService {
     public static CoverLayout Measure(CoverDocument d, CancellationToken token = default) {
-        if (d.Elements != null) return CoverObjectLayout.Measure(d, token) with { BackgroundArea = CoverTemplateCatalog.BackgroundArea(d) };
-        var legacy = CoverObjectLayout.WithObjects(MeasureLegacy(d, token));
-        legacy = legacy with { BackgroundArea = CoverTemplateCatalog.BackgroundArea(d) };
-        return d.Logo == null ? legacy : legacy with { Objects = [.. legacy.Objects, new(CoverElementId.Logo, new(legacy.TextArea.Right - 64, legacy.TextArea.Y, 64, 40), 0)] };
+        var template = CoverTemplateCatalog.Find(d.TemplateId, d.TemplateVersion);
+        if (template == null || (template.Elements != null && d.Elements == null))
+            throw new InvalidOperationException("暂不支持此封面模板版本");
+        var layout = d.Elements != null ? CoverObjectLayout.Measure(d, token) : CoverObjectLayout.WithObjects(MeasureLegacy(d, token));
+        if (d.Elements == null && d.Logo != null)
+            layout = layout with { Objects = [.. layout.Objects, new(CoverElementId.Logo, new(layout.TextArea.Right - 64, layout.TextArea.Y, 64, 40), 0)] };
+        var legacyArea = d.Elements?.LegacyDecorationArea ?? layout.TextArea;
+        return layout with {
+            BackgroundArea = template.BackgroundArea,
+            Decorations = template.Decorations.Select(decoration => decoration.Arrange(legacyArea, layout.Objects)).ToArray()
+        };
     }
     private static CoverLayout MeasureLegacy(CoverDocument d, CancellationToken token) {
         if (d.Width != 1200 || d.Height != 900 || !d.Crops.IsValid || !double.IsFinite(d.Zoom) || d.Zoom < 1 || d.Zoom > 4
@@ -40,8 +48,6 @@ public static class CoverLayoutService {
             || !double.IsFinite(d.LineHeight) || d.LineHeight < 1 || d.LineHeight > 2
             || new[] { d.TextX, d.TextY, d.BackgroundX, d.BackgroundY, d.Scrim }.Any(v => !double.IsFinite(v)))
             throw new InvalidOperationException("封面布局参数无效");
-        if (!CoverTemplate.All.Any(t => t.Id == d.TemplateId) || d.TemplateVersion != 1)
-            throw new InvalidOperationException("暂不支持此封面模板版本");
         var shared = CoverSafeZone.Intersect(d.Crops.Window(d.Width, d.Height, true), d.Crops.Window(d.Width, d.Height, false));
         var area = CoverSafeZone.Inset(d.Manual ? new(0, 0, d.Width, d.Height) : shared, 48);
         var bounds = area;
@@ -138,19 +144,14 @@ public sealed class CoverRenderer {
                     [SKColors.Transparent, new SKColor(0, 0, 0, (byte)(Math.Clamp(d.Scrim, 0, 1) * 255))], SKShaderTileMode.Clamp);
                 using var scrim = new SKPaint { Shader = shader }; canvas.DrawRect(0, 0, d.Width, d.Height, scrim);
             }
-            if (layer != CoverRenderLayer.Text && element != CoverElementId.Logo && d.TemplateVersion == 1 && d.TemplateId is "minimal" or "column") {
-                using var accent = new SKPaint { Color = SKColor.Parse("#52D6B0"), IsAntialias = true };
-                var decorationArea = d.Elements?.LegacyDecorationArea ?? layout.TextArea;
-                canvas.DrawRoundRect(decorationArea.X, decorationArea.Y - 16, 80, 6, 3, 3, accent);
-            }
-            if (layer != CoverRenderLayer.Text && element != CoverElementId.Logo && d.TemplateVersion >= 2) {
-                using var accent = new SKPaint { Color = SKColor.Parse(d.TemplateId == "minimal" ? "#B65D3A" : d.TemplateId == "split" ? "#4169B3" : "#D7B477"), IsAntialias = true };
-                if (d.TemplateId == "minimal") canvas.DrawRect(216, 286, 72, 5, accent);
-                if (d.TemplateId == "split") {
-                    var bar = CoverTemplateCatalog.SplitAccent(d, layout);
-                    canvas.DrawRect(bar.X, bar.Y, bar.Width, bar.Height, accent);
+            if (layer != CoverRenderLayer.Text && element != CoverElementId.Logo) {
+                foreach (var decoration in layout.Decorations) {
+                    var bounds = decoration.Bounds;
+                    using var paint = new SKPaint { Color = SKColor.Parse(decoration.Color), IsAntialias = true };
+                    if (decoration.CornerRadius > 0)
+                        canvas.DrawRoundRect(bounds.X, bounds.Y, bounds.Width, bounds.Height, decoration.CornerRadius, decoration.CornerRadius, paint);
+                    else canvas.DrawRect(bounds.X, bounds.Y, bounds.Width, bounds.Height, paint);
                 }
-                if (d.TemplateId == "column") canvas.DrawRect(0, 416, 1200, 4, accent);
             }
             token.ThrowIfCancellationRequested();
             foreach (var line in layer == CoverRenderLayer.Decoration ? [] : layout.Lines) {

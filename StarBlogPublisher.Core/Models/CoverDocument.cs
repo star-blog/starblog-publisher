@@ -10,7 +10,7 @@ namespace StarBlogPublisher.Models;
 public sealed record CoverDocument {
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
     public string TemplateId { get; init; } = "minimal";
-    [JsonIgnore] public bool UsesBackgroundImage => TemplateId is "photo" or "split" or "column";
+    [JsonIgnore] public bool UsesBackgroundImage => CoverTemplateCatalog.UsesBackgroundImage(this);
     public int TemplateVersion { get; init; } = 1;
     public CoverElements? Elements { get; init; }
     [JsonIgnore] public bool IsSupported => CoverTemplateCatalog.IsSupported(TemplateId, TemplateVersion) && (TemplateVersion == 1 || Elements != null);
@@ -100,14 +100,8 @@ public sealed record CoverCropSet {
 }
 
 public sealed record CoverTemplate(string Id, string Name) {
-    public static IReadOnlyList<CoverTemplate> All { get; } = [new("minimal", "纯色大标题"), new("photo", "照片叠字"),
-        new("split", "图文分区"), new("column", "栏目封面")];
-    public CoverDocument Apply(CoverDocument source) => source with {
-        TemplateId = Id, TemplateVersion = 1, FontSize = Id == "column" ? 60 : 64,
-        Centered = Id != "split", Placement = Id == "photo" ? "bottom" : "center",
-        TextWidth = Id == "split" ? .52 : 1, TextX = 0, TextY = 0,
-        Color = "#FFFFFF", BackgroundColor = Id == "column" ? "#41335B" : "#17263C", Scrim = Id is "photo" or "column" ? .65 : 0
-    };
+    public static IReadOnlyList<CoverTemplate> All => CoverTemplateCatalog.Templates;
+    public CoverDocument Apply(CoverDocument source) => CoverTemplateCatalog.ApplyLegacy(this, source);
 }
 
 [JsonSerializable(typeof(ArticleCoverState))]

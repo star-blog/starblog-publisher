@@ -10,8 +10,8 @@ using SkiaSharp;
 namespace StarBlogPublisher.Services.Application;
 
 public sealed record CoverRawImage(int Width, int Height, int Stride, byte[] Pixels);
-public sealed record CoverPreviewLayerData(CoverDocument Document, CoverRawImage? Background, CoverRawImage Decoration,
-    CoverRawImage Text, CoverLayout Layout, CoverPixelRect TextBounds) {
+public sealed record CoverPreviewLayerData(CoverDocument Document, CoverRawImage? Background, CoverRawImage Text,
+    CoverLayout Layout, CoverPixelRect TextBounds) {
     public IReadOnlyDictionary<CoverElementId, CoverRawImage> ObjectLayers { get; init; } = new Dictionary<CoverElementId, CoverRawImage>();
     public static CoverPreviewLayerData Create(CoverDocument document, string? articlePath, CoverRawImage? cachedBackground, CancellationToken token, CoverPreviewLayerData? previous = null) {
         var background = document.UsesBackgroundImage ? cachedBackground : null;
@@ -24,7 +24,6 @@ public sealed record CoverPreviewLayerData(CoverDocument Document, CoverRawImage
         var renderer = new CoverRenderer();
         var layout = CoverLayoutService.Measure(document, token);
         using var text = renderer.Render(document, articlePath, token, CoverRenderLayer.Text, measured: layout);
-        using var decoration = renderer.Render(document, articlePath, token, CoverRenderLayer.Decoration, CoverElementId.None, layout);
         var rect = new CoverPixelRect();
         foreach (var line in text.Layout.Lines) {
             if (!CoverComposer.TryResolveFont(line.Bold, out var face, out _)) continue;
@@ -48,6 +47,6 @@ public sealed record CoverPreviewLayerData(CoverDocument Document, CoverRawImage
                 objects[obj.Id] = rendered.Bitmap.CopyPixels();
             }
         }
-        return new(document, background, decoration.Bitmap.CopyPixels(), text.Bitmap.CopyPixels(), text.Layout, rect) { ObjectLayers = objects };
+        return new(document, background, text.Bitmap.CopyPixels(), layout, rect) { ObjectLayers = objects };
     }
 }

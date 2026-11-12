@@ -19,7 +19,6 @@ public sealed class CoverPreviewLayers : IDisposable {
     private bool _disposed;
     public CoverPreviewLayerData Data { get; }
     public Bitmap? Background => _background?.Image;
-    public Bitmap Decoration { get; }
     public Bitmap Text { get; }
     public Bitmap Object(CoverElementId id) => _objects[id].Image;
     public CoverPreviewLayers(CoverPreviewLayerData data, CoverPreviewLayers? previous = null) {
@@ -28,7 +27,7 @@ public sealed class CoverPreviewLayers : IDisposable {
             if (previous?._background is { } shared && ReferenceEquals(previous.Data.Background, data.Background)) { _background = shared; shared.Users++; }
             else _background = new(Upload(data.Background));
         }
-        Decoration = Upload(data.Decoration); Text = Upload(data.Text);
+        Text = Upload(data.Text);
         foreach (var pair in data.ObjectLayers) {
             if (previous != null && previous._objects.TryGetValue(pair.Key, out var shared) &&
                 previous.Data.ObjectLayers.TryGetValue(pair.Key, out var raw) && ReferenceEquals(raw, pair.Value)) { shared.Users++; _objects[pair.Key] = shared; }
@@ -41,5 +40,5 @@ public sealed class CoverPreviewLayers : IDisposable {
         for (var row = 0; row < data.Height; row++) Marshal.Copy(data.Pixels, row * data.Stride, buffer.Address + row * buffer.RowBytes, data.Width * 4);
         return bitmap;
     }
-    public void Dispose() { if (_disposed) return; _disposed = true; if (_background != null && --_background.Users == 0) _background.Image.Dispose(); foreach (var shared in _objects.Values) if (--shared.Users == 0) shared.Image.Dispose(); Decoration.Dispose(); Text.Dispose(); }
+    public void Dispose() { if (_disposed) return; _disposed = true; if (_background != null && --_background.Users == 0) _background.Image.Dispose(); foreach (var shared in _objects.Values) if (--shared.Users == 0) shared.Image.Dispose(); Text.Dispose(); }
 }

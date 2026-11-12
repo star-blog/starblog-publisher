@@ -61,7 +61,9 @@ public sealed class CoverV2Tests : IDisposable {
         d = d with { Elements = d.Elements! with { Title = d.Elements.Title with { X = 160 } } };
         var safe = CoverLayoutService.Measure(d);
         safe.Objects.Single().Bounds.X.Should().Be(198);
-        CoverTemplateCatalog.SplitAccent(d, safe).X.Should().Be(174);
+        var accent = safe.Decorations.Single();
+        accent.Bounds.X.Should().Be(174);
+        accent.ResolveBounds(safe.Objects, _ => -38).X.Should().Be(136);
 
         d = d with { Manual = true, Crops = new() { SecondaryOffset = .4 } };
         using var render = new CoverRenderer().Render(d, null);
