@@ -111,6 +111,7 @@
          <ToggleButton Content="B" FontWeight="Bold" IsChecked="{Binding IsBold}" Width="32"/>
          <ComboBox ItemsSource="{Binding AlignmentChoices}" SelectedItem="{Binding SelectedAlignmentChoice}" DisplayMemberBinding="{Binding Name}" Width="136"/>
         </StackPanel>
+        <CheckBox Content="文字保持在共同安全区" IsChecked="{Binding !Manual}" FontSize="12"/>
         <Expander Header="更多排版设置"><StackPanel Spacing="8" Margin="0,8,0,0">
          <TextBlock Classes="Label" Text="行距"/><Slider Minimum="1" Maximum="2" Value="{Binding LineHeight}" PointerReleased="OnGestureEnd"/>
          <TextBlock Classes="Label" Text="文本框宽度"/><Slider Minimum="{Binding WidthMinimum}" Maximum="{Binding WidthMaximum}" Value="{Binding TextWidth}" PointerReleased="OnGestureEnd"/>
