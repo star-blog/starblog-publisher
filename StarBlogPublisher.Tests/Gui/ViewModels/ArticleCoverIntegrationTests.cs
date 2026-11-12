@@ -26,6 +26,35 @@ public sealed class ArticleCoverIntegrationTests : IDisposable {
         doc.NavigateBreadcrumbAt(0); shell.WeChatPage.NavigateBreadcrumbAt(0);
         await doc.SaveDocumentAsync(); await shell.Workspace.CloseActiveCommand.ExecuteAsync(null);
     }
+    [Fact] public async Task WeChatStudio_UsesEditedWeChatTitleForNewCoversAndExplicitSync() {
+        var shell = Shell();
+        await shell.Workspace.OpenPathAsync(await Article());
+        var doc = shell.PublishPage;
+        var weChat = shell.WeChatPage;
+        weChat.SyncFrom(doc);
+        weChat.ArticleTitle = "公众号标题";
+
+        try {
+            weChat.ShowCoverStudioCommand.Execute(null);
+            var studio = (CoverStudioViewModel)weChat.ActiveStackPage!;
+            studio.CoverTitle.Should().Be("公众号标题");
+            doc.ArticleTitle.Should().Be("post");
+            doc.IsDocumentDirty.Should().BeFalse();
+
+            studio.CoverTitle = "自定义封面文案";
+            weChat.NavigateBreadcrumbAt(0);
+            weChat.ArticleTitle = "更新后的公众号标题";
+            weChat.ShowCoverStudioCommand.Execute(null);
+
+            var reopened = (CoverStudioViewModel)weChat.ActiveStackPage!;
+            reopened.CoverTitle.Should().Be("自定义封面文案");
+            reopened.SyncTitleCommand.Execute(null);
+            reopened.CoverTitle.Should().Be("更新后的公众号标题");
+        }
+        finally {
+            shell.Workspace.ReleaseCoverSessions();
+        }
+    }
     [Fact] public async Task SaveReopen_PreservesDraftAndAppliedIndependently_AndSwitchClearsWeChat() {
         var shell = Shell(); var path = await Article(); await shell.Workspace.OpenPathAsync(path); var doc = shell.PublishPage;
         doc.CoverSession.Change(doc.CoverSession.Draft with { Title = "已应用" }); await doc.CoverSession.ApplyAsync();
